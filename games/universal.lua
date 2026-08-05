@@ -7995,39 +7995,58 @@ run(function()
 		return false
 	end
 
-	local function paintWorld()
-		for _, part in workspace:GetDescendants() do
-			if not part:IsA('BasePart') then continue end
-			if isCharacterPart(part) then continue end
-			if not References[part] then
-				References[part] = {part.Color, part.Material}
-			end
-			pcall(function()
-				part.Color = potatoColor
-				part.Material = Enum.Material.SmoothPlastic
-			end)
+	local function snapshot(part)
+		if not References[part] then
+			References[part] = {part.Color, part.Material}
 		end
 	end
 
-	local function restore()
-		for part, values in pairs(References) do
-			if part.Parent and part:IsDescendantOf(workspace) then
-				pcall(function()
-					part.Color = values[1]
-					part.Material = values[2]
-				end)
-			end
-		end
-		table.clear(References)
+	local function apply(part)
+		pcall(function()
+			part.Color = potatoColor
+			part.Material = Enum.Material.SmoothPlastic
+		end)
 	end
 
 	PotatoMode = vape.Legit:CreateModule({
 		Name = 'Potato Mode',
 		Function = function(callback)
 			if callback then
-				PotatoMode:Clean(runService.Heartbeat:Connect(paintWorld))
+				local all = workspace:GetDescendants()
+				for _, part in all do
+					if part:IsA('BasePart') and not isCharacterPart(part) then
+						snapshot(part)
+						apply(part)
+					end
+				end
+				local tick = 0
+				PotatoMode:Clean(runService.Heartbeat:Connect(function()
+					tick += 1
+					if tick % 30 ~= 0 then return end
+					for part, values in next, References do
+						if part.Parent and part:IsDescendantOf(workspace) then
+							if part.Color ~= values[1] or part.Material ~= values[2] then
+								apply(part)
+							end
+						end
+					end
+				end))
+				PotatoMode:Clean(workspace.DescendantAdded:Connect(function(part)
+					if part:IsA('BasePart') and not isCharacterPart(part) then
+						snapshot(part)
+						apply(part)
+					end
+				end))
 			else
-				restore()
+				for part, values in pairs(References) do
+					if part.Parent and part:IsDescendantOf(workspace) then
+						pcall(function()
+							part.Color = values[1]
+							part.Material = values[2]
+						end)
+					end
+				end
+				table.clear(References)
 			end
 		end,
 		Tooltip = 'Changes all parts in the world to a potato coloured material for smoother performance'

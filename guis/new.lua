@@ -1,5 +1,6 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local license = ...
 local mainapi = {
 	Categories = {},
@@ -269,7 +270,7 @@ local function createDownloader(text)
 			downloader.Parent = mainapi.gui
 			mainapi.Downloader = downloader
 		end
-		downloader.Text = 'Downloading '..text
+		downloader.Text = 'Downloading '..(text:gsub('^catsix/', 'Vape Private/'))
 	end
 end
 

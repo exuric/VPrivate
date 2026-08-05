@@ -1,4 +1,5 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local license = ... or {}
 repeat task.wait() until game:IsLoaded()
 if shared.vape then shared.vape:Uninject() end
@@ -98,7 +99,8 @@ local function finishLoading()
 			end)
 			task.delay(0.05 + cloneref(game:GetService('RunService')).PostSimulation:Wait(), function()
 				if shared.updated then
-					vape:CreateNotification('Cat', `Script has updated from {shared.updated} to {readfile('catrewrite/profiles/commit.txt')}`, 10, 'info')
+					local commit = isfile('catsix/profiles/commit.txt') and readfile('catsix/profiles/commit.txt') or 'unknown'
+					vape:CreateNotification('Vape Private', `Script has updated from {shared.updated} to {commit}`, 10, 'info')
 				end
 			end)
 		end	

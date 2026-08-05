@@ -26,7 +26,7 @@ downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(ga
 local function downloadFile(path, func)
 	if not isfile(path) then
 		if not license.Closet then
-			downloader.Text = 'Downloading '.. path
+			downloader.Text = 'Downloading '.. (path:gsub('^catsix/', 'Vape Private/'))
 		end
 		local suc, res = pcall(function()
 			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('catsix/profiles/commit.txt')..'/'..select(1, path:gsub('catsix/', '')), true)
@@ -59,7 +59,7 @@ end
 
 for _, folder in {'catsix', 'catsix/games', 'catsix/profiles', 'catsix/assets', 'catsix/libraries', 'catsix/guis'} do
 	if not isfolder(folder) then
-		downloader.Text = 'Downloading '.. folder
+		downloader.Text = 'Downloading '.. (folder:gsub('^catsix/', 'Vape Private/'))
 		makefolder(folder)
 	end
 end

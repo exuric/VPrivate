@@ -8024,7 +8024,7 @@ run(function()
 			if callback then
 				PotatoMode:Clean(runService.Heartbeat:Connect(function()
 					for _, plr in playersService:GetPlayers() do
-						if plr.Character then
+						if plr ~= playersService.LocalPlayer and plr.Character then
 							paint(plr)
 						end
 					end

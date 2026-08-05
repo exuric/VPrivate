@@ -8002,16 +8002,49 @@ run(function()
 	end
 
 	local function apply(part)
-		pcall(function()
+		if part.Color ~= potatoColor then
 			part.Color = potatoColor
+		end
+		if part.Material ~= Enum.Material.SmoothPlastic then
 			part.Material = Enum.Material.SmoothPlastic
+		end
+	end
+
+	local savedQuality, savedShadows
+
+	local function boostGraphics()
+		pcall(function()
+			local render = game:GetService('RenderSettings')
+			savedQuality = render.QualityLevel
+			render.QualityLevel = 0
 		end)
+		pcall(function()
+			local lighting = game:GetService('Lighting')
+			savedShadows = lighting.GlobalShadows
+			lighting.GlobalShadows = false
+		end)
+	end
+
+	local function restoreGraphics()
+		if savedQuality then
+			pcall(function()
+				game:GetService('RenderSettings').QualityLevel = savedQuality
+			end)
+		end
+		if savedShadows then
+			pcall(function()
+				game:GetService('Lighting').GlobalShadows = savedShadows
+			end)
+		end
+		savedQuality = nil
+		savedShadows = nil
 	end
 
 	PotatoMode = vape.Legit:CreateModule({
 		Name = 'Potato Mode',
 		Function = function(callback)
 			if callback then
+				boostGraphics()
 				local all = workspace:GetDescendants()
 				for _, part in all do
 					if part:IsA('BasePart') and not isCharacterPart(part) then
@@ -8022,12 +8055,14 @@ run(function()
 				local tick = 0
 				PotatoMode:Clean(runService.Heartbeat:Connect(function()
 					tick += 1
-					if tick % 30 ~= 0 then return end
-					for part, values in next, References do
-						if part.Parent and part:IsDescendantOf(workspace) then
-							if part.Color ~= values[1] or part.Material ~= values[2] then
+					if tick % 120 ~= 0 then return end
+					for part in next, References do
+						if part.Parent then
+							if part.Color ~= potatoColor or part.Material ~= Enum.Material.SmoothPlastic then
 								apply(part)
 							end
+						else
+							References[part] = nil
 						end
 					end
 				end))
@@ -8038,8 +8073,9 @@ run(function()
 					end
 				end))
 			else
-				for part, values in pairs(References) do
-					if part.Parent and part:IsDescendantOf(workspace) then
+				restoreGraphics()
+				for part, values in next, References do
+					if part.Parent then
 						pcall(function()
 							part.Color = values[1]
 							part.Material = values[2]
@@ -8049,7 +8085,7 @@ run(function()
 				table.clear(References)
 			end
 		end,
-		Tooltip = 'Changes all parts in the world to a potato coloured material for smoother performance'
+		Tooltip = 'Makes the world low detail and lowers graphics settings for an FPS boost'
 	})
 end)
 

@@ -2,6 +2,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -1670,9 +1671,9 @@ end
 run(function()
 	local AimAssist
 	local AimMode
-	local Mode
+	local Technique
 	local Targets
-	local Vibe
+	local Mode
 	local Sort
 	local AimPart
 	local AimSpeed
@@ -1732,20 +1733,20 @@ run(function()
 		return math.acos(math.clamp(forwardA:Dot(forwardB), -1, 1))
 	end
 
-	local function getVibe()
-		local style = Vibe.Value
+	local function getMode()
+		local style = Mode.Value
 		if style == 'Legit' then
 			return 0.055 * (1 + AimSpeed.Value * 0.04), 0.3
-		elseif style == 'Hybrid' then
-			return 0.14 * (1 + AimSpeed.Value * 0.03), 0.18
+		elseif style == 'Robotic Aim' then
+			return 0.75 * (1 + AimSpeed.Value * 0.01), 0.01
 		end
-		return 0.3, 0.05
+		return 0.9, 0.001
 	end
 
 	local aimfuncs = {
 		Simple = function(localcframe, ent, fps)
 			local rng = Random.new()
-			local perFrame, delay = getVibe()
+			local perFrame, delay = getMode()
 			local react = math.clamp((tick() - started) / delay, 0.1, 1)
 			local strafe = StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0
 			local speed = (AimSpeed.Value + strafe)
@@ -1753,17 +1754,17 @@ run(function()
 			local target = CFrame.lookAt(localcframe.p, desired)
 
 			local step = perFrame * react
-			if Vibe.Value == 'Hybrid' and localAngle(target, localcframe) < math.rad(12) then
-				step = 0.75
-			elseif Vibe.Value == 'Blatant' then
-				step = math.clamp(0.3 + AimSpeed.Value * 0.03, 0.3, 0.95) * react
+			if Mode.Value == 'Legit' and localAngle(target, localcframe) < math.rad(12) then
+				step = math.max(step, 0.45)
+			elseif Mode.Value == 'Robotic Aim' then
+				step = 0.85
 			end
 			step = step * (0.85 + rng:NextNumber() * 0.3)
 			return localcframe:Lerp(target, math.clamp(step, 0, 1)), speed * fps
 		end,
 		Adaptive = function(localcframe, ent, fps)
 			local prog, rng = ease(math.min(tick() - started, 1)), Random.new()
-			local perFrame, delay = getVibe()
+			local perFrame, delay = getMode()
 			local react = math.clamp((tick() - started) / delay, 0.1, 1)
 			local speed = (AimSpeed.Value * 0.1 * prog) + (1 - prog) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 5)
 			local desired = getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
@@ -1851,18 +1852,18 @@ run(function()
 							local perspective = AimMode.Value
 
 							if perspective == 'Mouse' then
-								local cframe = aimfuncs[Mode.Value](gameCamera.CFrame, ent, dt)
+								local cframe = aimfuncs[Technique.Value](gameCamera.CFrame, ent, dt)
 								local viewport = gameCamera:WorldToViewportPoint(cframe.Position)
 								local pos = Vector2.new(viewport.X, viewport.Y) - inputService:GetMouseLocation()
 								pos = pos * math.min(AimSpeed.Value * dt * (1 - math.exp(-Smoothness.Value * 60 * dt)), 1)
 								mousemoverel(pos.X, pos.Y)
 							elseif perspective == 'First person' or (perspective == 'Dynamic' and firstPerson) then
 								if not firstPerson then return end
-								local cframe = aimfuncs[Mode.Value](gameCamera.CFrame, ent, dt)
+								local cframe = aimfuncs[Technique.Value](gameCamera.CFrame, ent, dt)
 								gameCamera.CFrame = gameCamera.CFrame:Lerp(cframe, 1 - math.exp(-Smoothness.Value * 60 * dt))
 							elseif perspective == 'Third person' or (perspective == 'Dynamic' and not firstPerson) then
 								if firstPerson then return end
-								local cframe = aimfuncs[Mode.Value](root.CFrame, ent, dt)
+								local cframe = aimfuncs[Technique.Value](root.CFrame, ent, dt)
 								local direction = cframe.LookVector * Vector3.new(1, 0, 1)
 								if direction.Magnitude > 0 then
 									entitylib.character.Humanoid.AutoRotate = false
@@ -1894,17 +1895,17 @@ run(function()
 		List = {'First person', 'Third person', 'Dynamic'},
 		Default = 'First person'
 	})
-	Mode = AimAssist:CreateDropdown({
-		Name = 'Mode',
+	Technique = AimAssist:CreateDropdown({
+		Name = 'Technique',
 		List = modes,
 		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior',
 		Default = modes[1],
 	})
-	Vibe = AimAssist:CreateDropdown({
-		Name = 'Vibe',
-		List = {'Blatant', 'Legit', 'Hybrid'},
-		Tooltip = 'Blatant - Strong instant aim lock\nLegit - Human reaction delay and slow smooth pull\nHybrid - Slow pull far away, fast finish when close to target',
-		Default = 'Hybrid',
+	Mode = AimAssist:CreateDropdown({
+		Name = 'Mode',
+		List = {'Not Human Aim', 'Robotic Aim', 'Legit'},
+		Tooltip = 'Not Human Aim - Max strength instant lock\nRobotic Aim - Strong rigid lock\nLegit - Human reaction delay and slow smooth pull',
+		Default = 'Robotic Aim',
 	})
 	Targets = AimAssist:CreateTargets({
 		Players = true,
@@ -2004,9 +2005,7 @@ run(function()
 							end
 						end
 					elseif store.hand.toolType == 'sword' then
-						if MissChance.Value <= 0 or math.random() > MissChance.Value then
-							bedwars.SwordController:swingSwordAtMouse(0.39)
-						end
+						bedwars.SwordController:swingSwordAtMouse(0.39)
 					end
 				end
 	
@@ -2071,14 +2070,6 @@ run(function()
 		Max = 9,
 		DefaultMin = 7,
 		DefaultMax = 7
-	})
-	MissChance = AutoClicker:CreateSlider({
-		Name = 'Break chance',
-		Min = 0,
-		Max = 0.5,
-		Default = 0,
-		Decimal = 100,
-		Tooltip = 'Random chance each click is dropped. Makes autoclicker look human'
 	})
 	AutoClicker:CreateToggle({
 		Name = 'Place Blocks',
@@ -2152,8 +2143,8 @@ run(function()
 	SwordRange = Reach:CreateSlider({
 		Name = 'Sword Range',
 		Min = 1,
-		Max = 18,
-		Default = 18,
+		Max = 30,
+		Default = 21,
 		Decimal = 5,
 		Darker = true,
 		Suffix = function(val)
@@ -2172,8 +2163,8 @@ run(function()
 	BlockRange = Reach:CreateSlider({
 		Name = 'Placement Range',
 		Min = 1,
-		Max = 60,
-		Default = 18,
+		Max = 100,
+		Default = 30,
 		Darker = true,
 		Suffix = function(val)
 			return val <= 1 and 'stud' or 'studs'
@@ -2189,8 +2180,8 @@ run(function()
 	BreakRange = Reach:CreateSlider({
 		Name = 'Break Range',
 		Min = 1,
-		Max = 30,
-		Default = 30,
+		Max = 50,
+		Default = 36,
 		Decimal = 5,
 		Darker = true,
 		Suffix = function(val)
@@ -3016,7 +3007,6 @@ run(function()
 	local WallCheck
 	local PopBalloons
 	local TP
-	local Smooth
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 	local up, down, old = 0, 0
@@ -3085,11 +3075,7 @@ run(function()
 						end
 
 						root.CFrame += destination
-						local velocityTarget = (moveDirection * velo) + Vector3.new(0, mass, 0)
-						if Smooth.Enabled then
-							velocityTarget = root.AssemblyLinearVelocity:Lerp(velocityTarget, 1 - math.exp(-9 * dt))
-						end
-						root.AssemblyLinearVelocity = velocityTarget
+						root.AssemblyLinearVelocity = (moveDirection * velo) + Vector3.new(0, mass, 0)
 					end
 				end))
 				Fly:Clean(inputService.InputBegan:Connect(function(input)
@@ -3160,10 +3146,6 @@ run(function()
 		Name = 'TP Down',
 		Default = true
 	})
-	Smooth = Fly:CreateToggle({
-		Name = 'Smooth',
-		Tooltip = 'Eases velocity changes instead of snapping instantly. Smoother hover, less detectable'
-	})
 end)
 
 run(function()
@@ -3174,7 +3156,7 @@ run(function()
 	local function createHitbox(ent)
 		if ent.Targetable and ent.Player then
 			local hitbox = Instance.new('Part')
-			hitbox.Size = Vector3.new(3, 6, 3) + Vector3.one * (Expand.Value / 5)
+			hitbox.Size = Vector3.new(3, 6, 3) + Vector3.one * (Expand.Value / 3)
 			hitbox.Position = ent.RootPart.Position
 			hitbox.CanCollide = false
 			hitbox.Massless = true
@@ -3193,7 +3175,7 @@ run(function()
 		Function = function(callback)
 			if callback then
 				if Mode.Value == 'Sword' then
-					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (Expand.Value / 3))
+					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (Expand.Value / 1.5))
 					set = true
 				else
 					HitBoxes:Clean(entitylib.Events.EntityAdded:Connect(createHitbox))
@@ -3234,16 +3216,16 @@ run(function()
 	Expand = HitBoxes:CreateSlider({
 		Name = 'Expand amount',
 		Min = 0,
-		Max = 14.4,
-		Default = 14.4,
+		Max = 25,
+		Default = 20,
 		Decimal = 10,
 		Function = function(val)
 			if HitBoxes.Enabled then
 				if Mode.Value == 'Sword' then
-					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (val / 3))
+					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (val / 1.5))
 				else
 					for _, part in objects do
-						part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 5)
+						part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 3)
 					end
 				end
 			end
@@ -3268,7 +3250,6 @@ end)
 run(function()
 	local Value
 	local CameraDir
-	local Smooth
 	local start
 	local JumpTick, JumpSpeed, Direction = tick(), 0
 	local projectileRemote = {InvokeServer = function() end}
@@ -3450,11 +3431,7 @@ run(function()
 							if start then
 								root.CFrame = CFrame.lookAlong(start, root.CFrame.LookVector)
 							end
-							if Smooth.Enabled and root.AssemblyLinearVelocity.Magnitude > 0.5 then
-								root.AssemblyLinearVelocity = root.AssemblyLinearVelocity:Lerp(Vector3.zero, 1 - math.exp(-6 * dt))
-							else
-								root.AssemblyLinearVelocity = Vector3.zero
-							end
+							root.AssemblyLinearVelocity = Vector3.zero
 							JumpSpeed = 0
 						end
 					else
@@ -3496,10 +3473,6 @@ run(function()
 	})
 	CameraDir = LongJump:CreateToggle({
 		Name = 'Camera Direction'
-	})
-	Smooth = LongJump:CreateToggle({
-		Name = 'Smooth',
-		Tooltip = 'Eases you to a stop instead of instantly freezing after the jump'
 	})
 end)
 

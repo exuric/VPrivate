@@ -1672,6 +1672,7 @@ run(function()
 	local AimMode
 	local Mode
 	local Targets
+	local Vibe
 	local Sort
 	local AimPart
 	local AimSpeed
@@ -1725,20 +1726,53 @@ run(function()
 	end
 	
 	local started, lasttarget, nextsearch = 0, nil, 0
+	local function localAngle(a, b)
+		local forwardA = a.LookVector.Unit
+		local forwardB = b.LookVector.Unit
+		return math.acos(math.clamp(forwardA:Dot(forwardB), -1, 1))
+	end
+
+	local function getVibe()
+		local style = Vibe.Value
+		if style == 'Legit' then
+			return 0.055 * (1 + AimSpeed.Value * 0.04), 0.3
+		elseif style == 'Hybrid' then
+			return 0.14 * (1 + AimSpeed.Value * 0.03), 0.18
+		end
+		return 0.3, 0.05
+	end
+
 	local aimfuncs = {
 		Simple = function(localcframe, ent, fps)
 			local rng = Random.new()
-			local speed = (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0))
-	
-			return localcframe:Lerp(CFrame.lookAt(localcframe.p, getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)), speed * fps), speed
+			local perFrame, delay = getVibe()
+			local react = math.clamp((tick() - started) / delay, 0.1, 1)
+			local strafe = StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0
+			local speed = (AimSpeed.Value + strafe)
+			local desired = getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
+			local target = CFrame.lookAt(localcframe.p, desired)
+
+			local step = perFrame * react
+			if Vibe.Value == 'Hybrid' and localAngle(target, localcframe) < math.rad(12) then
+				step = 0.75
+			elseif Vibe.Value == 'Blatant' then
+				step = math.clamp(0.3 + AimSpeed.Value * 0.03, 0.3, 0.95) * react
+			end
+			step = step * (0.85 + rng:NextNumber() * 0.3)
+			return localcframe:Lerp(target, math.clamp(step, 0, 1)), speed * fps
 		end,
 		Adaptive = function(localcframe, ent, fps)
 			local prog, rng = ease(math.min(tick() - started, 1)), Random.new()
+			local perFrame, delay = getVibe()
+			local react = math.clamp((tick() - started) / delay, 0.1, 1)
 			local speed = (AimSpeed.Value * 0.1 * prog) + (1 - prog) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 5)
-			return localcframe:Lerp(CFrame.lookAt(localcframe.p, getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)), speed * fps), speed
+			local desired = getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
+			local target = CFrame.lookAt(localcframe.Position, desired)
+			local step = perFrame * react * (0.6 + prog * 0.4)
+			return localcframe:Lerp(target, math.clamp(step, 0, 1)), speed * fps
 		end
 	}
-	
+
 	local function isValid(ent)
 		if not entitylib.isAlive then return false end
 		if not ent or not ent.Character or not ent.Character.Parent then return false end
@@ -1866,6 +1900,12 @@ run(function()
 		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior',
 		Default = modes[1],
 	})
+	Vibe = AimAssist:CreateDropdown({
+		Name = 'Vibe',
+		List = {'Blatant', 'Legit', 'Hybrid'},
+		Tooltip = 'Blatant - Strong instant aim lock\nLegit - Human reaction delay and slow smooth pull\nHybrid - Slow pull far away, fast finish when close to target',
+		Default = 'Hybrid',
+	})
 	Targets = AimAssist:CreateTargets({
 		Players = true,
 		Walls = true,
@@ -1964,7 +2004,9 @@ run(function()
 							end
 						end
 					elseif store.hand.toolType == 'sword' then
-						bedwars.SwordController:swingSwordAtMouse(0.39)
+						if MissChance.Value <= 0 or math.random() > MissChance.Value then
+							bedwars.SwordController:swingSwordAtMouse(0.39)
+						end
 					end
 				end
 	
@@ -2029,6 +2071,14 @@ run(function()
 		Max = 9,
 		DefaultMin = 7,
 		DefaultMax = 7
+	})
+	MissChance = AutoClicker:CreateSlider({
+		Name = 'Break chance',
+		Min = 0,
+		Max = 0.5,
+		Default = 0,
+		Decimal = 100,
+		Tooltip = 'Random chance each click is dropped. Makes autoclicker look human'
 	})
 	AutoClicker:CreateToggle({
 		Name = 'Place Blocks',

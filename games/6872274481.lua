@@ -1,4 +1,5 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -3607,6 +3608,9 @@ run(function()
 	local Prediction
 	local metaCache = {}
 	local history = {}
+	local partMemory = {}
+	local velFilter = {}
+	local smoothDir
 
 	local function getMousePosition()
 		if inputService.TouchEnabled then
@@ -3664,24 +3668,56 @@ run(function()
 
 	local function getPart(plr, origin)
 		if TargetPart.Value ~= 'Closest' then
-			return plr[TargetPart.Value]
+			local part = plr[TargetPart.Value]
+			return part or plr.RootPart
 		end
-		local mouse = getMousePosition()
 		local root = plr.RootPart
-		if not root then return end
-		local head = plr.Head
-		if not head then return root end
+		if not root then
+			partMemory[plr] = nil
+			return
+		end
+		local head = plr.Head or root
+		local rayOrigin, rayDir
+		local ok = pcall(function()
+			local mouse = getMousePosition()
+			local ray = gameCamera:ScreenPointToRay(mouse.X, mouse.Y)
+			rayOrigin, rayDir = ray.Origin, ray.Direction
+		end)
+		if not ok or not rayOrigin then
+			rayOrigin = gameCamera.CFrame.Position
+			rayDir = gameCamera.CFrame.LookVector
+		end
+		local parts
+		if typeof(plr.Character) == 'Instance' then
+			parts = plr.Character:GetDescendants()
+		else
+			parts = {root, head}
+		end
+		local dists = {}
 		local best, bestDist
-		for _, part in {root, head} do
-			local screenPos, onViewport = gameCamera:WorldToViewportPoint(part.Position)
-			if onViewport then
-				local dist = (mouse - Vector2.new(screenPos.X, screenPos.Y)).LengthSquared
-				if not bestDist or dist < bestDist then
-					best, bestDist = part, dist
+		for i = 1, #parts do
+			local part = parts[i]
+			if part:IsA('BasePart') then
+				local rel = part.Position - rayOrigin
+				local along = rel:Dot(rayDir)
+				if along >= 0 then
+					local dist = (rayOrigin + rayDir * along - part.Position).Magnitude
+					dists[part] = dist
+					if not bestDist or dist < bestDist then
+						best, bestDist = part, dist
+					end
 				end
 			end
 		end
-		return best or root
+		if not best then
+			return head
+		end
+		local prev = partMemory[plr]
+		if prev and prev.Parent and dists[prev] and dists[prev] <= bestDist + 0.4 then
+			best, bestDist = prev, dists[prev]
+		end
+		partMemory[plr] = best
+		return best
 	end
 
 	local function getTargetVelocity(plr, part)
@@ -3710,11 +3746,28 @@ run(function()
 				break
 			end
 		end
-		local vel = measured and (measured * 0.6) + (base * 0.4) or base
-		if entitylib.character and entitylib.character.RootPart then
-			local dist = (root.Position - entitylib.character.RootPart.Position).Magnitude
-			local measuredWeight = math.clamp(0.6 + dist * 0.002, 0.6, 1)
-			vel = measured and (measured * measuredWeight) + (base * (1 - measuredWeight)) or base
+		local vel
+		if measured then
+			vel = velFilter[part]
+			if not vel then
+				vel = measured
+				velFilter[part] = vel
+			else
+				local weight = math.clamp((now - (samples[#samples] and samples[#samples][1] or now)) * 4, 0.25, 0.9)
+				vel = vel:Lerp(measured, weight)
+				velFilter[part] = vel
+			end
+			if entitylib.character and entitylib.character.RootPart then
+				local dist = (root.Position - entitylib.character.RootPart.Position).Magnitude
+				local measuredWeight = math.clamp(0.6 + dist * 0.002, 0.6, 1)
+				vel = (measured * measuredWeight) + (base * (1 - measuredWeight))
+			end
+		else
+			vel = base
+		end
+		local mag = vel.Magnitude
+		if mag > 48 then
+			vel = vel / mag * 48
 		end
 		return vel * Prediction.Value
 	end
@@ -3756,24 +3809,56 @@ run(function()
 					local candidates = getCandidates(offsetpos)
 					for i = 1, math.min(#candidates, 8) do
 						local plr = candidates[i].Entity
-						local targetPart = getPart(plr, offsetpos)
-						if not targetPart then continue end
-						if Targets.Walls.Enabled then
-							if entitylib.Wallcheck(offsetpos, targetPart.Position, Targets.Walls.Enabled) then continue end
-						end
-						local targetVelocity = isPearl and Vector3.zero or getTargetVelocity(plr, targetPart)
-						local newlook = CFrame.new(offsetpos, targetPart.Position) * CFrame.new(projName == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPart.Position, targetVelocity, getGravity(plr), plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(targetVelocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-						if calc and travelTime and travelTime <= lifetime then
-							lastTarget = plr
-							targetinfo.Targets[plr] = tick() + 1
-							return {
-								initialVelocity = CFrame.new(newlook.Position, calc).LookVector * launchSpeed,
-								positionFrom = offsetpos,
-								deltaT = math.min(travelTime + 0.05, lifetime),
-								gravitationalAcceleration = gravity,
-								drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
-							}
+						local ok, result = pcall(function()
+							local targetPart = getPart(plr, offsetpos)
+							if not targetPart then return end
+							if Targets.Walls.Enabled then
+								if entitylib.Wallcheck(offsetpos, targetPart.Position, Targets.Walls.Enabled) then return end
+							end
+							local targetVelocity = isPearl and Vector3.zero or getTargetVelocity(plr, targetPart)
+							local newlook = CFrame.new(offsetpos, targetPart.Position) * CFrame.new(projName == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
+							local calc, travelTime
+							local predicted = targetPart.Position
+							for iter = 1, 3 do
+								local c, _, tt = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, predicted, targetVelocity, getGravity(plr), plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(targetVelocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								if not c or not tt or tt <= 0 then break end
+								calc, travelTime = c, tt
+								local lead = predicted + targetVelocity * tt
+								if (lead - predicted).Magnitude < 0.02 or iter == 3 then
+									predicted = lead
+									break
+								end
+								predicted = lead
+							end
+							if calc and travelTime and travelTime <= lifetime then
+								lastTarget = plr
+								targetinfo.Targets[plr] = tick() + 1
+								local dir = CFrame.new(newlook.Position, calc).LookVector
+								if Humanized.Enabled and Spread.Value > 0 then
+									local right = Vector3.new(0, 1, 0):Cross(dir)
+									right = right.Magnitude > 0.0001 and right.Unit or Vector3.new(1, 0, 0)
+									local up = right:Cross(dir).Unit
+									local theta = math.random() * math.pi * 2
+									local rad = math.rad(Spread.Value * math.random())
+									local nudge = (right * math.cos(theta) + up * math.sin(theta)) * math.tan(rad)
+									dir = (dir + nudge).Unit
+								end
+								if Smoothing.Value > 0 then
+									smoothDir = smoothDir or dir
+									dir = smoothDir:Lerp(dir, 1 - math.clamp(Smoothing.Value, 0, 0.95))
+									smoothDir = dir
+								end
+								return {
+									initialVelocity = dir * launchSpeed,
+									positionFrom = offsetpos,
+									deltaT = math.min(travelTime + 0.05, lifetime),
+									gravitationalAcceleration = gravity,
+									drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+								}
+							end
+						end)
+						if ok and result then
+							return result
 						end
 					end
 					return old(...)
@@ -3782,7 +3867,10 @@ run(function()
 				bedwars.ProjectileController.calculateImportantLaunchValues = old
 				old = nil
 				lastTarget = nil
+				smoothDir = nil
 				table.clear(history)
+				table.clear(velFilter)
+				table.clear(partMemory)
 				table.clear(metaCache)
 			end
 		end,
@@ -3835,6 +3923,28 @@ run(function()
 		Name = 'Lock On',
 		Default = true,
 		Tooltip = 'Keeps aiming at the same target instead of flickering between enemies'
+	})
+	Humanized = ProjectileAimbot:CreateToggle({
+		Name = 'Humanized',
+		Default = false,
+		Darker = true,
+		Tooltip = 'Adds human-like aim error and smoothing instead of pixel-perfect aim'
+	})
+	Spread = ProjectileAimbot:CreateSlider({
+		Name = 'Spread',
+		Min = 0,
+		Max = 10,
+		Default = 0,
+		Decimal = 10,
+		Tooltip = 'Random aim error in degrees each shot, higher looks more human'
+	})
+	Smoothing = ProjectileAimbot:CreateSlider({
+		Name = 'Smoothing',
+		Min = 0,
+		Max = 1,
+		Default = 0,
+		Decimal = 100,
+		Tooltip = 'Chases the perfect aim over several shots instead of snapping instantly'
 	})
 	Blacklist = ProjectileAimbot:CreateTextList({
 		Name = 'Blacklist',

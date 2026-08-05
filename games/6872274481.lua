@@ -1,5 +1,6 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -3748,19 +3749,20 @@ run(function()
 		end
 		local vel
 		if measured then
-			vel = velFilter[part]
-			if not vel then
-				vel = measured
-				velFilter[part] = vel
+			local filter = velFilter[part]
+			if not filter then
+				filter = {vel = measured, time = now}
+				velFilter[part] = filter
 			else
-				local weight = math.clamp((now - (samples[#samples] and samples[#samples][1] or now)) * 4, 0.25, 0.9)
-				vel = vel:Lerp(measured, weight)
-				velFilter[part] = vel
+				local weight = math.clamp((now - filter.time) * 6, 0.25, 0.9)
+				vel = filter.vel:Lerp(measured, weight)
+				filter.vel = vel
+				filter.time = now
 			end
 			if entitylib.character and entitylib.character.RootPart then
 				local dist = (root.Position - entitylib.character.RootPart.Position).Magnitude
 				local measuredWeight = math.clamp(0.6 + dist * 0.002, 0.6, 1)
-				vel = (measured * measuredWeight) + (base * (1 - measuredWeight))
+				vel = (vel * measuredWeight) + (base * (1 - measuredWeight))
 			end
 		else
 			vel = base
@@ -3817,19 +3819,7 @@ run(function()
 							end
 							local targetVelocity = isPearl and Vector3.zero or getTargetVelocity(plr, targetPart)
 							local newlook = CFrame.new(offsetpos, targetPart.Position) * CFrame.new(projName == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-							local calc, travelTime
-							local predicted = targetPart.Position
-							for iter = 1, 3 do
-								local c, _, tt = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, predicted, targetVelocity, getGravity(plr), plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(targetVelocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-								if not c or not tt or tt <= 0 then break end
-								calc, travelTime = c, tt
-								local lead = predicted + targetVelocity * tt
-								if (lead - predicted).Magnitude < 0.02 or iter == 3 then
-									predicted = lead
-									break
-								end
-								predicted = lead
-							end
+							local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPart.Position, targetVelocity, getGravity(plr), plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(targetVelocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 							if calc and travelTime and travelTime <= lifetime then
 								lastTarget = plr
 								targetinfo.Targets[plr] = tick() + 1
@@ -3897,7 +3887,7 @@ run(function()
 		Max = 2,
 		Default = 1,
 		Decimal = 10,
-		Tooltip = 'Multiplies the target movement prediction for far shots'
+		Tooltip = '0 = prediction off, aims at where the enemy is right now. Higher = lead the shot further ahead'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',

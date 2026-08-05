@@ -3016,6 +3016,7 @@ run(function()
 	local WallCheck
 	local PopBalloons
 	local TP
+	local Smooth
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 	local up, down, old = 0, 0
@@ -3084,7 +3085,11 @@ run(function()
 						end
 
 						root.CFrame += destination
-						root.AssemblyLinearVelocity = (moveDirection * velo) + Vector3.new(0, mass, 0)
+						local velocityTarget = (moveDirection * velo) + Vector3.new(0, mass, 0)
+						if Smooth.Enabled then
+							velocityTarget = root.AssemblyLinearVelocity:Lerp(velocityTarget, 1 - math.exp(-9 * dt))
+						end
+						root.AssemblyLinearVelocity = velocityTarget
 					end
 				end))
 				Fly:Clean(inputService.InputBegan:Connect(function(input)
@@ -3154,6 +3159,10 @@ run(function()
 	TP = Fly:CreateToggle({
 		Name = 'TP Down',
 		Default = true
+	})
+	Smooth = Fly:CreateToggle({
+		Name = 'Smooth',
+		Tooltip = 'Eases velocity changes instead of snapping instantly. Smoother hover, less detectable'
 	})
 end)
 
@@ -3259,6 +3268,7 @@ end)
 run(function()
 	local Value
 	local CameraDir
+	local Smooth
 	local start
 	local JumpTick, JumpSpeed, Direction = tick(), 0
 	local projectileRemote = {InvokeServer = function() end}
@@ -3440,7 +3450,11 @@ run(function()
 							if start then
 								root.CFrame = CFrame.lookAlong(start, root.CFrame.LookVector)
 							end
-							root.AssemblyLinearVelocity = Vector3.zero
+							if Smooth.Enabled and root.AssemblyLinearVelocity.Magnitude > 0.5 then
+								root.AssemblyLinearVelocity = root.AssemblyLinearVelocity:Lerp(Vector3.zero, 1 - math.exp(-6 * dt))
+							else
+								root.AssemblyLinearVelocity = Vector3.zero
+							end
 							JumpSpeed = 0
 						end
 					else
@@ -3482,6 +3496,10 @@ run(function()
 	})
 	CameraDir = LongJump:CreateToggle({
 		Name = 'Camera Direction'
+	})
+	Smooth = LongJump:CreateToggle({
+		Name = 'Smooth',
+		Tooltip = 'Eases you to a stop instead of instantly freezing after the jump'
 	})
 end)
 
@@ -4105,6 +4123,7 @@ run(function()
 	local WallCheck
 	local AutoJump
 	local AlwaysJump
+	local Smooth
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 	
@@ -4138,7 +4157,11 @@ run(function()
 						end
 	
 						root.CFrame += destination
-						root.AssemblyLinearVelocity = (moveDirection * velo) + Vector3.new(0, root.AssemblyLinearVelocity.Y, 0)
+						local velocityTarget = (moveDirection * velo) + Vector3.new(0, root.AssemblyLinearVelocity.Y, 0)
+						if Smooth.Enabled then
+							velocityTarget = root.AssemblyLinearVelocity:Lerp(velocityTarget, 1 - math.exp(-9 * dt))
+						end
+						root.AssemblyLinearVelocity = velocityTarget
 						if AutoJump.Enabled and (state == Enum.HumanoidStateType.Running or state == Enum.HumanoidStateType.Landed) and moveDirection ~= Vector3.zero and (Attacking or AlwaysJump.Enabled) then
 							entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 						end
@@ -4174,6 +4197,10 @@ run(function()
 		Name = 'Always Jump',
 		Visible = false,
 		Darker = true
+	})
+	Smooth = Speed:CreateToggle({
+		Name = 'Smooth',
+		Tooltip = 'Eases speed changes instead of snapping. Smoother acceleration curves'
 	})
 end)
 

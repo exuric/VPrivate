@@ -1,6 +1,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -3809,7 +3810,8 @@ run(function()
 					local isPearl = projName == 'telepearl'
 
 					local candidates = getCandidates(offsetpos)
-					for i = 1, math.min(#candidates, 8) do
+					local bestShot
+					for i = 1, math.min(#candidates, 12) do
 						local plr = candidates[i].Entity
 						local ok, result = pcall(function()
 							local targetPart = getPart(plr, offsetpos)
@@ -3820,36 +3822,40 @@ run(function()
 							local targetVelocity = isPearl and Vector3.zero or getTargetVelocity(plr, targetPart)
 							local newlook = CFrame.new(offsetpos, targetPart.Position) * CFrame.new(projName == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
 							local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPart.Position, targetVelocity, getGravity(plr), plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(targetVelocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-							if calc and travelTime and travelTime <= lifetime then
-								lastTarget = plr
-								targetinfo.Targets[plr] = tick() + 1
-								local dir = CFrame.new(newlook.Position, calc).LookVector
-								if Humanized.Enabled and Spread.Value > 0 then
-									local right = Vector3.new(0, 1, 0):Cross(dir)
-									right = right.Magnitude > 0.0001 and right.Unit or Vector3.new(1, 0, 0)
-									local up = right:Cross(dir).Unit
-									local theta = math.random() * math.pi * 2
-									local rad = math.rad(Spread.Value * math.random())
-									local nudge = (right * math.cos(theta) + up * math.sin(theta)) * math.tan(rad)
-									dir = (dir + nudge).Unit
-								end
-								if Smoothing.Value > 0 then
-									smoothDir = smoothDir or dir
-									dir = smoothDir:Lerp(dir, 1 - math.clamp(Smoothing.Value, 0, 0.95))
-									smoothDir = dir
-								end
-								return {
-									initialVelocity = dir * launchSpeed,
-									positionFrom = offsetpos,
-									deltaT = math.min(travelTime + 0.05, lifetime),
-									gravitationalAcceleration = gravity,
-									drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
-								}
+							if not calc or not travelTime or travelTime <= 0 or travelTime > lifetime then return end
+							local dir = CFrame.new(newlook.Position, calc).LookVector
+							if Humanized.Enabled and Spread.Value > 0 then
+								local right = Vector3.new(0, 1, 0):Cross(dir)
+								right = right.Magnitude > 0.0001 and right.Unit or Vector3.new(1, 0, 0)
+								local up = right:Cross(dir).Unit
+								local theta = math.random() * math.pi * 2
+								local distScale = 0.6 + 0.4 * math.min(1, travelTime / 120)
+								local rad = math.rad(Spread.Value * math.random() * distScale)
+								local nudge = (right * math.cos(theta) + up * math.sin(theta)) * math.tan(rad)
+								dir = (dir + nudge).Unit
 							end
+							if Smoothing.Value > 0 then
+								if lastTarget ~= plr then smoothDir = nil end
+								smoothDir = smoothDir or dir
+								dir = smoothDir:Lerp(dir, 1 - math.clamp(Smoothing.Value, 0, 0.95))
+								smoothDir = dir
+							end
+							return {
+								initialVelocity = dir * launchSpeed,
+								positionFrom = offsetpos,
+								deltaT = math.min(travelTime + 0.05, lifetime),
+								gravitationalAcceleration = gravity,
+								drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+							}
 						end)
-						if ok and result then
-							return result
+						if ok and result and (not bestShot or result.deltaT < bestShot.deltaT) then
+							bestShot = result
+							lastTarget = plr
+							targetinfo.Targets[plr] = tick() + 1
 						end
+					end
+					if bestShot then
+						return bestShot
 					end
 					return old(...)
 				end

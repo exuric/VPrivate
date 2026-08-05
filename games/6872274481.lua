@@ -14504,18 +14504,23 @@ run(function()
 	local References = {}
 	local potatoColor = Color3.fromRGB(163, 131, 77)
 
-	local function paint(plr)
-		local character = plr.Character
-		if not character then return end
-		local store = References[character]
-		if not store then
-			store = {}
-			References[character] = store
+	local function isCharacterPart(part)
+		local character = part:FindFirstAncestorOfClass('Model')
+		while character do
+			if character:FindFirstChildOfClass('Humanoid') and character:FindFirstChild('HumanoidRootPart') then
+				return true
+			end
+			character = character.Parent
 		end
-		for _, part in character:GetDescendants() do
+		return false
+	end
+
+	local function paintWorld()
+		for _, part in workspace:GetDescendants() do
 			if not part:IsA('BasePart') then continue end
-			if not store[part] then
-				store[part] = {part.Color, part.Material}
+			if isCharacterPart(part) then continue end
+			if not References[part] then
+				References[part] = {part.Color, part.Material}
 			end
 			pcall(function()
 				part.Color = potatoColor
@@ -14525,14 +14530,12 @@ run(function()
 	end
 
 	local function restore()
-		for character, store in pairs(References) do
-			for part, values in pairs(store) do
-				if part.Parent and part:IsDescendantOf(character) then
-					pcall(function()
-						part.Color = values[1]
-						part.Material = values[2]
-					end)
-				end
+		for part, values in pairs(References) do
+			if part.Parent and part:IsDescendantOf(workspace) then
+				pcall(function()
+					part.Color = values[1]
+					part.Material = values[2]
+				end)
 			end
 		end
 		table.clear(References)
@@ -14542,18 +14545,12 @@ run(function()
 		Name = 'Potato Mode',
 		Function = function(callback)
 			if callback then
-				PotatoMode:Clean(runService.Heartbeat:Connect(function()
-					for _, plr in playersService:GetPlayers() do
-						if plr ~= playersService.LocalPlayer and plr.Character then
-							paint(plr)
-						end
-					end
-				end))
+				PotatoMode:Clean(runService.Heartbeat:Connect(paintWorld))
 			else
 				restore()
 			end
 		end,
-		Tooltip = 'Changes all parts of all players to a potato coloured material for smoother performance'
+		Tooltip = 'Changes all parts in the world to a potato coloured material for smoother performance'
 	})
 end)
 

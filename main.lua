@@ -9,7 +9,7 @@ if isfolder('catrewrite') and isfolder('catrewrite/profiles') then
 	for _, v in listfiles('catrewrite/profiles') do
 		if not v:find('commit.txt') then
 			local old = v
-			v = v:gsub('catrewrite', 'catsix')
+			v = v:gsub('catrewrite', 'VapePrivate')
 			writefile(v, readfile(old))
 		end
 	end
@@ -40,7 +40,7 @@ local httpService = cloneref(game:GetService("HttpService"))
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('catsix/profiles/commit.txt')..'/'..select(1, path:gsub('catsix/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/'..select(1, path:gsub('VapePrivate/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -64,9 +64,9 @@ local function finishLoading()
 			local teleportScript = [[
 				shared.vapereload = true
 				if shared.VapeDeveloper then
-					loadstring(readfile('catsix/main.lua'), 'main')(_scriptconfig)
+					loadstring(readfile('VapePrivate/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('catsix/profiles/commit.txt')..'/init.lua', true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/init.lua', true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)
@@ -99,7 +99,7 @@ local function finishLoading()
 			end)
 			task.delay(0.05 + cloneref(game:GetService('RunService')).PostSimulation:Wait(), function()
 				if shared.updated then
-					local commit = isfile('catsix/profiles/commit.txt') and readfile('catsix/profiles/commit.txt') or 'unknown'
+					local commit = isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or 'unknown'
 					vape:CreateNotification('Vape Private', `Script has updated from {shared.updated} to {commit}`, 10, 'info')
 				end
 			end)
@@ -107,15 +107,15 @@ local function finishLoading()
 	end
 end
 
-if not isfile('catsix/profiles/gui.txt') then
-	writefile('catsix/profiles/gui.txt', 'new')
+if not isfile('VapePrivate/profiles/gui.txt') then
+	writefile('VapePrivate/profiles/gui.txt', 'new')
 end
-local gui = 'new'--readfile('catsix/profiles/gui.txt')
+local gui = 'new'--readfile('VapePrivate/profiles/gui.txt')
 
-if not isfolder('catsix/assets/'..gui) then
-	makefolder('catsix/assets/'..gui)
+if not isfolder('VapePrivate/assets/'..gui) then
+	makefolder('VapePrivate/assets/'..gui)
 end
-vape = loadstring(downloadFile('catsix/guis/'..gui..'.lua'), 'gui')(license)
+vape = loadstring(downloadFile('VapePrivate/guis/'..gui..'.lua'), 'gui')(license)
 shared.vape = vape
 _G.vape = vape
 getgenv().used_init = true
@@ -138,20 +138,19 @@ if shared.maincat then
 end
 
 if not shared.VapeIndependent then
-	loadstring(downloadFile('catsix/games/universal.lua'), 'universal')(license)
-	if isfile('catsix/games/'..game.PlaceId..'.lua') then
-		loadstring(readfile('catsix/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+	loadstring(downloadFile('VapePrivate/games/universal.lua'), 'universal')(license)
+	if isfile('VapePrivate/games/'..game.PlaceId..'.lua') then
+		loadstring(readfile('VapePrivate/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
 	else
 		if not shared.VapeDeveloper then
 			local suc, res = pcall(function()
-				return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('catsix/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
+				return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
 			end)
 			if suc and res ~= '404: Not Found' then
-				loadstring(downloadFile('catsix/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+				loadstring(downloadFile('VapePrivate/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
 			end
 		end
 	end
-	loadstring(downloadFile('catsix/libraries/premium.lua'), 'premium')(license)
 	finishLoading()
 else
 	vape.Init = finishLoading

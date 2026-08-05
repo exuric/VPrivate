@@ -26,10 +26,10 @@ downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(ga
 local function downloadFile(path, func)
 	if not isfile(path) then
 		if not license.Closet then
-			downloader.Text = 'Downloading '.. (path:gsub('^catsix/', 'Vape Private/'))
+			downloader.Text = 'Downloading '.. (path:gsub('^VapePrivate/', 'Vape Private/'))
 		end
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('catsix/profiles/commit.txt')..'/'..select(1, path:gsub('catsix/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/'..select(1, path:gsub('VapePrivate/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -57,10 +57,24 @@ local function wipeFolder(path)
 end
 
 
-for _, folder in {'catsix', 'catsix/games', 'catsix/profiles', 'catsix/assets', 'catsix/libraries', 'catsix/guis'} do
+for _, folder in {'VapePrivate', 'VapePrivate/games', 'VapePrivate/profiles', 'VapePrivate/assets', 'VapePrivate/libraries', 'VapePrivate/guis'} do
 	if not isfolder(folder) then
-		downloader.Text = 'Downloading '.. (folder:gsub('^catsix/', 'Vape Private/'))
+		downloader.Text = 'Downloading '.. (folder:gsub('^VapePrivate/', 'Vape Private/'))
 		makefolder(folder)
+	end
+end
+
+for _, old in {'catsix', 'catrewrite'} do
+	if isfolder(old) and isfolder(old..'/profiles') then
+		for _, file in listfiles(old..'/profiles') do
+			if not file:find('commit.txt') then
+				writefile(file:gsub(old, 'VapePrivate'), readfile(file))
+			end
+		end
+	end
+	if isfolder(old) then
+		wipeFolder(old)
+		pcall(delfolder, old)
 	end
 end
 
@@ -74,17 +88,17 @@ if not shared.VapeDeveloper then
 		commit = commit and subbed:sub(commit + 13, commit + 52) or nil
 		commit = commit and #commit == 40 and commit or 'main'
 	end
-	if commit == 'main' or (isfile('catsix/profiles/commit.txt') and readfile('catsix/profiles/commit.txt') or '') ~= commit then
-		if commit ~= 'main' and isfile('catsix/profiles/commit.txt') then
-			shared.updated = readfile('catsix/profiles/commit.txt')
+	if commit == 'main' or (isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or '') ~= commit then
+		if commit ~= 'main' and isfile('VapePrivate/profiles/commit.txt') then
+			shared.updated = readfile('VapePrivate/profiles/commit.txt')
 		end
-		wipeFolder('catsix')
-		wipeFolder('catsix/games')
-		wipeFolder('catsix/guis')
-		wipeFolder('catsix/libraries')
+		wipeFolder('VapePrivate')
+		wipeFolder('VapePrivate/games')
+		wipeFolder('VapePrivate/guis')
+		wipeFolder('VapePrivate/libraries')
 	end
-	writefile('catsix/profiles/commit.txt', commit)
-	if #listfiles('catsix/profiles') < 4 then
+	writefile('VapePrivate/profiles/commit.txt', commit)
+	if #listfiles('VapePrivate/profiles') < 4 then
 		shared.VapePresetInstall = function()
 			local suc, req = pcall(request, {
 				Url = 'https://api.github.com/repos/exuric/VPrivate/contents/profiles',
@@ -95,7 +109,7 @@ if not shared.VapeDeveloper then
 			if not body or typeof(body) ~= 'table' then return false end
 			local installed = false
 			for _, v in body do
-				if v.type == 'file' and pcall(downloadFile, 'catsix/'.. ({v.path:gsub(' ', '%%20')})[1]) then
+				if v.type == 'file' and pcall(downloadFile, 'VapePrivate/'.. ({v.path:gsub(' ', '%%20')})[1]) then
 					installed = true
 				end
 			end
@@ -105,4 +119,4 @@ if not shared.VapeDeveloper then
 end
 
 downloader.Text = ''
-return loadstring(downloadFile('catsix/main.lua'), 'main')(license)
+return loadstring(downloadFile('VapePrivate/main.lua'), 'main')(license)

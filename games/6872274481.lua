@@ -3,6 +3,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -3149,69 +3150,56 @@ run(function()
 end)
 
 run(function()
-	local Mode
+	local Targets
 	local Expand
-	local objects, set = {}
+	local objects = {}
 	
 	local function createHitbox(ent)
-		if ent.Targetable and ent.Player then
-			local hitbox = Instance.new('Part')
-			hitbox.Size = Vector3.new(3, 6, 3) + Vector3.one * (Expand.Value / 3)
-			hitbox.Position = ent.RootPart.Position
-			hitbox.CanCollide = false
-			hitbox.Massless = true
-			hitbox.Transparency = 1
-			hitbox.Parent = ent.Character
-			local weld = Instance.new('Motor6D')
-			weld.Part0 = hitbox
-			weld.Part1 = ent.RootPart
-			weld.Parent = hitbox
-			objects[ent] = hitbox
-		end
+		if not ent.Targetable then return end
+		if not Targets.Players.Enabled and ent.Player then return end
+		if not Targets.NPCs.Enabled and ent.NPC then return end
+		local root = ent.RootPart
+		if not root then return end
+		local hitbox = Instance.new('Part')
+		hitbox.Size = Vector3.new(3, 6, 3) + Vector3.one * (Expand.Value / 2)
+		hitbox.Position = root.Position
+		hitbox.CanCollide = false
+		hitbox.Massless = true
+		hitbox.Transparency = 1
+		hitbox.Parent = ent.Character
+		local weld = Instance.new('Motor6D')
+		weld.Part0 = hitbox
+		weld.Part1 = root
+		weld.Parent = hitbox
+		objects[ent] = hitbox
 	end
 	
 	HitBoxes = vape.Categories.Blatant:CreateModule({
 		Name = 'HitBoxes',
 		Function = function(callback)
 			if callback then
-				if Mode.Value == 'Sword' then
-					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (Expand.Value / 1.5))
-					set = true
-				else
-					HitBoxes:Clean(entitylib.Events.EntityAdded:Connect(createHitbox))
-					HitBoxes:Clean(entitylib.Events.EntityRemoving:Connect(function(ent)
-						if objects[ent] then
-							objects[ent]:Destroy()
-							objects[ent] = nil
-						end
-					end))
-					for _, ent in entitylib.List do
-						createHitbox(ent)
+				HitBoxes:Clean(entitylib.Events.EntityAdded:Connect(createHitbox))
+				HitBoxes:Clean(entitylib.Events.EntityRemoving:Connect(function(ent)
+					if objects[ent] then
+						objects[ent]:Destroy()
+						objects[ent] = nil
 					end
+				end))
+				for _, ent in entitylib.List do
+					createHitbox(ent)
 				end
 			else
-				if set then
-					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, 3.8)
-					set = nil
-				end
 				for _, part in objects do
 					part:Destroy()
 				end
 				table.clear(objects)
 			end
 		end,
-		Tooltip = 'Expands attack hitbox'
+		Tooltip = 'Increases the hitbox of entities so you hit them from further away'
 	})
-	Mode = HitBoxes:CreateDropdown({
-		Name = 'Mode',
-		List = {'Sword', 'Player'},
-		Function = function()
-			if HitBoxes.Enabled then
-				HitBoxes:Toggle()
-				HitBoxes:Toggle()
-			end
-		end,
-		Tooltip = 'Sword - Increases the range around you to hit entities\nPlayer - Increases the players hitbox'
+	Targets = HitBoxes:CreateTargets({
+		Players = true,
+		NPCs = false
 	})
 	Expand = HitBoxes:CreateSlider({
 		Name = 'Expand amount',
@@ -3220,14 +3208,8 @@ run(function()
 		Default = 20,
 		Decimal = 10,
 		Function = function(val)
-			if HitBoxes.Enabled then
-				if Mode.Value == 'Sword' then
-					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (val / 1.5))
-				else
-					for _, part in objects do
-						part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 3)
-					end
-				end
+			for _, part in objects do
+				part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 2)
 			end
 		end,
 		Suffix = function(val)
@@ -3649,6 +3631,7 @@ run(function()
 	local old
 	local lastTarget
 	local Prediction
+	local TargetMode
 	local metaCache = {}
 	local history = {}
 	local partMemory = {}
@@ -3683,6 +3666,7 @@ run(function()
 	end
 
 	local function getCandidates(origin)
+		local cursor = TargetMode.Value == 'Cursor'
 		local mousePosition = getMousePosition()
 		local candidates = {}
 		for _, entity in entitylib.List do
@@ -3692,6 +3676,14 @@ run(function()
 			if not Targets.NPCs.Enabled and entity.NPC then continue end
 			local part = entity[TargetPart.Value == 'Closest' and 'RootPart' or TargetPart.Value]
 			if not part then continue end
+			if not cursor then
+				table.insert(candidates, {
+					Entity = entity,
+					Mag = entity.Target and -2 or 0,
+					Dist = (origin - part.Position).Magnitude
+				})
+				continue
+			end
 			local screenPos, visible = gameCamera:WorldToViewportPoint(part.Position)
 			if not visible then continue end
 			local mag = (mousePosition - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
@@ -3927,6 +3919,14 @@ run(function()
 		Min = 1,
 		Max = 1000,
 		Default = 1000
+	})
+	TargetMode = ProjectileAimbot:CreateDropdown({
+		Name = 'Target Mode',
+		List = {'Cursor', 'Dynamic'},
+		Function = function(val)
+			FOV.Object.Visible = val == 'Cursor'
+		end,
+		Tooltip = 'Cursor - aims at whoever your crosshair is closest to\nDynamic - aims at the nearest shootable enemy'
 	})
 	Prediction = ProjectileAimbot:CreateSlider({
 		Name = 'Prediction',

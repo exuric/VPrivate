@@ -1,5 +1,6 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -2481,14 +2482,65 @@ run(function()
 		return candidates
 	end
 
+	local function getBedwars()
+		local env
+		if type(getgenv) == 'function' then
+			env = getgenv()
+		elseif type(getgenvironment) == 'function' then
+			env = getgenvironment()
+		elseif type(getrngvalue) == 'function' then
+			local ok, res = pcall(getrngvalue)
+			if ok and typeof(res) == 'table' then
+				env = res
+			end
+		end
+		env = env or _G
+		local bed, store = env.bedwars, env.store
+		if type(bed) == 'table' and type(store) == 'table' and bed.Client and store.hand then
+			return bed, store
+		end
+		return nil, nil
+	end
+
+	local function bedwarsSwing(bed, store, target)
+		local root = target and target.RootPart
+		local character = entitylib.character
+		if not root or not character or not character.RootPart then return end
+		local tool = store.hand and store.hand.tool
+		if not tool then return end
+		local selfPos = character.RootPart.Position
+		local targetPos = root.Position
+		local camPos = gameCamera.CFrame.Position
+		local direction = (targetPos - camPos).Unit
+		pcall(function()
+			bed.Client:Get('SwordHit'):SendToServer({
+				weapon = tool,
+				entityInstance = target.Character,
+				validate = {
+					raycast = {
+						cameraPosition = { value = camPos },
+						cursorDirection = { value = direction }
+					},
+					targetPosition = { value = targetPos },
+					selfPosition = {
+						value = selfPos + ((selfPos - targetPos).Magnitude > 14 and CFrame.lookAt(selfPos, targetPos).LookVector * 4 or Vector3.new(0, 0, 0))
+					}
+				},
+				chargedAttack = { chargeRatio = 0.8 }
+			})
+		end)
+	end
+
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
 				repeat
 					local attacked = {}
+					local bed, store = getBedwars()
+					local isBedwars = bed and store and store.hand.toolType == 'sword' and store.hand.tool and bed.Client
 					interest, tool = getAttackData()
-					if interest then
+					if interest or isBedwars then
 						local candidates = getCandidates()
 						for _, data in candidates do
 							local v = data.Entity
@@ -2498,7 +2550,11 @@ run(function()
 							local ready = (not AttackDelay[v] or tick() >= AttackDelay[v])
 							if ready and delta.Magnitude <= AttackRange.Value then
 								AttackDelay[v] = tick() + (1 / CPS.GetRandomValue())
-								tool:Activate()
+								if isBedwars then
+									bedwarsSwing(bed, store, v)
+								else
+									tool:Activate()
+								end
 							end
 
 							table.insert(attacked, {
@@ -2506,6 +2562,11 @@ run(function()
 								Check = delta.Magnitude > AttackRange.Value and BoxSwingColor or BoxAttackColor
 							})
 							if delta.Magnitude > AttackRange.Value then continue end
+
+							if isBedwars then
+								store.KillauraTarget = v
+								continue
+							end
 
 							Overlay.FilterDescendantsInstances = {v.Character}
 							for _, part in workspace:GetPartBoundsInBox(v.RootPart.CFrame, Vector3.new(4, 4, 4), Overlay) do

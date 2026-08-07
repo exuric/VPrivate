@@ -3201,7 +3201,7 @@ run(function()
 	local Targets, AttackRange, SwingRange, SwingTime, HitReg
 	local SwingOnly, LimitItems, GuiCheck, MaxAngle
 
-	local lastHit, lastSwing = 0, 0
+	local lastHit = 0
 
 	local function getSwingItem()
 		local sword = getSword()
@@ -3229,24 +3229,16 @@ run(function()
 		return false
 	end
 
-	local function fireAttack(ent, sword, selfpos)
-		local camPos = gameCamera.CFrame.Position
-		local dir = (ent.RootPart.Position - camPos).Unit
+	local function fireAttack(ent, sword)
 		bedwars.Handler:Get('SwordHit'):Fire('SendToServer', {
-			weapon = sword,
-			chargedAttack = {chargeRatio = 0},
 			entityInstance = ent.Character,
+			chargedAttack = {chargeRatio = 0},
 			validate = {
-				raycast = {
-					cameraPosition = {value = camPos},
-					cursorDirection = {value = dir}
-				},
 				targetPosition = {value = ent.Character:GetPivot().Position},
 				selfPosition = {value = entitylib.character:GetPivot().Position}
 			},
-			timeSinceSwingStart = workspace:GetServerTimeNow() - (bedwars.SwordController.lastAttack or workspace:GetServerTimeNow())
+			weapon = sword
 		})
-		bedwars.SwordController.lastAttack = workspace:GetServerTimeNow()
 		store.KillauraTarget = ent
 		targetinfo.Targets[ent] = tick() + 1
 	end
@@ -3273,7 +3265,7 @@ run(function()
 								Part = 'RootPart',
 								Sort = function(a, b) return a.Magnitude < b.Magnitude end
 							})
-							local swinging = not SwingOnly.Enabled or (tick() - lastSwing) <= SwingTime.Value
+							local swinging = not SwingOnly.Enabled or inputService:IsMouseButtonPressed(0)
 							for _, ent in entities do
 								if Targets.Invisible.Enabled and isInvisible(ent.Character) then continue end
 								local delta = ent.RootPart.Position - selfpos
@@ -3287,11 +3279,7 @@ run(function()
 							end
 						end
 					end
-					if (tick() - lastSwing) >= SwingTime.Value and lastHit >= tick() then
-						lastSwing = tick()
-						bedwars.SwordController:swingSwordAtMouse(SwingTime.Value)
-					end
-					task.wait()
+task.wait()
 				until not Killaura.Enabled
 			else
 				store.KillauraTarget = nil

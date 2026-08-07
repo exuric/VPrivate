@@ -5,6 +5,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -2517,16 +2518,16 @@ run(function()
 		return grabbed:FindFirstChildWhichIsA('TouchTransmitter', true) ~= nil
 	end
 
-	local function swingVisual()
+	local function swingVisual(bed)
 		local char = entitylib.character
 		if not char or not char.Humanoid or not char.Humanoid:FindFirstChild('Animator') then return end
-		local isR15 = char.Humanoid.RigType == Enum.HumanoidRigType.R15
 		pcall(function()
 			local anim = Instance.new('Animation')
-			anim.AnimationId = 'rbxassetid://' .. (isR15 and '180426354' or '180435571')
+			anim.AnimationId = 'rbxassetid://4947108314'
 			local track = char.Humanoid.Animator:LoadAnimation(anim)
 			track.Priority = Enum.AnimationPriority.Action4
-			track:Play(0, 0.3, 0)
+			track.TimePosition = 0
+			track:Play(0, 0.15, 0)
 			anim:Destroy()
 		end)
 	end

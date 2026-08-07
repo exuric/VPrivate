@@ -89,6 +89,9 @@ local function finishLoading()
 	if not shared.vapereload then
 		if not shared.vapereload then
 			vape:CreateNotification('Finished Loading', (vape.VapeButton and 'Press the button in the top right' or 'Press '..table.concat(vape.Keybind, ' + '):upper())..' to open GUI', 5)
+			task.delay(1, function()
+				vape:CreateNotification('Vape Private Loaded (BETA)', 'Vape Private is now loaded', 5, 'info')
+			end)
 			task.delay(0.05 + cloneref(game:GetService('RunService')).PostSimulation:Wait(), function()
 				if shared.updated then
 					local commit = isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or 'unknown'

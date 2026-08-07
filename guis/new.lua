@@ -2538,7 +2538,7 @@ function mainapi:CreateGUI()
 	discordbutton.BackgroundTransparency = 1
 	discordbutton.Image = getcustomasset('VapePrivate/assets/new/discord.png')
 	discordbutton.Parent = window
-	addTooltip(discordbutton, 'Join discord')
+	addTooltip(discordbutton, 'Copy discord: jx4r')
 	local settingspane = Instance.new('TextButton')
 	settingspane.Size = UDim2.fromScale(1, 1)
 	settingspane.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -3577,33 +3577,9 @@ function mainapi:CreateGUI()
 	end)
 	discordbutton.MouseButton1Click:Connect(function()
 		task.spawn(function()
-			local body = httpService:JSONEncode({
-				nonce = httpService:GenerateGUID(false),
-				args = {
-					invite = {code = 'VZEQJxMSnG'},
-					code = 'VZEQJxMSnG'
-				},
-				cmd = 'INVITE_BROWSER'
-			})
-
-			for i = 1, 14 do
-				task.spawn(function()
-					request({
-						Method = 'POST',
-						Url = 'http://127.0.0.1:64'..(53 + i)..'/rpc?v=1',
-						Headers = {
-							['Content-Type'] = 'application/json',
-							Origin = 'https://discord.com'
-						},
-						Body = body
-					})
-				end)
-			end
-		end)
-
-		task.spawn(function()
 			tooltip.Text = 'Copied!'
-			setclipboard('https://discord.gg/VZEQJxMSnG')
+			scarcitybanner.Text = 'Discord: jx4r'
+			setclipboard('jx4r')
 		end)
 	end)
 	settingsbutton.MouseEnter:Connect(function()
@@ -5913,7 +5889,7 @@ local scarcitybanner = Instance.new('TextLabel')
 scarcitybanner.Size = UDim2.fromScale(1, 0.02)
 scarcitybanner.Position = UDim2.fromScale(0, 0.97)
 scarcitybanner.BackgroundTransparency = 1
-scarcitybanner.Text = 'The discord link has been fixed, click the discord icon to join.'
+scarcitybanner.Text = ''
 scarcitybanner.TextScaled = true
 scarcitybanner.TextColor3 = Color3.new(1, 1, 1)
 scarcitybanner.TextStrokeTransparency = 0.5

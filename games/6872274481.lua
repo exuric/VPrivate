@@ -3203,11 +3203,27 @@ run(function()
 
 	local lastHit = 0
 
+	local inventoryRoot = game:GetService('ReplicatedStorage'):WaitForChild('Inventories'):WaitForChild(lplr.Name, 10)
+
+	local function resolveWeapon(hand)
+		if not inventoryRoot then return hand end
+		local found = inventoryRoot:FindFirstChild(hand.Name)
+		if found then return found end
+		for _, item in inventoryRoot:GetChildren() do
+			if item:IsA('Tool') or item:IsA('Model') then
+				if item:GetAttribute('itemType') == hand.Name then
+					return item
+				end
+			end
+		end
+		return hand
+	end
+
 	local function getSwingItem()
 		local sword = getSword()
 		if not sword then return nil end
 		switchItem(sword.tool, 0)
-		return sword.tool
+		return resolveWeapon(sword.tool)
 	end
 
 	local function isInvisible(char)
@@ -3229,15 +3245,26 @@ run(function()
 		return false
 	end
 
-	local function fireAttack(ent, sword)
-		bedwars.Handler:Get('SwordHit'):Fire('SendToServer', {
+	local function fireAttack(ent, weapon)
+		local ok, res = pcall(bedwars.Handler.Get, bedwars.Handler, 'SwordHit')
+		if not ok or not res or not res.Remote then
+			warn('[Killaura] SwordHit remote unavailable:', ok, res)
+			return
+		end
+		local selfInstance = entitylib.character and entitylib.character.Character or nil
+		local selfPos = selfInstance and pcall(selfInstance.GetPivot, selfInstance) and selfInstance:GetPivot().Position
+		if not selfPos then
+			selfPos = entitylib.character and entitylib.character.RootPart.Position
+		end
+		local targetPos = ent.Character:GetPivot().Position
+		res:Fire('SendToServer', {
 			entityInstance = ent.Character,
 			chargedAttack = {chargeRatio = 0},
 			validate = {
-				targetPosition = {value = ent.Character:GetPivot().Position},
-				selfPosition = {value = entitylib.character:GetPivot().Position}
+				targetPosition = {value = targetPos},
+				selfPosition = {value = selfPos}
 			},
-			weapon = sword
+			weapon = weapon
 		})
 		store.KillauraTarget = ent
 		targetinfo.Targets[ent] = tick() + 1

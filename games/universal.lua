@@ -1,6 +1,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -2429,6 +2430,7 @@ run(function()
 	local Max
 	local Mouse
 	local Lunge
+	local SwordOnly
 	local BoxSwingColor
 	local BoxAttackColor
 	local ParticleTexture
@@ -2502,6 +2504,15 @@ run(function()
 		return nil, nil
 	end
 
+	local function isSwordOut()
+		local grabbed = getTool()
+		if not grabbed then return false end
+		local name = tostring(grabbed.Name):lower()
+		local toolNameCheck = (not SwordOnly.Enabled) or name:find('sword') or name:find('melee') or name:find('blade')
+		if not toolNameCheck then return false end
+		return grabbed:FindFirstChildWhichIsA('TouchTransmitter', true) ~= nil
+	end
+
 	local function bedwarsSwing(bed, store, target)
 		local root = target and target.RootPart
 		local character = entitylib.character
@@ -2539,8 +2550,9 @@ run(function()
 					local attacked = {}
 					local bed, store = getBedwars()
 					local isBedwars = bed and store and store.hand.toolType == 'sword' and store.hand.tool and bed.Client
-					interest, tool = getAttackData()
-					if interest or isBedwars then
+					local readyToAttack = (not Mouse.Enabled) or inputService:IsMouseButtonPressed(0)
+					if readyToAttack and (isBedwars or isSwordOut()) then
+						interest, tool = getAttackData()
 						local candidates = getCandidates()
 						for _, data in candidates do
 							local v = data.Entity
@@ -2552,7 +2564,7 @@ run(function()
 								AttackDelay[v] = tick() + (1 / CPS.GetRandomValue())
 								if isBedwars then
 									bedwarsSwing(bed, store, v)
-								else
+								elseif interest then
 									tool:Activate()
 								end
 							end
@@ -2614,9 +2626,9 @@ run(function()
 	CPS = Killaura:CreateTwoSlider({
 		Name = 'Attacks per Second',
 		Min = 1,
-		Max = 20,
-		DefaultMin = 12,
-		DefaultMax = 12
+		Max = 40,
+		DefaultMin = 35,
+		DefaultMax = 36
 	})
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
@@ -2648,8 +2660,13 @@ run(function()
 		Max = 10,
 		Default = 10
 	})
-	Mouse = Killaura:CreateToggle({Name = 'Require mouse down'})
+	Mouse = Killaura:CreateToggle({Name = 'Require mouse down', Default = true})
 	Lunge = Killaura:CreateToggle({Name = 'Sword lunge only'})
+	SwordOnly = Killaura:CreateToggle({
+		Name = 'Sword only',
+		Default = true,
+		Tooltip = 'Only attacks while a sword is equipped'
+	})
 	Killaura:CreateToggle({
 		Name = 'Show target',
 		Function = function(callback)

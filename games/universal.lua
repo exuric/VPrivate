@@ -2,6 +2,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -2430,7 +2431,7 @@ run(function()
 	local Max
 	local Mouse
 	local Lunge
-	local SwordOnly
+	local LimitToItems
 	local BoxSwingColor
 	local BoxAttackColor
 	local ParticleTexture
@@ -2508,7 +2509,7 @@ run(function()
 		local grabbed = getTool()
 		if not grabbed then return false end
 		local name = tostring(grabbed.Name):lower()
-		local toolNameCheck = (not SwordOnly.Enabled) or name:find('sword') or name:find('melee') or name:find('blade')
+		local toolNameCheck = (not LimitToItems.Enabled) or name:find('sword') or name:find('melee') or name:find('blade')
 		if not toolNameCheck then return false end
 		return grabbed:FindFirstChildWhichIsA('TouchTransmitter', true) ~= nil
 	end
@@ -2517,8 +2518,18 @@ run(function()
 		local root = target and target.RootPart
 		local character = entitylib.character
 		if not root or not character or not character.RootPart then return end
+		local controller = bed.SwordController
+		if type(controller) == 'table' and type(controller.swingSwordAtMouse) == 'function' then
+			local cam = gameCamera
+			local saved = cam.CFrame
+			cam.CFrame = CFrame.new(saved.Position, root.Position + Vector3.new(0, 2.5, 0))
+			local ok = pcall(controller.swingSwordAtMouse, controller, 1 / CPS.GetRandomValue())
+			cam.CFrame = saved
+			store.KillauraTarget = target
+			return ok
+		end
 		local tool = store.hand and store.hand.tool
-		if not tool then return end
+		if not tool or not bed.Client then return end
 		local selfPos = character.RootPart.Position
 		local targetPos = root.Position
 		local camPos = gameCamera.CFrame.Position
@@ -2540,6 +2551,7 @@ run(function()
 				chargedAttack = { chargeRatio = 0.8 }
 			})
 		end)
+		store.KillauraTarget = target
 	end
 
 	Killaura = vape.Categories.Blatant:CreateModule({
@@ -2662,10 +2674,10 @@ run(function()
 	})
 	Mouse = Killaura:CreateToggle({Name = 'Require mouse down', Default = true})
 	Lunge = Killaura:CreateToggle({Name = 'Sword lunge only'})
-	SwordOnly = Killaura:CreateToggle({
-		Name = 'Sword only',
+	LimitToItems = Killaura:CreateToggle({
+		Name = 'Limit to items',
 		Default = true,
-		Tooltip = 'Only attacks while a sword is equipped'
+		Tooltip = 'Only attacks while a sword-type item is equipped'
 	})
 	Killaura:CreateToggle({
 		Name = 'Show target',

@@ -7,6 +7,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -2434,7 +2435,7 @@ run(function()
 	local AngleSlider
 	local Max
 	local Mouse
-	local LimitToItems
+	local Lunge
 	local BoxSwingColor
 	local BoxAttackColor
 	local ParticleTexture
@@ -2444,143 +2445,66 @@ run(function()
 	local Face
 	local Overlay = OverlapParams.new()
 	Overlay.FilterType = Enum.RaycastFilterType.Include
-	local Particles, Boxes = {}, {}
-	local AttackDelay = {}
-	local SwingCount = {}
-	local SwingWindow = {}
-	local interest, tool = nil, nil
-
+	local Particles, Boxes, AttackDelay = {}, {}, tick()
+	
 	local function getAttackData()
 		if Mouse.Enabled then
 			if not inputService:IsMouseButtonPressed(0) then return false end
 		end
-
-		local grabbed = getTool()
-		return grabbed and grabbed:FindFirstChildWhichIsA('TouchTransmitter', true) or nil, grabbed
+	
+		local tool = getTool()
+		return tool and tool:FindFirstChildWhichIsA('TouchTransmitter', true) or nil, tool
 	end
-
-	local function getCandidates()
-		if not entitylib.character or not entitylib.character.RootPart then return {} end
-		local plrs = entitylib.AllPosition({
-			Range = SwingRange.Value,
-			Wallcheck = Targets.Walls.Enabled or nil,
-			Part = 'RootPart',
-			Players = Targets.Players.Enabled,
-			NPCs = Targets.NPCs.Enabled,
-			Limit = Max.Value
-		})
-
-		local selfpos = entitylib.character.RootPart.Position
-		local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-		local candidates = {}
-		for _, v in plrs do
-			local delta = (v.RootPart.Position - selfpos)
-			local horizontal = delta * Vector3.new(1, 0, 1)
-			local angle = localfacing.Magnitude > 0 and horizontal.Magnitude > 0 and math.acos(math.clamp(localfacing.Unit:Dot(horizontal.Unit), -1, 1)) or 0
-			if angle > (math.rad(AngleSlider.Value) / 2) then continue end
-			table.insert(candidates, {
-				Entity = v,
-				Delta = delta,
-				Angle = angle
-			})
-		end
-		table.sort(candidates, function(a, b)
-			return a.Angle < b.Angle
-		end)
-		return candidates
-	end
-
-	local function getBedwars()
-		local env
-		if type(getgenv) == 'function' then
-			env = getgenv()
-		elseif type(getgenvironment) == 'function' then
-			env = getgenvironment()
-		elseif type(getrngvalue) == 'function' then
-			local ok, res = pcall(getrngvalue)
-			if ok and typeof(res) == 'table' then
-				env = res
-			end
-		end
-		env = env or _G
-		local bed, store = env.bedwars, env.store
-		if type(bed) == 'table' and type(store) == 'table' and bed.Client and store.hand then
-			return bed, store
-		end
-		return nil, nil
-	end
-
-	local function isSwordOut()
-		local grabbed = getTool()
-		if not grabbed then return false end
-		local name = tostring(grabbed.Name):lower()
-		local toolNameCheck = (not LimitToItems.Enabled) or name:find('sword') or name:find('melee') or name:find('blade')
-		if not toolNameCheck then return false end
-		return grabbed:FindFirstChildWhichIsA('TouchTransmitter', true) ~= nil
-	end
-
+	
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
 				repeat
+					local interest, tool = getAttackData()
 					local attacked = {}
-					local bed, store = getBedwars()
-					local isBedwars = bed and store and store.hand.toolType == 'sword' and store.hand.tool and bed.Client
-					local readyToAttack = (not Mouse.Enabled) or inputService:IsMouseButtonPressed(0)
-					if readyToAttack and (isBedwars or isSwordOut()) then
-						interest, tool = getAttackData()
-						local candidates = getCandidates()
-						for _, data in candidates do
-							local v = data.Entity
-							local delta = data.Delta
-							targetinfo.Targets[v] = tick() + 1
-
-							local ready = (not AttackDelay[v] or tick() >= AttackDelay[v])
-							if ready and delta.Magnitude <= AttackRange.Value then
-								local now0 = tick()
-								local interval = 1 / CPS.GetRandomValue()
-								local jitter = (math.random() * 2 - 1) * 0.002
-								AttackDelay[v] = now0 + interval + jitter
-								if isBedwars then
-									table.insert(SwingWindow, now0)
-									local keep = {}
-									local counted = 0
-									for _, t in SwingWindow do
-										if now0 - t < 1 then
-											counted = counted + 1
-											keep[#keep + 1] = t
-										end
-									end
-									SwingWindow = keep
-									if counted <= 35 and tool then
-										tool:Activate()
-										store.KillauraTarget = v
-									end
-								elseif interest then
+					if interest then
+						local plrs = entitylib.AllPosition({
+							Range = SwingRange.Value,
+							Wallcheck = Targets.Walls.Enabled or nil,
+							Part = 'RootPart',
+							Players = Targets.Players.Enabled,
+							NPCs = Targets.NPCs.Enabled,
+							Limit = Max.Value
+						})
+	
+						if #plrs > 0 then
+							local selfpos = entitylib.character.RootPart.Position
+							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+	
+							for _, v in plrs do
+								local delta = (v.RootPart.Position - selfpos)
+								local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
+								if angle > (math.rad(AngleSlider.Value) / 2) then continue end
+	
+								table.insert(attacked, {
+									Entity = v,
+									Check = delta.Magnitude > AttackRange.Value and BoxSwingColor or BoxAttackColor
+								})
+								targetinfo.Targets[v] = tick() + 1
+	
+								if AttackDelay < tick() then
+									AttackDelay = tick() + (1 / CPS.GetRandomValue())
 									tool:Activate()
 								end
-							end
-
-							table.insert(attacked, {
-								Entity = v,
-								Check = delta.Magnitude > AttackRange.Value and BoxSwingColor or BoxAttackColor
-							})
-							if delta.Magnitude > AttackRange.Value then continue end
-
-							if isBedwars then
-								store.KillauraTarget = v
-								continue
-							end
-
-							Overlay.FilterDescendantsInstances = {v.Character}
-							for _, part in workspace:GetPartBoundsInBox(v.RootPart.CFrame, Vector3.new(4, 4, 4), Overlay) do
-								firetouchinterest(interest.Parent, part, 1)
-								firetouchinterest(interest.Parent, part, 0)
+	
+								if Lunge.Enabled and tool.GripUp.X == 0 then break end
+								if delta.Magnitude > AttackRange.Value then continue end
+	
+								Overlay.FilterDescendantsInstances = {v.Character}
+								for _, part in workspace:GetPartBoundsInBox(v.RootPart.CFrame, Vector3.new(4, 4, 4), Overlay) do
+									firetouchinterest(interest.Parent, part, 1)
+									firetouchinterest(interest.Parent, part, 0)
+								end
 							end
 						end
 					end
-
+	
 					for i, v in Boxes do
 						v.Adornee = attacked[i] and attacked[i].Entity.RootPart or nil
 						if v.Adornee then
@@ -2588,31 +2512,24 @@ run(function()
 							v.Transparency = 1 - attacked[i].Check.Opacity
 						end
 					end
-
+	
 					for i, v in Particles do
 						v.Position = attacked[i] and attacked[i].Entity.RootPart.Position or Vector3.new(9e9, 9e9, 9e9)
 						v.Parent = attacked[i] and gameCamera or nil
 					end
-
+	
 					if Face.Enabled and attacked[1] then
 						local vec = attacked[1].Entity.RootPart.Position * Vector3.new(1, 0, 1)
 						entitylib.character.RootPart.CFrame = CFrame.lookAt(entitylib.character.RootPart.Position, Vector3.new(vec.X, entitylib.character.RootPart.Position.Y + 0.01, vec.Z))
 					end
-
-					local nextWake = math.huge
-					for _, at in AttackDelay do
-						local diff = at - tick()
-						if diff > 0 then
-							nextWake = math.min(nextWake, diff)
-						end
-					end
-					task.wait(math.clamp(nextWake, 0.0005, 0.1))
+	
+					task.wait()
 				until not Killaura.Enabled
 			else
 				for _, v in Boxes do
 					v.Adornee = nil
 				end
-
+	
 				for _, v in Particles do
 					v.Parent = nil
 				end
@@ -2624,9 +2541,9 @@ run(function()
 	CPS = Killaura:CreateTwoSlider({
 		Name = 'Attacks per Second',
 		Min = 1,
-		Max = 40,
-		DefaultMin = 35,
-		DefaultMax = 36
+		Max = 20,
+		DefaultMin = 12,
+		DefaultMax = 12
 	})
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
@@ -2658,12 +2575,8 @@ run(function()
 		Max = 10,
 		Default = 10
 	})
-	Mouse = Killaura:CreateToggle({Name = 'Require mouse down', Default = true})
-	LimitToItems = Killaura:CreateToggle({
-		Name = 'Limit to items',
-		Default = true,
-		Tooltip = 'Only attacks while a sword-type item is equipped'
-	})
+	Mouse = Killaura:CreateToggle({Name = 'Require mouse down'})
+	Lunge = Killaura:CreateToggle({Name = 'Sword lunge only'})
 	Killaura:CreateToggle({
 		Name = 'Show target',
 		Function = function(callback)
@@ -4849,14 +4762,14 @@ run(function()
 				label.Position = UDim2.new(0.5, 6, 0.5, 30)
 				label.AnchorPoint = Vector2.new(0.5, 0)
 				label.BackgroundTransparency = 1
-				label.Text = '100 ❤️'
+				label.Text = '100 â¤ï¸'
 				label.TextSize = 18
 				label.Font = Enum.Font.Arial
 				label.Parent = vape.gui
 				Health:Clean(label)
 				
 				repeat
-					label.Text = entitylib.isAlive and math.round(entitylib.character.Humanoid.Health)..' ❤️' or ''
+					label.Text = entitylib.isAlive and math.round(entitylib.character.Humanoid.Health)..' â¤ï¸' or ''
 					label.TextColor3 = entitylib.isAlive and Color3.fromHSV((entitylib.character.Humanoid.Health / entitylib.character.Humanoid.MaxHealth) / 2.8, 0.86, 1) or Color3.new()
 					task.wait()
 				until not Health.Enabled
@@ -4922,9 +4835,9 @@ run(function()
 		local lower = platform:lower()
 		local icon
 		if lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') then
-			icon = '🖥'
+			icon = 'ðŸ–¥'
 		elseif lower:find('ios') or lower:find('android') or lower:find('web') or lower:find('mobile') or lower:find('gamepad') or lower:find('xbox') or lower:find('playstation') or lower:find('vr') then
-			icon = '📱'
+			icon = 'ðŸ“±'
 		end
 		if icon then
 			DeviceCache[userId] = icon
@@ -8230,10 +8143,10 @@ run(function()
 		Name = 'Keystrokes',
 		Function = function(callback)
 			if callback then
-				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), UDim2.new(0, 6, 0, 5), Style.Value == 'Arrow' and '↑' or nil)
-				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and '↓' or nil)
-				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), UDim2.new(0, 7, 0, 5), Style.Value == 'Arrow' and '←' or nil)
-				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and '→' or nil)
+				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), UDim2.new(0, 6, 0, 5), Style.Value == 'Arrow' and 'â†‘' or nil)
+				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and 'â†“' or nil)
+				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), UDim2.new(0, 7, 0, 5), Style.Value == 'Arrow' and 'â†' or nil)
+				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and 'â†’' or nil)
 	
 				Keystrokes:Clean(inputService.InputBegan:Connect(updateKey))
 				Keystrokes:Clean(inputService.InputEnded:Connect(updateKey))

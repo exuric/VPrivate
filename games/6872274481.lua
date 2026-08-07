@@ -1672,9 +1672,8 @@ end
 run(function()
 	local AimAssist
 	local AimMode
-	local Technique
-	local Targets
 	local Mode
+	local Targets
 	local Sort
 	local AimPart
 	local AimSpeed
@@ -1728,53 +1727,20 @@ run(function()
 	end
 	
 	local started, lasttarget, nextsearch = 0, nil, 0
-	local function localAngle(a, b)
-		local forwardA = a.LookVector.Unit
-		local forwardB = b.LookVector.Unit
-		return math.acos(math.clamp(forwardA:Dot(forwardB), -1, 1))
-	end
-
-	local function getMode()
-		local style = Mode.Value
-		if style == 'Legit' then
-			return 0.055 * (1 + AimSpeed.Value * 0.04), 0.3
-		elseif style == 'Robotic Aim' then
-			return 0.75 * (1 + AimSpeed.Value * 0.01), 0.01
-		end
-		return 0.9, 0.001
-	end
-
 	local aimfuncs = {
 		Simple = function(localcframe, ent, fps)
 			local rng = Random.new()
-			local perFrame, delay = getMode()
-			local react = math.clamp((tick() - started) / delay, 0.1, 1)
-			local strafe = StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0
-			local speed = (AimSpeed.Value + strafe)
-			local desired = getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
-			local target = CFrame.lookAt(localcframe.p, desired)
-
-			local step = perFrame * react
-			if Mode.Value == 'Legit' and localAngle(target, localcframe) < math.rad(12) then
-				step = math.max(step, 0.45)
-			elseif Mode.Value == 'Robotic Aim' then
-				step = 0.85
-			end
-			step = step * (0.85 + rng:NextNumber() * 0.3)
-			return localcframe:Lerp(target, math.clamp(step, 0, 1)), speed * fps
+			local speed = (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0))
+	
+			return localcframe:Lerp(CFrame.lookAt(localcframe.p, getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)), speed * fps), speed
 		end,
 		Adaptive = function(localcframe, ent, fps)
 			local prog, rng = ease(math.min(tick() - started, 1)), Random.new()
-			local perFrame, delay = getMode()
-			local react = math.clamp((tick() - started) / delay, 0.1, 1)
 			local speed = (AimSpeed.Value * 0.1 * prog) + (1 - prog) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 5)
-			local desired = getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
-			local target = CFrame.lookAt(localcframe.Position, desired)
-			local step = perFrame * react * (0.6 + prog * 0.4)
-			return localcframe:Lerp(target, math.clamp(step, 0, 1)), speed * fps
+			return localcframe:Lerp(CFrame.lookAt(localcframe.p, getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)), speed * fps), speed
 		end
 	}
-
+	
 	local function isValid(ent)
 		if not entitylib.isAlive then return false end
 		if not ent or not ent.Character or not ent.Character.Parent then return false end
@@ -1851,24 +1817,23 @@ run(function()
 	
 							local firstPerson = entitylib.character.Head.LocalTransparencyModifier == 1
 							local perspective = AimMode.Value
-
+	
 							if perspective == 'Mouse' then
-								local cframe = aimfuncs[Technique.Value](gameCamera.CFrame, ent, dt)
+								local cframe, speed = aimfuncs[Mode.Value](gameCamera.CFrame, ent, dt)
 								local viewport = gameCamera:WorldToViewportPoint(cframe.Position)
-								local pos = Vector2.new(viewport.X, viewport.Y) - inputService:GetMouseLocation()
-								pos = pos * math.min(AimSpeed.Value * dt * (1 - math.exp(-Smoothness.Value * 60 * dt)), 1)
+								local pos = (Vector2.new(viewport.X, viewport.Y) - inputService:GetMouseLocation()) * (speed / 15)
 								mousemoverel(pos.X, pos.Y)
 							elseif perspective == 'First person' or (perspective == 'Dynamic' and firstPerson) then
 								if not firstPerson then return end
-								local cframe = aimfuncs[Technique.Value](gameCamera.CFrame, ent, dt)
-								gameCamera.CFrame = gameCamera.CFrame:Lerp(cframe, 1 - math.exp(-Smoothness.Value * 60 * dt))
+								local cframe = aimfuncs[Mode.Value](gameCamera.CFrame, ent, dt)
+								gameCamera.CFrame = cframe
 							elseif perspective == 'Third person' or (perspective == 'Dynamic' and not firstPerson) then
 								if firstPerson then return end
-								local cframe = aimfuncs[Technique.Value](root.CFrame, ent, dt)
+								local cframe = aimfuncs[Mode.Value](root.CFrame, ent, dt)
 								local direction = cframe.LookVector * Vector3.new(1, 0, 1)
 								if direction.Magnitude > 0 then
 									entitylib.character.Humanoid.AutoRotate = false
-									root.CFrame = root.CFrame:Lerp(CFrame.lookAlong(root.Position, direction), 1 - math.exp(-Smoothness.Value * 60 * dt))
+									root.CFrame = CFrame.lookAlong(root.Position, direction)
 									rotate = tick() + 0.1
 								end
 							end
@@ -1896,17 +1861,11 @@ run(function()
 		List = {'First person', 'Third person', 'Dynamic'},
 		Default = 'First person'
 	})
-	Technique = AimAssist:CreateDropdown({
-		Name = 'Technique',
+	Mode = AimAssist:CreateDropdown({
+		Name = 'Mode',
 		List = modes,
 		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior',
 		Default = modes[1],
-	})
-	Mode = AimAssist:CreateDropdown({
-		Name = 'Mode',
-		List = {'Not Human Aim', 'Robotic Aim', 'Legit'},
-		Tooltip = 'Not Human Aim - Max strength instant lock\nRobotic Aim - Strong rigid lock\nLegit - Human reaction delay and slow smooth pull',
-		Default = 'Robotic Aim',
 	})
 	Targets = AimAssist:CreateTargets({
 		Players = true,
@@ -1931,14 +1890,6 @@ run(function()
 		Min = 1,
 		Max = 20,
 		Default = 6,
-	})
-	Smoothness = AimAssist:CreateSlider({
-		Name = 'Smoothness',
-		Min = 0.01,
-		Max = 1,
-		Default = 0.5,
-		Decimal = 10,
-		Tooltip = 'Eases the aim movement for a smoother glide'
 	})
 	Distance = AimAssist:CreateSlider({
 		Name = 'Distance',
@@ -2144,8 +2095,8 @@ run(function()
 	SwordRange = Reach:CreateSlider({
 		Name = 'Sword Range',
 		Min = 1,
-		Max = 30,
-		Default = 21,
+		Max = 18,
+		Default = 18,
 		Decimal = 5,
 		Darker = true,
 		Suffix = function(val)
@@ -2164,8 +2115,8 @@ run(function()
 	BlockRange = Reach:CreateSlider({
 		Name = 'Placement Range',
 		Min = 1,
-		Max = 100,
-		Default = 30,
+		Max = 60,
+		Default = 18,
 		Darker = true,
 		Suffix = function(val)
 			return val <= 1 and 'stud' or 'studs'
@@ -2181,8 +2132,8 @@ run(function()
 	BreakRange = Reach:CreateSlider({
 		Name = 'Break Range',
 		Min = 1,
-		Max = 50,
-		Default = 36,
+		Max = 30,
+		Default = 30,
 		Decimal = 5,
 		Darker = true,
 		Suffix = function(val)
@@ -3150,66 +3101,85 @@ run(function()
 end)
 
 run(function()
-	local Targets
+	local Mode
 	local Expand
-	local objects = {}
+	local objects, set = {}
 	
 	local function createHitbox(ent)
-		if not ent.Targetable then return end
-		if not Targets.Players.Enabled and ent.Player then return end
-		if not Targets.NPCs.Enabled and ent.NPC then return end
-		local root = ent.RootPart
-		if not root then return end
-		local hitbox = Instance.new('Part')
-		hitbox.Size = Vector3.new(3, 6, 3) + Vector3.one * (Expand.Value / 2)
-		hitbox.Position = root.Position
-		hitbox.CanCollide = false
-		hitbox.Massless = true
-		hitbox.Transparency = 1
-		hitbox.Parent = ent.Character
-		local weld = Instance.new('Motor6D')
-		weld.Part0 = hitbox
-		weld.Part1 = root
-		weld.Parent = hitbox
-		objects[ent] = hitbox
+		if ent.Targetable and ent.Player then
+			local hitbox = Instance.new('Part')
+			hitbox.Size = Vector3.new(3, 6, 3) + Vector3.one * (Expand.Value / 5)
+			hitbox.Position = ent.RootPart.Position
+			hitbox.CanCollide = false
+			hitbox.Massless = true
+			hitbox.Transparency = 1
+			hitbox.Parent = ent.Character
+			local weld = Instance.new('Motor6D')
+			weld.Part0 = hitbox
+			weld.Part1 = ent.RootPart
+			weld.Parent = hitbox
+			objects[ent] = hitbox
+		end
 	end
 	
 	HitBoxes = vape.Categories.Blatant:CreateModule({
 		Name = 'HitBoxes',
 		Function = function(callback)
 			if callback then
-				HitBoxes:Clean(entitylib.Events.EntityAdded:Connect(createHitbox))
-				HitBoxes:Clean(entitylib.Events.EntityRemoving:Connect(function(ent)
-					if objects[ent] then
-						objects[ent]:Destroy()
-						objects[ent] = nil
+				if Mode.Value == 'Sword' then
+					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (Expand.Value / 3))
+					set = true
+				else
+					HitBoxes:Clean(entitylib.Events.EntityAdded:Connect(createHitbox))
+					HitBoxes:Clean(entitylib.Events.EntityRemoving:Connect(function(ent)
+						if objects[ent] then
+							objects[ent]:Destroy()
+							objects[ent] = nil
+						end
+					end))
+					for _, ent in entitylib.List do
+						createHitbox(ent)
 					end
-				end))
-				for _, ent in entitylib.List do
-					createHitbox(ent)
 				end
 			else
+				if set then
+					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, 3.8)
+					set = nil
+				end
 				for _, part in objects do
 					part:Destroy()
 				end
 				table.clear(objects)
 			end
 		end,
-		Tooltip = 'Increases the hitbox of entities so you hit them from further away'
+		Tooltip = 'Expands attack hitbox'
 	})
-	Targets = HitBoxes:CreateTargets({
-		Players = true,
-		NPCs = false
+	Mode = HitBoxes:CreateDropdown({
+		Name = 'Mode',
+		List = {'Sword', 'Player'},
+		Function = function()
+			if HitBoxes.Enabled then
+				HitBoxes:Toggle()
+				HitBoxes:Toggle()
+			end
+		end,
+		Tooltip = 'Sword - Increases the range around you to hit entities\nPlayer - Increases the players hitbox'
 	})
 	Expand = HitBoxes:CreateSlider({
 		Name = 'Expand amount',
 		Min = 0,
-		Max = 25,
-		Default = 20,
+		Max = 14.4,
+		Default = 14.4,
 		Decimal = 10,
 		Function = function(val)
-			for _, part in objects do
-				part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 2)
+			if HitBoxes.Enabled then
+				if Mode.Value == 'Sword' then
+					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (val / 3))
+				else
+					for _, part in objects do
+						part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 5)
+					end
+				end
 			end
 		end,
 		Suffix = function(val)
@@ -3624,190 +3594,11 @@ run(function()
 	local AutoCharge
 	local Aim = {}
 	local OtherProjectiles
-	local LockOn
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
-	local lastTarget
-	local Prediction
-	local TargetMode
-	local metaCache = {}
-	local history = {}
-	local partMemory = {}
-	local velFilter = {}
-	local smoothDir
-
-	local function getMousePosition()
-		if inputService.TouchEnabled then
-			return gameCamera.ViewportSize / 2
-		end
-		return inputService:GetMouseLocation()
-	end
-
-	local function getGravity(plr)
-		local playerGravity = workspace.Gravity
-		local balloons = plr.Character:GetAttribute('InflatedBalloons')
-		if balloons and balloons > 0 then
-			playerGravity = workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975)))
-		end
-		if plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
-			playerGravity = 6
-		end
-		if plr.Player and plr.Player:GetAttribute('IsOwlTarget') then
-			for _, owl in collectionService:GetTagged('Owl') do
-				if owl:GetAttribute('Target') == plr.Player.UserId and owl:GetAttribute('Status') == 2 then
-					playerGravity = 0
-					break
-				end
-			end
-		end
-		return playerGravity
-	end
-
-	local function getCandidates(origin)
-		local cursor = TargetMode.Value == 'Cursor'
-		local mousePosition = getMousePosition()
-		local candidates = {}
-		for _, entity in entitylib.List do
-			if not entity.Targetable then continue end
-			if not entitylib.isVulnerable(entity) then continue end
-			if not Targets.Players.Enabled and entity.Player then continue end
-			if not Targets.NPCs.Enabled and entity.NPC then continue end
-			local part = entity[TargetPart.Value == 'Closest' and 'RootPart' or TargetPart.Value]
-			if not part then continue end
-			if not cursor then
-				table.insert(candidates, {
-					Entity = entity,
-					Mag = entity.Target and -2 or 0,
-					Dist = (origin - part.Position).Magnitude
-				})
-				continue
-			end
-			local screenPos, visible = gameCamera:WorldToViewportPoint(part.Position)
-			if not visible then continue end
-			local mag = (mousePosition - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-			if mag > FOV.Value then continue end
-			table.insert(candidates, {
-				Entity = entity,
-				Mag = entity.Target and -2 or (entity == lastTarget and LockOn.Enabled and -1 or mag),
-				Dist = (origin - part.Position).Magnitude
-			})
-		end
-		table.sort(candidates, function(a, b)
-			if a.Mag ~= b.Mag then return a.Mag < b.Mag end
-			return a.Dist < b.Dist
-		end)
-		return candidates
-	end
-
-	local function getPart(plr, origin)
-		if TargetPart.Value ~= 'Closest' then
-			local part = plr[TargetPart.Value]
-			return part or plr.RootPart
-		end
-		local root = plr.RootPart
-		if not root then
-			partMemory[plr] = nil
-			return
-		end
-		local head = plr.Head or root
-		local rayOrigin, rayDir
-		local ok = pcall(function()
-			local mouse = getMousePosition()
-			local ray = gameCamera:ScreenPointToRay(mouse.X, mouse.Y)
-			rayOrigin, rayDir = ray.Origin, ray.Direction
-		end)
-		if not ok or not rayOrigin then
-			rayOrigin = gameCamera.CFrame.Position
-			rayDir = gameCamera.CFrame.LookVector
-		end
-		local parts
-		if typeof(plr.Character) == 'Instance' then
-			parts = plr.Character:GetDescendants()
-		else
-			parts = {root, head}
-		end
-		local dists = {}
-		local best, bestDist
-		for i = 1, #parts do
-			local part = parts[i]
-			if part:IsA('BasePart') then
-				local rel = part.Position - rayOrigin
-				local along = rel:Dot(rayDir)
-				if along >= 0 then
-					local dist = (rayOrigin + rayDir * along - part.Position).Magnitude
-					dists[part] = dist
-					if not bestDist or dist < bestDist then
-						best, bestDist = part, dist
-					end
-				end
-			end
-		end
-		if not best then
-			return head
-		end
-		local prev = partMemory[plr]
-		if prev and prev.Parent and dists[prev] and dists[prev] <= bestDist + 0.4 then
-			best, bestDist = prev, dists[prev]
-		end
-		partMemory[plr] = best
-		return best
-	end
-
-	local function getTargetVelocity(plr, part)
-		local root = plr.RootPart
-		if not root then return Vector3.zero end
-		local now = tick()
-		local samples = history[plr]
-		if not samples then
-			samples = {}
-			history[plr] = samples
-		end
-		table.insert(samples, {now, root.Position, root})
-		if samples[1][3] ~= root then
-			table.clear(samples)
-			table.insert(samples, {now, root.Position, root})
-		end
-		while samples[1] and now - samples[1][1] > 0.5 do
-			table.remove(samples, 1)
-		end
-		local base = part.AssemblyLinearVelocity
-		local measured
-		for i = #samples, 1, -1 do
-			local dt = now - samples[i][1]
-			if dt >= 0.06 then
-				measured = (root.Position - samples[i][2]) / dt
-				break
-			end
-		end
-		local vel
-		if measured then
-			local filter = velFilter[part]
-			if not filter then
-				filter = {vel = measured, time = now}
-				velFilter[part] = filter
-			else
-				local weight = math.clamp((now - filter.time) * 6, 0.25, 0.9)
-				vel = filter.vel:Lerp(measured, weight)
-				filter.vel = vel
-				filter.time = now
-			end
-			if entitylib.character and entitylib.character.RootPart then
-				local dist = (root.Position - entitylib.character.RootPart.Position).Magnitude
-				local measuredWeight = math.clamp(0.6 + dist * 0.002, 0.6, 1)
-				vel = (vel * measuredWeight) + (base * (1 - measuredWeight))
-			end
-		else
-			vel = base
-		end
-		local mag = vel.Magnitude
-		if mag > 48 then
-			vel = vel / mag * 48
-		end
-		return vel * Prediction.Value
-	end
-
+	
 	local ProjectileAimbot = vape.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
@@ -3815,92 +3606,70 @@ run(function()
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local self, projmeta, worldmeta, origin, shootpos = ...
-					if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') then
-						return old(...)
-					end
-					if table.find(Blacklist.ListEnabled or {}, ((projmeta.projectile == 'glue_trap' or projmeta.projectile == 'glue_projectile') and 'gloop' or projmeta.projectile)) then
-						return old(...)
-					end
-					if not entitylib.isAlive then return old(...) end
-
-					local projName = projmeta.projectile
-					local meta = metaCache[projName]
-					if not meta then
-						meta = projmeta:getProjectileMeta()
-						metaCache[projName] = meta
-					end
-					local lifetime = math.max(worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3, 6)
-					local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
-					local projSpeed = meta.launchVelocity or 100
-					local pos = shootpos or self:getLaunchPosition(origin)
-					if not pos then return old(...) end
-					local offsetpos = pos + (projName == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
-					local chargeMultiplier = Aim.Enabled and not AutoCharge.Enabled and projmeta.velocityMultiplier or 1
-					if chargeMultiplier < 0.15 then
-						chargeMultiplier = 1
-					end
-					local launchSpeed = projSpeed * chargeMultiplier
-					local isPearl = projName == 'telepearl'
-
-					local candidates = getCandidates(offsetpos)
-					local bestShot
-					for i = 1, math.min(#candidates, 12) do
-						local plr = candidates[i].Entity
-						local ok, result = pcall(function()
-							local targetPart = getPart(plr, offsetpos)
-							if not targetPart then return end
-							if Targets.Walls.Enabled then
-								if entitylib.Wallcheck(offsetpos, targetPart.Position, Targets.Walls.Enabled) then return end
+					local plr = entitylib.EntityMouse({
+						Part = 'RootPart',
+						Range = FOV.Value,
+						Players = Targets.Players.Enabled,
+						NPCs = Targets.NPCs.Enabled,
+						Wallcheck = Targets.Walls.Enabled,
+						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero
+					})
+					if plr then
+						local pos = shootpos or self:getLaunchPosition(origin)
+						if not pos then
+							return old(...)
+						end
+	
+						if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') then
+							return old(...)
+						end
+	
+						if table.find(Blacklist.ListEnabled or {}, ((projmeta.projectile == 'glue_trap' or projmeta.projectile == 'glue_projectile') and 'gloop' or projmeta.projectile)) then
+							return old(...)
+						end
+	
+						local meta = projmeta:getProjectileMeta()
+						local lifetime = (worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3)
+						local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
+						local projSpeed = (meta.launchVelocity or 100)
+						local offsetpos = pos + (projmeta.projectile == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
+						local balloons = plr.Character:GetAttribute('InflatedBalloons')
+						local playerGravity = workspace.Gravity
+	
+						if balloons and balloons > 0 then
+							playerGravity = (workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))))
+						end
+	
+						if plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
+							playerGravity = 6
+						end
+	
+						if plr.Player and plr.Player:GetAttribute('IsOwlTarget') then
+							for _, owl in collectionService:GetTagged('Owl') do
+								if owl:GetAttribute('Target') == plr.Player.UserId and owl:GetAttribute('Status') == 2 then
+									playerGravity = 0
+								end
 							end
-							local targetVelocity = isPearl and Vector3.zero or getTargetVelocity(plr, targetPart)
-							local newlook = CFrame.new(offsetpos, targetPart.Position) * CFrame.new(projName == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-							local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPart.Position, targetVelocity, getGravity(plr), plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(targetVelocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-							if not calc or not travelTime or travelTime <= 0 or travelTime > lifetime then return end
-							local dir = CFrame.new(newlook.Position, calc).LookVector
-							if Humanized.Enabled and Spread.Value > 0 then
-								local right = Vector3.new(0, 1, 0):Cross(dir)
-								right = right.Magnitude > 0.0001 and right.Unit or Vector3.new(1, 0, 0)
-								local up = right:Cross(dir).Unit
-								local theta = math.random() * math.pi * 2
-								local distScale = 0.6 + 0.4 * math.min(1, travelTime / 120)
-								local rad = math.rad(Spread.Value * math.random() * distScale)
-								local nudge = (right * math.cos(theta) + up * math.sin(theta)) * math.tan(rad)
-								dir = (dir + nudge).Unit
-							end
-							if Smoothing.Value > 0 then
-								if lastTarget ~= plr then smoothDir = nil end
-								smoothDir = smoothDir or dir
-								dir = smoothDir:Lerp(dir, 1 - math.clamp(Smoothing.Value, 0, 0.95))
-								smoothDir = dir
-							end
+						end
+	
+						local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
+						local calc = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+						if calc then
+							targetinfo.Targets[plr] = tick() + 1
 							return {
-								initialVelocity = dir * launchSpeed,
+								initialVelocity = (CFrame.new(newlook.Position, calc).LookVector * projSpeed) * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
 								positionFrom = offsetpos,
-								deltaT = math.min(travelTime + 0.05, lifetime),
+								deltaT = lifetime,
 								gravitationalAcceleration = gravity,
 								drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
 							}
-						end)
-						if ok and result and (not bestShot or result.deltaT < bestShot.deltaT) then
-							bestShot = result
-							lastTarget = plr
-							targetinfo.Targets[plr] = tick() + 1
 						end
 					end
-					if bestShot then
-						return bestShot
-					end
+	
 					return old(...)
 				end
 			else
 				bedwars.ProjectileController.calculateImportantLaunchValues = old
-				old = nil
-				lastTarget = nil
-				smoothDir = nil
-				table.clear(history)
-				table.clear(velFilter)
-				table.clear(partMemory)
-				table.clear(metaCache)
 			end
 		end,
 		Tooltip = 'Silently adjusts your aim towards the enemy'
@@ -3911,30 +3680,13 @@ run(function()
 	})
 	TargetPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Part',
-		List = {'RootPart', 'Head', 'Closest'},
-		Tooltip = 'Closest aims at the body part nearest to your shot line'
+		List = {'RootPart', 'Head'}
 	})
 	FOV = ProjectileAimbot:CreateSlider({
 		Name = 'FOV',
 		Min = 1,
 		Max = 1000,
 		Default = 1000
-	})
-	TargetMode = ProjectileAimbot:CreateDropdown({
-		Name = 'Target Mode',
-		List = {'Cursor', 'Dynamic'},
-		Function = function(val)
-			FOV.Object.Visible = val == 'Cursor'
-		end,
-		Tooltip = 'Cursor - aims at whoever your crosshair is closest to\nDynamic - aims at the nearest shootable enemy'
-	})
-	Prediction = ProjectileAimbot:CreateSlider({
-		Name = 'Prediction',
-		Min = 0,
-		Max = 2,
-		Default = 1,
-		Decimal = 10,
-		Tooltip = '0 = prediction off, aims at where the enemy is right now. Higher = lead the shot further ahead'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',
@@ -3955,33 +3707,6 @@ run(function()
 	OtherProjectiles = ProjectileAimbot:CreateToggle({
 		Name = 'Other Projectiles',
 		Default = true
-	})
-	LockOn = ProjectileAimbot:CreateToggle({
-		Name = 'Lock On',
-		Default = true,
-		Tooltip = 'Keeps aiming at the same target instead of flickering between enemies'
-	})
-	Humanized = ProjectileAimbot:CreateToggle({
-		Name = 'Humanized',
-		Default = false,
-		Darker = true,
-		Tooltip = 'Adds human-like aim error and smoothing instead of pixel-perfect aim'
-	})
-	Spread = ProjectileAimbot:CreateSlider({
-		Name = 'Spread',
-		Min = 0,
-		Max = 10,
-		Default = 0,
-		Decimal = 10,
-		Tooltip = 'Random aim error in degrees each shot, higher looks more human'
-	})
-	Smoothing = ProjectileAimbot:CreateSlider({
-		Name = 'Smoothing',
-		Min = 0,
-		Max = 1,
-		Default = 0,
-		Decimal = 100,
-		Tooltip = 'Chases the perfect aim over several shots instead of snapping instantly'
 	})
 	Blacklist = ProjectileAimbot:CreateTextList({
 		Name = 'Blacklist',
@@ -4096,7 +3821,6 @@ run(function()
 	local WallCheck
 	local AutoJump
 	local AlwaysJump
-	local Smooth
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 	
@@ -4130,11 +3854,7 @@ run(function()
 						end
 	
 						root.CFrame += destination
-						local velocityTarget = (moveDirection * velo) + Vector3.new(0, root.AssemblyLinearVelocity.Y, 0)
-						if Smooth.Enabled then
-							velocityTarget = root.AssemblyLinearVelocity:Lerp(velocityTarget, 1 - math.exp(-9 * dt))
-						end
-						root.AssemblyLinearVelocity = velocityTarget
+						root.AssemblyLinearVelocity = (moveDirection * velo) + Vector3.new(0, root.AssemblyLinearVelocity.Y, 0)
 						if AutoJump.Enabled and (state == Enum.HumanoidStateType.Running or state == Enum.HumanoidStateType.Landed) and moveDirection ~= Vector3.zero and (Attacking or AlwaysJump.Enabled) then
 							entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 						end
@@ -4170,10 +3890,6 @@ run(function()
 		Name = 'Always Jump',
 		Visible = false,
 		Darker = true
-	})
-	Smooth = Speed:CreateToggle({
-		Name = 'Smooth',
-		Tooltip = 'Eases speed changes instead of snapping. Smoother acceleration curves'
 	})
 end)
 
@@ -4527,14 +4243,14 @@ run(function()
 				label.Position = UDim2.new(0.5, 6, 0.5, 30)
 				label.BackgroundTransparency = 1
 				label.AnchorPoint = Vector2.new(0.5, 0)
-				label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' Γ¥ñ∩╕Å' or ''
+				label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' â¤ï¸' or ''
 				label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				label.TextSize = 18
 				label.Font = Enum.Font.Arial
 				label.Parent = vape.gui
 				Health:Clean(label)
 				Health:Clean(vapeEvents.AttributeChanged.Event:Connect(function()
-					label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' Γ¥ñ∩╕Å' or ''
+					label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' â¤ï¸' or ''
 					label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				end))
 			end
@@ -5099,52 +4815,6 @@ run(function()
 	local Folder = Instance.new('Folder')
 	Folder.Parent = vape.gui
 	local methodused
-	local Device
-	local DeviceCache = {}
-
-	local function getPlatformIcon(ent)
-		if not ent.Player then return end
-		local userId = ent.Player.UserId
-		local cached = DeviceCache[userId]
-		if cached then return cached end
-		local platform = ''
-		local ok, os = pcall(function() return ent.Player.OsPlatform end)
-		if ok and os ~= nil then
-			platform = tostring(os)
-		end
-		if platform == '' or platform:lower() == 'unknown' then
-			local ok2, os2 = pcall(gethiddenproperty, ent.Player, 'OsPlatform')
-			if ok2 and os2 ~= nil then
-				platform = tostring(os2)
-			end
-		end
-		if platform == '' and ent.Player == lplr then
-			local ok3, p = pcall(function() return inputService:GetPlatform() end)
-			if ok3 and p then
-				platform = tostring(p)
-			end
-			if platform == '' then
-				if guiService:IsTenFootInterface() then
-					platform = 'XBoxOne'
-				elseif inputService.TouchEnabled and not inputService.KeyboardEnabled then
-					platform = 'IOS'
-				else
-					platform = 'Windows'
-				end
-			end
-		end
-		local lower = platform:lower()
-		local icon
-		if lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') then
-			icon = '≡ƒûÑ'
-		elseif lower:find('ios') or lower:find('android') or lower:find('web') or lower:find('mobile') or lower:find('gamepad') or lower:find('xbox') or lower:find('playstation') or lower:find('vr') then
-			icon = '≡ƒô▒'
-		end
-		if icon then
-			DeviceCache[userId] = icon
-		end
-		return icon
-	end
 	
 	local Added = {
 		Normal = function(ent)
@@ -5153,7 +4823,7 @@ run(function()
 			if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
 	
 			local nametag = Instance.new('TextLabel')
-			Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
+			Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
 	
 			if Health.Enabled then
 				local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
@@ -5231,7 +4901,7 @@ run(function()
 			nametag.Text.Size = 15 * Scale.Value
 			nametag.Text.Font = 0
 			nametag.Text.ZIndex = 2
-			Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
+			Strings[ent] = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
 	
 			if Health.Enabled then
 				Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
@@ -5279,7 +4949,7 @@ run(function()
 			local nametag = Reference[ent]
 			if nametag then
 				Sizes[ent] = nil
-			Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
+				Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
 	
 				if Health.Enabled then
 					local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
@@ -5316,7 +4986,7 @@ run(function()
 					setthreadidentity(8)
 				end
 				Sizes[ent] = nil
-			Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
+				Strings[ent] = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
 	
 				if Health.Enabled then
 					Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
@@ -5564,16 +5234,6 @@ run(function()
 			end
 		end,
 		Default = true
-	})
-	Device = NameTags:CreateToggle({
-		Name = 'Device',
-		Function = function()
-			if NameTags.Enabled then
-				NameTags:Toggle()
-				NameTags:Toggle()
-			end
-		end,
-		Tooltip = "Shows a computer or phone icon after the player's name based on their device"
 	})
 	Teammates = NameTags:CreateToggle({
 		Name = 'Priority Only',
@@ -14652,116 +14312,6 @@ run(function()
 			end
 		end,
 		Default = true
-	})
-end)
-
-run(function()
-	local PotatoMode
-	local References = {}
-	local potatoColor = Color3.fromRGB(163, 131, 77)
-
-	local function isCharacterPart(part)
-		local character = part:FindFirstAncestorOfClass('Model')
-		while character do
-			if character:FindFirstChildOfClass('Humanoid') and character:FindFirstChild('HumanoidRootPart') then
-				return true
-			end
-			character = character.Parent
-		end
-		return false
-	end
-
-	local function snapshot(part)
-		if not References[part] then
-			References[part] = {part.Color, part.Material}
-		end
-	end
-
-	local function apply(part)
-		if part.Color ~= potatoColor then
-			part.Color = potatoColor
-		end
-		if part.Material ~= Enum.Material.SmoothPlastic then
-			part.Material = Enum.Material.SmoothPlastic
-		end
-	end
-
-	local savedQuality, savedShadows
-
-	local function boostGraphics()
-		pcall(function()
-			local render = game:GetService('RenderSettings')
-			savedQuality = render.QualityLevel
-			render.QualityLevel = 0
-		end)
-		pcall(function()
-			local lighting = game:GetService('Lighting')
-			savedShadows = lighting.GlobalShadows
-			lighting.GlobalShadows = false
-		end)
-	end
-
-	local function restoreGraphics()
-		if savedQuality then
-			pcall(function()
-				game:GetService('RenderSettings').QualityLevel = savedQuality
-			end)
-		end
-		if savedShadows then
-			pcall(function()
-				game:GetService('Lighting').GlobalShadows = savedShadows
-			end)
-		end
-		savedQuality = nil
-		savedShadows = nil
-	end
-
-	PotatoMode = vape.Legit:CreateModule({
-		Name = 'Potato Mode',
-		Function = function(callback)
-			if callback then
-				boostGraphics()
-				local all = workspace:GetDescendants()
-				for _, part in all do
-					if part:IsA('BasePart') and not isCharacterPart(part) then
-						snapshot(part)
-						apply(part)
-					end
-				end
-				local tick = 0
-				PotatoMode:Clean(runService.Heartbeat:Connect(function()
-					tick += 1
-					if tick % 120 ~= 0 then return end
-					for part in next, References do
-						if part.Parent then
-							if part.Color ~= potatoColor or part.Material ~= Enum.Material.SmoothPlastic then
-								apply(part)
-							end
-						else
-							References[part] = nil
-						end
-					end
-				end))
-				PotatoMode:Clean(workspace.DescendantAdded:Connect(function(part)
-					if part:IsA('BasePart') and not isCharacterPart(part) then
-						snapshot(part)
-						apply(part)
-					end
-				end))
-			else
-				restoreGraphics()
-				for part, values in next, References do
-					if part.Parent then
-						pcall(function()
-							part.Color = values[1]
-							part.Material = values[2]
-						end)
-					end
-				end
-				table.clear(References)
-			end
-		end,
-		Tooltip = 'Makes the world low detail and lowers graphics settings for an FPS boost'
 	})
 end)
 

@@ -97,6 +97,8 @@ if not shared.VapeDeveloper then
 		wipeFolder('VapePrivate/games')
 		wipeFolder('VapePrivate/guis')
 		wipeFolder('VapePrivate/libraries')
+		delfile('VapePrivate/assets/new/VapePriv.png')
+		delfile('VapePrivate/assets/new/Textv4.png')
 	end
 	writefile('VapePrivate/profiles/commit.txt', commit)
 	if #listfiles('VapePrivate/profiles') < 4 then

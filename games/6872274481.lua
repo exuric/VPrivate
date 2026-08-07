@@ -3201,12 +3201,12 @@ run(function()
 	local Targets, AttackRange, SwingRange, SwingTime, HitReg
 	local SwingOnly, LimitItems, GuiCheck, MaxAngle
 
-	local lastHit = 0
+	local lastSwing = 0
 
 	local inventoryRoot = game:GetService('ReplicatedStorage'):WaitForChild('Inventories'):WaitForChild(lplr.Name, 10)
 
 	local function resolveWeapon(hand)
-		if not inventoryRoot then return hand end
+		if not inventoryRoot or not hand then return hand end
 		local found = inventoryRoot:FindFirstChild(hand.Name)
 		if found then return found end
 		for _, item in inventoryRoot:GetChildren() do
@@ -3270,7 +3270,7 @@ run(function()
 		targetinfo.Targets[ent] = tick() + 1
 	end
 
-	Killaura = vape.Categories.Blatant:CreateModule({
+Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
@@ -3278,36 +3278,48 @@ run(function()
 				if swordHit and swordHit.Remote then
 					swordHit.MaxRequestsPerMinute = math.huge
 				end
-				repeat
+								while Killaura.Enabled do
 					if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) then
 						local selfpos = entitylib.character.RootPart.Position
 						local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-						local weapon = LimitItems.Enabled and (store.hand.toolType == 'sword' and store.hand.tool or nil) or getSwingItem()
-						if weapon then
+						local heldSword = store.hand and store.hand.toolType == 'sword' and store.hand.tool or nil
+						local weapon = LimitItems.Enabled and heldSword or getSwingItem()
+						local swinging = not SwingOnly.Enabled or inputService:IsMouseButtonPressed(0)
+						if weapon and swinging then
 							local entities = entitylib.AllPosition({
 								Range = SwingRange.Value,
 								Players = Targets.Players.Enabled,
 								NPCs = Targets.NPCs.Enabled,
 								Wallcheck = Targets.Walls.Enabled or nil,
 								Part = 'RootPart',
+								Limit = 1,
 								Sort = function(a, b) return a.Magnitude < b.Magnitude end
 							})
-							local swinging = not SwingOnly.Enabled or inputService:IsMouseButtonPressed(0)
+							local target
 							for _, ent in entities do
 								if Targets.Invisible.Enabled and isInvisible(ent.Character) then continue end
 								local delta = ent.RootPart.Position - selfpos
 								local horizontal = delta * Vector3.new(1, 0, 1)
 								local angle = localfacing.Magnitude > 0 and horizontal.Magnitude > 0 and math.acos(math.clamp(localfacing.Unit:Dot(horizontal.Unit), -1, 1)) or 0
 								if angle > (math.rad(MaxAngle.Value) / 2) then continue end
-								if delta.Magnitude <= AttackRange.Value and swinging and lastHit <= tick() then
-									lastHit = tick() + (1 / HitReg.Value)
-									fireAttack(ent, weapon)
+								if delta.Magnitude <= AttackRange.Value then
+									target = ent
+									break
+								end
+							end
+							if target then
+								fireAttack(target, resolveWeapon(weapon))
+								if bedwars.SwordController then
+									local ok = pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController, SwingTime.Value)
+									if ok then
+										lastSwing = tick()
+									end
 								end
 							end
 						end
 					end
-task.wait()
-				until not Killaura.Enabled
+					task.wait(1 / HitReg.Value)
+				end
 			else
 				store.KillauraTarget = nil
 			end
@@ -3320,6 +3332,7 @@ task.wait()
 	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
+		Default = true,
 		Tooltip = 'Only attack while a sword is actually in hand.'
 	})
 	SwingOnly = Killaura:CreateToggle({
@@ -4415,14 +4428,14 @@ run(function()
 				label.Position = UDim2.new(0.5, 6, 0.5, 30)
 				label.BackgroundTransparency = 1
 				label.AnchorPoint = Vector2.new(0.5, 0)
-				label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ÃƒÂ¢Ã‚ÂÃ‚Â¤ÃƒÂ¯Ã‚Â¸Ã‚Â' or ''
+				label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â¤ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â' or ''
 				label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				label.TextSize = 18
 				label.Font = Enum.Font.Arial
 				label.Parent = vape.gui
 				Health:Clean(label)
 				Health:Clean(vapeEvents.AttributeChanged.Event:Connect(function()
-					label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ÃƒÂ¢Ã‚ÂÃ‚Â¤ÃƒÂ¯Ã‚Â¸Ã‚Â' or ''
+					label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â¤ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â' or ''
 					label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				end))
 			end

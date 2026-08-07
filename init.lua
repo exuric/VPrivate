@@ -99,6 +99,7 @@ if not shared.VapeDeveloper then
 		wipeFolder('VapePrivate/libraries')
 		delfile('VapePrivate/assets/new/VapePriv.png')
 		delfile('VapePrivate/assets/new/Textv4.png')
+		delfile('VapePrivate/profiles/default6872274481.txt')
 	end
 	writefile('VapePrivate/profiles/commit.txt', commit)
 	if #listfiles('VapePrivate/profiles') < 4 then

@@ -3202,108 +3202,171 @@ end)
 
 run(function()
 	local Killaura
-	local Targets
-	local CPS
-	local SwingRange
-	local AttackRange
-	local AngleSlider
-	local Max
-	local Mouse
-	local Lunge
-	local BoxSwingColor
-	local BoxAttackColor
-	local ParticleTexture
-	local ParticleColor1
-	local ParticleColor2
-	local ParticleSize
-	local Face
-	local Overlay = OverlapParams.new()
-	Overlay.FilterType = Enum.RaycastFilterType.Include
-	local Particles, Boxes, AttackDelay = {}, {}, tick()
-	
-	local function getAttackData()
-		if Mouse.Enabled then
-			if not inputService:IsMouseButtonPressed(0) then return false end
+	local NoTween, FastHits, TargetMode, Targets
+	local AnimationMode, Projectiles, AnimationSpeed
+	local FireRate, SwingTime, NoSwing, ColorEnd, TargetColor
+	local SwingOnly, AttackRange, StartAnimSpeed, CustomAnimation
+	local SwingRange, LimitItems, LegitSwitch, Size
+	local EndAnimSpeed, FaceTarget, TargetParticles, MouseDown
+	local ShowTarget, Texture, AttackSpeed, HitChance, MaxAngle
+	local GuiCheck, BoxAnimation, MaxTargets, Attackable, ContinueSwing
+	local ColorBegin, AttackColor
+	local Boxes, Particles = {}, {}
+	local lastHit, lastSwing, FireDelays = 0, 0, {}
+	local projectileRemote = {InvokeServer = function() end}
+	local rayCheck = RaycastParams.new()
+	rayCheck.FilterType = Enum.RaycastFilterType.Exclude
+	task.spawn(function()
+		projectileRemote = bedwars.Handler:Get('ProjectileFire').Remote.instance
+	end)
+	local BoxStyles = {
+		Bounce = Enum.EasingStyle.Bounce,
+		BounceSquish = Enum.EasingStyle.Back
+	}
+	local function getSwingItem()
+		local sword = getSword()
+		if not sword then return nil end
+		if LegitSwitch.Enabled then
+			hotbarSwitch(getHotbar(sword.tool))
+		else
+			switchItem(sword.tool, 0)
 		end
-	
-		local tool = getTool()
-		return tool and tool:FindFirstChildWhichIsA('TouchTransmitter', true) or nil, tool
+		return sword.tool
 	end
-	
+	local function launchProjectile(ent)
+		local selfpos = entitylib.character.RootPart.Position
+		for _, data in getProjectiles(Projectiles.ListEnabled) do
+			local item, ammo, projectile, itemMeta = unpack(data)
+			if (FireDelays[item.itemType] or 0) < tick() then
+				rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera}
+				local meta = bedwars.ProjectileMeta[projectile]
+				local projSpeed, gravity = meta.launchVelocity, meta.gravitationalAcceleration or 196.2
+				local calc = prediction.SolveTrajectory(selfpos, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
+				if calc then
+					local switched = LegitSwitch.Enabled and hotbarSwitch(getHotbar(item.tool)) or switchItem(item.tool)
+					task.spawn(function()
+						local dir, id = CFrame.lookAt(selfpos, calc).LookVector, httpService:GenerateGUID(true)
+						local shootPosition = (CFrame.new(selfpos, calc) * CFrame.new(Vector3.new(-bedwars.BowConstantsTable.RelX, -bedwars.BowConstantsTable.RelY, -bedwars.BowConstantsTable.RelZ))).Position
+						bedwars.ProjectileController:createLocalProjectile(meta, ammo, projectile, shootPosition, id, dir * projSpeed, {drawDurationSeconds = 1})
+						local res = projectileRemote:InvokeServer(item.tool, ammo, projectile, shootPosition, selfpos, dir * projSpeed, id, {drawDurationSeconds = 1, shotId = httpService:GenerateGUID(false)}, workspace:GetServerTimeNow() - 0.045)
+						if res then
+							pcall(function() res.Parent = replicatedStorage end)
+							local shoot = itemMeta.launchSound
+							shoot = shoot and shoot[math.random(1, #shoot)] or nil
+							if shoot then
+								bedwars.SoundManager:playSound(shoot)
+							end
+						end
+					end)
+					FireDelays[item.itemType] = tick() + itemMeta.fireDelaySec
+					if switched then
+						task.wait(0.05)
+					end
+				end
+			end
+		end
+	end
+	local function fireAttack(ent, sword, selfpos)
+		if math.random(1, 100) > HitChance.Value then return end
+		local dir = (ent.RootPart.Position - selfpos).Unit
+		bedwars.Handler:Get('SwordHit'):Fire('SendToServer', {
+			weapon = sword,
+			chargedAttack = {chargeRatio = 0},
+			entityInstance = ent.Character,
+			validate = {
+				raycast = {
+					cameraPosition = {value = selfpos},
+					cursorDirection = {value = dir}
+				},
+				targetPosition = {value = ent.RootPart.Position},
+				selfPosition = {value = selfpos}
+			}
+		})
+		bedwars.SwordController.lastAttack = workspace:GetServerTimeNow()
+		store.KillauraTarget = ent
+		targetinfo.Targets[ent] = tick() + 1
+	end
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
 				repeat
-					local interest, tool = getAttackData()
-					local attacked = {}
-					if interest then
-						local plrs = entitylib.AllPosition({
-							Range = SwingRange.Value,
-							Wallcheck = Targets.Walls.Enabled or nil,
-							Part = 'RootPart',
-							Players = Targets.Players.Enabled,
-							NPCs = Targets.NPCs.Enabled,
-							Limit = Max.Value
-						})
-	
-						if #plrs > 0 then
-							local selfpos = entitylib.character.RootPart.Position
-							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-	
+					if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) and (not MouseDown.Enabled or inputService:IsMouseButtonPressed(0)) then
+						local selfpos = entitylib.character.RootPart.Position
+						local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+						local sword = LimitItems.Enabled and (store.hand.toolType == 'sword' and store.hand.tool or nil) or getSwingItem()
+						local attacked = {}
+						if sword or #Projectiles.ListEnabled > 0 then
+							local plrs = entitylib.AllPosition({
+								Range = SwingRange.Value,
+								Wallcheck = Targets.Walls.Enabled or nil,
+								Part = 'RootPart',
+								Players = Targets.Players.Enabled,
+								NPCs = Targets.NPCs.Enabled,
+								Sort = sortmethods[TargetMode.Value],
+								Limit = MaxTargets.Value
+							})
 							for _, v in plrs do
+								if Attackable.Enabled and v.Character:GetAttribute('Attackable') == false then continue end
 								local delta = (v.RootPart.Position - selfpos)
-								local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
-								if angle > (math.rad(AngleSlider.Value) / 2) then continue end
-	
+								local horizontal = delta * Vector3.new(1, 0, 1)
+								local angle = localfacing.Magnitude > 0 and horizontal.Magnitude > 0 and math.acos(math.clamp(localfacing.Unit:Dot(horizontal.Unit), -1, 1)) or 0
+								if angle > (math.rad(MaxAngle.Value) / 2) then continue end
+								local inrange = delta.Magnitude <= AttackRange.Value
 								table.insert(attacked, {
 									Entity = v,
-									Check = delta.Magnitude > AttackRange.Value and BoxSwingColor or BoxAttackColor
+									Check = inrange and AttackColor or TargetColor
 								})
-								targetinfo.Targets[v] = tick() + 1
-	
-								if AttackDelay < tick() then
-									AttackDelay = tick() + (1 / CPS.GetRandomValue())
-									tool:Activate()
+								if not SwingOnly.Enabled and sword and inrange and (FastHits.Enabled or lastHit < tick()) then
+									lastHit = tick() + FireRate.Value
+									fireAttack(v, sword, selfpos)
 								end
-	
-								if Lunge.Enabled and tool.GripUp.X == 0 then break end
-								if delta.Magnitude > AttackRange.Value then continue end
-	
-								Overlay.FilterDescendantsInstances = {v.Character}
-								for _, part in workspace:GetPartBoundsInBox(v.RootPart.CFrame, Vector3.new(4, 4, 4), Overlay) do
-									firetouchinterest(interest.Parent, part, 1)
-									firetouchinterest(interest.Parent, part, 0)
+								if not inrange and #Projectiles.ListEnabled > 0 then
+									launchProjectile(v)
+								end
+								if sword and not NoSwing.Enabled and AnimationMode.Value ~= 'Off' and (tick() - lastSwing) >= SwingTime.Value + ContinueSwing.ValueMin + math.random() * (ContinueSwing.ValueMax - ContinueSwing.ValueMin) then
+									lastSwing = tick()
+									bedwars.SwordController:swingSwordAtMouse(SwingTime.Value * (1 + AttackSpeed.Value))
 								end
 							end
 						end
-					end
-	
-					for i, v in Boxes do
-						v.Adornee = attacked[i] and attacked[i].Entity.RootPart or nil
-						if v.Adornee then
-							v.Color3 = Color3.fromHSV(attacked[i].Check.Hue, attacked[i].Check.Sat, attacked[i].Check.Value)
-							v.Transparency = 1 - attacked[i].Check.Opacity
+						if FaceTarget.Enabled and attacked[1] then
+							local vec = attacked[1].Entity.RootPart.Position * Vector3.new(1, 0, 1)
+							entitylib.character.RootPart.CFrame = CFrame.lookAt(entitylib.character.RootPart.Position, Vector3.new(vec.X, entitylib.character.RootPart.Position.Y + 0.01, vec.Z))
+						end
+						local animation = CustomAnimation.Enabled and (1 / StartAnimSpeed.Value) or (0.1 / AnimationSpeed.Value)
+						local style = BoxStyles[BoxAnimation.Value] or Enum.EasingStyle.Bounce
+						for i, box in Boxes do
+							local data = attacked[i]
+							box.Adornee = data and data.Entity.RootPart or nil
+							if box.Adornee then
+								box.Color3 = Color3.fromHSV(data.Check.Hue, data.Check.Sat, data.Check.Value)
+								box.Transparency = 1 - data.Check.Opacity
+								local size = Vector3.new(3, 5, 3) * (0.2 + Size.Value)
+								if NoTween.Enabled then
+									box.Size = size
+									box.CFrame = CFrame.new(0, -0.5, 0)
+								else
+									tweenService:Create(box, TweenInfo.new(animation, style, Enum.EasingDirection.Out), {
+										Size = size,
+										CFrame = CFrame.new(0, -0.5, 0)
+									}):Play()
+								end
+							end
+						end
+						for i, part in Particles do
+							local data = attacked[i]
+							part.Position = data and data.Entity.RootPart.Position or Vector3.new(9e9, 9e9, 9e9)
+							part.Parent = data and gameCamera or nil
 						end
 					end
-	
-					for i, v in Particles do
-						v.Position = attacked[i] and attacked[i].Entity.RootPart.Position or Vector3.new(9e9, 9e9, 9e9)
-						v.Parent = attacked[i] and gameCamera or nil
-					end
-	
-					if Face.Enabled and attacked[1] then
-						local vec = attacked[1].Entity.RootPart.Position * Vector3.new(1, 0, 1)
-						entitylib.character.RootPart.CFrame = CFrame.lookAt(entitylib.character.RootPart.Position, Vector3.new(vec.X, entitylib.character.RootPart.Position.Y + 0.01, vec.Z))
-					end
-	
 					task.wait()
 				until not Killaura.Enabled
 			else
+				store.KillauraTarget = nil
 				for _, v in Boxes do
 					v.Adornee = nil
 				end
-	
 				for _, v in Particles do
 					v.Parent = nil
 				end
@@ -3311,53 +3374,166 @@ run(function()
 		end,
 		Tooltip = 'Attack players around you\nwithout aiming at them.'
 	})
-	Targets = Killaura:CreateTargets({Players = true})
-	CPS = Killaura:CreateTwoSlider({
-		Name = 'Attacks per Second',
-		Min = 1,
-		Max = 20,
-		DefaultMin = 12,
-		DefaultMax = 12
+	NoTween = Killaura:CreateToggle({Name = 'No Tween'})
+	FastHits = Killaura:CreateToggle({Name = 'Fast Hits'})
+	TargetMode = Killaura:CreateDropdown({
+		Name = 'Target Mode',
+		List = {'Damage', 'Threat', 'Kit', 'Health', 'Angle', 'Mouse'},
+		Default = 'Damage'
 	})
-	SwingRange = Killaura:CreateSlider({
-		Name = 'Swing range',
-		Min = 1,
-		Max = 30,
-		Default = 13,
-		Suffix = function(val)
-			return val == 1 and 'stud' or 'studs'
-		end
+	Targets = Killaura:CreateTargets({
+		Players = true,
+		NPCs = true
 	})
+	AnimationMode = Killaura:CreateDropdown({
+		Name = 'Animation Mode',
+		List = {'Normal', 'Low', 'Off'},
+		Default = 'Normal'
+	})
+	Projectiles = Killaura:CreateTextList({
+		Name = 'Projectiles',
+		Default = {'arrow', 'snowball'}
+	})
+	AnimationSpeed = Killaura:CreateSlider({
+		Name = 'Animation Speed',
+		Min = 1,
+		Max = 2,
+		Default = 1,
+		Decimal = 100
+	})
+	FireRate = Killaura:CreateSlider({
+		Name = 'Fire rate',
+		Min = 0.05,
+		Max = 2,
+		Default = 0.05,
+		Decimal = 100
+	})
+	SwingTime = Killaura:CreateSlider({
+		Name = 'Swing time',
+		Min = 0.11,
+		Max = 2,
+		Default = 0.11,
+		Decimal = 100
+	})
+	NoSwing = Killaura:CreateToggle({Name = 'No Swing'})
+	ColorEnd = Killaura:CreateColorSlider({
+		Name = 'Color End',
+		DefaultHue = 0.44,
+		Function = function(hue, sat, val)
+			for _, v in Particles do
+				v.ParticleEmitter.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromHSV(ColorBegin.Hue, ColorBegin.Sat, ColorBegin.Value)),
+					ColorSequenceKeypoint.new(1, Color3.fromHSV(hue, sat, val))
+				})
+			end
+		end,
+		Darker = true,
+		Visible = false
+	})
+	TargetColor = Killaura:CreateColorSlider({
+		Name = 'Target Color',
+		DefaultHue = 0.6,
+		DefaultOpacity = 0.5,
+		Darker = true,
+		Visible = false
+	})
+	SwingOnly = Killaura:CreateToggle({Name = 'Swing only'})
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
 		Min = 1,
-		Max = 30,
-		Default = 13,
-		Suffix = function(val)
-			return val == 1 and 'stud' or 'studs'
+		Max = 18.1,
+		Default = 18.1,
+		Decimal = 100
+	})
+	StartAnimSpeed = Killaura:CreateSlider({
+		Name = 'Start Animation Speed',
+		Min = 0.9,
+		Max = 10,
+		Default = 0.9,
+		Decimal = 100
+	})
+	CustomAnimation = Killaura:CreateToggle({Name = 'Custom Animation'})
+	SwingRange = Killaura:CreateSlider({
+		Name = 'Swing range',
+		Min = 1,
+		Max = 28,
+		Default = 28,
+		Decimal = 100
+	})
+	LimitItems = Killaura:CreateToggle({Name = 'Limit to items'})
+	LegitSwitch = Killaura:CreateToggle({Name = 'Legit Switch'})
+	Size = Killaura:CreateSlider({
+		Name = 'Size',
+		Min = 0,
+		Max = 1,
+		Default = 0.2,
+		Decimal = 100,
+		Function = function(val)
+			for _, v in Particles do
+				v.ParticleEmitter.Size = NumberSequence.new(val)
+			end
+		end,
+		Darker = true,
+		Visible = false
+	})
+	EndAnimSpeed = Killaura:CreateSlider({
+		Name = 'End Animation Speed',
+		Min = 1.4,
+		Max = 10,
+		Default = 1.4,
+		Decimal = 100
+	})
+	FaceTarget = Killaura:CreateToggle({Name = 'Face target'})
+	TargetParticles = Killaura:CreateToggle({
+		Name = 'Target particles',
+		Function = function(callback)
+			Texture.Object.Visible = callback
+			ColorBegin.Object.Visible = callback
+			ColorEnd.Object.Visible = callback
+			Size.Object.Visible = callback
+			if callback then
+				for i = 1, 5 do
+					local part = Instance.new('Part')
+					part.Size = Vector3.new(2, 4, 2)
+					part.Anchored = true
+					part.CanCollide = false
+					part.Transparency = 1
+					part.CanQuery = false
+					part.Parent = Killaura.Enabled and gameCamera or nil
+					local particles = Instance.new('ParticleEmitter')
+					particles.Brightness = 1.5
+					particles.Size = NumberSequence.new(Size.Value)
+					particles.Shape = Enum.ParticleEmitterShape.Sphere
+					particles.Texture = Texture.Value
+					particles.Transparency = NumberSequence.new(0)
+					particles.Lifetime = NumberRange.new(0.4)
+					particles.Speed = NumberRange.new(16)
+					particles.Rate = 128
+					particles.Drag = 16
+					particles.ShapePartial = 1
+					particles.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromHSV(ColorBegin.Hue, ColorBegin.Sat, ColorBegin.Value)),
+						ColorSequenceKeypoint.new(1, Color3.fromHSV(ColorEnd.Hue, ColorEnd.Sat, ColorEnd.Value))
+					})
+					particles.Parent = part
+					Particles[i] = part
+				end
+			else
+				for _, v in Particles do
+					v:Destroy()
+				end
+				table.clear(Particles)
+			end
 		end
 	})
-	AngleSlider = Killaura:CreateSlider({
-		Name = 'Max angle',
-		Min = 1,
-		Max = 360,
-		Default = 90
-	})
-	Max = Killaura:CreateSlider({
-		Name = 'Max targets',
-		Min = 1,
-		Max = 10,
-		Default = 10
-	})
-	Mouse = Killaura:CreateToggle({Name = 'Require mouse down'})
-	Lunge = Killaura:CreateToggle({Name = 'Sword lunge only'})
-	Killaura:CreateToggle({
+	MouseDown = Killaura:CreateToggle({Name = 'Require mouse down'})
+	ShowTarget = Killaura:CreateToggle({
 		Name = 'Show target',
 		Function = function(callback)
-			BoxSwingColor.Object.Visible = callback
-			BoxAttackColor.Object.Visible = callback
+			TargetColor.Object.Visible = callback
+			AttackColor.Object.Visible = callback
 			if callback then
-				for i = 1, 10 do
+				for i = 1, 5 do
 					local box = Instance.new('BoxHandleAdornment')
 					box.Adornee = nil
 					box.AlwaysOnTop = true
@@ -3375,113 +3551,78 @@ run(function()
 			end
 		end
 	})
-	BoxSwingColor = Killaura:CreateColorSlider({
-		Name = 'Target Color',
-		Darker = true,
-		DefaultHue = 0.6,
-		DefaultOpacity = 0.5,
-		Visible = false
-	})
-	BoxAttackColor = Killaura:CreateColorSlider({
-		Name = 'Attack Color',
-		Darker = true,
-		DefaultOpacity = 0.5,
-		Visible = false
-	})
-	Killaura:CreateToggle({
-		Name = 'Target particles',
-		Function = function(callback)
-			ParticleTexture.Object.Visible = callback
-			ParticleColor1.Object.Visible = callback
-			ParticleColor2.Object.Visible = callback
-			ParticleSize.Object.Visible = callback
-			if callback then
-				for i = 1, 10 do
-					local part = Instance.new('Part')
-					part.Size = Vector3.new(2, 4, 2)
-					part.Anchored = true
-					part.CanCollide = false
-					part.Transparency = 1
-					part.CanQuery = false
-					part.Parent = Killaura.Enabled and gameCamera or nil
-					local particles = Instance.new('ParticleEmitter')
-					particles.Brightness = 1.5
-					particles.Size = NumberSequence.new(ParticleSize.Value)
-					particles.Shape = Enum.ParticleEmitterShape.Sphere
-					particles.Texture = ParticleTexture.Value
-					particles.Transparency = NumberSequence.new(0)
-					particles.Lifetime = NumberRange.new(0.4)
-					particles.Speed = NumberRange.new(16)
-					particles.Rate = 128
-					particles.Drag = 16
-					particles.ShapePartial = 1
-					particles.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromHSV(ParticleColor1.Hue, ParticleColor1.Sat, ParticleColor1.Value)),
-						ColorSequenceKeypoint.new(1, Color3.fromHSV(ParticleColor2.Hue, ParticleColor2.Sat, ParticleColor2.Value))
-					})
-					particles.Parent = part
-					Particles[i] = part
-				end
-			else
-				for _, v in Particles do
-					v:Destroy()
-				end
-				table.clear(Particles)
-			end
-		end
-	})
-	ParticleTexture = Killaura:CreateTextBox({
+	Texture = Killaura:CreateTextBox({
 		Name = 'Texture',
 		Default = 'rbxassetid://14736249347',
 		Function = function()
 			for _, v in Particles do
-				v.ParticleEmitter.Texture = ParticleTexture.Value
+				v.ParticleEmitter.Texture = Texture.Value
 			end
 		end,
 		Darker = true,
 		Visible = false
 	})
-	ParticleColor1 = Killaura:CreateColorSlider({
+	AttackSpeed = Killaura:CreateSlider({
+		Name = 'Attack speed',
+		Min = 0,
+		Max = 1,
+		Default = 0,
+		Decimal = 100
+	})
+	HitChance = Killaura:CreateSlider({
+		Name = 'Hit chance',
+		Min = 1,
+		Max = 100,
+		Default = 100
+	})
+	MaxAngle = Killaura:CreateSlider({
+		Name = 'Max angle',
+		Min = 1,
+		Max = 360,
+		Default = 360
+	})
+	GuiCheck = Killaura:CreateToggle({Name = 'GUI check'})
+	BoxAnimation = Killaura:CreateDropdown({
+		Name = 'Box Animation',
+		List = {'Bounce', 'BounceSquish'},
+		Default = 'Bounce'
+	})
+	MaxTargets = Killaura:CreateSlider({
+		Name = 'Max targets',
+		Min = 1,
+		Max = 5,
+		Default = 5
+	})
+	Attackable = Killaura:CreateToggle({Name = 'Attackable check'})
+	ContinueSwing = Killaura:CreateTwoSlider({
+		Name = 'Continue swing',
+		Min = 0,
+		Max = 1,
+		Decimal = 100,
+		DefaultMin = 0,
+		DefaultMax = 0
+	})
+	ColorBegin = Killaura:CreateColorSlider({
 		Name = 'Color Begin',
+		DefaultHue = 0.44,
 		Function = function(hue, sat, val)
 			for _, v in Particles do
 				v.ParticleEmitter.Color = ColorSequence.new({
 					ColorSequenceKeypoint.new(0, Color3.fromHSV(hue, sat, val)),
-					ColorSequenceKeypoint.new(1, Color3.fromHSV(ParticleColor2.Hue, ParticleColor2.Sat, ParticleColor2.Value))
+					ColorSequenceKeypoint.new(1, Color3.fromHSV(ColorEnd.Hue, ColorEnd.Sat, ColorEnd.Value))
 				})
 			end
 		end,
 		Darker = true,
 		Visible = false
 	})
-	ParticleColor2 = Killaura:CreateColorSlider({
-		Name = 'Color End',
-		Function = function(hue, sat, val)
-			for _, v in Particles do
-				v.ParticleEmitter.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromHSV(ParticleColor1.Hue, ParticleColor1.Sat, ParticleColor1.Value)),
-					ColorSequenceKeypoint.new(1, Color3.fromHSV(hue, sat, val))
-				})
-			end
-		end,
+	AttackColor = Killaura:CreateColorSlider({
+		Name = 'Attack Color',
+		DefaultHue = 0.44,
+		DefaultOpacity = 0.5,
 		Darker = true,
 		Visible = false
 	})
-	ParticleSize = Killaura:CreateSlider({
-		Name = 'Size',
-		Min = 0,
-		Max = 1,
-		Default = 0.2,
-		Decimal = 100,
-		Function = function(val)
-			for _, v in Particles do
-				v.ParticleEmitter.Size = NumberSequence.new(val)
-			end
-		end,
-		Darker = true,
-		Visible = false
-	})
-	Face = Killaura:CreateToggle({Name = 'Face target'})
 end)
 
 

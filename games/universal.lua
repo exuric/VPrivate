@@ -6,6 +6,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -2518,51 +2519,6 @@ run(function()
 		return grabbed:FindFirstChildWhichIsA('TouchTransmitter', true) ~= nil
 	end
 
-	local function swingVisual(bed)
-		local char = entitylib.character
-		if not char or not char.Humanoid or not char.Humanoid:FindFirstChild('Animator') then return end
-		pcall(function()
-			local anim = Instance.new('Animation')
-			anim.AnimationId = 'rbxassetid://4947108314'
-			local track = char.Humanoid.Animator:LoadAnimation(anim)
-			track.Priority = Enum.AnimationPriority.Action4
-			track.TimePosition = 0
-			track:Play(0, 0.15, 0)
-			anim:Destroy()
-		end)
-	end
-
-	local function bedwarsSwing(bed, store, target)
-		local root = target and target.RootPart
-		local character = entitylib.character
-		if not root or not character or not character.RootPart then return end
-		local tool = store.hand and store.hand.tool
-		if not tool or not bed.Client then return end
-		local selfPos = character.RootPart.Position
-		local targetPos = root.Position
-		local camPos = gameCamera.CFrame.Position
-		local direction = (targetPos - camPos).Unit
-		pcall(function()
-			bed.Client:Get('SwordHit'):SendToServer({
-				weapon = tool,
-				entityInstance = target.Character,
-				validate = {
-					raycast = {
-						cameraPosition = { value = camPos },
-						cursorDirection = { value = direction }
-					},
-					targetPosition = { value = targetPos },
-					selfPosition = {
-						value = selfPos + ((selfPos - targetPos).Magnitude > 14 and CFrame.lookAt(selfPos, targetPos).LookVector * 4 or Vector3.new(0, 0, 0))
-					}
-				},
-				chargedAttack = { chargeRatio = 0.8 }
-			})
-		end)
-		swingVisual()
-		store.KillauraTarget = target
-	end
-
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
@@ -2597,8 +2553,9 @@ run(function()
 										end
 									end
 									SwingWindow = keep
-									if counted <= 35 then
-										bedwarsSwing(bed, store, v)
+									if counted <= 35 and tool then
+										tool:Activate()
+										store.KillauraTarget = v
 									end
 								elseif interest then
 									tool:Activate()

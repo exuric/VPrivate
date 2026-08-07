@@ -87,16 +87,8 @@ local function finishLoading()
 	end))
 
 	if not shared.vapereload then
-		if getgenv().catrole == 'HWID MISMATCH' then
-			vape:CreateNotification('Cat', 'HWID MISMATCH, Go to the script panel to reset hwid', 25, 'alert')
-			getgenv().catrole = ''
-			task.wait(0.1)
-		end
 		if not shared.vapereload then
-			vape:CreateNotification('Finished Loading', (getgenv().catname and `Authenticated as {getgenv().catname} with {getgenv().catrole}, ` or '').. (vape.VapeButton and 'Press the button in the top right' or 'Press '..table.concat(vape.Keybind, ' + '):upper())..' to open GUI', 5)
-			task.delay(1, function()
-				vape:CreateNotification('Vape Private Loaded', `Welcome back {getgenv().catname or 'user'} - Vape Private is now loaded`, 5, 'info')
-			end)
+			vape:CreateNotification('Finished Loading', (vape.VapeButton and 'Press the button in the top right' or 'Press '..table.concat(vape.Keybind, ' + '):upper())..' to open GUI', 5)
 			task.delay(0.05 + cloneref(game:GetService('RunService')).PostSimulation:Wait(), function()
 				if shared.updated then
 					local commit = isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or 'unknown'
@@ -129,12 +121,6 @@ if hookmetamethod then
 		end
 		return old(self, Remote, ...)
 	end)
-end
-
-if shared.maincat then
-	redirect()
-	playersService.LocalPlayer:Kick('Your script is outdated, Get new one at discord.gg/catvape')
-	return
 end
 
 if not shared.VapeIndependent then

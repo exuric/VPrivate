@@ -3270,15 +3270,23 @@ run(function()
 		targetinfo.Targets[ent] = tick() + 1
 	end
 
-Killaura = vape.Categories.Blatant:CreateModule({
+local forcedLimit = false
+	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
+				if not forcedLimit then
+					forcedLimit = true
+					if not LimitItems.Enabled then
+						LimitItems:Toggle()
+					end
+				end
 				local swordHit = bedwars.Handler:Get('SwordHit')
 				if swordHit and swordHit.Remote then
 					swordHit.MaxRequestsPerMinute = math.huge
 				end
-								while Killaura.Enabled do
+								local windowStart, windowSent = tick(), 0
+				while Killaura.Enabled do
 					if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) then
 						local selfpos = entitylib.character.RootPart.Position
 						local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
@@ -3308,17 +3316,28 @@ Killaura = vape.Categories.Blatant:CreateModule({
 								end
 							end
 							if target then
-								fireAttack(target, resolveWeapon(weapon))
-								if bedwars.SwordController then
-									local ok = pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController, SwingTime.Value)
-									if ok then
-										lastSwing = tick()
+								local targetless = tick() - windowStart
+								local expected = math.floor(targetless / (1 / HitReg.Value)) + 1
+								local missing = expected - windowSent
+								if missing > 0 then
+									for _ = 1, math.min(missing, 3) do
+										local weapon = resolveWeapon(weapon)
+										fireAttack(target, weapon)
+										if bedwars.SwordController then
+											local ok = pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController, SwingTime.Value)
+											if ok then
+												lastSwing = tick()
+											end
+										end
 									end
+									windowSent = expected
 								end
+							else
+								windowStart, windowSent = tick(), 0
 							end
 						end
 					end
-					task.wait(1 / HitReg.Value)
+					task.wait()
 				end
 			else
 				store.KillauraTarget = nil

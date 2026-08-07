@@ -3,6 +3,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -2518,16 +2519,6 @@ run(function()
 		local root = target and target.RootPart
 		local character = entitylib.character
 		if not root or not character or not character.RootPart then return end
-		local controller = bed.SwordController
-		if type(controller) == 'table' and type(controller.swingSwordAtMouse) == 'function' then
-			local cam = gameCamera
-			local saved = cam.CFrame
-			cam.CFrame = CFrame.new(saved.Position, root.Position + Vector3.new(0, 2.5, 0))
-			local ok = pcall(controller.swingSwordAtMouse, controller, 1 / CPS.GetRandomValue())
-			cam.CFrame = saved
-			store.KillauraTarget = target
-			return ok
-		end
 		local tool = store.hand and store.hand.tool
 		if not tool or not bed.Client then return end
 		local selfPos = character.RootPart.Position
@@ -2620,7 +2611,14 @@ run(function()
 						entitylib.character.RootPart.CFrame = CFrame.lookAt(entitylib.character.RootPart.Position, Vector3.new(vec.X, entitylib.character.RootPart.Position.Y + 0.01, vec.Z))
 					end
 
-					task.wait()
+					local nextWake = math.huge
+					for _, at in AttackDelay do
+						local diff = at - tick()
+						if diff > 0 then
+							nextWake = math.min(nextWake, diff)
+						end
+					end
+					task.wait(math.clamp(nextWake, 0.0005, 0.1))
 				until not Killaura.Enabled
 			else
 				for _, v in Boxes do

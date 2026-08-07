@@ -1,13 +1,4 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -928,7 +919,6 @@ run(function()
 	local Part
 	local FOV
 	local Speed
-	local Smoothness
 	local CircleColor
 	local CircleTransparency
 	local CircleFilled
@@ -936,41 +926,21 @@ run(function()
 	local RightClick
 	local ShowTarget
 	local moveConst = Vector2.new(1, 0.77) * math.rad(0.5)
-
+	
 	local function wrapAngle(num)
 		num = num % math.pi
 		num -= num >= (math.pi / 2) and math.pi or 0
 		num += num < -(math.pi / 2) and math.pi or 0
 		return num
 	end
-
-	local function getAimPart(ent)
-		if Part.Value ~= 'Closest' then
-			return ent[Part.Value]
-		end
-		local mouse = inputService:GetMouseLocation()
-		local best, bestDist
-		for _, name in {'RootPart', 'Head'} do
-			local part = ent[name]
-			if not part then continue end
-			local projected, onViewport = gameCamera:WorldToViewportPoint(part.Position)
-			if onViewport then
-				local dist = (Vector2.new(projected.X, projected.Y) - mouse).LengthSquared
-				if not bestDist or dist < bestDist then
-					best, bestDist = part, dist
-				end
-			end
-		end
-		return best or ent.RootPart
-	end
-
+	
 	AimAssist = vape.Categories.Combat:CreateModule({
 		Name = 'AimAssist',
 		Function = function(callback)
 			if CircleObject then
 				CircleObject.Visible = callback
 			end
-
+	
 			if callback then
 				local ent
 				local rightClicked = not RightClick.Enabled or inputService:IsMouseButtonPressed(1)
@@ -978,41 +948,38 @@ run(function()
 					if CircleObject then
 						CircleObject.Position = inputService:GetMouseLocation()
 					end
-
+	
 					if rightClicked and not vape.gui.ScaledGui.ClickGui.Visible then
 						ent = entitylib.EntityMouse({
 							Range = FOV.Value,
-							Part = Part.Value == 'Closest' and 'RootPart' or Part.Value,
+							Part = Part.Value,
 							Players = Targets.Players.Enabled,
 							NPCs = Targets.NPCs.Enabled,
 							Wallcheck = Targets.Walls.Enabled,
 							Origin = gameCamera.CFrame.Position
 						})
-
+	
 						if ent then
-							local aimPart = getAimPart(ent)
-							if aimPart then
-								local facing = gameCamera.CFrame.LookVector
-								local new = (aimPart.Position - gameCamera.CFrame.Position).Unit
-								new = new == new and new or Vector3.zero
-
-								if ShowTarget.Enabled then
-									targetinfo.Targets[ent] = tick() + 1
-								end
-
-								if new ~= Vector3.zero then
-									local diffYaw = wrapAngle(math.atan2(facing.X, facing.Z) - math.atan2(new.X, new.Z))
-									local diffPitch = math.asin(facing.Y) - math.asin(new.Y)
-									local angle = Vector2.new(diffYaw, diffPitch) // (moveConst * UserSettings():GetService('UserGameSettings').MouseSensitivity)
-									local smooth = 1 - math.exp(-Smoothness.Value * 60 * dt)
-									angle *= math.min(Speed.Value * dt * smooth, 1)
-									mousemoverel(angle.X, angle.Y)
-								end
+							local facing = gameCamera.CFrame.LookVector
+							local new = (ent[Part.Value].Position - gameCamera.CFrame.Position).Unit
+							new = new == new and new or Vector3.zero
+	
+							if ShowTarget.Enabled then
+								targetinfo.Targets[ent] = tick() + 1
+							end
+	
+							if new ~= Vector3.zero then
+								local diffYaw = wrapAngle(math.atan2(facing.X, facing.Z) - math.atan2(new.X, new.Z))
+								local diffPitch = math.asin(facing.Y) - math.asin(new.Y)
+								local angle = Vector2.new(diffYaw, diffPitch) // (moveConst * UserSettings():GetService('UserGameSettings').MouseSensitivity)
+	
+								angle *= math.min(Speed.Value * dt, 1)
+								mousemoverel(angle.X, angle.Y)
 							end
 						end
 					end
 				end))
-
+	
 				if RightClick.Enabled then
 					AimAssist:Clean(inputService.InputBegan:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton2 then
@@ -1020,7 +987,7 @@ run(function()
 							rightClicked = true
 						end
 					end))
-
+	
 					AimAssist:Clean(inputService.InputEnded:Connect(function(input)
 						if input.UserInputType == Enum.UserInputType.MouseButton2 then
 							rightClicked = false
@@ -1034,8 +1001,7 @@ run(function()
 	Targets = AimAssist:CreateTargets({Players = true})
 	Part = AimAssist:CreateDropdown({
 		Name = 'Part',
-		List = {'RootPart', 'Head', 'Closest'},
-		Tooltip = 'Closest aims at the body part nearest to your crosshair line'
+		List = {'RootPart', 'Head'}
 	})
 	FOV = AimAssist:CreateSlider({
 		Name = 'FOV',
@@ -1053,14 +1019,6 @@ run(function()
 		Min = 0,
 		Max = 30,
 		Default = 15
-	})
-	Smoothness = AimAssist:CreateSlider({
-		Name = 'Smoothness',
-		Min = 0.01,
-		Max = 1,
-		Default = 0.5,
-		Decimal = 10,
-		Tooltip = 'Eases the aim movement for a smoother glide'
 	})
 	AimAssist:CreateToggle({
 		Name = 'Range Circle',
@@ -4762,14 +4720,14 @@ run(function()
 				label.Position = UDim2.new(0.5, 6, 0.5, 30)
 				label.AnchorPoint = Vector2.new(0.5, 0)
 				label.BackgroundTransparency = 1
-				label.Text = '100 â¤ï¸'
+				label.Text = '100 ❤️'
 				label.TextSize = 18
 				label.Font = Enum.Font.Arial
 				label.Parent = vape.gui
 				Health:Clean(label)
 				
 				repeat
-					label.Text = entitylib.isAlive and math.round(entitylib.character.Humanoid.Health)..' â¤ï¸' or ''
+					label.Text = entitylib.isAlive and math.round(entitylib.character.Humanoid.Health)..' ❤️' or ''
 					label.TextColor3 = entitylib.isAlive and Color3.fromHSV((entitylib.character.Humanoid.Health / entitylib.character.Humanoid.MaxHealth) / 2.8, 0.86, 1) or Color3.new()
 					task.wait()
 				until not Health.Enabled
@@ -4794,56 +4752,10 @@ run(function()
 	local Teammates
 	local DistanceCheck
 	local DistanceLimit
-	local Device
 	local Strings, Sizes, Reference = {}, {}, {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = vape.gui
 	local methodused
-	local DeviceCache = {}
-
-	local function getPlatformIcon(ent)
-		if not ent.Player then return end
-		local userId = ent.Player.UserId
-		local cached = DeviceCache[userId]
-		if cached then return cached end
-		local platform = ''
-		local ok, os = pcall(function() return ent.Player.OsPlatform end)
-		if ok and os ~= nil then
-			platform = tostring(os)
-		end
-		if platform == '' or platform:lower() == 'unknown' then
-			local ok2, os2 = pcall(gethiddenproperty, ent.Player, 'OsPlatform')
-			if ok2 and os2 ~= nil then
-				platform = tostring(os2)
-			end
-		end
-		if platform == '' and ent.Player == lplr then
-			local ok3, p = pcall(function() return inputService:GetPlatform() end)
-			if ok3 and p then
-				platform = tostring(p)
-			end
-			if platform == '' then
-				if guiService:IsTenFootInterface() then
-					platform = 'XBoxOne'
-				elseif inputService.TouchEnabled and not inputService.KeyboardEnabled then
-					platform = 'IOS'
-				else
-					platform = 'Windows'
-				end
-			end
-		end
-		local lower = platform:lower()
-		local icon
-		if lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') then
-			icon = 'ðŸ–¥'
-		elseif lower:find('ios') or lower:find('android') or lower:find('web') or lower:find('mobile') or lower:find('gamepad') or lower:find('xbox') or lower:find('playstation') or lower:find('vr') then
-			icon = 'ðŸ“±'
-		end
-		if icon then
-			DeviceCache[userId] = icon
-		end
-		return icon
-	end
 	
 	local Added = {
 		Normal = function(ent)
@@ -4854,12 +4766,12 @@ run(function()
 				setthreadidentity(8)
 			end
 	
-		Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
-
-		if Health.Enabled then
-			local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-			Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(healthColor.R * 255))..','..tostring(math.floor(healthColor.G * 255))..','..tostring(math.floor(healthColor.B * 255))..')">'..math.round(ent.Health)..'</font>'
-		end
+			Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+	
+			if Health.Enabled then
+				local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
+				Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(healthColor.R * 255))..','..tostring(math.floor(healthColor.G * 255))..','..tostring(math.floor(healthColor.B * 255))..')">'..math.round(ent.Health)..'</font>'
+			end
 	
 			if Distance.Enabled then
 				Strings[ent] = '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> '..Strings[ent]
@@ -4898,11 +4810,11 @@ run(function()
 			nametag.Text.Size = 15 * Scale.Value
 			nametag.Text.Font = 0
 			nametag.Text.ZIndex = 2
-Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
-
-		if Health.Enabled then
-			Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
-		end
+			Strings[ent] = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+	
+			if Health.Enabled then
+				Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
+			end
 	
 			if Distance.Enabled then
 				Strings[ent] = '[%s] '..Strings[ent]
@@ -4955,8 +4867,8 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 					setthreadidentity(8)
 				end
 				Sizes[ent] = nil
-Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
-
+				Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+	
 				if Health.Enabled then
 					local color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
 					Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(color.R * 255))..','..tostring(math.floor(color.G * 255))..','..tostring(math.floor(color.B * 255))..')">'..math.round(ent.Health)..'</font>'
@@ -4978,8 +4890,8 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayNa
 					setthreadidentity(8)
 				end
 				Sizes[ent] = nil
-Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
-
+				Strings[ent] = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+	
 				if Health.Enabled then
 					Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
 				end
@@ -5212,16 +5124,6 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 			end
 		end,
 		Default = true
-	})
-	Device = NameTags:CreateToggle({
-		Name = 'Device',
-		Function = function()
-			if NameTags.Enabled then
-				NameTags:Toggle()
-				NameTags:Toggle()
-			end
-		end,
-		Tooltip = "Shows a computer or phone icon based on the player's device"
 	})
 	Teammates = NameTags:CreateToggle({
 		Name = 'Priority Only',
@@ -7968,116 +7870,6 @@ run(function()
 end)
 
 run(function()
-	local PotatoMode
-	local References = {}
-	local potatoColor = Color3.fromRGB(163, 131, 77)
-
-	local function isCharacterPart(part)
-		local character = part:FindFirstAncestorOfClass('Model')
-		while character do
-			if character:FindFirstChildOfClass('Humanoid') and character:FindFirstChild('HumanoidRootPart') then
-				return true
-			end
-			character = character.Parent
-		end
-		return false
-	end
-
-	local function snapshot(part)
-		if not References[part] then
-			References[part] = {part.Color, part.Material}
-		end
-	end
-
-	local function apply(part)
-		if part.Color ~= potatoColor then
-			part.Color = potatoColor
-		end
-		if part.Material ~= Enum.Material.SmoothPlastic then
-			part.Material = Enum.Material.SmoothPlastic
-		end
-	end
-
-	local savedQuality, savedShadows
-
-	local function boostGraphics()
-		pcall(function()
-			local render = game:GetService('RenderSettings')
-			savedQuality = render.QualityLevel
-			render.QualityLevel = 0
-		end)
-		pcall(function()
-			local lighting = game:GetService('Lighting')
-			savedShadows = lighting.GlobalShadows
-			lighting.GlobalShadows = false
-		end)
-	end
-
-	local function restoreGraphics()
-		if savedQuality then
-			pcall(function()
-				game:GetService('RenderSettings').QualityLevel = savedQuality
-			end)
-		end
-		if savedShadows then
-			pcall(function()
-				game:GetService('Lighting').GlobalShadows = savedShadows
-			end)
-		end
-		savedQuality = nil
-		savedShadows = nil
-	end
-
-	PotatoMode = vape.Legit:CreateModule({
-		Name = 'Potato Mode',
-		Function = function(callback)
-			if callback then
-				boostGraphics()
-				local all = workspace:GetDescendants()
-				for _, part in all do
-					if part:IsA('BasePart') and not isCharacterPart(part) then
-						snapshot(part)
-						apply(part)
-					end
-				end
-				local tick = 0
-				PotatoMode:Clean(runService.Heartbeat:Connect(function()
-					tick += 1
-					if tick % 120 ~= 0 then return end
-					for part in next, References do
-						if part.Parent then
-							if part.Color ~= potatoColor or part.Material ~= Enum.Material.SmoothPlastic then
-								apply(part)
-							end
-						else
-							References[part] = nil
-						end
-					end
-				end))
-				PotatoMode:Clean(workspace.DescendantAdded:Connect(function(part)
-					if part:IsA('BasePart') and not isCharacterPart(part) then
-						snapshot(part)
-						apply(part)
-					end
-				end))
-			else
-				restoreGraphics()
-				for part, values in next, References do
-					if part.Parent then
-						pcall(function()
-							part.Color = values[1]
-							part.Material = values[2]
-						end)
-					end
-				end
-				table.clear(References)
-			end
-		end,
-		Tooltip = 'Makes the world low detail and lowers graphics settings for an FPS boost'
-	})
-end)
-
-run(function()
 	local Keystrokes
 	local Style
 	local Color
@@ -8143,10 +7935,10 @@ run(function()
 		Name = 'Keystrokes',
 		Function = function(callback)
 			if callback then
-				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), UDim2.new(0, 6, 0, 5), Style.Value == 'Arrow' and 'â†‘' or nil)
-				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and 'â†“' or nil)
-				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), UDim2.new(0, 7, 0, 5), Style.Value == 'Arrow' and 'â†' or nil)
-				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and 'â†’' or nil)
+				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), UDim2.new(0, 6, 0, 5), Style.Value == 'Arrow' and '↑' or nil)
+				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and '↓' or nil)
+				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), UDim2.new(0, 7, 0, 5), Style.Value == 'Arrow' and '←' or nil)
+				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and '→' or nil)
 	
 				Keystrokes:Clean(inputService.InputBegan:Connect(updateKey))
 				Keystrokes:Clean(inputService.InputEnded:Connect(updateKey))

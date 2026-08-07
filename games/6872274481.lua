@@ -3285,13 +3285,18 @@ local forcedLimit = false
 				if swordHit and swordHit.Remote then
 					swordHit.MaxRequestsPerMinute = math.huge
 				end
-								local windowStart, windowSent = tick(), 0
+								local lastTick, acc = tick(), 0
 				while Killaura.Enabled do
 					if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) then
 						local selfpos = entitylib.character.RootPart.Position
 						local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-						local heldSword = store.hand and store.hand.toolType == 'sword' and store.hand.tool or nil
-						local weapon = LimitItems.Enabled and heldSword or getSwingItem()
+local heldSword = store.hand and store.hand.toolType == 'sword' and store.hand.tool or nil
+						local weapon
+						if LimitItems.Enabled then
+							weapon = heldSword
+						else
+							weapon = getSwingItem()
+						end
 						local swinging = not SwingOnly.Enabled or inputService:IsMouseButtonPressed(0)
 						if weapon and swinging then
 							local entities = entitylib.AllPosition({
@@ -3316,24 +3321,25 @@ local forcedLimit = false
 								end
 							end
 							if target then
-								local targetless = tick() - windowStart
-								local expected = math.floor(targetless / (1 / HitReg.Value)) + 1
-								local missing = expected - windowSent
-								if missing > 0 then
-									for _ = 1, math.min(missing, 3) do
-										local weapon = resolveWeapon(weapon)
-										fireAttack(target, weapon)
+								local now = tick()
+								acc = acc + (now - lastTick)
+								lastTick = now
+								local interval = 1 / (HitReg.Value or 35)
+								local fires = math.floor(acc / interval)
+								if fires > 0 then
+									acc = acc - fires * interval
+									for _ = 1, math.min(fires, 3) do
+										fireAttack(target, resolveWeapon(weapon))
 										if bedwars.SwordController then
 											local ok = pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController, SwingTime.Value)
 											if ok then
-												lastSwing = tick()
+												lastSwing = now
 											end
 										end
 									end
-									windowSent = expected
 								end
 							else
-								windowStart, windowSent = tick(), 0
+								lastTick = tick()
 							end
 						end
 					end

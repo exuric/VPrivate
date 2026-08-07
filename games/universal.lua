@@ -4,6 +4,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -2431,7 +2432,6 @@ run(function()
 	local AngleSlider
 	local Max
 	local Mouse
-	local Lunge
 	local LimitToItems
 	local BoxSwingColor
 	local BoxAttackColor
@@ -2444,6 +2444,8 @@ run(function()
 	Overlay.FilterType = Enum.RaycastFilterType.Include
 	local Particles, Boxes = {}, {}
 	local AttackDelay = {}
+	local SwingCount = {}
+	local SwingWindow = {}
 	local interest, tool = nil, nil
 
 	local function getAttackData()
@@ -2515,6 +2517,20 @@ run(function()
 		return grabbed:FindFirstChildWhichIsA('TouchTransmitter', true) ~= nil
 	end
 
+	local function swingVisual()
+		local char = entitylib.character
+		if not char or not char.Humanoid or not char.Humanoid:FindFirstChild('Animator') then return end
+		local isR15 = char.Humanoid.RigType == Enum.HumanoidRigType.R15
+		pcall(function()
+			local anim = Instance.new('Animation')
+			anim.AnimationId = 'rbxassetid://' .. (isR15 and '180426354' or '180435571')
+			local track = char.Humanoid.Animator:LoadAnimation(anim)
+			track.Priority = Enum.AnimationPriority.Action4
+			track:Play(0, 0.3, 0)
+			anim:Destroy()
+		end)
+	end
+
 	local function bedwarsSwing(bed, store, target)
 		local root = target and target.RootPart
 		local character = entitylib.character
@@ -2542,6 +2558,7 @@ run(function()
 				chargedAttack = { chargeRatio = 0.8 }
 			})
 		end)
+		swingVisual()
 		store.KillauraTarget = target
 	end
 
@@ -2564,9 +2581,24 @@ run(function()
 
 							local ready = (not AttackDelay[v] or tick() >= AttackDelay[v])
 							if ready and delta.Magnitude <= AttackRange.Value then
-								AttackDelay[v] = tick() + (1 / CPS.GetRandomValue())
+								local now0 = tick()
+								local interval = 1 / CPS.GetRandomValue()
+								local jitter = (math.random() * 2 - 1) * 0.002
+								AttackDelay[v] = now0 + interval + jitter
 								if isBedwars then
-									bedwarsSwing(bed, store, v)
+									table.insert(SwingWindow, now0)
+									local keep = {}
+									local counted = 0
+									for _, t in SwingWindow do
+										if now0 - t < 1 then
+											counted = counted + 1
+											keep[#keep + 1] = t
+										end
+									end
+									SwingWindow = keep
+									if counted <= 35 then
+										bedwarsSwing(bed, store, v)
+									end
 								elseif interest then
 									tool:Activate()
 								end
@@ -2588,8 +2620,6 @@ run(function()
 								firetouchinterest(interest.Parent, part, 1)
 								firetouchinterest(interest.Parent, part, 0)
 							end
-
-							if Lunge.Enabled and tool.GripUp.X == 0 then break end
 						end
 					end
 
@@ -2671,7 +2701,6 @@ run(function()
 		Default = 10
 	})
 	Mouse = Killaura:CreateToggle({Name = 'Require mouse down', Default = true})
-	Lunge = Killaura:CreateToggle({Name = 'Sword lunge only'})
 	LimitToItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
 		Default = true,

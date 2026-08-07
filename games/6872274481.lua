@@ -883,10 +883,6 @@ run(function()
 		end
 
 		if self:GetCurrentRequests() >= self:GetRateLimit() then
-			if tick() - lastNotify > 5 then
-				lastNotify = tick()
-				notif('Cat', `{self.ID} has hit its rate limit of {self.MaxRequestsPerMinute} requests per min`, 15, 'alert')
-			end
 			return {andThen = function() end}
 		end
 
@@ -3287,9 +3283,10 @@ run(function()
 		targetinfo.Targets[ent] = tick() + 1
 	end
 	Killaura = vape.Categories.Blatant:CreateModule({
-		Name = 'Killaura',
+		Name = 'Killaura (broken)',
 		Function = function(callback)
 			if callback then
+				notif('Killaura', 'Killaura is broken, do not use it.', 15, 'warning')
 				repeat
 					if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) and (not MouseDown.Enabled or inputService:IsMouseButtonPressed(0)) then
 						local selfpos = entitylib.character.RootPart.Position
@@ -3374,94 +3371,138 @@ run(function()
 		end,
 		Tooltip = 'Attack players around you\nwithout aiming at them.'
 	})
-	NoTween = Killaura:CreateToggle({Name = 'No Tween'})
-	FastHits = Killaura:CreateToggle({Name = 'Fast Hits'})
+NoTween = Killaura:CreateToggle({
+		Name = 'No Tween',
+		Tooltip = 'Disables box/particle tween animations.\nThe box size updates instantly instead.'
+	})
+	FastHits = Killaura:CreateToggle({
+		Name = 'Fast Hits',
+		Tooltip = 'Ignores the attack-delay gating and swings\nas fast as the game lets you.'
+	})
 	TargetMode = Killaura:CreateDropdown({
 		Name = 'Target Mode',
 		List = {'Damage', 'Threat', 'Kit', 'Health', 'Angle', 'Mouse'},
-		Default = 'Damage'
+		Default = 'Damage',
+		Tooltip = 'Which target to prioritize when several\nplayers are in range.'
 	})
 	Targets = Killaura:CreateTargets({
 		Players = true,
 		NPCs = true
 	})
-	AnimationMode = Killaura:CreateDropdown({
-		Name = 'Animation Mode',
-		List = {'Normal', 'Low', 'Off'},
-		Default = 'Normal'
-	})
 	Projectiles = Killaura:CreateTextList({
 		Name = 'Projectiles',
-		Default = {'arrow', 'snowball'}
+		Default = {'arrow', 'snowball'},
+		Tooltip = 'If a target is too far for an attack,\nlaunch these projectiles at it instead.'
 	})
-	AnimationSpeed = Killaura:CreateSlider({
-		Name = 'Animation Speed',
+	SwingRange = Killaura:CreateSlider({
+		Name = 'Swing range',
 		Min = 1,
-		Max = 2,
-		Default = 1,
-		Decimal = 100
+		Max = 28,
+		Default = 28,
+		Decimal = 100,
+		Tooltip = 'Max distance to track & swing at a target.\nBeyond this range targets are ignored.'
 	})
-	FireRate = Killaura:CreateSlider({
-		Name = 'Fire rate',
-		Min = 0.05,
-		Max = 2,
-		Default = 0.05,
-		Decimal = 100
+	AttackRange = Killaura:CreateSlider({
+		Name = 'Attack range',
+		Min = 1,
+		Max = 18.1,
+		Default = 18.1,
+		Decimal = 100,
+		Tooltip = 'Distances below this actually send attack\ndamage; further targets only get projectiles.'
 	})
 	SwingTime = Killaura:CreateSlider({
 		Name = 'Swing time',
 		Min = 0.11,
 		Max = 2,
 		Default = 0.11,
-		Decimal = 100
+		Decimal = 100,
+		Tooltip = 'Duration of one sword swing animation.'
 	})
-	NoSwing = Killaura:CreateToggle({Name = 'No Swing'})
-	ColorEnd = Killaura:CreateColorSlider({
-		Name = 'Color End',
-		DefaultHue = 0.44,
-		Function = function(hue, sat, val)
-			for _, v in Particles do
-				v.ParticleEmitter.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromHSV(ColorBegin.Hue, ColorBegin.Sat, ColorBegin.Value)),
-					ColorSequenceKeypoint.new(1, Color3.fromHSV(hue, sat, val))
-				})
-			end
-		end,
-		Darker = true,
-		Visible = false
+	ContinueSwing = Killaura:CreateTwoSlider({
+		Name = 'Continue swing',
+		Min = 0,
+		Max = 1,
+		Decimal = 100,
+		DefaultMin = 0,
+		DefaultMax = 0,
+		Tooltip = 'Random wait (min to max) before the next swing.'
 	})
-	TargetColor = Killaura:CreateColorSlider({
-		Name = 'Target Color',
-		DefaultHue = 0.6,
-		DefaultOpacity = 0.5,
-		Darker = true,
-		Visible = false
+	SwingOnly = Killaura:CreateToggle({
+		Name = 'Swing only',
+		Tooltip = 'Only play the swing animation,\nnever actually damage the target.'
 	})
-	SwingOnly = Killaura:CreateToggle({Name = 'Swing only'})
-	AttackRange = Killaura:CreateSlider({
-		Name = 'Attack range',
+	AnimationMode = Killaura:CreateDropdown({
+		Name = 'Animation Mode',
+		List = {'Normal', 'Low', 'Off'},
+		Default = 'Normal',
+		Tooltip = 'Sword swing animation style.\nOff = no swing animation at all.'
+	})
+	NoSwing = Killaura:CreateToggle({
+		Name = 'No Swing',
+		Tooltip = 'Completely suppresses the swing animation.'
+	})
+	AnimationSpeed = Killaura:CreateSlider({
+		Name = 'Animation Speed',
 		Min = 1,
-		Max = 18.1,
-		Default = 18.1,
-		Decimal = 100
+		Max = 2,
+		Default = 1,
+		Decimal = 100,
+		Tooltip = 'Multiplier for how fast animation plays.'
 	})
-	StartAnimSpeed = Killaura:CreateSlider({
-		Name = 'Start Animation Speed',
-		Min = 0.9,
-		Max = 10,
-		Default = 0.9,
-		Decimal = 100
+	FireRate = Killaura:CreateSlider({
+		Name = 'Fire rate',
+		Min = 0.05,
+		Max = 2,
+		Default = 0.05,
+		Decimal = 100,
+		Tooltip = 'Minimum time between two damage swings.'
 	})
-	CustomAnimation = Killaura:CreateToggle({Name = 'Custom Animation'})
-	SwingRange = Killaura:CreateSlider({
-		Name = 'Swing range',
+	HitChance = Killaura:CreateSlider({
+		Name = 'Hit chance',
 		Min = 1,
-		Max = 28,
-		Default = 28,
-		Decimal = 100
+		Max = 100,
+		Default = 100,
+		Suffix = '%'
 	})
-	LimitItems = Killaura:CreateToggle({Name = 'Limit to items'})
-	LegitSwitch = Killaura:CreateToggle({Name = 'Legit Switch'})
+	MaxAngle = Killaura:CreateSlider({
+		Name = 'Max angle',
+		Min = 1,
+		Max = 360,
+		Default = 360,
+		Tooltip = 'Targets within how many degrees of you.'
+	})
+	MaxTargets = Killaura:CreateSlider({
+		Name = 'Max targets',
+		Min = 1,
+		Max = 5,
+		Default = 5
+	})
+	Attackable = Killaura:CreateToggle({
+		Name = 'Attackable check',
+		Tooltip = 'Skip entities the game marks as not attackable.'
+	})
+	FaceTarget = Killaura:CreateToggle({Name = 'Face target'})
+	MouseDown = Killaura:CreateToggle({Name = 'Require mouse down'})
+	GuiCheck = Killaura:CreateToggle({
+		Name = 'GUI check',
+		Tooltip = 'Pause attacks while a game menu is open.'
+	})
+	LimitItems = Killaura:CreateToggle({
+		Name = 'Limit to items',
+		Tooltip = 'Only attack while a sword is actually in hand.'
+	})
+	LegitSwitch = Killaura:CreateToggle({
+		Name = 'Legit Switch',
+		Tooltip = 'Switch sword via the hotbar instead of insta-swap.'
+	})
+	AttackSpeed = Killaura:CreateSlider({
+		Name = 'Attack speed',
+		Min = 0,
+		Max = 1,
+		Default = 0,
+		Decimal = 100,
+		Tooltip = 'Adds a little speed to every swing.'
+	})
 	Size = Killaura:CreateSlider({
 		Name = 'Size',
 		Min = 0,
@@ -3476,14 +3517,63 @@ run(function()
 		Darker = true,
 		Visible = false
 	})
-	EndAnimSpeed = Killaura:CreateSlider({
-		Name = 'End Animation Speed',
-		Min = 1.4,
-		Max = 10,
-		Default = 1.4,
-		Decimal = 100
+	ShowTarget = Killaura:CreateToggle({
+		Name = 'Show target',
+		Function = function(callback)
+			TargetColor.Object.Visible = callback
+			AttackColor.Object.Visible = callback
+			BoxAnimation.Object.Visible = callback
+			if callback then
+				for i = 1, 5 do
+					local box = Instance.new('BoxHandleAdornment')
+					box.Adornee = nil
+					box.AlwaysOnTop = true
+					box.Size = Vector3.new(3, 5, 3)
+					box.CFrame = CFrame.new(0, -0.5, 0)
+					box.ZIndex = 0
+					box.Parent = vape.gui
+					Boxes[i] = box
+				end
+			else
+				for _, v in Boxes do
+					v:Destroy()
+				end
+				table.clear(Boxes)
+			end
+		end,
+		Tooltip = 'Draws a box over every tracked target.'
 	})
-	FaceTarget = Killaura:CreateToggle({Name = 'Face target'})
+	TargetColor = Killaura:CreateColorSlider({
+		Name = 'Target Color',
+		DefaultHue = 0.6,
+		DefaultOpacity = 0.5,
+		Darker = true,
+		Visible = false
+	})
+	AttackColor = Killaura:CreateColorSlider({
+		Name = 'Attack Color',
+		DefaultHue = 0.44,
+		DefaultOpacity = 0.5,
+		Darker = true,
+		Visible = false
+	})
+	BoxAnimation = Killaura:CreateDropdown({
+		Name = 'Box Animation',
+		List = {'Bounce', 'BounceSquish'},
+		Default = 'Bounce',
+		Function = function()
+			if Boxes then
+				for _, v in Boxes do
+					local animation = CustomAnimation.Enabled and (1 / StartAnimSpeed.Value) or (0.1 / AnimationSpeed.Value)
+					tweenService:Create(v, TweenInfo.new(animation, BoxStyles[v.Value] or Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {
+						Size = Vector3.new(3, 5, 3) * (0.2 + Size.Value)
+					}):Play()
+				end
+			end
+		end,
+		Darker = true,
+		Tooltip = 'Box animation easing:\nBounce - smooth spring\nBounceSquish - sharp squash back'
+	})
 	TargetParticles = Killaura:CreateToggle({
 		Name = 'Target particles',
 		Function = function(callback)
@@ -3526,31 +3616,6 @@ run(function()
 			end
 		end
 	})
-	MouseDown = Killaura:CreateToggle({Name = 'Require mouse down'})
-	ShowTarget = Killaura:CreateToggle({
-		Name = 'Show target',
-		Function = function(callback)
-			TargetColor.Object.Visible = callback
-			AttackColor.Object.Visible = callback
-			if callback then
-				for i = 1, 5 do
-					local box = Instance.new('BoxHandleAdornment')
-					box.Adornee = nil
-					box.AlwaysOnTop = true
-					box.Size = Vector3.new(3, 5, 3)
-					box.CFrame = CFrame.new(0, -0.5, 0)
-					box.ZIndex = 0
-					box.Parent = vape.gui
-					Boxes[i] = box
-				end
-			else
-				for _, v in Boxes do
-					v:Destroy()
-				end
-				table.clear(Boxes)
-			end
-		end
-	})
 	Texture = Killaura:CreateTextBox({
 		Name = 'Texture',
 		Default = 'rbxassetid://14736249347',
@@ -3561,46 +3626,6 @@ run(function()
 		end,
 		Darker = true,
 		Visible = false
-	})
-	AttackSpeed = Killaura:CreateSlider({
-		Name = 'Attack speed',
-		Min = 0,
-		Max = 1,
-		Default = 0,
-		Decimal = 100
-	})
-	HitChance = Killaura:CreateSlider({
-		Name = 'Hit chance',
-		Min = 1,
-		Max = 100,
-		Default = 100
-	})
-	MaxAngle = Killaura:CreateSlider({
-		Name = 'Max angle',
-		Min = 1,
-		Max = 360,
-		Default = 360
-	})
-	GuiCheck = Killaura:CreateToggle({Name = 'GUI check'})
-	BoxAnimation = Killaura:CreateDropdown({
-		Name = 'Box Animation',
-		List = {'Bounce', 'BounceSquish'},
-		Default = 'Bounce'
-	})
-	MaxTargets = Killaura:CreateSlider({
-		Name = 'Max targets',
-		Min = 1,
-		Max = 5,
-		Default = 5
-	})
-	Attackable = Killaura:CreateToggle({Name = 'Attackable check'})
-	ContinueSwing = Killaura:CreateTwoSlider({
-		Name = 'Continue swing',
-		Min = 0,
-		Max = 1,
-		Decimal = 100,
-		DefaultMin = 0,
-		DefaultMax = 0
 	})
 	ColorBegin = Killaura:CreateColorSlider({
 		Name = 'Color Begin',
@@ -3616,12 +3641,39 @@ run(function()
 		Darker = true,
 		Visible = false
 	})
-	AttackColor = Killaura:CreateColorSlider({
-		Name = 'Attack Color',
+	ColorEnd = Killaura:CreateColorSlider({
+		Name = 'Color End',
 		DefaultHue = 0.44,
-		DefaultOpacity = 0.5,
+		Function = function(hue, sat, val)
+			for _, v in Particles do
+				v.ParticleEmitter.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromHSV(ColorBegin.Hue, ColorBegin.Sat, ColorBegin.Value)),
+					ColorSequenceKeypoint.new(1, Color3.fromHSV(hue, sat, val))
+				})
+			end
+		end,
 		Darker = true,
 		Visible = false
+	})
+	CustomAnimation = Killaura:CreateToggle({
+		Name = 'Custom Animation',
+		Tooltip = 'Use separate grow/fade speeds for the box animation\ninstead of the main animation speed.'
+	})
+	StartAnimSpeed = Killaura:CreateSlider({
+		Name = 'Start Animation Speed',
+		Min = 0.5,
+		Max = 10,
+		Default = 0.9,
+		Decimal = 100,
+		Tooltip = 'Speed the box grows at when a target appears.'
+	})
+	EndAnimSpeed = Killaura:CreateSlider({
+		Name = 'End Animation Speed',
+		Min = 0.5,
+		Max = 10,
+		Default = 1.4,
+		Decimal = 100,
+		Tooltip = 'Speed the box fades out at when a target disappears.'
 	})
 end)
 

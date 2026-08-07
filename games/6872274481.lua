@@ -3264,29 +3264,31 @@ run(function()
 	end
 	local function fireAttack(ent, sword, selfpos)
 		if math.random(1, 100) > HitChance.Value then return end
-		local dir = (ent.RootPart.Position - selfpos).Unit
+		local camPos = gameCamera.CFrame.Position
+		local dir = (ent.RootPart.Position - camPos).Unit
+		local targetPos = ent.Character:GetPivot().Position
 		bedwars.Handler:Get('SwordHit'):Fire('SendToServer', {
 			weapon = sword,
 			chargedAttack = {chargeRatio = 0},
 			entityInstance = ent.Character,
 			validate = {
 				raycast = {
-					cameraPosition = {value = selfpos},
+					cameraPosition = {value = camPos},
 					cursorDirection = {value = dir}
 				},
-				targetPosition = {value = ent.RootPart.Position},
-				selfPosition = {value = selfpos}
-			}
+				targetPosition = {value = targetPos},
+				selfPosition = {value = entitylib.character:GetPivot().Position}
+			},
+			timeSinceSwingStart = workspace:GetServerTimeNow() - (bedwars.SwordController.lastAttack or workspace:GetServerTimeNow())
 		})
 		bedwars.SwordController.lastAttack = workspace:GetServerTimeNow()
 		store.KillauraTarget = ent
 		targetinfo.Targets[ent] = tick() + 1
 	end
 	Killaura = vape.Categories.Blatant:CreateModule({
-		Name = 'Killaura (broken)',
+		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
-				notif('Killaura', 'Killaura is broken, do not use it.', 15, 'warning')
 				repeat
 					if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) and (not MouseDown.Enabled or inputService:IsMouseButtonPressed(0)) then
 						local selfpos = entitylib.character.RootPart.Position

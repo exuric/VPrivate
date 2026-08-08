@@ -3198,171 +3198,88 @@ end)
 
 run(function()
 	local Killaura
-	local Targets, AttackRange, SwingRange, SwingTime, HitReg
-	local SwingOnly, LimitItems, GuiCheck, MaxAngle
+	local Targets
+	local CPS
+	local SwingRange
+	local AttackRange
+	local AngleSlider
+	local MaxTargets
+	local Mouse
+	local Lunge
+	local Face
+	local GuiCheck
+	local AttackDelay = 0
 
-	local lastSwing = 0
-
-	local inventoryRoot = game:GetService('ReplicatedStorage'):WaitForChild('Inventories'):WaitForChild(lplr.Name, 10)
-
-	local function resolveWeapon(hand)
-		if not inventoryRoot or not hand then return hand end
-		local found = inventoryRoot:FindFirstChild(hand.Name)
-		if found then return found end
-		for _, item in inventoryRoot:GetChildren() do
-			if item:IsA('Tool') or item:IsA('Model') then
-				if item:GetAttribute('itemType') == hand.Name then
-					return item
-				end
-			end
-		end
-		return hand
+	local function isCasting()
+		local casting = lplr:GetAttribute('IsCasting')
+		return casting and casting ~= 0 and casting ~= ''
 	end
 
-	local function getSwingItem()
-		local sword = getSword()
-		if not sword then return nil end
-		switchItem(sword.tool, 0)
-		return resolveWeapon(sword.tool)
+	local function canSwing()
+		if not bedwars.SwordController then return false end
+		if bedwars.SwordController.getSwordSwingDisabled and bedwars.SwordController:getSwordSwingDisabled() then return false end
+		if isCasting() then return false end
+		local itemMeta = store.hand and store.hand.tool and bedwars.ItemMeta[store.hand.tool.Name]
+		return itemMeta and itemMeta.sword ~= nil and itemMeta.sword.chargedAttack == nil
 	end
 
-	local function isInvisible(char)
-		if char then
-			local humanoid = char:FindFirstChildOfClass('Humanoid')
-			if humanoid and humanoid.Transparency > 0.75 then
-				return true
-			end
-		end
-		local bed, meta = bedwars.StatusEffectUtil, bedwars.StatusEffectMeta
-		if bed and meta then
-			for _, effect in {meta.INVISIBILITY, meta.SMOKE_INVISIBILITY, meta.NINJA_INVISIBLE} do
-				local ok, active = pcall(bed.isActive, bed, char, effect)
-				if ok and active then
-					return true
-				end
-			end
-		end
-		return false
-	end
-
-	local function fireAttack(ent, weapon)
-		local ok, res = pcall(bedwars.Handler.Get, bedwars.Handler, 'SwordHit')
-		if not ok or not res or not res.Remote then
-			warn('[Killaura] SwordHit remote unavailable:', ok, res)
-			return
-		end
-		local selfInstance = entitylib.character and entitylib.character.Character or nil
-		local selfPos = selfInstance and pcall(selfInstance.GetPivot, selfInstance) and selfInstance:GetPivot().Position
-		if not selfPos then
-			selfPos = entitylib.character and entitylib.character.RootPart.Position
-		end
-		local targetPos = ent.Character:GetPivot().Position
-		local raycast = nil
-		local cam = workspace.CurrentCamera
-		if cam then
-			local camPos = cam.CFrame.Position
-			local dir = (targetPos - camPos)
-			if dir.Magnitude > 0 then dir = dir.Unit else dir = Vector3.zAxis end
-			raycast = {
-				cameraPosition = {value = camPos},
-				cursorDirection = {value = dir}
-			}
-		end
-		res:Fire('SendToServer', {
-			entityInstance = ent.Character,
-			chargedAttack = {chargeRatio = 0},
-			validate = {
-				raycast = raycast,
-				targetPosition = {value = targetPos},
-				selfPosition = {value = selfPos}
-			},
-			weapon = weapon
-		})
-		store.KillauraTarget = ent
-		targetinfo.Targets[ent] = tick() + 1
-	end
-
-	local function swingAnim(weapon)
-		if not weapon or not bedwars.SwordController or not bedwars.SwordController.playSwordEffect then return end
-		local itemMeta = bedwars.ItemMeta and bedwars.ItemMeta[weapon.Name]
-		if not itemMeta then return end
-		pcall(bedwars.SwordController.playSwordEffect, bedwars.SwordController, itemMeta, false, {
-			playAnimation = true,
-			playSound = false,
-			itemSkin = weapon:GetAttribute('ItemSkin')
-		})
-	end
-
-local forcedLimit = false
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
-				if not forcedLimit then
-					forcedLimit = true
-					if not LimitItems.Enabled then
-						LimitItems:Toggle()
+				local swordHit
+				pcall(function()
+					swordHit = bedwars.Handler:Get('SwordHit')
+					if swordHit and swordHit.Remote then
+						swordHit.MaxRequestsPerMinute = math.huge
 					end
-				end
-				local swordHit = bedwars.Handler:Get('SwordHit')
-				if swordHit and swordHit.Remote then
-					swordHit.MaxRequestsPerMinute = math.huge
-				end
-								local lastTick, acc = tick(), 0
-				while Killaura.Enabled do
+				end)
+				repeat
+					local attacked = {}
 					if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) then
-						local selfpos = entitylib.character.RootPart.Position
-						local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-local heldSword = store.hand and store.hand.toolType == 'sword' and store.hand.tool or nil
-						local weapon
-						if LimitItems.Enabled then
-							weapon = heldSword
-						else
-							weapon = getSwingItem()
-						end
-						local swinging = not SwingOnly.Enabled or inputService:IsMouseButtonPressed(0)
-						if weapon and swinging then
-							local entities = entitylib.AllPosition({
+						if store.hand and store.hand.toolType == 'sword' and canSwing() and (not Mouse.Enabled or inputService:IsMouseButtonPressed(0)) then
+							local selfpos = entitylib.character.RootPart.Position
+							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+							local plrs = entitylib.AllPosition({
 								Range = SwingRange.Value,
-								Players = Targets.Players.Enabled,
-								NPCs = Targets.NPCs.Enabled,
 								Wallcheck = Targets.Walls.Enabled or nil,
 								Part = 'RootPart',
-								Limit = 1,
-								Sort = function(a, b) return a.Magnitude < b.Magnitude end
+								Players = Targets.Players.Enabled,
+								NPCs = Targets.NPCs.Enabled,
+								Limit = MaxTargets.Value
 							})
-							local target
-							for _, ent in entities do
-								if Targets.Invisible.Enabled and isInvisible(ent.Character) then continue end
-								local delta = ent.RootPart.Position - selfpos
-								local horizontal = delta * Vector3.new(1, 0, 1)
-								local angle = localfacing.Magnitude > 0 and horizontal.Magnitude > 0 and math.acos(math.clamp(localfacing.Unit:Dot(horizontal.Unit), -1, 1)) or 0
-								if angle > (math.rad(MaxAngle.Value) / 2) then continue end
-								if delta.Magnitude <= AttackRange.Value then
-									target = ent
-									break
+
+							for _, v in plrs do
+								local delta = (v.RootPart.Position - selfpos)
+								local flatDelta = delta * Vector3.new(1, 0, 1)
+								local angle = localfacing.Magnitude > 0 and flatDelta.Magnitude > 0 and math.acos(math.clamp(localfacing.Unit:Dot(flatDelta.Unit), -1, 1)) or 0
+								if angle > (math.rad(AngleSlider.Value) / 2) then continue end
+
+								table.insert(attacked, v)
+								targetinfo.Targets[v] = tick() + 1
+								store.KillauraTarget = v
+
+								if AttackDelay < tick() and delta.Magnitude <= AttackRange.Value then
+									AttackDelay = tick() + (1 / CPS.GetRandomValue())
+									pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController)
 								end
-							end
-							if target then
-								local now = tick()
-								acc = acc + (now - lastTick)
-								lastTick = now
-								local interval = 1 / (HitReg.Value or 35)
-								if acc >= interval then
-									acc = acc - interval
-									local resolvedWeapon = resolveWeapon(weapon)
-									fireAttack(target, resolvedWeapon)
-									if resolvedWeapon then
-										pcall(swingAnim, resolvedWeapon)
-									end
+
+								if Lunge.Enabled then
+									local sword = store.hand.tool
+									if sword and sword.GripUp and sword.GripUp.X == 0 then break end
 								end
-							else
-								lastTick = tick()
+								if delta.Magnitude > AttackRange.Value then continue end
 							end
 						end
 					end
+
+					if Face.Enabled and attacked[1] then
+						local vec = attacked[1].RootPart.Position * Vector3.new(1, 0, 1)
+						entitylib.character.RootPart.CFrame = CFrame.lookAt(entitylib.character.RootPart.Position, Vector3.new(vec.X, entitylib.character.RootPart.Position.Y + 0.01, vec.Z))
+					end
+
 					task.wait()
-				end
+				until not Killaura.Enabled
 			else
 				store.KillauraTarget = nil
 			end
@@ -3373,53 +3290,46 @@ local heldSword = store.hand and store.hand.toolType == 'sword' and store.hand.t
 		Players = true,
 		NPCs = true
 	})
-	LimitItems = Killaura:CreateToggle({
-		Name = 'Limit to items',
-		Default = true,
-		Tooltip = 'Only attack while a sword is actually in hand.'
-	})
-	SwingOnly = Killaura:CreateToggle({
-		Name = 'Swing only',
-		Tooltip = 'Only hit while your sword swing is active.'
-	})
-	MaxAngle = Killaura:CreateSlider({
-		Name = 'Max angle',
-		Min = 0,
-		Max = 360,
-		Default = 360,
-		Tooltip = 'Maximum angle from your view direction\ntargets can be attacked at.'
+	CPS = Killaura:CreateTwoSlider({
+		Name = 'Attacks per second',
+		Min = 1,
+		Max = 20,
+		DefaultMin = 12,
+		DefaultMax = 12
 	})
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
 		Min = 1,
-		Max = 28,
-		Default = 28,
-		Decimal = 100,
-		Tooltip = 'Range in studs where the module will\nswing at targets.'
+		Max = 30,
+		Default = 13,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
 	})
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
 		Min = 1,
-		Max = 28,
-		Default = 18.1,
-		Decimal = 100,
-		Tooltip = 'Range in studs where hits actually\nland.'
+		Max = 30,
+		Default = 13,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
 	})
-	SwingTime = Killaura:CreateSlider({
-		Name = 'Swing time',
-		Min = 0.11,
-		Max = 2,
-		Default = 0.11,
-		Decimal = 100,
-		Tooltip = 'Length of a single sword swing.'
-	})
-	HitReg = Killaura:CreateSlider({
-		Name = 'Hit Reg',
+	AngleSlider = Killaura:CreateSlider({
+		Name = 'Max angle',
 		Min = 1,
-		Max = 35,
-		Default = 35,
-		Tooltip = 'Maximum hits per second.\n35 = full speed, 34 = slightly slower.'
+		Max = 360,
+		Default = 90
 	})
+	MaxTargets = Killaura:CreateSlider({
+		Name = 'Max targets',
+		Min = 1,
+		Max = 10,
+		Default = 10
+	})
+	Mouse = Killaura:CreateToggle({Name = 'Require mouse down'})
+	Lunge = Killaura:CreateToggle({Name = 'Sword lunge only'})
+	Face = Killaura:CreateToggle({Name = 'Face target'})
 	GuiCheck = Killaura:CreateToggle({
 		Name = 'GUI check',
 		Tooltip = 'Pause while a game menu is open.'

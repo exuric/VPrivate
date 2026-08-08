@@ -3257,10 +3257,22 @@ run(function()
 			selfPos = entitylib.character and entitylib.character.RootPart.Position
 		end
 		local targetPos = ent.Character:GetPivot().Position
+		local raycast = nil
+		local cam = workspace.CurrentCamera
+		if cam then
+			local camPos = cam.CFrame.Position
+			local dir = (targetPos - camPos)
+			if dir.Magnitude > 0 then dir = dir.Unit else dir = Vector3.zAxis end
+			raycast = {
+				cameraPosition = {value = camPos},
+				cursorDirection = {value = dir}
+			}
+		end
 		res:Fire('SendToServer', {
 			entityInstance = ent.Character,
 			chargedAttack = {chargeRatio = 0},
 			validate = {
+				raycast = raycast,
 				targetPosition = {value = targetPos},
 				selfPosition = {value = selfPos}
 			},
@@ -3268,6 +3280,17 @@ run(function()
 		})
 		store.KillauraTarget = ent
 		targetinfo.Targets[ent] = tick() + 1
+	end
+
+	local function swingAnim(weapon)
+		if not weapon or not bedwars.SwordController or not bedwars.SwordController.playSwordEffect then return end
+		local itemMeta = bedwars.ItemMeta and bedwars.ItemMeta[weapon.Name]
+		if not itemMeta then return end
+		pcall(bedwars.SwordController.playSwordEffect, bedwars.SwordController, itemMeta, false, {
+			playAnimation = true,
+			playSound = false,
+			itemSkin = weapon:GetAttribute('ItemSkin')
+		})
 	end
 
 local forcedLimit = false
@@ -3327,7 +3350,11 @@ local heldSword = store.hand and store.hand.toolType == 'sword' and store.hand.t
 								local interval = 1 / (HitReg.Value or 35)
 								if acc >= interval then
 									acc = acc - interval
-									fireAttack(target, resolveWeapon(weapon))
+									local resolvedWeapon = resolveWeapon(weapon)
+									fireAttack(target, resolvedWeapon)
+									if resolvedWeapon then
+										pcall(swingAnim, resolvedWeapon)
+									end
 								end
 							else
 								lastTick = tick()

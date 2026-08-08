@@ -3208,6 +3208,8 @@ run(function()
 	local Lunge
 	local Face
 	local GuiCheck
+	local LimitItems
+	local SwingOnly
 	local AttackDelay = 0
 
 	local function isCasting()
@@ -3236,8 +3238,16 @@ run(function()
 				end)
 				repeat
 					local attacked = {}
-					if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) then
-						if store.hand and store.hand.toolType == 'sword' and canSwing() and (not Mouse.Enabled or inputService:IsMouseButtonPressed(0)) then
+				if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) then
+					local hasSword = store.hand and store.hand.toolType == 'sword'
+					if not hasSword and not LimitItems.Enabled then
+						local sword = getSword()
+						if sword then
+							switchItem(sword.tool, 0)
+							hasSword = true
+						end
+					end
+					if hasSword and canSwing() and (not SwingOnly.Enabled or inputService:IsMouseButtonPressed(0)) and (not Mouse.Enabled or inputService:IsMouseButtonPressed(0)) then
 							local selfpos = entitylib.character.RootPart.Position
 							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
 							local plrs = entitylib.AllPosition({
@@ -3261,6 +3271,7 @@ run(function()
 
 								if AttackDelay < tick() and delta.Magnitude <= AttackRange.Value then
 									AttackDelay = tick() + (1 / CPS.GetRandomValue())
+									bedwars.SwordController.lastSwing = 0
 									pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController)
 								end
 
@@ -3293,7 +3304,7 @@ run(function()
 	CPS = Killaura:CreateTwoSlider({
 		Name = 'Attacks per second',
 		Min = 1,
-		Max = 20,
+		Max = 35,
 		DefaultMin = 12,
 		DefaultMax = 12
 	})
@@ -3330,6 +3341,15 @@ run(function()
 	Mouse = Killaura:CreateToggle({Name = 'Require mouse down'})
 	Lunge = Killaura:CreateToggle({Name = 'Sword lunge only'})
 	Face = Killaura:CreateToggle({Name = 'Face target'})
+	LimitItems = Killaura:CreateToggle({
+		Name = 'Limit to items',
+		Default = true,
+		Tooltip = 'Only attack while a sword is actually in hand.'
+	})
+	SwingOnly = Killaura:CreateToggle({
+		Name = 'Swing only',
+		Tooltip = 'Only attack while your mouse is held down.'
+	})
 	GuiCheck = Killaura:CreateToggle({
 		Name = 'GUI check',
 		Tooltip = 'Pause while a game menu is open.'

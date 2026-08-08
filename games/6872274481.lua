@@ -3225,9 +3225,29 @@ run(function()
 		return itemMeta and itemMeta.sword ~= nil and itemMeta.sword.chargedAttack == nil
 	end
 
+	local function attackTarget(ent)
+		local sc = bedwars.SwordController
+		if not sc then return end
+		local handItem = sc.getHandItem and sc:getHandItem()
+		if not handItem then return end
+		local tool = handItem.tool or handItem
+		if not tool then return end
+		local cam = workspace.CurrentCamera
+		local rayDir = Vector3.new(0, -1, 0)
+		if cam then
+			rayDir = (ent.RootPart.Position - cam.CFrame.Position)
+			if rayDir.Magnitude > 0 then rayDir = rayDir.Unit end
+		end
+		pcall(sc.sendServerRequest, sc, ent, 0, {rayDirection = rayDir})
+		pcall(sc.playSwordEffect, sc, bedwars.ItemMeta[tool.Name], false, {playAnimation = true, playSound = true, itemSkin = tool:GetAttribute('ItemSkin')})
+		targetinfo.Targets[ent] = tick() + 1
+		bedwars.SwordController.lastSwing = tick()
+		bedwars.SwordController.lastAttack = workspace:GetServerTimeNow()
+	end
+
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
-		Function = function(callback)
+	Function = function(callback)
 			if callback then
 				local swordHit
 				pcall(function()
@@ -3236,15 +3256,13 @@ run(function()
 						swordHit.MaxRequestsPerMinute = math.huge
 					end
 				end)
-				local oldPlaySwordEffect = bedwars.SwordController.playSwordEffect
-				bedwars.SwordController.playSwordEffect = function(self, itemMeta, isCharged, opts)
-					opts = opts or {}
-					opts.playSound = false
-					return oldPlaySwordEffect(self, itemMeta, isCharged, opts)
-				end
 				repeat
 					local attacked = {}
-				if entitylib.isAlive and (not GuiCheck.Enabled or not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)) then
+					local guiOpen = false
+					pcall(function()
+						guiOpen = bedwars.AppController and bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN)
+					end)
+					if entitylib.isAlive and (not GuiCheck.Enabled or not guiOpen) then
 					local hasSword = store.hand and store.hand.toolType == 'sword'
 					if not hasSword and not LimitItems.Enabled then
 						local sword = getSword()
@@ -3277,8 +3295,7 @@ run(function()
 
 								if AttackDelay < tick() and delta.Magnitude <= AttackRange.Value then
 									AttackDelay = tick() + (1 / CPS.GetRandomValue())
-									bedwars.SwordController.lastSwing = 0
-									pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController)
+									attackTarget(v)
 								end
 
 								if Lunge.Enabled then
@@ -3299,9 +3316,6 @@ run(function()
 				until not Killaura.Enabled
 			else
 				store.KillauraTarget = nil
-				if bedwars.SwordController and oldPlaySwordEffect then
-					bedwars.SwordController.playSwordEffect = oldPlaySwordEffect
-				end
 			end
 		end,
 		Tooltip = 'Attack nearby players and NPCs without\naiming at them properly.'

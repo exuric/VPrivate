@@ -3325,16 +3325,13 @@ local heldSword = store.hand and store.hand.toolType == 'sword' and store.hand.t
 								acc = acc + (now - lastTick)
 								lastTick = now
 								local interval = 1 / (HitReg.Value or 35)
-								local fires = math.floor(acc / interval)
-								if fires > 0 then
-									acc = acc - fires * interval
-									for _ = 1, math.min(fires, 3) do
-										fireAttack(target, resolveWeapon(weapon))
-										if bedwars.SwordController then
-											local ok = pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController, SwingTime.Value)
-											if ok then
-												lastSwing = now
-											end
+								if acc >= interval then
+									acc = acc - interval
+									fireAttack(target, resolveWeapon(weapon))
+									if bedwars.SwordController then
+										local ok = pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController, SwingTime.Value)
+										if ok then
+											lastSwing = now
 										end
 									end
 								end

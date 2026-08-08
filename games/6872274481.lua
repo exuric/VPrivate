@@ -3328,12 +3328,6 @@ local heldSword = store.hand and store.hand.toolType == 'sword' and store.hand.t
 								if acc >= interval then
 									acc = acc - interval
 									fireAttack(target, resolveWeapon(weapon))
-									if bedwars.SwordController then
-										local ok = pcall(bedwars.SwordController.swingSwordAtMouse, bedwars.SwordController, SwingTime.Value)
-										if ok then
-											lastSwing = now
-										end
-									end
 								end
 							else
 								lastTick = tick()

@@ -65,42 +65,25 @@ for _, folder in {'VapePrivate', 'VapePrivate/games', 'VapePrivate/profiles', 'V
 	end
 end
 
-for _, old in {'catsix', 'catrewrite'} do
-	if isfolder(old) and isfolder(old..'/profiles') then
-		for _, file in listfiles(old..'/profiles') do
-			if not file:find('commit.txt') then
-				writefile(file:gsub(old, 'VapePrivate'), readfile(file))
-			end
-		end
-	end
-	if isfolder(old) then
-		wipeFolder(old)
-		pcall(delfolder, old)
-	end
-end
-
 if not shared.VapeDeveloper then
-	local commit = license.Commit or nil
-	if not commit then
-		local _, subbed = pcall(function()
-			return game:HttpGet('https://github.com/exuric/VPrivate')
-		end)
-		commit = subbed:find('currentOid')
-		commit = commit and subbed:sub(commit + 13, commit + 52) or nil
-		commit = commit and #commit == 40 and commit or 'main'
-	end
-	if commit == 'main' or (isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or '') ~= commit then
-		if commit ~= 'main' and isfile('VapePrivate/profiles/commit.txt') then
-			shared.updated = readfile('VapePrivate/profiles/commit.txt')
+	local commit = 'main'
+	local stored = isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or ''
+	local version = isfile('VapePrivate/.version') and readfile('VapePrivate/.version') or ''
+	if commit ~= stored or version ~= '2' then
+		if stored ~= '' and stored ~= commit then
+			shared.updated = stored
 		end
 		wipeFolder('VapePrivate')
 		wipeFolder('VapePrivate/games')
 		wipeFolder('VapePrivate/guis')
 		wipeFolder('VapePrivate/libraries')
-		delfile('VapePrivate/assets/new/VapePriv.png')
-		delfile('VapePrivate/assets/new/Textv4.png')
-		delfile('VapePrivate/profiles/default6872274481.txt')
+		for _, file in {'VapePrivate/assets/new/VapePriv.png', 'VapePrivate/assets/new/Textv4.png', 'VapePrivate/profiles/default6872274481.txt'} do
+			if isfile(file) then
+				pcall(delfile, file)
+			end
+		end
 	end
+	writefile('VapePrivate/.version', '2')
 	writefile('VapePrivate/profiles/commit.txt', commit)
 	if #listfiles('VapePrivate/profiles') < 4 then
 		shared.VapePresetInstall = function()

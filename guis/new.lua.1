@@ -3681,8 +3681,9 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			for _, button in v.Buttons do
 				if button.Enabled then
 					button.Object.TextColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
-					if button.Object.Active then
-						button.Object.Active.BackgroundColor3 = button.Object.TextColor3
+					local active = button.Object:FindFirstChild('Active')
+					if active then
+						active.BackgroundColor3 = button.Object.TextColor3
 					end
 					if button.Icon then
 						button.Icon.ImageColor3 = button.Object.TextColor3

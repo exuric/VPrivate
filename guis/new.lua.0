@@ -3726,3 +3726,28 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
 		modulebutton.Text = '            '..modulesettings.Name
+		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
+		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		modulebutton.TextSize = 14
+		modulebutton.FontFace = uipallet.Font
+		modulebutton.Parent = children
+		addCorner(modulebutton, UDim.new(0, 6))
+		local indicatorholder = Instance.new('Frame')
+		indicatorholder.Parent = modulebutton
+		indicatorholder.Size = UDim2.fromOffset(0, 21)
+		indicatorholder.AnchorPoint = Vector2.new(0, 0.5)
+		indicatorholder.Name = 'Indicators'
+		indicatorholder.BackgroundTransparency = 1
+		indicatorholder.Position = UDim2.fromScale(0.85, 0.5)
+		local layout = Instance.new('UIListLayout')
+		layout.Parent = indicatorholder
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+		layout.VerticalAlignment = Enum.VerticalAlignment.Center
+		layout.FillDirection = Enum.FillDirection.Horizontal
+		layout.Padding = UDim.new(0, 5)
+		modulesettings.Tags = modulesettings.Tags or {}
+		task.spawn(function()
+			for i, tag in modulesettings.Tags do
+				tag = tag:upper()
+				modulesettings.Tags[i] = tag:lower()
+				local size = getfontsize(removeTags(tag), 12, uipallet.Font, Vector2.new(100000, 100000))

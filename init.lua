@@ -69,7 +69,7 @@ if not shared.VapeDeveloper then
 	local commit = 'main'
 	local stored = isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or ''
 	local version = isfile('VapePrivate/.version') and readfile('VapePrivate/.version') or ''
-	if commit ~= stored or version ~= '7' then
+	if commit ~= stored or version ~= '8' then
 		if stored ~= '' and stored ~= commit then
 			shared.updated = stored
 		end
@@ -83,7 +83,7 @@ if not shared.VapeDeveloper then
 			end
 		end
 	end
-	writefile('VapePrivate/.version', '7')
+	writefile('VapePrivate/.version', '8')
 	writefile('VapePrivate/profiles/commit.txt', commit)
 	if #listfiles('VapePrivate/profiles') < 4 then
 		shared.VapePresetInstall = function()

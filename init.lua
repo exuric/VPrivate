@@ -108,4 +108,12 @@ if not shared.VapeDeveloper then
 end
 
 downloader.Text = ''
-return loadstring(downloadFile('VapePrivate/main.lua'), 'main')(license)
+local _vapechunk, _vapeerr = loadstring(downloadFile('VapePrivate/main.lua'), 'main')
+if not _vapechunk then
+	error('VapePrivate/main.lua failed to compile: '..tostring(_vapeerr))
+end
+local _vapeok, _vaperes = pcall(_vapechunk, license)
+if not _vapeok then
+	error('VapePrivate/main.lua: '..tostring(_vaperes))
+end
+return _vaperes

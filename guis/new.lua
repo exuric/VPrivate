@@ -529,6 +529,17 @@ components = {
 		label.FontFace = uipallet.Font
 		label.Parent = bkg
 		addCorner(label, UDim.new(0, 4))
+		local icon
+		if optionsettings.Icon then
+			icon = Instance.new('ImageLabel')
+			icon.Name = 'Icon'
+			icon.Size = UDim2.fromOffset(13, 13)
+			icon.Position = UDim2.fromOffset(10, 7)
+			icon.BackgroundTransparency = 1
+			icon.Image = optionsettings.Icon
+			icon.ImageColor3 = optionsettings.IconColor or color.Dark(uipallet.Text, 0.16)
+			icon.Parent = bkg
+		end
 		optionsettings.Function = optionsettings.Function or function() end
 		
 		button.MouseEnter:Connect(function()
@@ -6377,24 +6388,10 @@ local Profiles = mainapi:CreateCategoryList({
 	Profiles = true
 })
 Profiles:CreateButton({
-	Name = 'Sync to "default" profile',
-	LayoutOrder = 6,
-	Function = function()
-		mainapi:Save('default')
-		local newval = nil
-		for i, v in mainapi.Profiles do
-			if v.Name == mainapi.Profile then
-				newval = v
-				break
-			end
-		end
-		newval.Name = 'default'
-		mainapi:Load(true, 'default', newval)
-	end
-})
-Profiles:CreateButton({
-	Name = 'Reset current profile',
+	Name = 'Reset Profile',
 	LayoutOrder = 7,
+	Icon = getcustomasset('VapePrivate/assets/new/warning.png'),
+	IconColor = color.Light(uipallet.Text, 0.25),
 	Function = function()
 		mainapi.Save = function() end
 		if isfile('VapePrivate/profiles/'..mainapi.Profile..mainapi.Place..'.txt') and delfile then
@@ -6407,7 +6404,7 @@ Profiles:CreateButton({
 			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/init.lua', true))(license)
 		end
 	end,
-	Tooltip = 'This will set your profile to the default settings of Cat Vape'
+	Tooltip = 'Resets the current profile back to default settings'
 })	
 
 --[[

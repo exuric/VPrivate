@@ -533,15 +533,12 @@ components = {
 		if optionsettings.Icon then
 			icon = Instance.new('ImageLabel')
 			icon.Name = 'Icon'
-			icon.Size = UDim2.fromOffset(16, 16)
-			icon.Position = UDim2.fromOffset(9, 6)
+			icon.Size = UDim2.fromOffset(20, 20)
+			icon.Position = UDim2.fromOffset(4, 3)
 			icon.BackgroundTransparency = 1
 			icon.Image = optionsettings.Icon
 			icon.ImageColor3 = optionsettings.IconColor or Color3.new(1, 1, 1)
 			icon.Parent = bkg
-			label.TextXAlignment = Enum.TextXAlignment.Left
-			label.Position = UDim2.fromOffset(33, 2)
-			label.Size = UDim2.new(1, -39, 1, -4)
 		end
 		optionsettings.Function = optionsettings.Function or function() end
 		

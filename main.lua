@@ -5,17 +5,6 @@ repeat task.wait() until game:IsLoaded()
 if shared.vape then shared.vape:Uninject() end
 license.Key = license.Key or '_key'
 
-if isfolder('catrewrite') and isfolder('catrewrite/profiles') then
-	for _, v in listfiles('catrewrite/profiles') do
-		if not v:find('commit.txt') then
-			local old = v
-			v = v:gsub('catrewrite', 'VapePrivate')
-			writefile(v, readfile(old))
-		end
-	end
-	delfolder('catrewrite/profiles')
-end
-
 local vape
 local loadstring = function(...)
 	local res, err = loadstring(...)

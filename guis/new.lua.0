@@ -993,7 +993,7 @@ components = {
 		title.Name = 'Title'
 		title.Size = UDim2.new(1, 0, 0, 29)
 		title.BackgroundTransparency = 1
-		title.Text = '         '..optionsettings.Name..' - '..optionapi.Value
+		title.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name..' - '..optionapi.Value
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		title.TextSize = 13
@@ -1032,7 +1032,7 @@ components = {
 		
 		function optionapi:SetValue(val, mouse)
 			self.Value = table.find(optionsettings.List, val) and val or optionsettings.List[1] or 'None'
-			title.Text = '         '..optionsettings.Name..' - '..self.Value
+			title.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name..' - '..self.Value
 			if dropdownchildren then
 				arrow.Rotation = 90
 				dropdownchildren:Destroy()
@@ -1062,7 +1062,7 @@ components = {
 					dropdownoption.BackgroundColor3 = uipallet.Main
 					dropdownoption.BorderSizePixel = 0
 					dropdownoption.AutoButtonColor = false
-					dropdownoption.Text = '         '..v
+					dropdownoption.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..v
 					dropdownoption.TextXAlignment = Enum.TextXAlignment.Left
 					dropdownoption.TextColor3 = color.Dark(uipallet.Text, 0.16)
 					dropdownoption.TextSize = 13
@@ -2106,7 +2106,7 @@ components = {
 		toggle.BorderSizePixel = 0
 		toggle.AutoButtonColor = false
 		toggle.Visible = optionsettings.Visible == nil or optionsettings.Visible
-		toggle.Text = '          '..optionsettings.Name
+		toggle.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name
 		toggle.TextXAlignment = Enum.TextXAlignment.Left
 		toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		toggle.TextSize = 14
@@ -2420,7 +2420,7 @@ components = {
 			label.Name = 'DividerLabel'
 			label.Size = UDim2.fromOffset(218, 27)
 			label.BackgroundTransparency = 1
-			label.Text = '          '..text:upper()
+			label.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..text:upper()
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.TextColor3 = color.Dark(uipallet.Text, 0.43)
 			label.TextSize = 9
@@ -2601,7 +2601,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = '          Rebind GUI'
+		button.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€ŠRebind GUI'
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2689,7 +2689,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = (categorysettings.Icon and '                                 ' or '             ')..categorysettings.Name
+		button.Text = (categorysettings.Icon and 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š' or 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š')..categorysettings.Name
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2870,7 +2870,7 @@ function mainapi:CreateGUI()
 			toggle.Size = UDim2.new(1, 0, 0, 40)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
-			toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
+			toggle.Text = string.rep('â€Š', 33 * scale.Scale)..togglesettings.Name
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
 			toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			toggle.TextSize = 14
@@ -2914,7 +2914,7 @@ function mainapi:CreateGUI()
 			end
 
 			scale:GetPropertyChangedSignal('Scale'):Connect(function()
-				toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
+				toggle.Text = string.rep('â€Š', 33 * scale.Scale)..togglesettings.Name
 			end)
 			toggle.MouseEnter:Connect(function()
 				hovered = true
@@ -3008,7 +3008,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = '          '..categorysettings.Name
+		button.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..categorysettings.Name
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -3105,7 +3105,7 @@ function mainapi:CreateGUI()
 			window.Size = UDim2.fromOffset(220, 45 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 			for _, v in categoryapi.Buttons do
 				if v.Icon then
-					v.Object.Text = string.rep(' ', 33 * scale.Scale)..v.Name
+					v.Object.Text = string.rep('â€Š', 33 * scale.Scale)..v.Name
 				end
 			end
 		end)
@@ -3610,7 +3610,7 @@ function mainapi:CreateGUI()
 		window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 		for _, v in categoryapi.Buttons do
 			if v.Icon then
-				v.Object.Text = string.rep(' ', 36 * scale.Scale)..v.Name
+				v.Object.Text = string.rep('â€Š', 36 * scale.Scale)..v.Name
 			end
 		end
 	end)
@@ -3725,7 +3725,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = '            '..modulesettings.Name
+		modulebutton.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..modulesettings.Name
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
@@ -3739,3 +3739,99 @@ function mainapi:CreateCategory(categorysettings)
 		indicatorholder.Name = 'Indicators'
 		indicatorholder.BackgroundTransparency = 1
 		indicatorholder.Position = UDim2.fromScale(0.85, 0.5)
+		local layout = Instance.new('UIListLayout')
+		layout.Parent = indicatorholder
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+		layout.VerticalAlignment = Enum.VerticalAlignment.Center
+		layout.FillDirection = Enum.FillDirection.Horizontal
+		layout.Padding = UDim.new(0, 5)
+		modulesettings.Tags = modulesettings.Tags or {}
+		task.spawn(function()
+			for i, tag in modulesettings.Tags do
+				tag = tag:upper()
+				modulesettings.Tags[i] = tag:lower()
+				local size = getfontsize(removeTags(tag), 12, uipallet.Font, Vector2.new(100000, 100000))
+				local indicator = Instance.new('TextLabel')
+				indicator.LayoutOrder = i - 1
+				indicator.Size = UDim2.new(0, size.X + 4, 0, 21)
+				indicator.BackgroundColor3 = Color3.new(1, 1, 1)
+				indicator.TextSize = 14
+				indicator.TextTransparency = 1
+				indicator.Text = tag
+				indicator.Name = tag
+				indicator.Position = UDim2.new()
+				indicator.TextColor3 = Color3.new(0, 0, 0)
+				indicator.FontFace = uipallet.Font
+				indicator.Parent = indicatorholder
+				addCorner(indicator, UDim.new(0, 5))
+				local text = indicator:Clone()
+				text.Position = UDim2.new()
+				text.Size = UDim2.fromScale(1, 1)
+				text.BackgroundTransparency = 1
+				text.Name = 'Text'
+				text.AnchorPoint = Vector2.new()
+				text.TextSize = 12
+				text.TextTransparency = 0
+				text.Parent = indicator
+				table.insert(moduleapi.Tags, indicator)
+				indicator.Visible = tag ~= 'MATCHED'
+			end
+		end)
+		local gradient = Instance.new('UIGradient')
+		gradient.Rotation = 90
+		gradient.Enabled = false
+		gradient.Parent = modulebutton
+		local modulechildren = Instance.new('Frame')
+		local bind = Instance.new('TextButton')
+		addTooltip(modulebutton, modulesettings.Tooltip)
+		addTooltip(bind, 'Click to bind')
+		bind.Name = 'Bind'
+		bind.Size = UDim2.fromOffset(20, 21)
+		bind.Position = UDim2.new(1, -36, 0, 9)
+		bind.AnchorPoint = Vector2.new(1, 0)
+		bind.BackgroundColor3 = Color3.new(1, 1, 1)
+		bind.BackgroundTransparency = 0.92
+		bind.BorderSizePixel = 0
+		bind.AutoButtonColor = false
+		bind.Visible = false
+		bind.Text = ''
+		addCorner(bind, UDim.new(0, 4))
+		local bindicon = Instance.new('ImageLabel')
+		bindicon.Name = 'Icon'
+		bindicon.Size = UDim2.fromOffset(12, 12)
+		bindicon.Position = UDim2.new(0.5, -6, 0, 5)
+		bindicon.BackgroundTransparency = 1
+		bindicon.Image = getcustomasset('VapePrivate/assets/new/bind.png')
+		bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+		bindicon.Parent = bind
+		local bindtext = Instance.new('TextLabel')
+		bindtext.Size = UDim2.fromScale(1, 1)
+		bindtext.Position = UDim2.fromOffset(0, 1)
+		bindtext.BackgroundTransparency = 1
+		bindtext.Visible = false
+		bindtext.Text = ''
+		bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
+		bindtext.TextSize = 12
+		bindtext.FontFace = uipallet.Font
+		bindtext.Parent = bind
+		local bindcover = Instance.new('ImageLabel')
+		bindcover.Name = 'Cover'
+		bindcover.Size = UDim2.fromOffset(154, 40)
+		bindcover.BackgroundTransparency = 1
+		bindcover.Visible = false
+		bindcover.Image = getcustomasset('VapePrivate/assets/new/bindbkg.png')
+		bindcover.ScaleType = Enum.ScaleType.Slice
+		bindcover.SliceCenter = Rect.new(0, 0, 141, 40)
+		bindcover.Parent = modulebutton
+		local bindcovertext = Instance.new('TextLabel')
+		bindcovertext.Name = 'Text'
+		bindcovertext.Size = UDim2.new(1, -10, 1, -3)
+		bindcovertext.BackgroundTransparency = 1
+		bindcovertext.Text = 'PRESS A KEY TO BIND'
+		bindcovertext.TextColor3 = uipallet.Text
+		bindcovertext.TextSize = 11
+		bindcovertext.FontFace = uipallet.Font
+		bindcovertext.Parent = bindcover
+		bind.Parent = modulebutton
+		local dotsbutton = Instance.new('TextButton')
+		dotsbutton.Name = 'Dots'

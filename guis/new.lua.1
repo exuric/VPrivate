@@ -1,99 +1,3 @@
-		local layout = Instance.new('UIListLayout')
-		layout.Parent = indicatorholder
-		layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-		layout.VerticalAlignment = Enum.VerticalAlignment.Center
-		layout.FillDirection = Enum.FillDirection.Horizontal
-		layout.Padding = UDim.new(0, 5)
-		modulesettings.Tags = modulesettings.Tags or {}
-		task.spawn(function()
-			for i, tag in modulesettings.Tags do
-				tag = tag:upper()
-				modulesettings.Tags[i] = tag:lower()
-				local size = getfontsize(removeTags(tag), 12, uipallet.Font, Vector2.new(100000, 100000))
-				local indicator = Instance.new('TextLabel')
-				indicator.LayoutOrder = i - 1
-				indicator.Size = UDim2.new(0, size.X + 4, 0, 21)
-				indicator.BackgroundColor3 = Color3.new(1, 1, 1)
-				indicator.TextSize = 14
-				indicator.TextTransparency = 1
-				indicator.Text = tag
-				indicator.Name = tag
-				indicator.Position = UDim2.new()
-				indicator.TextColor3 = Color3.new(0, 0, 0)
-				indicator.FontFace = uipallet.Font
-				indicator.Parent = indicatorholder
-				addCorner(indicator, UDim.new(0, 5))
-				local text = indicator:Clone()
-				text.Position = UDim2.new()
-				text.Size = UDim2.fromScale(1, 1)
-				text.BackgroundTransparency = 1
-				text.Name = 'Text'
-				text.AnchorPoint = Vector2.new()
-				text.TextSize = 12
-				text.TextTransparency = 0
-				text.Parent = indicator
-				table.insert(moduleapi.Tags, indicator)
-				indicator.Visible = tag ~= 'MATCHED'
-			end
-		end)
-		local gradient = Instance.new('UIGradient')
-		gradient.Rotation = 90
-		gradient.Enabled = false
-		gradient.Parent = modulebutton
-		local modulechildren = Instance.new('Frame')
-		local bind = Instance.new('TextButton')
-		addTooltip(modulebutton, modulesettings.Tooltip)
-		addTooltip(bind, 'Click to bind')
-		bind.Name = 'Bind'
-		bind.Size = UDim2.fromOffset(20, 21)
-		bind.Position = UDim2.new(1, -36, 0, 9)
-		bind.AnchorPoint = Vector2.new(1, 0)
-		bind.BackgroundColor3 = Color3.new(1, 1, 1)
-		bind.BackgroundTransparency = 0.92
-		bind.BorderSizePixel = 0
-		bind.AutoButtonColor = false
-		bind.Visible = false
-		bind.Text = ''
-		addCorner(bind, UDim.new(0, 4))
-		local bindicon = Instance.new('ImageLabel')
-		bindicon.Name = 'Icon'
-		bindicon.Size = UDim2.fromOffset(12, 12)
-		bindicon.Position = UDim2.new(0.5, -6, 0, 5)
-		bindicon.BackgroundTransparency = 1
-		bindicon.Image = getcustomasset('VapePrivate/assets/new/bind.png')
-		bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
-		bindicon.Parent = bind
-		local bindtext = Instance.new('TextLabel')
-		bindtext.Size = UDim2.fromScale(1, 1)
-		bindtext.Position = UDim2.fromOffset(0, 1)
-		bindtext.BackgroundTransparency = 1
-		bindtext.Visible = false
-		bindtext.Text = ''
-		bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
-		bindtext.TextSize = 12
-		bindtext.FontFace = uipallet.Font
-		bindtext.Parent = bind
-		local bindcover = Instance.new('ImageLabel')
-		bindcover.Name = 'Cover'
-		bindcover.Size = UDim2.fromOffset(154, 40)
-		bindcover.BackgroundTransparency = 1
-		bindcover.Visible = false
-		bindcover.Image = getcustomasset('VapePrivate/assets/new/bindbkg.png')
-		bindcover.ScaleType = Enum.ScaleType.Slice
-		bindcover.SliceCenter = Rect.new(0, 0, 141, 40)
-		bindcover.Parent = modulebutton
-		local bindcovertext = Instance.new('TextLabel')
-		bindcovertext.Name = 'Text'
-		bindcovertext.Size = UDim2.new(1, -10, 1, -3)
-		bindcovertext.BackgroundTransparency = 1
-		bindcovertext.Text = 'PRESS A KEY TO BIND'
-		bindcovertext.TextColor3 = uipallet.Text
-		bindcovertext.TextSize = 11
-		bindcovertext.FontFace = uipallet.Font
-		bindcovertext.Parent = bindcover
-		bind.Parent = modulebutton
-		local dotsbutton = Instance.new('TextButton')
-		dotsbutton.Name = 'Dots'
 		dotsbutton.Size = UDim2.fromOffset(25, 40)
 		dotsbutton.Position = UDim2.new(1, -25, 0, 0)
 		dotsbutton.BackgroundTransparency = 1
@@ -187,8 +91,8 @@
 			self.Enabled = not self.Enabled
 			divider.Visible = self.Enabled
 			gradient.Enabled = self.Enabled
-			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
-			modulebutton.BackgroundColor3 = self.Enabled and ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.07) or color.Light(uipallet.Main, 0.05)) or ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.045) or color.Light(uipallet.Main, 0.02))
+			modulebutton.TextColor3 = (hovered or moduleapi.Children.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
+			modulebutton.BackgroundColor3 = self.Enabled and ((hovered or moduleapi.Children.Visible) and color.Light(uipallet.Main, 0.07) or color.Light(uipallet.Main, 0.05)) or ((hovered or moduleapi.Children.Visible) and color.Light(uipallet.Main, 0.045) or color.Light(uipallet.Main, 0.02))
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			pinicon.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
@@ -269,34 +173,34 @@
 			end
 		end)
 		dotsbutton.MouseButton1Click:Connect(function()
-			modulechildren.Visible = not modulechildren.Visible
+			moduleapi.Children.Visible = not moduleapi.Children.Visible
 		end)
 		dotsbutton.MouseButton2Click:Connect(function()
-			modulechildren.Visible = not modulechildren.Visible
+			moduleapi.Children.Visible = not moduleapi.Children.Visible
 		end)
 		modulebutton.MouseEnter:Connect(function()
 			hovered = true
-			if not moduleapi.Enabled and not modulechildren.Visible then
+			if not moduleapi.Enabled and not moduleapi.Children.Visible then
 				modulebutton.TextColor3 = uipallet.Text
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
 			end
-			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			bind.Visible = #moduleapi.Bind > 0 or hovered or moduleapi.Children.Visible
 			updatePin()
 		end)
 		modulebutton.MouseLeave:Connect(function()
 			hovered = false
-			if not moduleapi.Enabled and not modulechildren.Visible then
+			if not moduleapi.Enabled and not moduleapi.Children.Visible then
 				modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			end
-			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			bind.Visible = #moduleapi.Bind > 0 or hovered or moduleapi.Children.Visible
 			updatePin()
 		end)
 		modulebutton.MouseButton1Click:Connect(function()
 			moduleapi:Toggle()
 		end)
 		modulebutton.MouseButton2Click:Connect(function()
-			modulechildren.Visible = not modulechildren.Visible
+			moduleapi.Children.Visible = not moduleapi.Children.Visible
 		end)
 		if inputService.TouchEnabled then
 			local heldbutton = false
@@ -2360,19 +2264,167 @@ function mainapi:UpdatePinned()
 		local enabled = pinopt and pinopt.Enabled
 		if enabled then
 			count = count + 1
-			local object = moduleapi.Object
-			if object and object.Parent ~= pinnedchildren then
-				moduleapi.PinnedHome = moduleapi.PinnedHome or object.Parent
-				object.LayoutOrder = moduleapi.Index
-				object.Parent = pinnedchildren
+			if not moduleapi.PinnedClone then
+				local object = moduleapi.Object
+				if object then
+					local clone = object:Clone()
+					clone.LayoutOrder = moduleapi.Index
+					clone.Parent = pinnedchildren
+					local bind = clone:FindFirstChild('Bind')
+					local dots = clone:FindFirstChild('Dots')
+					local pinicon = clone:FindFirstChild('Pin')
+					local divider = clone:FindFirstChild('Divider')
+					local gradient = clone:FindFirstChildOfClass('UIGradient')
+					local cover = clone:FindFirstChild('Cover')
+					local hovered = false
+					local function updatePinVisible()
+						local bindvisible = bind and (bind.Visible or hovered or moduleapi.Children.Visible)
+						if pinicon then
+							pinicon.Visible = enabled and not bindvisible
+						end
+					end
+					clone.MouseButton1Click:Connect(function()
+						moduleapi:Toggle()
+					end)
+					clone.MouseButton2Click:Connect(function()
+						moduleapi.Children.Visible = not moduleapi.Children.Visible
+					end)
+					if dots then
+						dots.MouseButton1Click:Connect(function()
+							moduleapi.Children.Visible = not moduleapi.Children.Visible
+						end)
+						dots.MouseButton2Click:Connect(function()
+							moduleapi.Children.Visible = not moduleapi.Children.Visible
+						end)
+						dots.MouseEnter:Connect(function()
+							if not moduleapi.Enabled then
+								dots.Dots.ImageColor3 = uipallet.Text
+							end
+						end)
+						dots.MouseLeave:Connect(function()
+							if not moduleapi.Enabled then
+								dots.Dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
+							end
+						end)
+					end
+					if bind then
+						local bindicon = bind:FindFirstChild('Icon')
+						local bindtext = bind:FindFirstChild('TextLabel')
+						bind.MouseEnter:Connect(function()
+							if bindtext then bindtext.Visible = false end
+							if bindicon then
+								bindicon.Visible = true
+								bindicon.Image = getcustomasset('VapePrivate/assets/new/edit.png')
+								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16) end
+							end
+						end)
+						bind.MouseLeave:Connect(function()
+							if bindtext then bindtext.Visible = #moduleapi.Bind > 0 end
+							if bindicon then
+								bindicon.Visible = not (bindtext and bindtext.Visible)
+								bindicon.Image = getcustomasset('VapePrivate/assets/new/bind.png')
+								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43) end
+							end
+						end)
+						bind.MouseButton1Click:Connect(function()
+							if cover then cover.Visible = true end
+							mainapi.Binding = moduleapi
+						end)
+					end
+					clone.MouseEnter:Connect(function()
+						hovered = true
+						if not moduleapi.Enabled and not moduleapi.Children.Visible then
+							clone.TextColor3 = uipallet.Text
+							clone.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
+						end
+						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or moduleapi.Children.Visible end
+						updatePinVisible()
+					end)
+					clone.MouseLeave:Connect(function()
+						hovered = false
+						if not moduleapi.Enabled and not moduleapi.Children.Visible then
+							clone.TextColor3 = color.Dark(uipallet.Text, 0.16)
+							clone.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+						end
+						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or moduleapi.Children.Visible end
+						updatePinVisible()
+					end)
+					local origsetbind = moduleapi.SetBind
+					moduleapi.SetBind = function(self, tab, mouse)
+						origsetbind(self, tab, mouse)
+						local pinnedclone = self.PinnedClone
+						if pinnedclone and pinnedclone.Parent then
+							local clonebind = pinnedclone:FindFirstChild('Bind')
+							if clonebind then
+								local clonebindtext = clonebind:FindFirstChild('TextLabel')
+								local clonebindicon = clonebind:FindFirstChild('Icon')
+								if #tab <= 0 then
+									if clonebindtext then clonebindtext.Visible = false end
+									if clonebindicon then clonebindicon.Visible = true end
+								else
+									clonebind.Visible = true
+									if clonebindtext then
+										clonebindtext.Visible = true
+										clonebindtext.Text = table.concat(tab, ' + '):upper()
+									end
+									if clonebindicon then clonebindicon.Visible = false end
+								end
+							end
+							local clonecover = pinnedclone:FindFirstChild('Cover')
+							if clonecover then clonecover.Visible = false end
+						end
+					end
+					moduleapi.PinnedClone = clone
+				end
 			end
-		elseif moduleapi.PinnedHome then
-			local object = moduleapi.Object
-			local home = moduleapi.PinnedHome
-			moduleapi.PinnedHome = nil
-			if object and typeof(home) == 'Instance' and home.Parent and object.Parent ~= home then
-				object.Parent = home
+			local clone = moduleapi.PinnedClone
+			if clone and clone.Parent then
+				local hue, sat, val = self.GUIColor.Hue, self.GUIColor.Sat, self.GUIColor.Value
+				local rainbow = self.GUIColor.Rainbow and self.RainbowMode.Value ~= 'Retro'
+				if moduleapi.Enabled then
+					clone.BackgroundColor3 = rainbow and Color3.fromHSV(self:Color((hue - (moduleapi.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+					clone.TextColor3 = self.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or self:TextColor(hue, sat, val)
+					if gradient then
+						gradient.Enabled = rainbow and self.RainbowMode.Value == 'Gradient'
+						if gradient.Enabled then
+							clone.BackgroundColor3 = Color3.new(1, 1, 1)
+							gradient.Color = ColorSequence.new({
+								ColorSequenceKeypoint.new(0, Color3.fromHSV(self:Color((hue - (moduleapi.Index * 0.025)) % 1))),
+								ColorSequenceKeypoint.new(1, Color3.fromHSV(self:Color((hue - ((moduleapi.Index + 1) * 0.025)) % 1)))
+							})
+						end
+					end
+					if divider then divider.Visible = true end
+					local clonebind = clone:FindFirstChild('Bind')
+					if clonebind then
+						local clonebindicon = clonebind:FindFirstChild('Icon')
+						if clonebindicon then clonebindicon.ImageColor3 = clone.TextColor3 end
+						local clonebindtext = clonebind:FindFirstChild('TextLabel')
+						if clonebindtext then clonebindtext.TextColor3 = clone.TextColor3 end
+					end
+					local clonedots = clone:FindFirstChild('Dots')
+					if clonedots then clonedots.Dots.ImageColor3 = clone.TextColor3 end
+					if pinicon then pinicon.ImageColor3 = clone.TextColor3 end
+				else
+					clone.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+					clone.TextColor3 = color.Dark(uipallet.Text, 0.16)
+					if gradient then gradient.Enabled = false end
+					if divider then divider.Visible = false end
+					local clonedots = clone:FindFirstChild('Dots')
+					if clonedots then clonedots.Dots.ImageColor3 = color.Light(uipallet.Main, 0.37) end
+					if pinicon then pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37) end
+					local clonebind = clone:FindFirstChild('Bind')
+					if clonebind then
+						local clonebindicon = clonebind:FindFirstChild('Icon')
+						if clonebindicon then clonebindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43) end
+						local clonebindtext = clonebind:FindFirstChild('TextLabel')
+						if clonebindtext then clonebindtext.TextColor3 = color.Dark(uipallet.Text, 0.43) end
+					end
+				end
 			end
+		elseif moduleapi.PinnedClone then
+			moduleapi.PinnedClone:Destroy()
+			moduleapi.PinnedClone = nil
 		end
 	end
 	if count > 0 and not pinnedcategory.Expanded then
@@ -3729,6 +3781,34 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			v.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or button.Enabled and Color3.new(1, 1, 1) or Color3.fromHSV(hue, sat, val)
 			v.BackgroundTransparency = (rainbow or not button.Enabled) and 0 or 0.85
 			v:FindFirstChild('Text').TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+		end
+
+		if button.PinnedClone and button.Enabled then
+			local pinned = button.PinnedClone
+			pinned.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+			pinned.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+			local pgradient = pinned:FindFirstChildOfClass('UIGradient')
+			if pgradient then
+				pgradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
+				if pgradient.Enabled then
+					pinned.BackgroundColor3 = Color3.new(1, 1, 1)
+					pgradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))),
+						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((button.Index + 1) * 0.025)) % 1)))
+					})
+				end
+			end
+			local pbind = pinned:FindFirstChild('Bind')
+			if pbind then
+				local pbindicon = pbind:FindFirstChild('Icon')
+				if pbindicon then pbindicon.ImageColor3 = pinned.TextColor3 end
+				local pbindtext = pbind:FindFirstChild('TextLabel')
+				if pbindtext then pbindtext.TextColor3 = pinned.TextColor3 end
+			end
+			local pdots = pinned:FindFirstChild('Dots')
+			if pdots then pdots.Dots.ImageColor3 = pinned.TextColor3 end
+			local ppin = pinned:FindFirstChild('Pin')
+			if ppin then ppin.ImageColor3 = pinned.TextColor3 end
 		end
 	end
 

@@ -3054,17 +3054,21 @@ function mainapi:CreateGUI()
 		panepadding.PaddingTop = UDim.new(0, 3)
 		panepadding.PaddingBottom = UDim.new(0, 3)
 		panepadding.Parent = panechildren
-		panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 			if mainapi.ThreadFix then
 				setthreadidentity(8)
 			end
 			panechildren.CanvasSize = UDim2.fromOffset(0, panewindowlist.AbsoluteContentSize.Y / scale.Scale)
+			if mainapi.SettingsPaneState and mainapi.SettingsPaneState.Selected == entry and mainapi.UpdateSettingsSize then
+				mainapi.UpdateSettingsSize()
+			end
 		end)
 
 		local entry
 		entry = {
 			button = button,
 			children = panechildren,
+			list = panewindowlist,
 			Name = categorysettings.Name,
 			Select = function()
 				if mainapi.SettingsPaneState.Selected == entry then return end
@@ -3080,6 +3084,9 @@ function mainapi:CreateGUI()
 						v.button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 					end
 				end
+			if mainapi.UpdateSettingsSize then
+				mainapi.UpdateSettingsSize()
+			end
 			end
 		}
 		table.insert(panes, entry)
@@ -3578,9 +3585,15 @@ function mainapi:CreateGUI()
 	end)
 	back.MouseButton1Click:Connect(function()
 		settingspane.Visible = false
+		if mainapi.UpdateSettingsSize then
+			mainapi.UpdateSettingsSize()
+		end
 	end)
 	close.MouseButton1Click:Connect(function()
 		settingspane.Visible = false
+		if mainapi.UpdateSettingsSize then
+			mainapi.UpdateSettingsSize()
+		end
 	end)
 	discordbutton.MouseButton1Click:Connect(function()
 		task.spawn(function()
@@ -3604,12 +3617,21 @@ function mainapi:CreateGUI()
 				mainapi.SettingsPanes[1]:Select()
 			end
 		end
+		if mainapi.UpdateSettingsSize then
+			mainapi.UpdateSettingsSize()
+		end
 	end)
 	windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 		if self.ThreadFix then
 			setthreadidentity(8)
 		end
-		window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
+		if settingspane.Visible then
+			if mainapi.UpdateSettingsSize then
+				mainapi.UpdateSettingsSize()
+			end
+		else
+			window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
+		end
 		for _, v in categoryapi.Buttons do
 			if v.Icon then
 				v.Object.Text = string.rep(' ', 36 * scale.Scale)..v.Name
@@ -3617,7 +3639,17 @@ function mainapi:CreateGUI()
 		end
 	end)
 
-	self.Categories.Main = categoryapi
+		mainapi.UpdateSettingsSize = function()
+		local selected = mainapi.SettingsPaneState and mainapi.SettingsPaneState.Selected
+		if settingspane.Visible and selected then
+			local height = selected.list and selected.list.AbsoluteContentSize.Y / scale.Scale or 0
+			window.Size = UDim2.fromOffset(220, math.min(45 + height, 601))
+		else
+			window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
+		end
+	end
+
+self.Categories.Main = categoryapi
 
 	return categoryapi
 end
@@ -3832,18 +3864,4 @@ function mainapi:CreateCategory(categorysettings)
 		bindcovertext.Text = 'PRESS A KEY TO BIND'
 		bindcovertext.TextColor3 = uipallet.Text
 		bindcovertext.TextSize = 11
-		bindcovertext.FontFace = uipallet.Font
-		bindcovertext.Parent = bindcover
-		bind.Parent = modulebutton
-		local dotsbutton = Instance.new('TextButton')
-		dotsbutton.Name = 'Dots'
-		dotsbutton.Size = UDim2.fromOffset(25, 40)
-		dotsbutton.Position = UDim2.new(1, -25, 0, 0)
-		dotsbutton.BackgroundTransparency = 1
-		dotsbutton.Text = ''
-		dotsbutton.Parent = modulebutton
-		local dots = Instance.new('ImageLabel')
-		dots.Name = 'Dots'
-		dots.Size = UDim2.fromOffset(3, 16)
-		dots.Position = UDim2.fromOffset(4, 12)
-		dots.BackgroundTransparency = 1
+		bindcovertext.FontFace = uipallet.Font

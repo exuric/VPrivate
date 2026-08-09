@@ -3968,7 +3968,7 @@ function mainapi:CreateCategory(categorysettings)
 			else
 				modulebutton.UIGradient.Enabled = false
 			end
-			if mainapi:UpdatePinned then
+			if mainapi.UpdatePinned then
 				mainapi:UpdatePinned()
 			end
 		end

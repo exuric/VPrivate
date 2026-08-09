@@ -2729,6 +2729,14 @@ function mainapi:CreateGUI()
 		arrow.Image = getcustomasset('VapePrivate/assets/new/expandright.png')
 		arrow.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		arrow.Parent = button
+		local active = Instance.new('Frame')
+		active.Name = 'Active'
+		active.Size = UDim2.fromOffset(3, 20)
+		active.Position = UDim2.fromOffset(6, 10)
+		active.BackgroundTransparency = 1
+		active.BorderSizePixel = 0
+		active.Parent = button
+		addCorner(active, UDim.new(1, 0))
 		optionapi.Name = categorysettings.Name
 		optionapi.Icon = icon
 		optionapi.Object = button
@@ -2742,6 +2750,10 @@ function mainapi:CreateGUI()
 			if icon then
 				icon.ImageColor3 = button.TextColor3
 			end
+			active.BackgroundColor3 = button.TextColor3
+			tween:Tween(active, uipallet.Tween, {
+				BackgroundTransparency = self.Enabled and 0 or 1
+			})
 			button.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			categorysettings.Window.Visible = self.Enabled
 		end
@@ -3684,7 +3696,14 @@ function mainapi:CreateCategory(categorysettings)
 	local windowlist = Instance.new('UIListLayout')
 	windowlist.SortOrder = Enum.SortOrder.LayoutOrder
 	windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	windowlist.Padding = UDim.new(0, 3)
 	windowlist.Parent = children
+	local padding = Instance.new('UIPadding')
+	padding.PaddingLeft = UDim.new(0, 4)
+	padding.PaddingRight = UDim.new(0, 4)
+	padding.PaddingTop = UDim.new(0, 3)
+	padding.PaddingBottom = UDim.new(0, 3)
+	padding.Parent = children
 
 	function categoryapi:CreateModule(modulesettings)
 		mainapi:Remove(modulesettings.Name)
@@ -3703,7 +3722,7 @@ function mainapi:CreateCategory(categorysettings)
 		local modulebutton = Instance.new('TextButton')
 		modulebutton.Name = modulesettings.Name
 		modulebutton.Size = UDim2.fromOffset(220, 40)
-		modulebutton.BackgroundColor3 = uipallet.Main
+		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
 		modulebutton.Text = '            '..modulesettings.Name
@@ -3712,6 +3731,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.TextSize = 14
 		modulebutton.FontFace = uipallet.Font
 		modulebutton.Parent = children
+		addCorner(modulebutton, UDim.new(0, 6))
 		local indicatorholder = Instance.new('Frame')
 		indicatorholder.Parent = modulebutton
 		indicatorholder.Size = UDim2.fromOffset(0, 21)
@@ -3834,11 +3854,18 @@ function mainapi:CreateCategory(categorysettings)
 		modulechildren.BorderSizePixel = 0
 		modulechildren.Visible = false
 		modulechildren.Parent = children
+		addCorner(modulechildren, UDim.new(0, 6))
 		moduleapi.Children = modulechildren
 		local windowlist = Instance.new('UIListLayout')
 		windowlist.SortOrder = Enum.SortOrder.LayoutOrder
 		windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		windowlist.Parent = modulechildren
+		local modulepadding = Instance.new('UIPadding')
+		modulepadding.PaddingLeft = UDim.new(0, 4)
+		modulepadding.PaddingRight = UDim.new(0, 4)
+		modulepadding.PaddingTop = UDim.new(0, 3)
+		modulepadding.PaddingBottom = UDim.new(0, 3)
+		modulepadding.Parent = modulechildren
 		local divider = Instance.new('Frame')
 		divider.Name = 'Divider'
 		divider.Size = UDim2.new(1, 0, 0, 1)
@@ -3887,7 +3914,7 @@ function mainapi:CreateCategory(categorysettings)
 			divider.Visible = self.Enabled
 			gradient.Enabled = self.Enabled
 			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
-			modulebutton.BackgroundColor3 = (hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.02) or uipallet.Main
+			modulebutton.BackgroundColor3 = self.Enabled and ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.07) or color.Light(uipallet.Main, 0.05)) or ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.045) or color.Light(uipallet.Main, 0.02))
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
@@ -3950,7 +3977,7 @@ function mainapi:CreateCategory(categorysettings)
 			hovered = true
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = uipallet.Text
-				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 		end)
@@ -3958,7 +3985,7 @@ function mainapi:CreateCategory(categorysettings)
 			hovered = false
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
-				modulebutton.BackgroundColor3 = uipallet.Main
+				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 		end)
@@ -4023,20 +4050,43 @@ function mainapi:CreateCategory(categorysettings)
 		moduleapi.Object = modulebutton
 		mainapi.Modules[modulesettings.Name] = moduleapi
 
-		local sorting = {}
-		for _, v in mainapi.Modules do
-			sorting[v.Category] = sorting[v.Category] or {}
-			table.insert(sorting[v.Category], v.Name)
-		end
-
-		for _, sort in sorting do
-			table.sort(sort)
-			for i, v in sort do
-				mainapi.Modules[v].Index = i
-				mainapi.Modules[v].Object.LayoutOrder = i
-				mainapi.Modules[v].Children.LayoutOrder = i
+		local function resort()
+			local sorting = {}
+			for _, v in mainapi.Modules do
+				sorting[v.Category] = sorting[v.Category] or {}
+				table.insert(sorting[v.Category], v.Name)
+			end
+			for _, sort in sorting do
+				local pinned, rest = {}, {}
+				for _, name in sort do
+					local pinopt = mainapi.Modules[name].Options['Pin to top']
+					if pinopt and pinopt.Enabled then
+						table.insert(pinned, name)
+					else
+						table.insert(rest, name)
+					end
+				end
+				table.sort(pinned)
+				table.sort(rest)
+				local ordered = {}
+				for _, v in pinned do table.insert(ordered, v) end
+				for _, v in rest do table.insert(ordered, v) end
+				for i, v in ordered do
+					mainapi.Modules[v].Index = i
+					mainapi.Modules[v].Object.LayoutOrder = i
+					mainapi.Modules[v].Children.LayoutOrder = i
+				end
 			end
 		end
+		resort()
+		local pin = moduleapi:CreateToggle({
+			Name = 'Pin to top',
+			Default = false,
+			Function = function()
+				resort()
+			end,
+			Tooltip = 'Pins this module to the top of its category.'
+		})
 
 		return moduleapi
 	end
@@ -7268,6 +7318,9 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			for _, button in v.Buttons do
 				if button.Enabled then
 					button.Object.TextColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+					if button.Object.Active then
+						button.Object.Active.BackgroundColor3 = button.Object.TextColor3
+					end
 					if button.Icon then
 						button.Icon.ImageColor3 = button.Object.TextColor3
 					end

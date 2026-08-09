@@ -4134,7 +4134,7 @@ function mainapi:CreateCategory(categorysettings)
 					mainapi:UpdatePinned()
 				end
 			end,
-			Tooltip = 'Pins this module to the top of its category.'
+			Tooltip = 'Moves this module to the Pinned tab.'
 		})
 
 		return moduleapi
@@ -6094,55 +6094,30 @@ function mainapi:UpdatePinned()
 	local pinnedcategory = self.Categories.Pinned
 	if not pinnedcategory then return end
 	local pinnedchildren = pinnedcategory.Object:FindFirstChild('Children')
+	if not pinnedchildren then return end
+	local count = 0
 	for _, moduleapi in pairs(self.Modules) do
 		local pinopt = moduleapi.Options['Pin to top']
 		local enabled = pinopt and pinopt.Enabled
-		if enabled and not moduleapi.PinnedRow then
-			local row = Instance.new('TextButton')
-			row.Name = moduleapi.Name
-			row.Size = UDim2.fromOffset(220, 40)
-			row.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
-			row.BorderSizePixel = 0
-			row.AutoButtonColor = false
-			row.Text = moduleapi.Name
-			row.TextXAlignment = Enum.TextXAlignment.Left
-			row.TextColor3 = color.Dark(uipallet.Text, 0.16)
-			row.TextSize = 14
-			row.FontFace = uipallet.Font
-			row.LayoutOrder = moduleapi.Index
-			row.Parent = pinnedchildren
-			addCorner(row, UDim.new(0, 6))
-			local rowpin = Instance.new('ImageLabel')
-			rowpin.Name = 'Pin'
-			rowpin.Size = UDim2.fromOffset(16, 16)
-			rowpin.Position = UDim2.new(1, -22, 0, 12)
-			rowpin.BackgroundTransparency = 1
-			rowpin.Image = getcustomasset('VapePrivate/assets/new/pin.png')
-			rowpin.ImageColor3 = color.Dark(uipallet.Text, 0.16)
-			rowpin.Parent = row
-			row.MouseButton1Click:Connect(function()
-				moduleapi:Toggle()
-			end)
-			moduleapi.PinnedRow = row
-		end
 		if enabled then
-			local row = moduleapi.PinnedRow
-			if row then
-				local hue, sat, val = self.GUIColor.Hue, self.GUIColor.Sat, self.GUIColor.Value
-				local rainbow = self.GUIColor.Rainbow and self.RainbowMode.Value ~= 'Retro'
-				if moduleapi.Enabled then
-					row.BackgroundColor3 = rainbow and Color3.fromHSV(self:Color((hue - (moduleapi.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
-					row.TextColor3 = rainbow and Color3.new(0.19, 0.19, 0.19) or self:TextColor(hue, sat, val)
-				else
-					row.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
-					row.TextColor3 = color.Dark(uipallet.Text, 0.16)
-				end
-				row.Pin.ImageColor3 = row.TextColor3
+			count = count + 1
+			local object = moduleapi.Object
+			if object and object.Parent ~= pinnedchildren then
+				moduleapi.PinnedHome = moduleapi.PinnedHome or object.Parent
+				object.LayoutOrder = moduleapi.Index
+				object.Parent = pinnedchildren
 			end
-		elseif moduleapi.PinnedRow then
-			moduleapi.PinnedRow:Destroy()
-			moduleapi.PinnedRow = nil
+		elseif moduleapi.PinnedHome then
+			local object = moduleapi.Object
+			local home = moduleapi.PinnedHome
+			moduleapi.PinnedHome = nil
+			if object and typeof(home) == 'Instance' and home.Parent and object.Parent ~= home then
+				object.Parent = home
+			end
 		end
+	end
+	if count > 0 and not pinnedcategory.Expanded then
+		pinnedcategory:Expand()
 	end
 end
 mainapi.Categories.Main:CreateDivider()

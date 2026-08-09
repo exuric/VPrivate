@@ -3739,15 +3739,3 @@ function mainapi:CreateCategory(categorysettings)
 		indicatorholder.Name = 'Indicators'
 		indicatorholder.BackgroundTransparency = 1
 		indicatorholder.Position = UDim2.fromScale(0.85, 0.5)
-		local layout = Instance.new('UIListLayout')
-		layout.Parent = indicatorholder
-		layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-		layout.VerticalAlignment = Enum.VerticalAlignment.Center
-		layout.FillDirection = Enum.FillDirection.Horizontal
-		layout.Padding = UDim.new(0, 5)
-		modulesettings.Tags = modulesettings.Tags or {}
-		task.spawn(function()
-			for i, tag in modulesettings.Tags do
-				tag = tag:upper()
-				modulesettings.Tags[i] = tag:lower()
-				local size = getfontsize(removeTags(tag), 12, uipallet.Font, Vector2.new(100000, 100000))

@@ -529,6 +529,17 @@ components = {
 		label.FontFace = uipallet.Font
 		label.Parent = bkg
 		addCorner(label, UDim.new(0, 4))
+		local icon
+		if optionsettings.Icon then
+			icon = Instance.new('ImageLabel')
+			icon.Name = 'Icon'
+			icon.Size = UDim2.fromOffset(13, 13)
+			icon.Position = UDim2.fromOffset(10, 7)
+			icon.BackgroundTransparency = 1
+			icon.Image = optionsettings.Icon
+			icon.ImageColor3 = optionsettings.IconColor or color.Dark(uipallet.Text, 0.16)
+			icon.Parent = bkg
+		end
 		optionsettings.Function = optionsettings.Function or function() end
 		
 		button.MouseEnter:Connect(function()
@@ -3833,12 +3844,4 @@ function mainapi:CreateCategory(categorysettings)
 		bindcovertext.FontFace = uipallet.Font
 		bindcovertext.Parent = bindcover
 		bind.Parent = modulebutton
-		local dotsbutton = Instance.new('TextButton')
-		dotsbutton.Name = 'Dots'
-		dotsbutton.Size = UDim2.fromOffset(25, 40)
-		dotsbutton.Position = UDim2.new(1, -25, 0, 0)
-		dotsbutton.BackgroundTransparency = 1
-		dotsbutton.Text = ''
-		dotsbutton.Parent = modulebutton
-		local dots = Instance.new('ImageLabel')
-		dots.Name = 'Dots'
+		local dotsbutton = Instance.new('TextButton')

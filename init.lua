@@ -69,7 +69,7 @@ if not shared.VapeDeveloper then
 	local commit = 'main'
 	local stored = isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or ''
 	local version = isfile('VapePrivate/.version') and readfile('VapePrivate/.version') or ''
-	if commit ~= stored or version ~= '2' then
+	if commit ~= stored or version ~= '3' then
 		if stored ~= '' and stored ~= commit then
 			shared.updated = stored
 		end

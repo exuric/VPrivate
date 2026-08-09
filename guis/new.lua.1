@@ -1,3 +1,17 @@
+		bindcovertext.Parent = bindcover
+		bind.Parent = modulebutton
+		local dotsbutton = Instance.new('TextButton')
+		dotsbutton.Name = 'Dots'
+		dotsbutton.Size = UDim2.fromOffset(25, 40)
+		dotsbutton.Position = UDim2.new(1, -25, 0, 0)
+		dotsbutton.BackgroundTransparency = 1
+		dotsbutton.Text = ''
+		dotsbutton.Parent = modulebutton
+		local dots = Instance.new('ImageLabel')
+		dots.Name = 'Dots'
+		dots.Size = UDim2.fromOffset(3, 16)
+		dots.Position = UDim2.fromOffset(4, 12)
+		dots.BackgroundTransparency = 1
 		dots.Image = getcustomasset('VapePrivate/assets/new/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = dotsbutton

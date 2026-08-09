@@ -3848,6 +3848,20 @@ function mainapi:CreateCategory(categorysettings)
 		dots.Image = getcustomasset('VapePrivate/assets/new/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = dotsbutton
+		local pinicon = Instance.new('ImageLabel')
+		pinicon.Name = 'Pin'
+		pinicon.Size = UDim2.fromOffset(16, 16)
+		pinicon.Position = UDim2.new(1, -48, 0, 12)
+		pinicon.BackgroundTransparency = 1
+		pinicon.Image = getcustomasset('VapePrivate/assets/new/pin.png')
+		pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		pinicon.Visible = false
+		pinicon.ZIndex = 2
+		pinicon.Parent = modulebutton
+		local pinned = false
+		local function updatePin()
+			pinicon.Visible = pinned and not bind.Visible
+		end
 		modulechildren.Name = modulesettings.Name..'Children'
 		modulechildren.Size = UDim2.new(1, 0, 0, 0)
 		modulechildren.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -3904,6 +3918,7 @@ function mainapi:CreateCategory(categorysettings)
 				bindtext.Text = table.concat(tab, ' + '):upper()
 				bind.Size = UDim2.fromOffset(math.max(getfontsize(bindtext.Text, bindtext.TextSize, bindtext.Font).X + 10, 20), 21)
 			end
+			updatePin()
 		end
 
 		function moduleapi:Toggle(multiple)
@@ -3916,6 +3931,7 @@ function mainapi:CreateCategory(categorysettings)
 			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
 			modulebutton.BackgroundColor3 = self.Enabled and ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.07) or color.Light(uipallet.Main, 0.05)) or ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.045) or color.Light(uipallet.Main, 0.02))
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
+			pinicon.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
 			if not self.Enabled then
@@ -3929,6 +3945,26 @@ function mainapi:CreateCategory(categorysettings)
 			end
 			mainapi:QueueSave()
 			task.spawn(modulesettings.Function, self.Enabled)
+			if self.Enabled then
+				local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
+				local hue, sat, val = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
+				modulebutton.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+				modulebutton.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+				modulebutton.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
+				if modulebutton.UIGradient.Enabled then
+					modulebutton.BackgroundColor3 = Color3.new(1, 1, 1)
+					modulebutton.UIGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1))),
+						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((self.Index + 1) * 0.025)) % 1)))
+					})
+				end
+				dots.ImageColor3 = modulebutton.TextColor3
+				pinicon.ImageColor3 = modulebutton.TextColor3
+				bindicon.ImageColor3 = modulebutton.TextColor3
+				bindtext.TextColor3 = modulebutton.TextColor3
+			else
+				modulebutton.UIGradient.Enabled = false
+			end
 		end
 
 		for i, v in components do
@@ -3980,6 +4016,7 @@ function mainapi:CreateCategory(categorysettings)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			updatePin()
 		end)
 		modulebutton.MouseLeave:Connect(function()
 			hovered = false
@@ -3988,6 +4025,7 @@ function mainapi:CreateCategory(categorysettings)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			updatePin()
 		end)
 		modulebutton.MouseButton1Click:Connect(function()
 			moduleapi:Toggle()
@@ -4082,7 +4120,9 @@ function mainapi:CreateCategory(categorysettings)
 		local pin = moduleapi:CreateToggle({
 			Name = 'Pin to top',
 			Default = false,
-			Function = function()
+			Function = function(callback)
+				pinned = callback
+				updatePin()
 				resort()
 			end,
 			Tooltip = 'Pins this module to the top of its category.'
@@ -7363,6 +7403,9 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			button.Object.Bind.Icon.ImageColor3 = button.Object.TextColor3
 			button.Object.Bind.TextLabel.TextColor3 = button.Object.TextColor3
 			button.Object.Dots.Dots.ImageColor3 = button.Object.TextColor3
+			if button.Object.Pin then
+				button.Object.Pin.ImageColor3 = button.Object.TextColor3
+			end
 		end
 
 		for _, option in button.Options do

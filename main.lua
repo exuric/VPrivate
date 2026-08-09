@@ -8,8 +8,8 @@ license.Key = license.Key or '_key'
 local vape
 local loadstring = function(...)
 	local res, err = loadstring(...)
-	if err and vape then
-		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
+	if err then
+		error('VapePrivate: '..tostring(err))
 	end
 	return res
 end
@@ -40,6 +40,24 @@ local function downloadFile(path, func)
 		writefile(path, res)
 	end
 	return (func or readfile)(path)
+end
+
+local function downloadSplit(base)
+	if isfile(base) then return readfile(base) end
+	local data = {}
+	for i = 0, 1 do
+		local ok, res = pcall(function()
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/'..select(1, base:gsub('^VapePrivate/', ''))..'.'..i, true)
+		end)
+		if not ok or typeof(res) ~= 'string' or res == '404: Not Found' then
+			error('Failed to download '..base..'.'..i..(ok and '' or ': '..tostring(res)))
+		end
+		table.insert(data, res)
+	end
+	local content = table.concat(data)
+	content = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..content
+	writefile(base, content)
+	return content
 end
 
 local function finishLoading()
@@ -99,7 +117,7 @@ local gui = 'new'--readfile('VapePrivate/profiles/gui.txt')
 if not isfolder('VapePrivate/assets/'..gui) then
 	makefolder('VapePrivate/assets/'..gui)
 end
-vape = loadstring(downloadFile('VapePrivate/guis/'..gui..'.lua'), 'gui')(license)
+vape = loadstring(downloadSplit('VapePrivate/guis/'..gui..'.lua'), 'gui')(license)
 shared.vape = vape
 _G.vape = vape
 getgenv().used_init = true

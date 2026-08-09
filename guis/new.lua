@@ -2582,57 +2582,22 @@ function mainapi:CreateGUI()
 	addCorner(settingspane)
 	local settingschildren = Instance.new('Frame')
 	settingschildren.Name = 'Children'
-	settingschildren.Size = UDim2.new(0, 64, 1, -57)
+	settingschildren.Size = UDim2.new(1, 0, 1, -57)
 	settingschildren.Position = UDim2.fromOffset(0, 41)
-	settingschildren.BackgroundTransparency = 1
+	settingschildren.BackgroundColor3 = uipallet.Main
 	settingschildren.BorderSizePixel = 0
 	settingschildren.Parent = settingspane
 	local settingswindowlist = Instance.new('UIListLayout')
 	settingswindowlist.SortOrder = Enum.SortOrder.LayoutOrder
 	settingswindowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	settingswindowlist.Padding = UDim.new(0, 3)
 	settingswindowlist.Parent = settingschildren
-	local raildivider = Instance.new('Frame')
-	raildivider.Size = UDim2.new(0, 1, 1, 0)
-	raildivider.Position = UDim2.new(1, -1, 0, 0)
-	raildivider.BackgroundColor3 = color.Light(uipallet.Main, 0.37)
-	raildivider.BackgroundTransparency = 0.85
-	raildivider.BorderSizePixel = 0
-	raildivider.ZIndex = 3
-	raildivider.Parent = settingschildren
-	local shellframe = Instance.new('Frame')
-	shellframe.Name = 'ShellRows'
-	shellframe.Size = UDim2.new(1, -76, 0, 0)
-	shellframe.Position = UDim2.fromOffset(70, 44)
-	shellframe.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-	shellframe.BorderSizePixel = 0
-	shellframe.Parent = settingspane
-	local shellpadding = Instance.new('UIPadding')
-	shellpadding.PaddingLeft = UDim.new(0, 4)
-	shellpadding.PaddingRight = UDim.new(0, 4)
-	shellpadding.PaddingTop = UDim.new(0, 3)
-	shellpadding.PaddingBottom = UDim.new(0, 3)
-	shellpadding.Parent = shellframe
-	local shellwindowlist = Instance.new('UIListLayout')
-	shellwindowlist.SortOrder = Enum.SortOrder.LayoutOrder
-	shellwindowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	shellwindowlist.Padding = UDim.new(0, 3)
-	shellwindowlist.Parent = shellframe
-	local function updateShellLayout()
-		shellframe.Size = UDim2.new(1, -76, 0, shellwindowlist.AbsoluteContentSize.Y / scale.Scale)
-		for _, v in (mainapi.SettingsPanes or {}) do
-			v.children.Position = UDim2.fromOffset(70, 44 + shellframe.AbsoluteSize.Y)
-		end
-	end
-	shellwindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(updateShellLayout)
-	updateShellLayout()
 	categoryapi.Object = window
 
 	function categoryapi:CreateBind()
 		local optionapi = {Bind = {'RightShift'}}
 
 		local button = Instance.new('TextButton')
-		button.Size = UDim2.new(1, 0, 0, 40)
+		button.Size = UDim2.fromOffset(220, 40)
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
@@ -2641,7 +2606,7 @@ function mainapi:CreateGUI()
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
 		button.FontFace = uipallet.Font
-		button.Parent = shellframe
+		button.Parent = settingschildren
 		addTooltip(button, 'Change the bind of the GUI')
 		local bind = Instance.new('TextButton')
 		bind.Name = 'Bind'
@@ -3031,112 +2996,119 @@ function mainapi:CreateGUI()
 	end
 
 	function categoryapi:CreateSettingsDivider()
+		components.Divider(settingschildren)
 	end
 
 	function categoryapi:CreateSettingsPane(categorysettings)
 		local optionapi = {}
 
-		if not mainapi.SettingsPaneState then
-			mainapi.SettingsPaneState = {Selected = nil}
-		end
-		if not mainapi.SettingsPanes then
-			mainapi.SettingsPanes = {}
-		end
-		local panes = mainapi.SettingsPanes
-
 		local button = Instance.new('TextButton')
 		button.Name = categorysettings.Name
-		button.Size = UDim2.new(1, 0, 0, 30)
-		button.BackgroundTransparency = 1
+		button.Size = UDim2.fromOffset(220, 40)
+		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = categorysettings.Name
+		button.Text = '          '..categorysettings.Name
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
-		button.TextSize = 13
+		button.TextSize = 14
 		button.FontFace = uipallet.Font
-		button.LayoutOrder = #panes + 1
 		button.Parent = settingschildren
-
-		local panechildren = Instance.new('ScrollingFrame')
-		panechildren.Name = categorysettings.Name..'Children'
-		panechildren.Size = UDim2.new(1, -76, 1, -50)
-		panechildren.Position = UDim2.fromOffset(70, 44)
-		panechildren.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-		panechildren.BorderSizePixel = 0
-		panechildren.ScrollBarThickness = 2
-		panechildren.ScrollBarImageTransparency = 0.75
-		panechildren.CanvasSize = UDim2.new()
-		panechildren.Visible = false
-		panechildren.Parent = settingspane
-		local panewindowlist = Instance.new('UIListLayout')
-		panewindowlist.SortOrder = Enum.SortOrder.LayoutOrder
-		panewindowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		panewindowlist.Padding = UDim.new(0, 3)
-		panewindowlist.Parent = panechildren
-		local panepadding = Instance.new('UIPadding')
-		panepadding.PaddingLeft = UDim.new(0, 4)
-		panepadding.PaddingRight = UDim.new(0, 4)
-		panepadding.PaddingTop = UDim.new(0, 3)
-		panepadding.PaddingBottom = UDim.new(0, 3)
-		panepadding.Parent = panechildren
-panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-			if mainapi.ThreadFix then
-				setthreadidentity(8)
-			end
-			panechildren.CanvasSize = UDim2.fromOffset(0, panewindowlist.AbsoluteContentSize.Y / scale.Scale)
-			if mainapi.SettingsPaneState and mainapi.SettingsPaneState.Selected == entry and mainapi.UpdateSettingsSize then
-				mainapi.UpdateSettingsSize()
-			end
-		end)
-
-		local entry
-		entry = {
-			button = button,
-			children = panechildren,
-			list = panewindowlist,
-			Name = categorysettings.Name,
-			Select = function()
-				if mainapi.SettingsPaneState.Selected == entry then return end
-				mainapi.SettingsPaneState.Selected = entry
-				for _, v in panes do
-					v.children.Visible = v == entry
-					if v == entry then
-						v.button.BackgroundColor3 = uipallet.Text
-						v.button.BackgroundTransparency = 0
-						v.button.TextColor3 = color.Dark(uipallet.Text, 0.85)
-					else
-						v.button.BackgroundTransparency = 1
-						v.button.TextColor3 = color.Dark(uipallet.Text, 0.16)
-					end
-				end
-			if mainapi.UpdateSettingsSize then
-				mainapi.UpdateSettingsSize()
-			end
-			end
-		}
-		table.insert(panes, entry)
-
-		button.MouseButton1Click:Connect(entry.Select)
-		button.MouseEnter:Connect(function()
-			if mainapi.SettingsPaneState.Selected ~= entry then
-				button.TextColor3 = uipallet.Text
-				button.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
-				button.BackgroundTransparency = 0
-			end
-		end)
-		button.MouseLeave:Connect(function()
-			if mainapi.SettingsPaneState.Selected ~= entry then
-				button.BackgroundTransparency = 1
-				button.TextColor3 = color.Dark(uipallet.Text, 0.16)
-			end
-		end)
+		local arrow = Instance.new('ImageLabel')
+		arrow.Name = 'Arrow'
+		arrow.Size = UDim2.fromOffset(4, 8)
+		arrow.Position = UDim2.new(1, -20, 0, 16)
+		arrow.BackgroundTransparency = 1
+		arrow.Image = getcustomasset('VapePrivate/assets/new/expandright.png')
+		arrow.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		arrow.Parent = button
+		local settingspane = Instance.new('TextButton')
+		settingspane.Size = UDim2.fromScale(1, 1)
+		settingspane.BackgroundColor3 = uipallet.Main
+		settingspane.AutoButtonColor = false
+		settingspane.Visible = false
+		settingspane.Text = ''
+		settingspane.Parent = window
+		local title = Instance.new('TextLabel')
+		title.Name = 'Title'
+		title.Size = UDim2.new(1, -36, 0, 20)
+		title.Position = UDim2.fromOffset(math.abs(title.Size.X.Offset), 11)
+		title.BackgroundTransparency = 1
+		title.Text = categorysettings.Name
+		title.TextXAlignment = Enum.TextXAlignment.Left
+		title.TextColor3 = uipallet.Text
+		title.TextSize = 13
+		title.FontFace = uipallet.Font
+		title.Parent = settingspane
+		local close = addCloseButton(settingspane)
+		local back = Instance.new('ImageButton')
+		back.Name = 'Back'
+		back.Size = UDim2.fromOffset(16, 16)
+		back.Position = UDim2.fromOffset(11, 13)
+		back.BackgroundTransparency = 1
+		back.Image = getcustomasset('VapePrivate/assets/new/back.png')
+		back.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		back.Parent = settingspane
+		addCorner(settingspane)
+		local settingschildren = Instance.new('Frame')
+		settingschildren.Name = 'Children'
+		settingschildren.Size = UDim2.new(1, 0, 1, -57)
+		settingschildren.Position = UDim2.fromOffset(0, 41)
+		settingschildren.BackgroundColor3 = uipallet.Main
+		settingschildren.BorderSizePixel = 0
+		settingschildren.Parent = settingspane
+		local divider = Instance.new('Frame')
+		divider.Name = 'Divider'
+		divider.Size = UDim2.new(1, 0, 0, 1)
+		divider.BackgroundColor3 = Color3.new(1, 1, 1)
+		divider.BackgroundTransparency = 0.928
+		divider.BorderSizePixel = 0
+		divider.Parent = settingschildren
+		local settingswindowlist = Instance.new('UIListLayout')
+		settingswindowlist.SortOrder = Enum.SortOrder.LayoutOrder
+		settingswindowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		settingswindowlist.Parent = settingschildren
 
 		for i, v in components do
 			optionapi['Create'..i] = function(_, settings)
-				return v(settings, panechildren, categoryapi)
+				return v(settings, settingschildren, categoryapi)
 			end
 		end
+
+		back.MouseEnter:Connect(function()
+			back.ImageColor3 = uipallet.Text
+		end)
+		back.MouseLeave:Connect(function()
+			back.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		end)
+		back.MouseButton1Click:Connect(function()
+			settingspane.Visible = false
+		end)
+		button.MouseEnter:Connect(function()
+			button.TextColor3 = uipallet.Text
+			button.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		end)
+		button.MouseLeave:Connect(function()
+			button.TextColor3 = color.Dark(uipallet.Text, 0.16)
+			button.BackgroundColor3 = uipallet.Main
+		end)
+		button.MouseButton1Click:Connect(function()
+			settingspane.Visible = true
+		end)
+		close.MouseButton1Click:Connect(function()
+			settingspane.Visible = false
+		end)
+		windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+			if mainapi.ThreadFix then
+				setthreadidentity(8)
+			end
+			window.Size = UDim2.fromOffset(220, 45 + windowlist.AbsoluteContentSize.Y / scale.Scale)
+			for _, v in categoryapi.Buttons do
+				if v.Icon then
+					v.Object.Text = string.rep(' ', 33 * scale.Scale)..v.Name
+				end
+			end
+		end)
 
 		return optionapi
 	end
@@ -3173,13 +3145,13 @@ panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function(
 		local function createSlider(name, gradientColor)
 			local slider = Instance.new('TextButton')
 			slider.Name = optionsettings.Name..'Slider'..name
-			slider.Size = UDim2.new(1, 0, 0, 50)
+			slider.Size = UDim2.fromOffset(220, 50)
 			slider.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
 			slider.BorderSizePixel = 0
 			slider.AutoButtonColor = false
 			slider.Visible = false
 			slider.Text = ''
-			slider.Parent = shellframe
+			slider.Parent = settingschildren
 			local title = Instance.new('TextLabel')
 			title.Name = 'Title'
 			title.Size = UDim2.fromOffset(60, 30)
@@ -3193,7 +3165,7 @@ panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function(
 			title.Parent = slider
 			local holder = Instance.new('Frame')
 			holder.Name = 'Slider'
-			holder.Size = UDim2.new(1, -20, 0, 2)
+			holder.Size = UDim2.fromOffset(200, 2)
 			holder.Position = UDim2.fromOffset(10, 37)
 			holder.BackgroundColor3 = Color3.new(1, 1, 1)
 			holder.BorderSizePixel = 0
@@ -3284,11 +3256,11 @@ panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function(
 
 		local slider = Instance.new('TextButton')
 		slider.Name = optionsettings.Name..'Slider'
-		slider.Size = UDim2.new(1, 0, 0, 50)
+		slider.Size = UDim2.fromOffset(220, 50)
 		slider.BackgroundTransparency = 1
 		slider.AutoButtonColor = false
 		slider.Text = ''
-		slider.Parent = shellframe
+		slider.Parent = settingschildren
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
 		title.Size = UDim2.fromOffset(60, 30)
@@ -3302,7 +3274,7 @@ panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function(
 		title.Parent = slider
 		local holder = Instance.new('Frame')
 		holder.Name = 'Slider'
-		holder.Size = UDim2.new(1, -20, 0, 2)
+		holder.Size = UDim2.fromOffset(200, 2)
 		holder.Position = UDim2.fromOffset(10, 37)
 		holder.BackgroundTransparency = 1
 		holder.BorderSizePixel = 0
@@ -3611,15 +3583,9 @@ panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function(
 	end)
 	back.MouseButton1Click:Connect(function()
 		settingspane.Visible = false
-		if mainapi.UpdateSettingsSize then
-			mainapi.UpdateSettingsSize()
-		end
 	end)
 	close.MouseButton1Click:Connect(function()
 		settingspane.Visible = false
-		if mainapi.UpdateSettingsSize then
-			mainapi.UpdateSettingsSize()
-		end
 	end)
 	discordbutton.MouseButton1Click:Connect(function()
 		task.spawn(function()
@@ -3636,28 +3602,12 @@ panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function(
 	end)
 	settingsbutton.MouseButton1Click:Connect(function()
 		settingspane.Visible = true
-		if mainapi.SettingsPaneState then
-			if mainapi.SettingsPaneState.Selected then
-				mainapi.SettingsPaneState.Selected:Select()
-			elseif mainapi.SettingsPanes and #mainapi.SettingsPanes > 0 then
-				mainapi.SettingsPanes[1]:Select()
-			end
-		end
-		if mainapi.UpdateSettingsSize then
-			mainapi.UpdateSettingsSize()
-		end
 	end)
 	windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 		if self.ThreadFix then
 			setthreadidentity(8)
 		end
-		if settingspane.Visible then
-			if mainapi.UpdateSettingsSize then
-				mainapi.UpdateSettingsSize()
-			end
-		else
-			window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
-		end
+		window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 		for _, v in categoryapi.Buttons do
 			if v.Icon then
 				v.Object.Text = string.rep(' ', 36 * scale.Scale)..v.Name
@@ -3665,18 +3615,7 @@ panewindowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function(
 		end
 	end)
 
-		mainapi.UpdateSettingsSize = function()
-		local selected = mainapi.SettingsPaneState and mainapi.SettingsPaneState.Selected
-		if settingspane.Visible and selected then
-			local height = selected.list and selected.list.AbsoluteContentSize.Y / scale.Scale or 0
-			local shellheight = shellframe and shellframe.AbsoluteSize.Y / scale.Scale or 0
-			window.Size = UDim2.fromOffset(220, math.min(45 + shellheight + height, 601))
-		else
-			window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
-		end
-	end
-
-self.Categories.Main = categoryapi
+	self.Categories.Main = categoryapi
 
 	return categoryapi
 end
@@ -3877,7 +3816,7 @@ function mainapi:CreateCategory(categorysettings)
 		bindtext.Parent = bind
 		local bindcover = Instance.new('ImageLabel')
 		bindcover.Name = 'Cover'
-		bindcover.Size = UDim2.new(1, 0, 1, 0)
+		bindcover.Size = UDim2.fromOffset(154, 40)
 		bindcover.BackgroundTransparency = 1
 		bindcover.Visible = false
 		bindcover.Image = getcustomasset('VapePrivate/assets/new/bindbkg.png')
@@ -3962,7 +3901,7 @@ function mainapi:CreateCategory(categorysettings)
 			self.Bind = table.clone(tab)
 			if mouse then
 				bindcovertext.Text = #tab <= 0 and 'BIND REMOVED' or 'BOUND TO'
-				bindcover.Size = UDim2.new(1, 0, 1, 0)
+				bindcover.Size = UDim2.fromOffset(getfontsize(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
 				task.delay(1, function()
 					bindcover.Visible = false
 				end)
@@ -4056,7 +3995,7 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		bind.MouseButton1Click:Connect(function()
 			bindcovertext.Text = 'PRESS A KEY TO BIND'
-			bindcover.Size = UDim2.new(1, 0, 1, 0)
+			bindcover.Size = UDim2.fromOffset(getfontsize(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
 			bindcover.Visible = true
 			mainapi.Binding = moduleapi
 		end)
@@ -4719,7 +4658,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				end)
 				local bindcover = Instance.new('ImageLabel')
 				bindcover.Name = 'Cover'
-				bindcover.Size = UDim2.new(1, 0, 1, 0)
+				bindcover.Size = UDim2.fromOffset(154, 33)
 				bindcover.BackgroundTransparency = 1
 				bindcover.Visible = false
 				bindcover.Image = getcustomasset('VapePrivate/assets/new/bindbkg.png')
@@ -4774,7 +4713,7 @@ function mainapi:CreateCategoryList(categorysettings)
 					v.Bind = table.clone(tab)
 					if mouse then
 						bindcovertext.Text = #tab <= 0 and 'BIND REMOVED' or 'BOUND TO '..table.concat(tab, ' + '):upper()
-						bindcover.Size = UDim2.new(1, 0, 1, 0)
+						bindcover.Size = UDim2.fromOffset(getfontsize(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
 						task.delay(1, function()
 							bindcover.Visible = false
 						end)
@@ -4796,7 +4735,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				bindFunction({}, v.Bind)
 				bind.MouseButton1Click:Connect(function()
 					bindcovertext.Text = 'PRESS A KEY TO BIND'
-					bindcover.Size = UDim2.new(1, 0, 1, 0)
+					bindcover.Size = UDim2.fromOffset(getfontsize(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
 					bindcover.Visible = true
 					mainapi.Binding = {SetBind = bindFunction, Bind = v.Bind}
 				end)

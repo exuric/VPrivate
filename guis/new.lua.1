@@ -1,3 +1,6 @@
+		bindcovertext.Parent = bindcover
+		bind.Parent = modulebutton
+		local dotsbutton = Instance.new('TextButton')
 		dotsbutton.Name = 'Dots'
 		dotsbutton.Size = UDim2.fromOffset(25, 40)
 		dotsbutton.Position = UDim2.new(1, -25, 0, 0)
@@ -2544,7 +2547,6 @@ Profiles:CreateButton({
 	Name = 'Reset Profile',
 	LayoutOrder = 7,
 	Icon = getcustomasset('VapePrivate/assets/new/warning.png'),
-	IconColor = color.Light(uipallet.Text, 0.25),
 	Function = function()
 		mainapi.Save = function() end
 		if isfile('VapePrivate/profiles/'..mainapi.Profile..mainapi.Place..'.txt') and delfile then

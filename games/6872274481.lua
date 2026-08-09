@@ -5596,6 +5596,7 @@ run(function()
 	local Materials = {}
 	local Decals = {}
 	local Meshes = {}
+	local Particles = {}
 	local reference = {}
 	
 	local function remember(obj, property)
@@ -5629,12 +5630,19 @@ run(function()
 			return
 		end
 	
+		if Particles.Enabled then
+			if obj:IsA('ParticleEmitter') or obj:IsA('Trail') or obj:IsA('Beam') or obj:IsA('Fire') or obj:IsA('Smoke') or obj:IsA('Sparkles') then
+				remember(obj, 'Texture')
+				obj.Texture = ''
+			end
+		end
+
 		if obj:IsA('BasePart') then
 			if Meshes.Enabled and obj:IsA('MeshPart') then
 				remember(obj, 'TextureID')
 				obj.TextureID = ''
 			end
-	
+
 			if Materials.Enabled then
 				remember(obj, 'Material')
 				obj.Material = Enum.Material.SmoothPlastic
@@ -5706,6 +5714,12 @@ run(function()
 		Default = true,
 		Function = refresh,
 		Tooltip = 'Clears textures off meshes'
+	})
+	Particles = NoTextures:CreateToggle({
+		Name = 'Particles',
+		Default = true,
+		Function = refresh,
+		Tooltip = 'Removes textures from particles, beams, trails, fire and smoke'
 	})
 	
 end)

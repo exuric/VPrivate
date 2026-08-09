@@ -83,7 +83,7 @@ if not shared.VapeDeveloper then
 			end
 		end
 	end
-	writefile('VapePrivate/.version', '2')
+	writefile('VapePrivate/.version', '3')
 	writefile('VapePrivate/profiles/commit.txt', commit)
 	if #listfiles('VapePrivate/profiles') < 4 then
 		shared.VapePresetInstall = function()

@@ -3962,6 +3962,9 @@ function mainapi:CreateCategory(categorysettings)
 				pinicon.ImageColor3 = modulebutton.TextColor3
 				bindicon.ImageColor3 = modulebutton.TextColor3
 				bindtext.TextColor3 = modulebutton.TextColor3
+				if mainapi.Loaded ~= nil then
+					mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
+				end
 			else
 				modulebutton.UIGradient.Enabled = false
 			end

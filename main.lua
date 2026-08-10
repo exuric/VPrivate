@@ -85,11 +85,14 @@ local function allowedsync()
 			and type(hash.hmac) == 'function'
 			and d.sig == hash.hmac(hash.sha512, WK, httpService:JSONEncode({WhitelistedUsers = d.WhitelistedUsers}))
 		then
-			for _, v in d.WhitelistedUsers do
-				if v.id then
-					allowedUsers[v.id] = v.name or true
+for _, v in d.WhitelistedUsers do
+			if v.id then
+				local uid = tonumber(v.id)
+				if uid then
+					allowedUsers[uid] = v.name or true
 				end
 			end
+		end
 		end
 	end)
 end
@@ -98,7 +101,8 @@ allowedsync()
 
 do
 	local player = playersService.LocalPlayer
-	if player and not allowedUsers[player.UserId] then
+	local pid = player and tonumber(player.UserId)
+	if player and pid and not allowedUsers[pid] then
 		player:Kick(AMSG)
 		return
 	end

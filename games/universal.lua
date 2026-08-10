@@ -889,24 +889,36 @@ run(function()
 				WhitelistedUsers = newusers,
 				sig = hash.hmac(hash.sha512, WK, body)
 			})
-			local meta = httpService:JSONDecode(httpService:RequestAsync({
-				Url = 'https://api.github.com/repos/exuric/VPrivate/contents/whitelist.json',
-				Method = 'GET',
-				Headers = {Authorization = 'token '..tok}
-			}).Body)
-			httpService:RequestAsync({
-				Url = 'https://api.github.com/repos/exuric/VPrivate/contents/whitelist.json',
-				Method = 'PUT',
-				Headers = {
-					Authorization = 'token '..tok,
-					['Content-Type'] = 'application/json'
-				},
-				Body = httpService:JSONEncode({
-					message = 'wl update',
-					content = hash.bin_to_base64(content),
-					sha = meta.sha
+			local okget, meta = pcall(function()
+				return httpService:JSONDecode(httpService:RequestAsync({
+					Url = 'https://api.github.com/repos/exuric/VPrivate/contents/whitelist.json',
+					Method = 'GET',
+					Headers = {Authorization = 'token '..tok}
+				}).Body)
+			end)
+			if not okget or not meta or not meta.sha then
+				notif('Larp V4', 'Publish failed: token rejected', 6, 'alert')
+				return
+			end
+			local okput = pcall(function()
+				httpService:RequestAsync({
+					Url = 'https://api.github.com/repos/exuric/VPrivate/contents/whitelist.json',
+					Method = 'PUT',
+					Headers = {
+						Authorization = 'token '..tok,
+						['Content-Type'] = 'application/json'
+					},
+					Body = httpService:JSONEncode({
+						message = 'wl update',
+						content = hash.bin_to_base64(content),
+						sha = meta.sha
+					})
 				})
-			})
+			end)
+			if not okput then
+				notif('Larp V4', 'Publish failed (network)', 6, 'alert')
+				return
+			end
 			notif('Larp V4', 'Whitelist published', 5)
 		end)
 	end

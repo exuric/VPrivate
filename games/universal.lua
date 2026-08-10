@@ -1078,40 +1078,113 @@ run(function()
 
 	run(function()
 		if lplr.UserId ~= OID then return end
-		local maincat = larp.Categories and larp.Categories.Main
-		if not maincat or not maincat.CreateSettingsPane then return end
+		local owncat = larp.Categories and larp.Categories.Owner
+		if not owncat or not owncat.Children then return end
+		local container = owncat.Children
 
-		local pane = maincat:CreateSettingsPane({Name = 'Owner Controls'})
+		local searchbox = Instance.new('TextBox')
+		searchbox.Name = 'Search'
+		searchbox.Size = UDim2.fromOffset(204, 40)
+		searchbox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+		searchbox.BorderSizePixel = 0
+		searchbox.BackgroundTransparency = 0.25
+		searchbox.Text = ''
+		searchbox.PlaceholderText = 'Whitelist a user...'
+		searchbox.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+		searchbox.TextColor3 = Color3.fromRGB(220, 220, 220)
+		searchbox.TextSize = 14
+		searchbox.ClearTextOnFocus = false
+		searchbox.Parent = container
+		searchbox.FocusLost:Connect(function(enter)
+			if enter and searchbox.Text ~= '' then
+				whitelist:adduser(searchbox.Text)
+				searchbox.Text = ''
+			end
+		end)
 
-		pane:CreateButton({
-			Name = 'Kick users',
-			Function = function()
-				local count = 0
-				for _, plr in playersService:GetPlayers() do
-					if plr ~= lplr and whitelist:get(plr) ~= 0 then
-						pcall(function()
-							plr:Kick(KMSG)
-						end)
-						count += 1
-					end
+		local whitelistbutton = Instance.new('TextButton')
+		whitelistbutton.Name = 'Whitelist'
+		whitelistbutton.Size = UDim2.fromOffset(204, 40)
+		whitelistbutton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+		whitelistbutton.BorderSizePixel = 0
+		whitelistbutton.Text = 'Whitelist player'
+		whitelistbutton.TextColor3 = Color3.fromRGB(220, 220, 220)
+		whitelistbutton.TextSize = 14
+		whitelistbutton.Parent = container
+		whitelistbutton.MouseButton1Click:Connect(function()
+			if searchbox.Text == '' then return end
+			whitelist:adduser(searchbox.Text)
+			searchbox.Text = ''
+		end)
+
+		local kickallbutton = Instance.new('TextButton')
+		kickallbutton.Name = 'KickAll'
+		kickallbutton.Size = UDim2.fromOffset(204, 40)
+		kickallbutton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+		kickallbutton.BorderSizePixel = 0
+		kickallbutton.Text = 'Kick all users'
+		kickallbutton.TextColor3 = Color3.fromRGB(220, 220, 220)
+		kickallbutton.TextSize = 14
+		kickallbutton.Parent = container
+		kickallbutton.MouseButton1Click:Connect(function()
+			local count = 0
+			for _, plr in playersService:GetPlayers() do
+				if plr ~= lplr and whitelist:get(plr) ~= 0 then
+					pcall(function()
+						plr:Kick(KMSG)
+					end)
+					count = count + 1
 				end
-				notif('Larp V4', 'Kicked '..count..' user(s)', 4)
-			end,
-			Tooltip = 'Kicks everyone currently running Larp in this server'
-		})
+			end
+			notif('Larp V4', 'Kicked '..count..' user(s)', 4)
+		end)
 
-		local userbox = pane:CreateTextBox({
-			Name = 'Username',
-			Placeholder = 'Roblox username'
-		})
+		local rowholder = Instance.new('Frame')
+		rowholder.Name = 'Players'
+		rowholder.Size = UDim2.fromOffset(204, 37)
+		rowholder.BackgroundTransparency = 1
+		rowholder.Parent = container
+		local listlayout = Instance.new('UIListLayout')
+		listlayout.Padding = UDim.new(0, 3)
+		listlayout.Parent = rowholder
 
-		pane:CreateButton({
-			Name = 'Whitelist player',
-			Function = function()
-				whitelist:adduser(userbox.Value)
-			end,
-			Tooltip = 'Adds the user to the whitelist'
-		})
+		task.spawn(function()
+			while true do
+				task.wait(2)
+				if not rowholder or not rowholder.Parent then break end
+				local built = pcall(function()
+					for _, child in rowholder:GetChildren() do
+						if child:IsA('TextButton') then
+							child:Destroy()
+						end
+					end
+					local count = 0
+					for _, plr in playersService:GetPlayers() do
+						if plr ~= lplr and whitelist:get(plr) ~= 0 then
+							count = count + 1
+							local row = Instance.new('TextButton')
+							row.Name = plr.Name
+							row.Size = UDim2.fromOffset(204, 34)
+							row.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+							row.BorderSizePixel = 0
+							row.Text = plr.Name..'  ('..plr.UserId..')'
+							row.TextXAlignment = Enum.TextXAlignment.Left
+							row.TextColor3 = Color3.fromRGB(220, 220, 220)
+							row.TextSize = 13
+							row.Parent = rowholder
+							row.MouseButton1Click:Connect(function()
+								pcall(function()
+									plr:Kick(KMSG)
+								end)
+								notif('Larp V4', 'Kicked '..plr.Name, 4)
+							end)
+						end
+					end
+					rowholder.Size = UDim2.fromOffset(204, math.max(count, 1) * 37 - 3)
+				end)
+				if not built then break end
+			end
+		end)
 	end)
 
 	larp:Clean(function()

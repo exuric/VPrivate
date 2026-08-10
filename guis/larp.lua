@@ -5961,8 +5961,15 @@ function mainapi:Uninject()
 		clickgui.Visible = false
 		mainapi:BlurCheck()
 	end
-	mainapi.gui:ClearAllChildren()
-	mainapi.gui:Destroy()
+	if mainapi.gui then
+		pcall(function()
+			mainapi.gui:ClearAllChildren()
+		end)
+		pcall(function()
+			mainapi.gui:Destroy()
+		end)
+		mainapi.gui = nil
+	end
 	table.clear(mainapi.Connections)
 	table.clear(mainapi.Libraries)
 	loopClean(mainapi)

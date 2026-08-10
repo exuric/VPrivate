@@ -3865,33 +3865,3 @@ function mainapi:CreateCategory(categorysettings)
 		pinicon.Position = UDim2.new(1, -48, 0, 12)
 		pinicon.BackgroundTransparency = 1
 		pinicon.Image = getcustomasset('LarpV4/assets/larp/pin.png')
-		pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
-		pinicon.Visible = false
-		pinicon.ZIndex = 2
-		pinicon.Parent = modulebutton
-		local pinned = false
-		local function updatePin()
-			pinicon.Visible = pinned and not bind.Visible
-		end
-		modulechildren.Name = modulesettings.Name..'Children'
-		modulechildren.Size = UDim2.new(1, 0, 0, 0)
-		modulechildren.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-		modulechildren.BorderSizePixel = 0
-		modulechildren.Visible = false
-		modulechildren.Parent = children
-		addCorner(modulechildren, UDim.new(0, 6))
-		moduleapi.Children = modulechildren
-		local windowlist = Instance.new('UIListLayout')
-		windowlist.SortOrder = Enum.SortOrder.LayoutOrder
-		windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		windowlist.Parent = modulechildren
-		local modulepadding = Instance.new('UIPadding')
-		modulepadding.PaddingLeft = UDim.new(0, 4)
-		modulepadding.PaddingRight = UDim.new(0, 4)
-		modulepadding.PaddingTop = UDim.new(0, 3)
-		modulepadding.PaddingBottom = UDim.new(0, 3)
-		modulepadding.Parent = modulechildren
-		local divider = Instance.new('Frame')
-		divider.Name = 'Divider'
-		divider.Size = UDim2.new(1, 0, 0, 1)
-		divider.Position = UDim2.new(0, 0, 1, -1)

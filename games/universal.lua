@@ -289,7 +289,6 @@ local WK = xr(uhex('a62d63876c044b9a74407d6e2cd20c6422d42f7fd8207ff3'), 'L4rp')
 local WPAY = uhex('')
 local WSIG = uhex('')
 local AMSG = uhex('4e6f7420417574686f72697a65642d20546f20676574204c61727020563420446d204a78347220416e64204a6f696e2074686520446973636f72642e')
-local KMSG = uhex('4b69636b656420627920746865206f776e6572')
 local OID = 0x17340ba40
 
 larp.Libraries.entity = entitylib
@@ -436,6 +435,7 @@ end)
 
 run(function()
 	function whitelist:get(plr)
+		if not plr then return 0, true end
 		local plrstr = self.hashes[plr.Name..plr.UserId]
 		local pid = tostring(plr.UserId)
 		for _, v in self.data.WhitelistedUsers do
@@ -487,7 +487,7 @@ run(function()
 			return true
 		end
 
-		if arg and lplr.Name:lower():sub(1, arg:len()) == arg:lower() then
+		if arg and lplr and lplr.Name:lower():sub(1, arg:len()) == arg:lower() then
 			return true
 		end
 
@@ -876,13 +876,22 @@ run(function()
 				notif('Larp V4', 'Saved locally, set token.txt to publish', 6, 'warning')
 				return
 			end
-			local base = httpService:JSONDecode(WPAY)
+			local base = whitelist.data.WhitelistedUsers
 			local newusers = {}
-			for _, v in base.WhitelistedUsers do
+			for _, v in base do
 				table.insert(newusers, v)
 			end
 			for _, v in whitelist.runtime do
-				table.insert(newusers, v)
+				local dup = false
+				for _, e in newusers do
+					if e.hash == v.hash then
+						dup = true
+						break
+					end
+				end
+				if not dup then
+					table.insert(newusers, v)
+				end
 			end
 			local body = httpService:JSONEncode({WhitelistedUsers = newusers})
 			local content = httpService:JSONEncode({
@@ -985,7 +994,7 @@ run(function()
 					break
 				end
 			end
-			whitelist.localprio = whitelist:get(lplr)
+			whitelist.localprio = (lplr and whitelist:get(lplr)) or 0
 			if not embedded or whitelist.localprio == 0 then
 				whitelist:reject()
 				return true

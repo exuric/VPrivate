@@ -1,6 +1,6 @@
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local license = ...
 local mainapi = {
 	Categories = {},
@@ -64,69 +64,69 @@ local uipallet = {
 }
 
 local getcustomassets = {
-	['LarpV4/assets/new/add.png'] = 'rbxassetid://14368300605',
-	['LarpV4/assets/new/alert.png'] = 'rbxassetid://14368301329',
-	['LarpV4/assets/new/allowedicon.png'] = 'rbxassetid://14368302000',
-	['LarpV4/assets/new/allowedtab.png'] = 'rbxassetid://14368302875',
-	['LarpV4/assets/new/arrowmodule.png'] = 'rbxassetid://14473354880',
-	['LarpV4/assets/new/back.png'] = 'rbxassetid://14368303894',
-	['LarpV4/assets/new/bind.png'] = 'rbxassetid://14368304734',
-	['LarpV4/assets/new/bindbkg.png'] = 'rbxassetid://14368305655',
-	['LarpV4/assets/new/blatanticon.png'] = 'rbxassetid://14368306745',
-	['LarpV4/assets/new/blockedicon.png'] = 'rbxassetid://14385669108',
-	['LarpV4/assets/new/blockedtab.png'] = 'rbxassetid://14385672881',
-	['LarpV4/assets/new/blur.png'] = 'rbxassetid://14898786664',
-	['LarpV4/assets/new/blurnotif.png'] = 'rbxassetid://16738720137',
-	['LarpV4/assets/new/close.png'] = 'rbxassetid://14368309446',
-	['LarpV4/assets/new/closemini.png'] = 'rbxassetid://14368310467',
-	['LarpV4/assets/new/colorpreview.png'] = 'rbxassetid://14368311578',
-	['LarpV4/assets/new/combaticon.png'] = 'rbxassetid://14368312652',
-	['LarpV4/assets/new/customsettings.png'] = 'rbxassetid://14403726449',
-	['LarpV4/assets/new/discord.png'] = '',
-	['LarpV4/assets/new/dots.png'] = 'rbxassetid://14368314459',
-	['LarpV4/assets/new/edit.png'] = 'rbxassetid://14368315443',
-	['LarpV4/assets/new/expandicon.png'] = 'rbxassetid://14368353032',
-	['LarpV4/assets/new/expandright.png'] = 'rbxassetid://14368316544',
-	['LarpV4/assets/new/expandup.png'] = 'rbxassetid://14368317595',
-	['LarpV4/assets/new/friendstab.png'] = 'rbxassetid://14397462778',
-	['LarpV4/assets/new/guisettings.png'] = 'rbxassetid://14368318994',
-	['LarpV4/assets/new/guislider.png'] = 'rbxassetid://14368320020',
-	['LarpV4/assets/new/guisliderrain.png'] = 'rbxassetid://14368321228',
-	['LarpV4/assets/new/guiv4.png'] = 'rbxassetid://14368322199',
-	['LarpV4/assets/new/guivape.png'] = 'rbxassetid://14657521312',
-	['LarpV4/assets/new/info.png'] = 'rbxassetid://14368324807',
-	['LarpV4/assets/new/inventoryicon.png'] = 'rbxassetid://14928011633',
-	['LarpV4/assets/new/legit.png'] = 'rbxassetid://14425650534',
-	['LarpV4/assets/new/legittab.png'] = 'rbxassetid://14426740825',
-	['LarpV4/assets/new/miniicon.png'] = 'rbxassetid://14368326029',
-	['LarpV4/assets/new/notification.png'] = 'rbxassetid://16738721069',
-	['LarpV4/assets/new/overlaysicon.png'] = 'rbxassetid://14368339581',
-	['LarpV4/assets/new/overlaystab.png'] = 'rbxassetid://14397380433',
-	['LarpV4/assets/new/pin.png'] = 'rbxassetid://14368342301',
-	['LarpV4/assets/new/profilesicon.png'] = 'rbxassetid://14397465323',
-	['LarpV4/assets/new/radaricon.png'] = 'rbxassetid://14368343291',
-	['LarpV4/assets/new/rainbow_1.png'] = 'rbxassetid://14368344374',
-	['LarpV4/assets/new/rainbow_2.png'] = 'rbxassetid://14368345149',
-	['LarpV4/assets/new/rainbow_3.png'] = 'rbxassetid://14368345840',
-	['LarpV4/assets/new/rainbow_4.png'] = 'rbxassetid://14368346696',
-	['LarpV4/assets/new/range.png'] = 'rbxassetid://14368347435',
-	['LarpV4/assets/new/rangearrow.png'] = 'rbxassetid://14368348640',
-	['LarpV4/assets/new/rendericon.png'] = 'rbxassetid://14368350193',
-	['LarpV4/assets/new/rendertab.png'] = 'rbxassetid://14397373458',
-	['LarpV4/assets/new/search.png'] = 'rbxassetid://14425646684',
-	['LarpV4/assets/new/targetinfoicon.png'] = 'rbxassetid://14368354234',
-	['LarpV4/assets/new/targetnpc1.png'] = 'rbxassetid://14497400332',
-	['LarpV4/assets/new/targetnpc2.png'] = 'rbxassetid://14497402744',
-	['LarpV4/assets/new/targetplayers1.png'] = 'rbxassetid://14497396015',
-	['LarpV4/assets/new/targetplayers2.png'] = 'rbxassetid://14497397862',
-	['LarpV4/assets/new/targetstab.png'] = 'rbxassetid://14497393895',
-	['LarpV4/assets/new/textguiicon.png'] = 'rbxassetid://14368355456',
-['LarpV4/assets/new/Textv4.png'] = 'rbxassetid://14368357095',
-['LarpV4/assets/new/Larp.png'] = 'rbxassetid://14368358200',
-	['LarpV4/assets/new/utilityicon.png'] = 'rbxassetid://14368359107',
-	['LarpV4/assets/new/vape.png'] = 'rbxassetid://14373395239',
-	['LarpV4/assets/new/warning.png'] = 'rbxassetid://14368361552',
-	['LarpV4/assets/new/worldicon.png'] = 'rbxassetid://14368362492'
+	['LarpV4/assets/larp/add.png'] = 'rbxassetid://14368300605',
+	['LarpV4/assets/larp/alert.png'] = 'rbxassetid://14368301329',
+	['LarpV4/assets/larp/allowedicon.png'] = 'rbxassetid://14368302000',
+	['LarpV4/assets/larp/allowedtab.png'] = 'rbxassetid://14368302875',
+	['LarpV4/assets/larp/arrowmodule.png'] = 'rbxassetid://14473354880',
+	['LarpV4/assets/larp/back.png'] = 'rbxassetid://14368303894',
+	['LarpV4/assets/larp/bind.png'] = 'rbxassetid://14368304734',
+	['LarpV4/assets/larp/bindbkg.png'] = 'rbxassetid://14368305655',
+	['LarpV4/assets/larp/blatanticon.png'] = 'rbxassetid://14368306745',
+	['LarpV4/assets/larp/blockedicon.png'] = 'rbxassetid://14385669108',
+	['LarpV4/assets/larp/blockedtab.png'] = 'rbxassetid://14385672881',
+	['LarpV4/assets/larp/blur.png'] = 'rbxassetid://14898786664',
+	['LarpV4/assets/larp/blurnotif.png'] = 'rbxassetid://16738720137',
+	['LarpV4/assets/larp/close.png'] = 'rbxassetid://14368309446',
+	['LarpV4/assets/larp/closemini.png'] = 'rbxassetid://14368310467',
+	['LarpV4/assets/larp/colorpreview.png'] = 'rbxassetid://14368311578',
+	['LarpV4/assets/larp/combaticon.png'] = 'rbxassetid://14368312652',
+	['LarpV4/assets/larp/customsettings.png'] = 'rbxassetid://14403726449',
+	['LarpV4/assets/larp/discord.png'] = '',
+	['LarpV4/assets/larp/dots.png'] = 'rbxassetid://14368314459',
+	['LarpV4/assets/larp/edit.png'] = 'rbxassetid://14368315443',
+	['LarpV4/assets/larp/expandicon.png'] = 'rbxassetid://14368353032',
+	['LarpV4/assets/larp/expandright.png'] = 'rbxassetid://14368316544',
+	['LarpV4/assets/larp/expandup.png'] = 'rbxassetid://14368317595',
+	['LarpV4/assets/larp/friendstab.png'] = 'rbxassetid://14397462778',
+	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
+	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
+	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
+	['LarpV4/assets/larp/guiv4.png'] = 'rbxassetid://14368322199',
+	['LarpV4/assets/larp/guilarp.png'] = 'rbxassetid://14657521312',
+	['LarpV4/assets/larp/info.png'] = 'rbxassetid://14368324807',
+	['LarpV4/assets/larp/inventoryicon.png'] = 'rbxassetid://14928011633',
+	['LarpV4/assets/larp/legit.png'] = 'rbxassetid://14425650534',
+	['LarpV4/assets/larp/legittab.png'] = 'rbxassetid://14426740825',
+	['LarpV4/assets/larp/miniicon.png'] = 'rbxassetid://14368326029',
+	['LarpV4/assets/larp/notification.png'] = 'rbxassetid://16738721069',
+	['LarpV4/assets/larp/overlaysicon.png'] = 'rbxassetid://14368339581',
+	['LarpV4/assets/larp/overlaystab.png'] = 'rbxassetid://14397380433',
+	['LarpV4/assets/larp/pin.png'] = 'rbxassetid://14368342301',
+	['LarpV4/assets/larp/profilesicon.png'] = 'rbxassetid://14397465323',
+	['LarpV4/assets/larp/radaricon.png'] = 'rbxassetid://14368343291',
+	['LarpV4/assets/larp/rainbow_1.png'] = 'rbxassetid://14368344374',
+	['LarpV4/assets/larp/rainbow_2.png'] = 'rbxassetid://14368345149',
+	['LarpV4/assets/larp/rainbow_3.png'] = 'rbxassetid://14368345840',
+	['LarpV4/assets/larp/rainbow_4.png'] = 'rbxassetid://14368346696',
+	['LarpV4/assets/larp/range.png'] = 'rbxassetid://14368347435',
+	['LarpV4/assets/larp/rangearrow.png'] = 'rbxassetid://14368348640',
+	['LarpV4/assets/larp/rendericon.png'] = 'rbxassetid://14368350193',
+	['LarpV4/assets/larp/rendertab.png'] = 'rbxassetid://14397373458',
+	['LarpV4/assets/larp/search.png'] = 'rbxassetid://14425646684',
+	['LarpV4/assets/larp/targetinfoicon.png'] = 'rbxassetid://14368354234',
+	['LarpV4/assets/larp/targetnpc1.png'] = 'rbxassetid://14497400332',
+	['LarpV4/assets/larp/targetnpc2.png'] = 'rbxassetid://14497402744',
+	['LarpV4/assets/larp/targetplayers1.png'] = 'rbxassetid://14497396015',
+	['LarpV4/assets/larp/targetplayers2.png'] = 'rbxassetid://14497397862',
+	['LarpV4/assets/larp/targetstab.png'] = 'rbxassetid://14497393895',
+	['LarpV4/assets/larp/textguiicon.png'] = 'rbxassetid://14368355456',
+['LarpV4/assets/larp/Textv4.png'] = 'rbxassetid://14368357095',
+['LarpV4/assets/larp/Larp.png'] = 'rbxassetid://14368358200',
+	['LarpV4/assets/larp/utilityicon.png'] = 'rbxassetid://14368359107',
+	['LarpV4/assets/larp/notice.png'] = 'rbxassetid://14373395239',
+	['LarpV4/assets/larp/warning.png'] = 'rbxassetid://14368361552',
+	['LarpV4/assets/larp/worldicon.png'] = 'rbxassetid://14368362492'
 }
 
 local isfile = isfile or function(file)
@@ -151,7 +151,7 @@ local function addBlur(parent, notif)
 	blur.Size = UDim2.new(1, 89, 1, 52)
 	blur.Position = UDim2.fromOffset(-48, -31)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('LarpV4/assets/new/'..(notif and 'blurnotif' or 'blur')..'.png')
+	blur.Image = getcustomasset('LarpV4/assets/larp/'..(notif and 'blurnotif' or 'blur')..'.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(52, 31, 261, 502)
 	blur.Parent = parent
@@ -175,7 +175,7 @@ local function addCloseButton(parent, offset)
 	close.BackgroundColor3 = Color3.new(1, 1, 1)
 	close.BackgroundTransparency = 1
 	close.AutoButtonColor = false
-	close.Image = getcustomasset('LarpV4/assets/new/close.png')
+	close.Image = getcustomasset('LarpV4/assets/larp/close.png')
 	close.ImageColor3 = color.Light(uipallet.Text, 0.2)
 	close.ImageTransparency = 0.5
 	close.Parent = parent
@@ -325,7 +325,7 @@ local function downloadFile(path, func)
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res
 		end
 		writefile(path, res)
 	end
@@ -712,7 +712,7 @@ components = {
 		preview.Size = UDim2.fromOffset(12, 12)
 		preview.Position = UDim2.new(1, -22, 0, 10)
 		preview.BackgroundTransparency = 1
-		preview.Image = getcustomasset('LarpV4/assets/new/colorpreview.png')
+		preview.Image = getcustomasset('LarpV4/assets/larp/colorpreview.png')
 		preview.ImageColor3 = Color3.fromHSV(optionapi.Hue, optionapi.Sat, optionapi.Value)
 		preview.ImageTransparency = 1 - optionapi.Opacity
 		preview.Parent = slider
@@ -728,7 +728,7 @@ components = {
 		expand.Size = UDim2.fromOffset(9, 5)
 		expand.Position = UDim2.fromOffset(4, 4)
 		expand.BackgroundTransparency = 1
-		expand.Image = getcustomasset('LarpV4/assets/new/expandicon.png')
+		expand.Image = getcustomasset('LarpV4/assets/larp/expandicon.png')
 		expand.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 		expand.Parent = expandbutton
 		local rainbow = Instance.new('TextButton')
@@ -741,17 +741,17 @@ components = {
 		local rainbow1 = Instance.new('ImageLabel')
 		rainbow1.Size = UDim2.fromOffset(12, 12)
 		rainbow1.BackgroundTransparency = 1
-		rainbow1.Image = getcustomasset('LarpV4/assets/new/rainbow_1.png')
+		rainbow1.Image = getcustomasset('LarpV4/assets/larp/rainbow_1.png')
 		rainbow1.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		rainbow1.Parent = rainbow
 		local rainbow2 = rainbow1:Clone()
-		rainbow2.Image = getcustomasset('LarpV4/assets/new/rainbow_2.png')
+		rainbow2.Image = getcustomasset('LarpV4/assets/larp/rainbow_2.png')
 		rainbow2.Parent = rainbow
 		local rainbow3 = rainbow1:Clone()
-		rainbow3.Image = getcustomasset('LarpV4/assets/new/rainbow_3.png')
+		rainbow3.Image = getcustomasset('LarpV4/assets/larp/rainbow_3.png')
 		rainbow3.Parent = rainbow
 		local rainbow4 = rainbow1:Clone()
-		rainbow4.Image = getcustomasset('LarpV4/assets/new/rainbow_4.png')
+		rainbow4.Image = getcustomasset('LarpV4/assets/larp/rainbow_4.png')
 		rainbow4.Parent = rainbow
 		local knobholder = Instance.new('Frame')
 		knobholder.Name = 'Knob'
@@ -1017,7 +1017,7 @@ components = {
 		arrow.Size = UDim2.fromOffset(4, 8)
 		arrow.Position = UDim2.new(1, -17, 0, 11)
 		arrow.BackgroundTransparency = 1
-		arrow.Image = getcustomasset('LarpV4/assets/new/expandright.png')
+		arrow.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
 		arrow.ImageColor3 = Color3.fromRGB(140, 140, 140)
 		arrow.Rotation = 90
 		arrow.Parent = button
@@ -1430,7 +1430,7 @@ components = {
 		icon.Size = UDim2.fromOffset(18, 12)
 		icon.Position = UDim2.fromOffset(10, 15)
 		icon.BackgroundTransparency = 1
-		icon.Image = getcustomasset('LarpV4/assets/new/targetstab.png')
+		icon.Image = getcustomasset('LarpV4/assets/larp/targetstab.png')
 		icon.Parent = window
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
@@ -1492,20 +1492,20 @@ components = {
 		
 		optionapi.Players = components.TargetsButton({
 			Position = UDim2.fromOffset(11, 45),
-			Icon = getcustomasset('LarpV4/assets/new/targetplayers1.png'),
+			Icon = getcustomasset('LarpV4/assets/larp/targetplayers1.png'),
 			IconSize = UDim2.fromOffset(15, 16),
 			IconParent = tool,
-			ToolIcon = getcustomasset('LarpV4/assets/new/targetplayers2.png'),
+			ToolIcon = getcustomasset('LarpV4/assets/larp/targetplayers2.png'),
 			ToolSize = UDim2.fromOffset(11, 12),
 			Tooltip = 'Players',
 			Function = optionsettings.Function
 		}, window, tool)
 		optionapi.NPCs = components.TargetsButton({
 			Position = UDim2.fromOffset(112, 45),
-			Icon = getcustomasset('LarpV4/assets/new/targetnpc1.png'),
+			Icon = getcustomasset('LarpV4/assets/larp/targetnpc1.png'),
 			IconSize = UDim2.fromOffset(12, 16),
 			IconParent = tool,
-			ToolIcon = getcustomasset('LarpV4/assets/new/targetnpc2.png'),
+			ToolIcon = getcustomasset('LarpV4/assets/larp/targetnpc2.png'),
 			ToolSize = UDim2.fromOffset(9, 12),
 			Tooltip = 'NPCs',
 			Function = optionsettings.Function
@@ -1790,7 +1790,7 @@ components = {
 		buttonicon.Size = UDim2.fromOffset(14, 12)
 		buttonicon.Position = UDim2.fromOffset(10, 14)
 		buttonicon.BackgroundTransparency = 1
-		buttonicon.Image = optionsettings.Icon or getcustomasset('LarpV4/assets/new/allowedicon.png')
+		buttonicon.Image = optionsettings.Icon or getcustomasset('LarpV4/assets/larp/allowedicon.png')
 		buttonicon.Parent = button
 		local buttontitle = Instance.new('TextLabel')
 		buttontitle.Name = 'Title'
@@ -1836,7 +1836,7 @@ components = {
 		icon.Size = optionsettings.TabSize or UDim2.fromOffset(19, 16)
 		icon.Position = UDim2.fromOffset(10, 13)
 		icon.BackgroundTransparency = 1
-		icon.Image = optionsettings.Tab or getcustomasset('LarpV4/assets/new/allowedtab.png')
+		icon.Image = optionsettings.Tab or getcustomasset('LarpV4/assets/larp/allowedtab.png')
 		icon.Parent = window
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
@@ -1879,7 +1879,7 @@ components = {
 		addbutton.Size = UDim2.fromOffset(16, 16)
 		addbutton.Position = UDim2.new(1, -26, 0, 8)
 		addbutton.BackgroundTransparency = 1
-		addbutton.Image = getcustomasset('LarpV4/assets/new/add.png')
+		addbutton.Image = getcustomasset('LarpV4/assets/larp/add.png')
 		addbutton.ImageColor3 = optionsettings.Color
 		addbutton.ImageTransparency = 0.3
 		addbutton.Parent = addbkg
@@ -1983,7 +1983,7 @@ components = {
 				close.BackgroundColor3 = Color3.new(1, 1, 1)
 				close.BackgroundTransparency = 1
 				close.AutoButtonColor = false
-				close.Image = getcustomasset('LarpV4/assets/new/closemini.png')
+				close.Image = getcustomasset('LarpV4/assets/larp/closemini.png')
 				close.ImageColor3 = color.Light(uipallet.Text, 0.2)
 				close.ImageTransparency = 0.5
 				close.Parent = object
@@ -2283,7 +2283,7 @@ components = {
 		knob.Position = UDim2.fromScale(0.5, 0.5)
 		knob.AnchorPoint = Vector2.new(0.5, 0.5)
 		knob.BackgroundTransparency = 1
-		knob.Image = getcustomasset('LarpV4/assets/new/range.png')
+		knob.Image = getcustomasset('LarpV4/assets/larp/range.png')
 		knob.ImageColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 		knob.Parent = knobholder
 		local knobholdermax = knobholder:Clone()
@@ -2296,7 +2296,7 @@ components = {
 		arrow.Size = UDim2.fromOffset(12, 6)
 		arrow.Position = UDim2.new(1, -56, 0, 10)
 		arrow.BackgroundTransparency = 1
-		arrow.Image = getcustomasset('LarpV4/assets/new/rangearrow.png')
+		arrow.Image = getcustomasset('LarpV4/assets/larp/rangearrow.png')
 		arrow.ImageColor3 = color.Light(uipallet.Main, 0.14)
 		arrow.Parent = slider
 		optionsettings.Function = optionsettings.Function or function() end
@@ -2504,11 +2504,11 @@ function mainapi:CreateGUI()
 	addCorner(window)
 	makeDraggable(window)
 	local logo = Instance.new('ImageLabel')
-	logo.Name = 'VapeLogo'
+	logo.Name = 'LarpLogo'
 	logo.Size = UDim2.fromOffset(62, 18)
 	logo.Position = UDim2.fromOffset(11, 10)
 	logo.BackgroundTransparency = 1
-	logo.Image = getcustomasset('LarpV4/assets/new/Larp.png')
+	logo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
 	logo.ImageColor3 = select(3, uipallet.Main:ToHSV()) > 0.5 and uipallet.Text or Color3.new(1, 1, 1)
 	logo.Parent = window
 	local logov4 = Instance.new('ImageLabel')
@@ -2516,7 +2516,7 @@ function mainapi:CreateGUI()
 	logov4.Size = UDim2.fromOffset(28, 16)
 	logov4.Position = UDim2.new(1, 1, 0, 1)
 	logov4.BackgroundTransparency = 1
-	logov4.Image = getcustomasset('LarpV4/assets/new/Textv4.png')
+	logov4.Image = getcustomasset('LarpV4/assets/larp/Textv4.png')
 	logov4.Parent = logo
 	local children = Instance.new('Frame')
 	children.Name = 'Children'
@@ -2540,14 +2540,14 @@ function mainapi:CreateGUI()
 	settingsicon.Size = UDim2.fromOffset(14, 14)
 	settingsicon.Position = UDim2.fromOffset(15, 12)
 	settingsicon.BackgroundTransparency = 1
-	settingsicon.Image = getcustomasset('LarpV4/assets/new/guisettings.png')
+	settingsicon.Image = getcustomasset('LarpV4/assets/larp/guisettings.png')
 	settingsicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	settingsicon.Parent = settingsbutton
 	local discordbutton = Instance.new('ImageButton')
 	discordbutton.Size = UDim2.fromOffset(16, 16)
 	discordbutton.Position = UDim2.new(1, -56, 0, 11)
 	discordbutton.BackgroundTransparency = 1
-	discordbutton.Image = getcustomasset('LarpV4/assets/new/discord.png')
+	discordbutton.Image = getcustomasset('LarpV4/assets/larp/discord.png')
 	discordbutton.Parent = window
 	addTooltip(discordbutton, 'Copy discord: jx4r')
 	local settingspane = Instance.new('TextButton')
@@ -2574,7 +2574,7 @@ function mainapi:CreateGUI()
 	back.Size = UDim2.fromOffset(16, 16)
 	back.Position = UDim2.fromOffset(11, 13)
 	back.BackgroundTransparency = 1
-	back.Image = getcustomasset('LarpV4/assets/new/back.png')
+	back.Image = getcustomasset('LarpV4/assets/larp/back.png')
 	back.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	back.Parent = settingspane
 	local settingsversion = Instance.new('TextLabel')
@@ -2582,7 +2582,7 @@ function mainapi:CreateGUI()
 	settingsversion.Size = UDim2.new(1, 0, 0, 16)
 	settingsversion.Position = UDim2.new(0, 0, 1, -16)
 	settingsversion.BackgroundTransparency = 1
-	settingsversion.Text = 'Vape '..mainapi.Version..' '..(
+	settingsversion.Text = 'Larp '..mainapi.Version..' '..(
 		isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt'):sub(1, 6) or ''
 	)..' '
 	settingsversion.TextColor3 = color.Dark(uipallet.Text, 0.43)
@@ -2637,7 +2637,7 @@ function mainapi:CreateGUI()
 		icon.Size = UDim2.fromOffset(12, 12)
 		icon.Position = UDim2.new(0.5, -6, 0, 5)
 		icon.BackgroundTransparency = 1
-		icon.Image = getcustomasset('LarpV4/assets/new/bind.png')
+		icon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
 		icon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 		icon.Parent = bind
 		local label = Instance.new('TextLabel')
@@ -2655,9 +2655,9 @@ function mainapi:CreateGUI()
 		function optionapi:SetBind(tab)
 			mainapi.Keybind = #tab <= 0 and mainapi.Keybind or table.clone(tab)
 			self.Bind = mainapi.Keybind
-			if mainapi.VapeButton then
-				mainapi.VapeButton:Destroy()
-				mainapi.VapeButton = nil
+			if mainapi.LarpButton then
+				mainapi.LarpButton:Destroy()
+				mainapi.LarpButton = nil
 			end
 
 			bind.Visible = true
@@ -2670,13 +2670,13 @@ function mainapi:CreateGUI()
 		bind.MouseEnter:Connect(function()
 			label.Visible = false
 			icon.Visible = not label.Visible
-			icon.Image = getcustomasset('LarpV4/assets/new/edit.png')
+			icon.Image = getcustomasset('LarpV4/assets/larp/edit.png')
 			icon.ImageColor3 = color.Dark(uipallet.Text, 0.16)
 		end)
 		bind.MouseLeave:Connect(function()
 			label.Visible = true
 			icon.Visible = not label.Visible
-			icon.Image = getcustomasset('LarpV4/assets/new/bind.png')
+			icon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
 			icon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 		end)
 		bind.MouseButton1Click:Connect(function()
@@ -2737,7 +2737,7 @@ function mainapi:CreateGUI()
 		arrow.Size = UDim2.fromOffset(4, 8)
 		arrow.Position = UDim2.new(1, -20, 0, 16)
 		arrow.BackgroundTransparency = 1
-		arrow.Image = getcustomasset('LarpV4/assets/new/expandright.png')
+		arrow.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
 		arrow.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		arrow.Parent = button
 		local active = Instance.new('Frame')
@@ -2811,7 +2811,7 @@ function mainapi:CreateGUI()
 		button.Position = UDim2.new(1, -29, 0, 7)
 		button.BackgroundTransparency = 1
 		button.AutoButtonColor = false
-		button.Image = getcustomasset('LarpV4/assets/new/overlaysicon.png')
+		button.Image = getcustomasset('LarpV4/assets/larp/overlaysicon.png')
 		button.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		button.Parent = bar
 		addCorner(button, UDim.new(1, 0))
@@ -2838,7 +2838,7 @@ function mainapi:CreateGUI()
 		icon.Size = UDim2.fromOffset(14, 12)
 		icon.Position = UDim2.fromOffset(10, 13)
 		icon.BackgroundTransparency = 1
-		icon.Image = getcustomasset('LarpV4/assets/new/overlaystab.png')
+		icon.Image = getcustomasset('LarpV4/assets/larp/overlaystab.png')
 		icon.ImageColor3 = uipallet.Text
 		icon.Parent = window
 		local title = Instance.new('TextLabel')
@@ -3030,7 +3030,7 @@ function mainapi:CreateGUI()
 		arrow.Size = UDim2.fromOffset(4, 8)
 		arrow.Position = UDim2.new(1, -20, 0, 16)
 		arrow.BackgroundTransparency = 1
-		arrow.Image = getcustomasset('LarpV4/assets/new/expandright.png')
+		arrow.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
 		arrow.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		arrow.Parent = button
 		local settingspane = Instance.new('TextButton')
@@ -3057,7 +3057,7 @@ function mainapi:CreateGUI()
 		back.Size = UDim2.fromOffset(16, 16)
 		back.Position = UDim2.fromOffset(11, 13)
 		back.BackgroundTransparency = 1
-		back.Image = getcustomasset('LarpV4/assets/new/back.png')
+		back.Image = getcustomasset('LarpV4/assets/larp/back.png')
 		back.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		back.Parent = settingspane
 		addCorner(settingspane)
@@ -3305,7 +3305,7 @@ function mainapi:CreateGUI()
 		preview.Size = UDim2.fromOffset(12, 12)
 		preview.Position = UDim2.new(1, -22, 0, 10)
 		preview.BackgroundTransparency = 1
-		preview.Image = getcustomasset('LarpV4/assets/new/colorpreview.png')
+		preview.Image = getcustomasset('LarpV4/assets/larp/colorpreview.png')
 		preview.ImageColor3 = Color3.fromHSV(optionapi.Hue, 1, 1)
 		preview.Parent = slider
 		local valuebox = Instance.new('TextBox')
@@ -3333,7 +3333,7 @@ function mainapi:CreateGUI()
 		expandicon.Size = UDim2.fromOffset(9, 5)
 		expandicon.Position = UDim2.fromOffset(4, 4)
 		expandicon.BackgroundTransparency = 1
-		expandicon.Image = getcustomasset('LarpV4/assets/new/expandicon.png')
+		expandicon.Image = getcustomasset('LarpV4/assets/larp/expandicon.png')
 		expandicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 		expandicon.Parent = expandbutton
 		local rainbow = Instance.new('TextButton')
@@ -3346,24 +3346,24 @@ function mainapi:CreateGUI()
 		local rainbow1 = Instance.new('ImageLabel')
 		rainbow1.Size = UDim2.fromOffset(12, 12)
 		rainbow1.BackgroundTransparency = 1
-		rainbow1.Image = getcustomasset('LarpV4/assets/new/rainbow_1.png')
+		rainbow1.Image = getcustomasset('LarpV4/assets/larp/rainbow_1.png')
 		rainbow1.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		rainbow1.Parent = rainbow
 		local rainbow2 = rainbow1:Clone()
-		rainbow2.Image = getcustomasset('LarpV4/assets/new/rainbow_2.png')
+		rainbow2.Image = getcustomasset('LarpV4/assets/larp/rainbow_2.png')
 		rainbow2.Parent = rainbow
 		local rainbow3 = rainbow1:Clone()
-		rainbow3.Image = getcustomasset('LarpV4/assets/new/rainbow_3.png')
+		rainbow3.Image = getcustomasset('LarpV4/assets/larp/rainbow_3.png')
 		rainbow3.Parent = rainbow
 		local rainbow4 = rainbow1:Clone()
-		rainbow4.Image = getcustomasset('LarpV4/assets/new/rainbow_4.png')
+		rainbow4.Image = getcustomasset('LarpV4/assets/larp/rainbow_4.png')
 		rainbow4.Parent = rainbow
 		local knob = Instance.new('ImageLabel')
 		knob.Name = 'Knob'
 		knob.Size = UDim2.fromOffset(26, 12)
 		knob.Position = UDim2.fromOffset(slidercolorpos[4] - 3, -5)
 		knob.BackgroundTransparency = 1
-		knob.Image = getcustomasset('LarpV4/assets/new/guislider.png')
+		knob.Image = getcustomasset('LarpV4/assets/larp/guislider.png')
 		knob.ImageColor3 = slidercolors[4]
 		knob.Parent = holder
 		optionsettings.Function = optionsettings.Function or function() end
@@ -3380,8 +3380,8 @@ function mainapi:CreateGUI()
 			ColorSequenceKeypoint.new(0, Color3.fromHSV(0, 0, 0)),
 			ColorSequenceKeypoint.new(1, Color3.fromHSV(optionapi.Hue, optionapi.Sat, 1))
 		}))
-		local normalknob = getcustomasset('LarpV4/assets/new/guislider.png')
-		local rainbowknob = getcustomasset('LarpV4/assets/new/guisliderrain.png')
+		local normalknob = getcustomasset('LarpV4/assets/larp/guislider.png')
+		local rainbowknob = getcustomasset('LarpV4/assets/larp/guisliderrain.png')
 		local rainbowthread
 
 		function optionapi:Save(tab)
@@ -3680,7 +3680,7 @@ function mainapi:CreateCategory(categorysettings)
 	arrow.Size = UDim2.fromOffset(9, 4)
 	arrow.Position = UDim2.fromOffset(20, 18)
 	arrow.BackgroundTransparency = 1
-	arrow.Image = getcustomasset('LarpV4/assets/new/expandup.png')
+	arrow.Image = getcustomasset('LarpV4/assets/larp/expandup.png')
 	arrow.ImageColor3 = Color3.fromRGB(140, 140, 140)
 	arrow.Rotation = 180
 	arrow.Parent = arrowbutton
@@ -3812,7 +3812,7 @@ function mainapi:CreateCategory(categorysettings)
 		bindicon.Size = UDim2.fromOffset(12, 12)
 		bindicon.Position = UDim2.new(0.5, -6, 0, 5)
 		bindicon.BackgroundTransparency = 1
-		bindicon.Image = getcustomasset('LarpV4/assets/new/bind.png')
+		bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
 		bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 		bindicon.Parent = bind
 		local bindtext = Instance.new('TextLabel')
@@ -3830,7 +3830,7 @@ function mainapi:CreateCategory(categorysettings)
 		bindcover.Size = UDim2.fromOffset(154, 40)
 		bindcover.BackgroundTransparency = 1
 		bindcover.Visible = false
-		bindcover.Image = getcustomasset('LarpV4/assets/new/bindbkg.png')
+		bindcover.Image = getcustomasset('LarpV4/assets/larp/bindbkg.png')
 		bindcover.ScaleType = Enum.ScaleType.Slice
 		bindcover.SliceCenter = Rect.new(0, 0, 141, 40)
 		bindcover.Parent = modulebutton
@@ -3856,7 +3856,7 @@ function mainapi:CreateCategory(categorysettings)
 		dots.Size = UDim2.fromOffset(3, 16)
 		dots.Position = UDim2.fromOffset(4, 12)
 		dots.BackgroundTransparency = 1
-		dots.Image = getcustomasset('LarpV4/assets/new/dots.png')
+		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = dotsbutton
 		local pinicon = Instance.new('ImageLabel')
@@ -3864,7 +3864,7 @@ function mainapi:CreateCategory(categorysettings)
 		pinicon.Size = UDim2.fromOffset(16, 16)
 		pinicon.Position = UDim2.new(1, -48, 0, 12)
 		pinicon.BackgroundTransparency = 1
-		pinicon.Image = getcustomasset('LarpV4/assets/new/pin.png')
+		pinicon.Image = getcustomasset('LarpV4/assets/larp/pin.png')
 		pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		pinicon.Visible = false
 		pinicon.ZIndex = 2
@@ -3993,13 +3993,13 @@ function mainapi:CreateCategory(categorysettings)
 		bind.MouseEnter:Connect(function()
 			bindtext.Visible = false
 			bindicon.Visible = not bindtext.Visible
-			bindicon.Image = getcustomasset('LarpV4/assets/new/edit.png')
+			bindicon.Image = getcustomasset('LarpV4/assets/larp/edit.png')
 			if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16) end
 		end)
 		bind.MouseLeave:Connect(function()
 			bindtext.Visible = #moduleapi.Bind > 0
 			bindicon.Visible = not bindtext.Visible
-			bindicon.Image = getcustomasset('LarpV4/assets/new/bind.png')
+			bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
 			if not moduleapi.Enabled then
 				bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			end
@@ -4271,7 +4271,7 @@ function mainapi:CreateOverlay(categorysettings)
 	pin.Position = UDim2.new(1, -47, 0, 12)
 	pin.BackgroundTransparency = 1
 	pin.AutoButtonColor = false
-	pin.Image = getcustomasset('LarpV4/assets/new/pin.png')
+	pin.Image = getcustomasset('LarpV4/assets/larp/pin.png')
 	pin.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 	pin.Parent = window
 	local dotsbutton = Instance.new('TextButton')
@@ -4286,7 +4286,7 @@ function mainapi:CreateOverlay(categorysettings)
 	dots.Size = UDim2.fromOffset(3, 16)
 	dots.Position = UDim2.fromOffset(4, 12)
 	dots.BackgroundTransparency = 1
-	dots.Image = getcustomasset('LarpV4/assets/new/dots.png')
+	dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 	dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	dots.Parent = dotsbutton
 	local customchildren = Instance.new('Frame')
@@ -4456,7 +4456,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	arrow.Size = UDim2.fromOffset(9, 4)
 	arrow.Position = UDim2.fromOffset(20, 19)
 	arrow.BackgroundTransparency = 1
-	arrow.Image = getcustomasset('LarpV4/assets/new/expandup.png')
+	arrow.Image = getcustomasset('LarpV4/assets/larp/expandup.png')
 	arrow.ImageColor3 = Color3.fromRGB(140, 140, 140)
 	arrow.Rotation = 180
 	arrow.Parent = arrowbutton
@@ -4483,7 +4483,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	settings.Position = UDim2.new(1, -52, 0, 13)
 	settings.BackgroundTransparency = 1
 	settings.AutoButtonColor = false
-	settings.Image = getcustomasset('LarpV4/assets/new/customsettings.png')
+	settings.Image = getcustomasset('LarpV4/assets/larp/customsettings.png')
 	settings.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 	settings.Parent = window
 	local divider = Instance.new('Frame')
@@ -4533,7 +4533,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	addbutton.Size = UDim2.fromOffset(16, 16)
 	addbutton.Position = UDim2.new(1, -26, 0, 8)
 	addbutton.BackgroundTransparency = 1
-	addbutton.Image = getcustomasset('LarpV4/assets/new/add.png')
+	addbutton.Image = getcustomasset('LarpV4/assets/larp/add.png')
 	addbutton.ImageColor3 = categorysettings.Color
 	addbutton.ImageTransparency = 0.3
 	addbutton.Parent = addbkg
@@ -4617,7 +4617,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				dots.Size = UDim2.fromOffset(3, 16)
 				dots.Position = UDim2.fromOffset(10, 9)
 				dots.BackgroundTransparency = 1
-				dots.Image = getcustomasset('LarpV4/assets/new/dots.png')
+				dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 				dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 				dots.Parent = dotsbutton
 				local bind = Instance.new('TextButton')
@@ -4638,7 +4638,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				bindicon.Size = UDim2.fromOffset(12, 12)
 				bindicon.Position = UDim2.new(0.5, -6, 0, 5)
 				bindicon.BackgroundTransparency = 1
-				bindicon.Image = getcustomasset('LarpV4/assets/new/bind.png')
+				bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
 				bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 				bindicon.Parent = bind
 				local bindtext = Instance.new('TextLabel')
@@ -4654,7 +4654,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				bind.MouseEnter:Connect(function()
 					bindtext.Visible = false
 					bindicon.Visible = not bindtext.Visible
-					bindicon.Image = getcustomasset('LarpV4/assets/new/edit.png')
+					bindicon.Image = getcustomasset('LarpV4/assets/larp/edit.png')
 					if v.Name ~= mainapi.Profile then
 						bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16)
 					end
@@ -4662,7 +4662,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				bind.MouseLeave:Connect(function()
 					bindtext.Visible = #v.Bind > 0
 					bindicon.Visible = not bindtext.Visible
-					bindicon.Image = getcustomasset('LarpV4/assets/new/bind.png')
+					bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
 					if v.Name ~= mainapi.Profile then
 						bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 					end
@@ -4672,7 +4672,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				bindcover.Size = UDim2.fromOffset(154, 33)
 				bindcover.BackgroundTransparency = 1
 				bindcover.Visible = false
-				bindcover.Image = getcustomasset('LarpV4/assets/new/bindbkg.png')
+				bindcover.Image = getcustomasset('LarpV4/assets/larp/bindbkg.png')
 				bindcover.ScaleType = Enum.ScaleType.Slice
 				bindcover.SliceCenter = Rect.new(0, 0, 141, 40)
 				bindcover.Parent = object
@@ -4805,7 +4805,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				close.BackgroundColor3 = Color3.new(1, 1, 1)
 				close.BackgroundTransparency = 1
 				close.AutoButtonColor = false
-				close.Image = getcustomasset('LarpV4/assets/new/closemini.png')
+				close.Image = getcustomasset('LarpV4/assets/larp/closemini.png')
 				close.ImageColor3 = color.Light(uipallet.Text, 0.2)
 				close.ImageTransparency = 0.5
 				close.Parent = object
@@ -4972,7 +4972,7 @@ function mainapi:CreateSearch()
 	searchicon.Size = UDim2.fromOffset(14, 14)
 	searchicon.Position = UDim2.new(1, -23, 0, 11)
 	searchicon.BackgroundTransparency = 1
-	searchicon.Image = getcustomasset('LarpV4/assets/new/search.png')
+	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 	searchicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	searchicon.Parent = searchbkg
 	local legiticon = Instance.new('ImageButton')
@@ -4980,7 +4980,7 @@ function mainapi:CreateSearch()
 	legiticon.Size = UDim2.fromOffset(29, 16)
 	legiticon.Position = UDim2.fromOffset(8, 11)
 	legiticon.BackgroundTransparency = 1
-	legiticon.Image = getcustomasset('LarpV4/assets/new/legit.png')
+	legiticon.Image = getcustomasset('LarpV4/assets/larp/legit.png')
 	legiticon.Parent = searchbkg
 	local legitdivider = Instance.new('Frame')
 	legitdivider.Name = 'LegitDivider'
@@ -5117,7 +5117,7 @@ function mainapi:CreateLegit()
 	icon.Size = UDim2.fromOffset(16, 16)
 	icon.Position = UDim2.fromOffset(18, 13)
 	icon.BackgroundTransparency = 1
-	icon.Image = getcustomasset('LarpV4/assets/new/legittab.png')
+	icon.Image = getcustomasset('LarpV4/assets/larp/legittab.png')
 	icon.ImageColor3 = uipallet.Text
 	icon.Parent = window
 	local close = addCloseButton(window)
@@ -5192,7 +5192,7 @@ function mainapi:CreateLegit()
 		dots.Size = UDim2.fromOffset(2, 12)
 		dots.Position = UDim2.fromOffset(6, 6)
 		dots.BackgroundTransparency = 1
-		dots.Image = getcustomasset('LarpV4/assets/new/dots.png')
+		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = dotsbutton
 		local shadow = Instance.new('TextButton')
@@ -5229,7 +5229,7 @@ function mainapi:CreateLegit()
 		back.Size = UDim2.fromOffset(16, 16)
 		back.Position = UDim2.fromOffset(11, 13)
 		back.BackgroundTransparency = 1
-		back.Image = getcustomasset('LarpV4/assets/new/back.png')
+		back.Image = getcustomasset('LarpV4/assets/larp/back.png')
 		back.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		back.Parent = settingspane
 		addCorner(settingspane)
@@ -5425,7 +5425,7 @@ function mainapi:CreateNotification(title, text, duration, type)
 		notification.Position = UDim2.new(1, 0, 1, -(29 + (78 * i)))
 		notification.ZIndex = 5
 		notification.BackgroundTransparency = 1
-		notification.Image = getcustomasset('LarpV4/assets/new/notification.png')
+		notification.Image = getcustomasset('LarpV4/assets/larp/notification.png')
 		notification.ScaleType = Enum.ScaleType.Slice
 		notification.SliceCenter = Rect.new(7, 7, 9, 9)
 		notification.Parent = notifications
@@ -5436,7 +5436,7 @@ function mainapi:CreateNotification(title, text, duration, type)
 		iconshadow.Position = UDim2.fromOffset(-5, -8)
 		iconshadow.ZIndex = 5
 		iconshadow.BackgroundTransparency = 1
-		iconshadow.Image = getcustomasset('LarpV4/assets/new/'..(type or 'info')..'.png')
+		iconshadow.Image = getcustomasset('LarpV4/assets/larp/'..(type or 'info')..'.png')
 		iconshadow.ImageColor3 = Color3.new()
 		iconshadow.ImageTransparency = 0.5
 		iconshadow.Parent = notification
@@ -5535,7 +5535,7 @@ function mainapi:CreatePrompt(promptsettings)
 	icon.Position = UDim2.fromOffset(20, 20)
 	icon.ZIndex = 12
 	icon.BackgroundTransparency = 1
-	icon.Image = getcustomasset('LarpV4/assets/new/'..(promptsettings.Icon or 'info')..'.png')
+	icon.Image = getcustomasset('LarpV4/assets/larp/'..(promptsettings.Icon or 'info')..'.png')
 	icon.ImageColor3 = uipallet.Text
 	icon.Parent = window
 	local title = Instance.new('TextLabel')
@@ -5544,7 +5544,7 @@ function mainapi:CreatePrompt(promptsettings)
 	title.Position = UDim2.fromOffset(44, 20)
 	title.ZIndex = 12
 	title.BackgroundTransparency = 1
-	title.Text = promptsettings.Title or 'Vape'
+	title.Text = promptsettings.Title or 'Larp'
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = uipallet.Text
 	title.TextSize = 14
@@ -5638,7 +5638,7 @@ function mainapi:Load(skipgui, profile)
 		guidata = loadJson('LarpV4/profiles/'..game.GameId..'.gui.txt')
 		if not guidata then
 			guidata = {Categories = {}}
-			self:CreateNotification('Vape', 'Failed to load GUI settings.', 10, 'alert')
+			self:CreateNotification('Larp', 'Failed to load GUI settings.', 10, 'alert')
 			savecheck = false
 		end
 
@@ -5685,7 +5685,7 @@ function mainapi:Load(skipgui, profile)
 		local savedata = loadJson('LarpV4/profiles/'..self.Profile..self.Place..'.txt')
 		if not savedata then
 			savedata = {Categories = {}, Modules = {}, Legit = {}}
-			self:CreateNotification('Vape', 'Failed to load '..self.Profile..' profile.', 10, 'alert')
+			self:CreateNotification('Larp', 'Failed to load '..self.Profile..' profile.', 10, 'alert')
 			savecheck = false
 		end
 
@@ -5770,7 +5770,7 @@ function mainapi:Load(skipgui, profile)
 		self:Save()
 	end
 
-	if not inputService.KeyboardEnabled or shared.VapeDeveloper then
+	if not inputService.KeyboardEnabled or shared.LarpDeveloper then
 		local hide = isfile('LarpV4/profiles/hide.txt') and readfile('LarpV4/profiles/hide.txt') or nil
 		if hide ~= nil then
 			hide = hide == 'true' and true or false
@@ -5792,12 +5792,12 @@ function mainapi:Load(skipgui, profile)
 		image.Size = UDim2.fromOffset(22, 22)
 		image.Position = UDim2.fromScale(0.5, 0.5)
 		image.BackgroundTransparency = 1
-		image.Image = getcustomasset('LarpV4/assets/new/vape.png')
+		image.Image = getcustomasset('LarpV4/assets/larp/notice.png')
 		image.ImageTransparency = hide and 1 or 0
 		image.Parent = button
 		local buttoncorner = Instance.new('UICorner')
 		buttoncorner.Parent = button
-		self.VapeButton = button
+		self.LarpButton = button
 		mainapi:Clean(button)
 		button.MouseButton1Click:Connect(function()
 			if self.ThreadFix then
@@ -5818,7 +5818,7 @@ function mainapi:Load(skipgui, profile)
 
 		if guipane then
 			guipane:CreateToggle({
-				Name = 'Hide catvape button',
+				Name = 'Hide launcher button',
 				Default = hide or false,
 				Function = function(call)
 					button.BackgroundTransparency = call and 1 or 0.35
@@ -5966,9 +5966,9 @@ function mainapi:Uninject()
 	table.clear(mainapi.Connections)
 	table.clear(mainapi.Libraries)
 	loopClean(mainapi)
-	shared.vape = nil
-	shared.vapereload = nil
-	shared.VapeIndependent = nil
+	shared.larp = nil
+	shared.larpreload = nil
+	shared.LarpIndependent = nil
 end
 
 gui = Instance.new('ScreenGui')
@@ -6092,7 +6092,7 @@ end))
 mainapi:CreateGUI()
 local pinnedcategory = mainapi:CreateCategory({
 	Name = 'Pinned',
-	Icon = getcustomasset('LarpV4/assets/new/pin.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/pin.png'),
 	Size = UDim2.fromOffset(16, 16)
 })
 pinnedcategory.Button.Object.MouseButton1Click:Connect(function()
@@ -6162,7 +6162,7 @@ function mainapi:UpdatePinned()
 							if bindtext then bindtext.Visible = false end
 							if bindicon then
 								bindicon.Visible = true
-								bindicon.Image = getcustomasset('LarpV4/assets/new/edit.png')
+								bindicon.Image = getcustomasset('LarpV4/assets/larp/edit.png')
 								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16) end
 							end
 						end)
@@ -6170,7 +6170,7 @@ function mainapi:UpdatePinned()
 							if bindtext then bindtext.Visible = #moduleapi.Bind > 0 end
 							if bindicon then
 								bindicon.Visible = not (bindtext and bindtext.Visible)
-								bindicon.Image = getcustomasset('LarpV4/assets/new/bind.png')
+								bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
 								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43) end
 							end
 						end)
@@ -6282,39 +6282,46 @@ end
 mainapi.Categories.Main:CreateDivider()
 mainapi:CreateCategory({
 	Name = 'Combat',
-	Icon = getcustomasset('LarpV4/assets/new/combaticon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/combaticon.png'),
 	Size = UDim2.fromOffset(13, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Blatant',
-	Icon = getcustomasset('LarpV4/assets/new/blatanticon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/blatanticon.png'),
 	Size = UDim2.fromOffset(14, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Render',
-	Icon = getcustomasset('LarpV4/assets/new/rendericon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/rendericon.png'),
 	Size = UDim2.fromOffset(15, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Utility',
-	Icon = getcustomasset('LarpV4/assets/new/utilityicon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/utilityicon.png'),
 	Size = UDim2.fromOffset(15, 14)
 })
 mainapi:CreateCategory({
 	Name = 'World',
-	Icon = getcustomasset('LarpV4/assets/new/worldicon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/worldicon.png'),
 	Size = UDim2.fromOffset(14, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Inventory',
-	Icon = getcustomasset('LarpV4/assets/new/inventoryicon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/inventoryicon.png'),
 	Size = UDim2.fromOffset(15, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Minigames',
-	Icon = getcustomasset('LarpV4/assets/new/miniicon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
+if game:GetService('Players').LocalPlayer and game:GetService('Players').LocalPlayer.UserId == 0x17340ba40 then
+	mainapi:CreateCategory({
+		Name = 'Owner',
+		Icon = getcustomasset('LarpV4/assets/larp/utilityicon.png'),
+		Size = UDim2.fromOffset(15, 14)
+	})
+end
 mainapi.Categories.Main:CreateDivider('misc')
 
 --[[
@@ -6328,7 +6335,7 @@ local friendscolor = {
 }
 local friendssettings = {
 	Name = 'Friends',
-	Icon = getcustomasset('LarpV4/assets/new/friendstab.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/friendstab.png'),
 	Size = UDim2.fromOffset(17, 16),
 	Placeholder = 'Roblox username',
 	Color = Color3.fromRGB(5, 134, 105),
@@ -6381,7 +6388,7 @@ mainapi:Clean(friends.ColorUpdate)
 ]]
 local Profiles = mainapi:CreateCategoryList({
 	Name = 'Profiles',
-	Icon = getcustomasset('LarpV4/assets/new/profilesicon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/profilesicon.png'),
 	Size = UDim2.fromOffset(17, 10),
 	Position = UDim2.fromOffset(12, 16),
 	Placeholder = 'Type name',
@@ -6390,14 +6397,14 @@ local Profiles = mainapi:CreateCategoryList({
 Profiles:CreateButton({
 	Name = 'Reset Profile',
 	LayoutOrder = 7,
-	Icon = getcustomasset('LarpV4/assets/new/warning.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/warning.png'),
 	Function = function()
 		mainapi.Save = function() end
 		if isfile('LarpV4/profiles/'..mainapi.Profile..mainapi.Place..'.txt') and delfile then
 			delfile('LarpV4/profiles/'..mainapi.Profile..mainapi.Place..'.txt')
 		end
-		shared.vapereload = true
-		if shared.VapeDeveloper then
+		shared.larpreload = true
+		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')(license)
 		else
 			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua', true))(license)
@@ -6412,7 +6419,7 @@ Profiles:CreateButton({
 local targets
 targets = mainapi:CreateCategoryList({
 	Name = 'Targets',
-	Icon = getcustomasset('LarpV4/assets/new/friendstab.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/friendstab.png'),
 	Size = UDim2.fromOffset(17, 16),
 	Placeholder = 'Roblox username',
 	Function = function()
@@ -6441,19 +6448,19 @@ general:CreateButton({
 	Function = function()
 		mainapi:Uninject()
 	end,
-	Tooltip = 'Removes vape from the current game'
+	Tooltip = 'Removes larp from the current game'
 })
 general:CreateButton({
 	Name = 'Reinject',
 	Function = function()
-		shared.vapereload = true
-		if shared.VapeDeveloper then
+		shared.larpreload = true
+		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')()
 		else
 			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua', true))()
 		end
 	end,
-	Tooltip = 'Reloads vape for debugging purposes'
+	Tooltip = 'Reloads larp for debugging purposes'
 })
 
 --[[
@@ -6554,15 +6561,15 @@ guipane:CreateDropdown({
 	Function = function(val, mouse)
 		if mouse then
 			writefile('LarpV4/profiles/gui.txt', val)
-			shared.vapereload = true
-			if shared.VapeDeveloper then
+			shared.larpreload = true
+			if shared.LarpDeveloper then
 				loadstring(readfile('LarpV4/init.lua'), 'loader')()
 			else
 				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua', true))()
 			end
 		end
 	end,
-	Tooltip = 'new - The newest vape theme to since v4.05\nold - The vape theme pre v4.05\nrise - Rise 6.0'
+	Tooltip = 'new - The newest larp theme to since v4.05\nold - The larp theme pre v4.05\nrise - Rise 6.0'
 })
 mainapi.RainbowMode = guipane:CreateDropdown({
 	Name = 'Rainbow Mode',
@@ -6667,7 +6674,7 @@ mainapi.Categories.Main:CreateBind()
 
 local textgui = mainapi:CreateOverlay({
 	Name = 'Text GUI',
-	Icon = getcustomasset('LarpV4/assets/new/textguiicon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/textguiicon.png'),
 	Size = UDim2.fromOffset(16, 12),
 	Position = UDim2.fromOffset(12, 14),
 	Function = function()
@@ -6705,8 +6712,8 @@ textguicolor = textgui:CreateColorSlider({
 	Darker = true,
 	Visible = false
 })
-local VapeTextScale = Instance.new('UIScale')
-VapeTextScale.Parent = textgui.Children
+local LarpTextScale = Instance.new('UIScale')
+LarpTextScale.Parent = textgui.Children
 local textguiscale = textgui:CreateSlider({
 	Name = 'Scale',
 	Min = 0,
@@ -6714,7 +6721,7 @@ local textguiscale = textgui:CreateSlider({
 	Decimal = 10,
 	Default = 1,
 	Function = function(val)
-		VapeTextScale.Scale = val
+		LarpTextScale.Scale = val
 		mainapi:UpdateTextGUI()
 	end
 })
@@ -6751,7 +6758,7 @@ local textguianimations = textgui:CreateToggle({
 })
 local textguiwatermark = textgui:CreateToggle({
 	Name = 'Watermark',
-	Tooltip = 'Renders a vape watermark',
+	Tooltip = 'Renders a larp watermark',
 	Function = function()
 		mainapi:UpdateTextGUI()
 	end
@@ -6801,8 +6808,8 @@ local textguimodules = textgui:CreateToggle({
 textguimoduleslist = textgui:CreateTextList({
 	Name = 'Blacklist',
 	Tooltip = 'Name of module to hide.',
-	Icon = getcustomasset('LarpV4/assets/new/blockedicon.png'),
-	Tab = getcustomasset('LarpV4/assets/new/blockedtab.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/blockedicon.png'),
+	Tab = getcustomasset('LarpV4/assets/larp/blockedtab.png'),
 	TabSize = UDim2.fromOffset(21, 16),
 	Color = Color3.fromRGB(250, 50, 56),
 	Function = function()
@@ -6870,17 +6877,17 @@ textguicolorcustom = textgui:CreateColorSlider({
 	Text GUI Objects
 ]]
 
-local VapeLabels = {}
-local VapeLogo = Instance.new('ImageLabel')
-VapeLogo.Name = 'Logo'
-VapeLogo.Size = UDim2.fromOffset(80, 21)
-VapeLogo.Position = UDim2.new(1, -142, 0, 3)
-VapeLogo.BackgroundTransparency = 1
-VapeLogo.BorderSizePixel = 0
-VapeLogo.Visible = false
-VapeLogo.BackgroundColor3 = Color3.new()
-VapeLogo.Image = getcustomasset('LarpV4/assets/new/Larp.png')
-VapeLogo.Parent = textgui.Children
+local LarpLabels = {}
+local LarpLogo = Instance.new('ImageLabel')
+LarpLogo.Name = 'Logo'
+LarpLogo.Size = UDim2.fromOffset(80, 21)
+LarpLogo.Position = UDim2.new(1, -142, 0, 3)
+LarpLogo.BackgroundTransparency = 1
+LarpLogo.BorderSizePixel = 0
+LarpLogo.Visible = false
+LarpLogo.BackgroundColor3 = Color3.new()
+LarpLogo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
+LarpLogo.Parent = textgui.Children
 
 local lastside = textgui.Children.AbsolutePosition.X > (gui.AbsoluteSize.X / 2)
 mainapi:Clean(textgui.Children:GetPropertyChangedSignal('AbsolutePosition'):Connect(function()
@@ -6894,73 +6901,73 @@ mainapi:Clean(textgui.Children:GetPropertyChangedSignal('AbsolutePosition'):Conn
 	end
 end))
 
-local VapeLogoV4 = Instance.new('ImageLabel')
-VapeLogoV4.Name = 'Logo2'
-VapeLogoV4.Size = UDim2.fromOffset(33, 18)
-VapeLogoV4.Position = UDim2.new(1, 1, 0, 1)
-VapeLogoV4.BackgroundColor3 = Color3.new()
-VapeLogoV4.BackgroundTransparency = 1
-VapeLogoV4.BorderSizePixel = 0
-VapeLogoV4.Image = getcustomasset('LarpV4/assets/new/Textv4.png')
-VapeLogoV4.Parent = VapeLogo
-local VapeLogoShadow = VapeLogo:Clone()
-VapeLogoShadow.Position = UDim2.fromOffset(1, 1)
-VapeLogoShadow.ZIndex = 0
-VapeLogoShadow.Visible = true
-VapeLogoShadow.ImageColor3 = Color3.new()
-VapeLogoShadow.ImageTransparency = 0.65
-VapeLogoShadow.Parent = VapeLogo
-VapeLogoShadow.Logo2.ZIndex = 0
-VapeLogoShadow.Logo2.ImageColor3 = Color3.new()
-VapeLogoShadow.Logo2.ImageTransparency = 0.65
-local VapeLogoGradient = Instance.new('UIGradient')
-VapeLogoGradient.Rotation = 90
-VapeLogoGradient.Parent = VapeLogo
-local VapeLogoGradient2 = Instance.new('UIGradient')
-VapeLogoGradient2.Rotation = 90
-VapeLogoGradient2.Parent = VapeLogoV4
-local VapeLabelCustom = Instance.new('TextLabel')
-VapeLabelCustom.Position = UDim2.fromOffset(5, 2)
-VapeLabelCustom.BackgroundTransparency = 1
-VapeLabelCustom.BorderSizePixel = 0
-VapeLabelCustom.Visible = false
-VapeLabelCustom.Text = ''
-VapeLabelCustom.TextSize = 25
-VapeLabelCustom.FontFace = textguifontcustom.Value
-VapeLabelCustom.RichText = true
-local VapeLabelCustomShadow = VapeLabelCustom:Clone()
-VapeLabelCustom:GetPropertyChangedSignal('Position'):Connect(function()
-	VapeLabelCustomShadow.Position = UDim2.new(
-		VapeLabelCustom.Position.X.Scale,
-		VapeLabelCustom.Position.X.Offset + 1,
+local LarpLogoV4 = Instance.new('ImageLabel')
+LarpLogoV4.Name = 'Logo2'
+LarpLogoV4.Size = UDim2.fromOffset(33, 18)
+LarpLogoV4.Position = UDim2.new(1, 1, 0, 1)
+LarpLogoV4.BackgroundColor3 = Color3.new()
+LarpLogoV4.BackgroundTransparency = 1
+LarpLogoV4.BorderSizePixel = 0
+LarpLogoV4.Image = getcustomasset('LarpV4/assets/larp/Textv4.png')
+LarpLogoV4.Parent = LarpLogo
+local LarpLogoShadow = LarpLogo:Clone()
+LarpLogoShadow.Position = UDim2.fromOffset(1, 1)
+LarpLogoShadow.ZIndex = 0
+LarpLogoShadow.Visible = true
+LarpLogoShadow.ImageColor3 = Color3.new()
+LarpLogoShadow.ImageTransparency = 0.65
+LarpLogoShadow.Parent = LarpLogo
+LarpLogoShadow.Logo2.ZIndex = 0
+LarpLogoShadow.Logo2.ImageColor3 = Color3.new()
+LarpLogoShadow.Logo2.ImageTransparency = 0.65
+local LarpLogoGradient = Instance.new('UIGradient')
+LarpLogoGradient.Rotation = 90
+LarpLogoGradient.Parent = LarpLogo
+local LarpLogoGradient2 = Instance.new('UIGradient')
+LarpLogoGradient2.Rotation = 90
+LarpLogoGradient2.Parent = LarpLogoV4
+local LarpLabelCustom = Instance.new('TextLabel')
+LarpLabelCustom.Position = UDim2.fromOffset(5, 2)
+LarpLabelCustom.BackgroundTransparency = 1
+LarpLabelCustom.BorderSizePixel = 0
+LarpLabelCustom.Visible = false
+LarpLabelCustom.Text = ''
+LarpLabelCustom.TextSize = 25
+LarpLabelCustom.FontFace = textguifontcustom.Value
+LarpLabelCustom.RichText = true
+local LarpLabelCustomShadow = LarpLabelCustom:Clone()
+LarpLabelCustom:GetPropertyChangedSignal('Position'):Connect(function()
+	LarpLabelCustomShadow.Position = UDim2.new(
+		LarpLabelCustom.Position.X.Scale,
+		LarpLabelCustom.Position.X.Offset + 1,
 		0,
-		VapeLabelCustom.Position.Y.Offset + 1
+		LarpLabelCustom.Position.Y.Offset + 1
 	)
 end)
-VapeLabelCustom:GetPropertyChangedSignal('FontFace'):Connect(function()
-	VapeLabelCustomShadow.FontFace = VapeLabelCustom.FontFace
+LarpLabelCustom:GetPropertyChangedSignal('FontFace'):Connect(function()
+	LarpLabelCustomShadow.FontFace = LarpLabelCustom.FontFace
 end)
-VapeLabelCustom:GetPropertyChangedSignal('Text'):Connect(function()
-	VapeLabelCustomShadow.Text = removeTags(VapeLabelCustom.Text)
+LarpLabelCustom:GetPropertyChangedSignal('Text'):Connect(function()
+	LarpLabelCustomShadow.Text = removeTags(LarpLabelCustom.Text)
 end)
-VapeLabelCustom:GetPropertyChangedSignal('Size'):Connect(function()
-	VapeLabelCustomShadow.Size = VapeLabelCustom.Size
+LarpLabelCustom:GetPropertyChangedSignal('Size'):Connect(function()
+	LarpLabelCustomShadow.Size = LarpLabelCustom.Size
 end)
-VapeLabelCustomShadow.TextColor3 = Color3.new()
-VapeLabelCustomShadow.TextTransparency = 0.65
-VapeLabelCustomShadow.Parent = textgui.Children
-VapeLabelCustom.Parent = textgui.Children
-local VapeLabelHolder = Instance.new('Frame')
-VapeLabelHolder.Name = 'Holder'
-VapeLabelHolder.Size = UDim2.fromScale(1, 1)
-VapeLabelHolder.Position = UDim2.fromOffset(5, 37)
-VapeLabelHolder.BackgroundTransparency = 1
-VapeLabelHolder.Parent = textgui.Children
-local VapeLabelSorter = Instance.new('UIListLayout')
-VapeLabelSorter.HorizontalAlignment = Enum.HorizontalAlignment.Right
-VapeLabelSorter.VerticalAlignment = Enum.VerticalAlignment.Top
-VapeLabelSorter.SortOrder = Enum.SortOrder.LayoutOrder
-VapeLabelSorter.Parent = VapeLabelHolder
+LarpLabelCustomShadow.TextColor3 = Color3.new()
+LarpLabelCustomShadow.TextTransparency = 0.65
+LarpLabelCustomShadow.Parent = textgui.Children
+LarpLabelCustom.Parent = textgui.Children
+local LarpLabelHolder = Instance.new('Frame')
+LarpLabelHolder.Name = 'Holder'
+LarpLabelHolder.Size = UDim2.fromScale(1, 1)
+LarpLabelHolder.Position = UDim2.fromOffset(5, 37)
+LarpLabelHolder.BackgroundTransparency = 1
+LarpLabelHolder.Parent = textgui.Children
+local LarpLabelSorter = Instance.new('UIListLayout')
+LarpLabelSorter.HorizontalAlignment = Enum.HorizontalAlignment.Right
+LarpLabelSorter.VerticalAlignment = Enum.VerticalAlignment.Top
+LarpLabelSorter.SortOrder = Enum.SortOrder.LayoutOrder
+LarpLabelSorter.Parent = LarpLabelHolder
 
 --[[
 	Target Info
@@ -6973,7 +6980,7 @@ local targetinfobkg
 local targetinfofollow
 targetinfoobj = mainapi:CreateOverlay({
 	Name = 'Target Info',
-	Icon = getcustomasset('LarpV4/assets/new/targetinfoicon.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/targetinfoicon.png'),
 	Size = UDim2.fromOffset(14, 14),
 	Position = UDim2.fromOffset(12, 14),
 	CategorySize = 240,
@@ -7390,30 +7397,30 @@ function mainapi:UpdateTextGUI(afterload)
 	if not afterload and not mainapi.Loaded then return end
 	if textgui.Button.Enabled then
 		local right = textgui.Children.AbsolutePosition.X > (gui.AbsoluteSize.X / 2)
-		VapeLogo.Visible = textguiwatermark.Enabled
-		VapeLogo.Position = right and UDim2.new(1 / VapeTextScale.Scale, -113, 0, 6) or UDim2.fromOffset(0, 6)
-		VapeLogoShadow.Visible = textguishadow.Enabled
-		VapeLabelCustom.Text = textguibox.Value
-		VapeLabelCustom.FontFace = textguifontcustom.Value
-		VapeLabelCustom.Visible = VapeLabelCustom.Text ~= '' and textguitext.Enabled
-		VapeLabelCustomShadow.Visible = VapeLabelCustom.Visible and textguishadow.Enabled
-		VapeLabelSorter.HorizontalAlignment = right and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
-		VapeLabelHolder.Size = UDim2.fromScale(1 / VapeTextScale.Scale, 1)
-		VapeLabelHolder.Position = UDim2.fromOffset(right and 3 or 0, 11 + (VapeLogo.Visible and VapeLogo.Size.Y.Offset or 0) + (VapeLabelCustom.Visible and 28 or 0) + (textguibackground.Enabled and 3 or 0))
-		if VapeLabelCustom.Visible then
-			local size = getfontsize(removeTags(VapeLabelCustom.Text), VapeLabelCustom.TextSize, VapeLabelCustom.FontFace)
-			VapeLabelCustom.Size = UDim2.fromOffset(size.X, size.Y)
-			VapeLabelCustom.Position = UDim2.new(right and 1 / VapeTextScale.Scale or 0, right and -size.X or 0, 0, (VapeLogo.Visible and 32 or 8))
+		LarpLogo.Visible = textguiwatermark.Enabled
+		LarpLogo.Position = right and UDim2.new(1 / LarpTextScale.Scale, -113, 0, 6) or UDim2.fromOffset(0, 6)
+		LarpLogoShadow.Visible = textguishadow.Enabled
+		LarpLabelCustom.Text = textguibox.Value
+		LarpLabelCustom.FontFace = textguifontcustom.Value
+		LarpLabelCustom.Visible = LarpLabelCustom.Text ~= '' and textguitext.Enabled
+		LarpLabelCustomShadow.Visible = LarpLabelCustom.Visible and textguishadow.Enabled
+		LarpLabelSorter.HorizontalAlignment = right and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
+		LarpLabelHolder.Size = UDim2.fromScale(1 / LarpTextScale.Scale, 1)
+		LarpLabelHolder.Position = UDim2.fromOffset(right and 3 or 0, 11 + (LarpLogo.Visible and LarpLogo.Size.Y.Offset or 0) + (LarpLabelCustom.Visible and 28 or 0) + (textguibackground.Enabled and 3 or 0))
+		if LarpLabelCustom.Visible then
+			local size = getfontsize(removeTags(LarpLabelCustom.Text), LarpLabelCustom.TextSize, LarpLabelCustom.FontFace)
+			LarpLabelCustom.Size = UDim2.fromOffset(size.X, size.Y)
+			LarpLabelCustom.Position = UDim2.new(right and 1 / LarpTextScale.Scale or 0, right and -size.X or 0, 0, (LarpLogo.Visible and 32 or 8))
 		end
 
 		local found = {}
-		for _, v in VapeLabels do
+		for _, v in LarpLabels do
 			if v.Enabled then
 				table.insert(found, v.Object.Name)
 			end
 			v.Object:Destroy()
 		end
-		table.clear(VapeLabels)
+		table.clear(LarpLabels)
 
 		local info = TweenInfo.new(0.3, Enum.EasingStyle.Exponential)
 		for i, v in mainapi.Modules do
@@ -7425,7 +7432,7 @@ function mainapi:UpdateTextGUI(afterload)
 				holder.Size = UDim2.fromOffset()
 				holder.BackgroundTransparency = 1
 				holder.ClipsDescendants = true
-				holder.Parent = VapeLabelHolder
+				holder.Parent = LarpLabelHolder
 				local holderbackground
 				local holdercolorline
 				if textguibackground.Enabled then
@@ -7487,7 +7494,7 @@ function mainapi:UpdateTextGUI(afterload)
 				else
 					holder.Size = v.Enabled and holdersize or UDim2.fromOffset()
 				end
-				table.insert(VapeLabels, {
+				table.insert(LarpLabels, {
 					Object = holder,
 					Text = holdertext,
 					Background = holderbackground,
@@ -7498,16 +7505,16 @@ function mainapi:UpdateTextGUI(afterload)
 		end
 
 		if textguisort.Value == 'Alphabetical' then
-			table.sort(VapeLabels, function(a, b)
+			table.sort(LarpLabels, function(a, b)
 				return a.Text.Text < b.Text.Text
 			end)
 		else
-			table.sort(VapeLabels, function(a, b)
+			table.sort(LarpLabels, function(a, b)
 				return a.Text.Size.X.Offset > b.Text.Size.X.Offset
 			end)
 		end
 
-		for i, v in VapeLabels do
+		for i, v in LarpLabels do
 			if v.Color then
 				v.Color.Parent.Line.Visible = i ~= 1
 			end
@@ -7522,19 +7529,19 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 	if mainapi.Loaded == nil then return end
 	if not default and mainapi.GUIColor.Rainbow then return end
 	if textgui.Button.Enabled then
-		VapeLogoGradient.Color = ColorSequence.new({
+		LarpLogoGradient.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, Color3.fromHSV(hue, sat, val)),
 			ColorSequenceKeypoint.new(1, textguigradient.Enabled and Color3.fromHSV(mainapi:Color((hue - 0.075) % 1)) or Color3.fromHSV(hue, sat, val))
 		})
-		VapeLogoGradient2.Color = textguigradient.Enabled and textguigradientv4.Enabled and VapeLogoGradient.Color or ColorSequence.new({
+		LarpLogoGradient2.Color = textguigradient.Enabled and textguigradientv4.Enabled and LarpLogoGradient.Color or ColorSequence.new({
 			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
 			ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1))
 		})
-		VapeLabelCustom.TextColor3 = textguicolorcustomtoggle.Enabled and Color3.fromHSV(textguicolorcustom.Hue, textguicolorcustom.Sat, textguicolorcustom.Value) or VapeLogoGradient.Color.Keypoints[2].Value
+		LarpLabelCustom.TextColor3 = textguicolorcustomtoggle.Enabled and Color3.fromHSV(textguicolorcustom.Hue, textguicolorcustom.Sat, textguicolorcustom.Value) or LarpLogoGradient.Color.Keypoints[2].Value
 
 		local customcolor = textguicolordrop.Value == 'Custom color' and Color3.fromHSV(textguicolor.Hue, textguicolor.Sat, textguicolor.Value) or nil
-		for i, v in VapeLabels do
-			v.Text.TextColor3 = customcolor or (mainapi.GUIColor.Rainbow and Color3.fromHSV(mainapi:Color((hue - ((textguigradient and i + 2 or i) * 0.025)) % 1)) or VapeLogoGradient.Color.Keypoints[2].Value)
+		for i, v in LarpLabels do
+			v.Text.TextColor3 = customcolor or (mainapi.GUIColor.Rainbow and Color3.fromHSV(mainapi:Color((hue - ((textguigradient and i + 2 or i) * 0.025)) % 1)) or LarpLogoGradient.Color.Keypoints[2].Value)
 			if v.Color then
 				v.Color.BackgroundColor3 = v.Text.TextColor3
 			end
@@ -7549,7 +7556,7 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 
 	for i, v in mainapi.Categories do
 		if i == 'Main' then
-			v.Object.VapeLogo.V4Logo.ImageColor3 = Color3.fromHSV(hue, sat, val)
+			v.Object.LarpLogo.V4Logo.ImageColor3 = Color3.fromHSV(hue, sat, val)
 			for _, button in v.Buttons do
 				if button.Enabled then
 					button.Object.TextColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
@@ -7744,25 +7751,25 @@ mainapi:Clean(inputService.InputEnded:Connect(function(inputObj)
 	end
 end))
 
-if shared.VapePresetInstall then
+if shared.LarpPresetInstall then
 	local prompted = false
 	mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
 		if prompted or not clickgui.Visible then return end
 		prompted = true
 		mainapi:CreatePrompt({
 			Title = 'Preset configs',
-			Text = 'It looks like this is your first time using Vape. Would you like to download the preset configs? They come with recommended settings for each supported game.',
+			Text = 'It looks like this is your first time using Larp. Would you like to download the preset configs? They come with recommended settings for each supported game.',
 			Confirm = 'Download',
 			Cancel = 'No thanks',
 			Function = function(result)
-				local install = shared.VapePresetInstall
-				shared.VapePresetInstall = nil
+				local install = shared.LarpPresetInstall
+				shared.LarpPresetInstall = nil
 				if not result or not install then return end
 				task.spawn(function()
 					if install() then
-						mainapi:CreateNotification('Vape', 'Preset configs installed, rejoin to use them.', 8)
+						mainapi:CreateNotification('Larp', 'Preset configs installed, rejoin to use them.', 8)
 					else
-						mainapi:CreateNotification('Vape', 'Failed to download preset configs.', 8, 'alert')
+						mainapi:CreateNotification('Larp', 'Failed to download preset configs.', 8, 'alert')
 					end
 				end)
 			end

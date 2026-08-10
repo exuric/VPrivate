@@ -1,4 +1,4 @@
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 --!nocheck
 local license = ... or {}
 license.Key = script_key or license.Key
@@ -36,7 +36,7 @@ local function downloadFile(path, func)
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res
 		end
 		writefile(path, res)
 		downloader.Text = ''
@@ -66,30 +66,30 @@ for _, folder in {'LarpV4', 'LarpV4/games', 'LarpV4/profiles', 'LarpV4/assets', 
 	end
 end
 
-if not shared.VapeDeveloper then
+if not shared.LarpDeveloper then
 	local commit = 'main'
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	local version = isfile('LarpV4/.version') and readfile('LarpV4/.version') or ''
-	if commit ~= stored or version ~= '50' then
+	if commit ~= stored or version ~= '51' then
 		if stored ~= '' and stored ~= commit then
 			shared.updated = stored
 		end
 		pcall(delfile, 'LarpV4/main.lua')
-		pcall(delfile, 'LarpV4/guis/new.lua')
+		pcall(delfile, 'LarpV4/guis/larp.lua')
 		wipeFolder('LarpV4')
 		wipeFolder('LarpV4/games')
 		wipeFolder('LarpV4/guis')
 		wipeFolder('LarpV4/libraries')
-		for _, file in {'LarpV4/assets/new/Larp.png', 'LarpV4/assets/new/Textv4.png', 'LarpV4/profiles/default6872274481.txt'} do
+		for _, file in {'LarpV4/assets/larp/Larp.png', 'LarpV4/assets/larp/Textv4.png', 'LarpV4/profiles/default6872274481.txt'} do
 			if isfile(file) then
 				pcall(delfile, file)
 			end
 		end
 	end
-	writefile('LarpV4/.version', '50')
+	writefile('LarpV4/.version', '51')
 	writefile('LarpV4/profiles/commit.txt', commit)
 	if #listfiles('LarpV4/profiles') < 4 then
-		shared.VapePresetInstall = function()
+		shared.LarpPresetInstall = function()
 			local suc, req = pcall(request, {
 				Url = 'https://api.github.com/repos/exuric/VPrivate/contents/profiles',
 				Method = 'GET'
@@ -109,12 +109,12 @@ if not shared.VapeDeveloper then
 end
 
 downloader.Text = ''
-local _vapechunk, _vapeerr = loadstring(downloadFile('LarpV4/main.lua'), 'main')
-if not _vapechunk then
-	error('LarpV4/main.lua failed to compile: '..tostring(_vapeerr))
+local _larpchunk, _larperr = loadstring(downloadFile('LarpV4/main.lua'), 'main')
+if not _larpchunk then
+	error('LarpV4/main.lua failed to compile: '..tostring(_larperr))
 end
-local _vapeok, _vaperes = pcall(_vapechunk, license)
-if not _vapeok then
-	error('LarpV4/main.lua: '..tostring(_vaperes))
+local _larpok, _larpres = pcall(_larpchunk, license)
+if not _larpok then
+	error('LarpV4/main.lua: '..tostring(_larpres))
 end
-return _vaperes
+return _larpres

@@ -1,9 +1,9 @@
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
-local vape = shared.vape
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+local larp = shared.larp
 local loadstring = function(...)
 	local res, err = loadstring(...)
-	if err and vape then
-		vape:CreateNotification('Vape', 'Failed to load : '..err, 30, 'alert')
+	if err and larp then
+		larp:CreateNotification('Larp', 'Failed to load : '..err, 30, 'alert')
 	end
 	return res
 end
@@ -22,23 +22,23 @@ local function downloadFile(path, func)
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res
 		end
 		writefile(path, res)
 	end
 	return (func or readfile)(path)
 end
 
-vape.Place = 6872274481
-if isfile('LarpV4/games/'..vape.Place..'.lua') then
-	loadstring(readfile('LarpV4/games/'..vape.Place..'.lua'), 'bedwars')()
+larp.Place = 6872274481
+if isfile('LarpV4/games/'..larp.Place..'.lua') then
+	loadstring(readfile('LarpV4/games/'..larp.Place..'.lua'), 'bedwars')()
 else
-	if not shared.VapeDeveloper then
+	if not shared.LarpDeveloper then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/games/'..vape.Place..'.lua', true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/games/'..larp.Place..'.lua', true)
 		end)
 		if suc and res ~= '404: Not Found' then
-			loadstring(downloadFile('LarpV4/games/'..vape.Place..'.lua'), 'bedwars')()
+			loadstring(downloadFile('LarpV4/games/'..larp.Place..'.lua'), 'bedwars')()
 		end
 	end
 end

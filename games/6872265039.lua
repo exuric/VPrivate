@@ -1,4 +1,4 @@
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local run = function(func) func() end
 local cloneref = cloneref or function(obj) return obj end
 
@@ -7,13 +7,13 @@ local replicatedStorage = cloneref(game:GetService('ReplicatedStorage'))
 local inputService = cloneref(game:GetService('UserInputService'))
 
 local lplr = playersService.LocalPlayer
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local sessioninfo = vape.Libraries.sessioninfo
+local larp = shared.larp
+local entitylib = larp.Libraries.entity
+local sessioninfo = larp.Libraries.sessioninfo
 local bedwars = {}
 
 local function notif(...)
-	return vape:CreateNotification(...)
+	return larp:CreateNotification(...)
 end
 
 run(function()
@@ -50,14 +50,14 @@ run(function()
 	local wins = sessioninfo:AddItem('Wins')
 	local games = sessioninfo:AddItem('Games')
 
-	vape:Clean(function()
+	larp:Clean(function()
 		table.clear(bedwars)
 	end)
 end)
 
-for _, v in vape.Modules do
+for _, v in larp.Modules do
 	if v.Category == 'Combat' or v.Category == 'Minigames' then
-		vape:Remove(i)
+		larp:Remove(i)
 	end
 end
 
@@ -65,7 +65,7 @@ run(function()
 	local Sprint
 	local old
 	
-	Sprint = vape.Categories.Combat:CreateModule({
+	Sprint = larp.Categories.Combat:CreateModule({
 		Name = 'Sprint',
 		Function = function(callback)
 			if callback then
@@ -89,7 +89,7 @@ end)
 run(function()
 	local AutoGamble
 	
-	AutoGamble = vape.Categories.Minigames:CreateModule({
+	AutoGamble = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoGamble',
 		Function = function(callback)
 			if callback then

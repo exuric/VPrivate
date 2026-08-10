@@ -9,7 +9,7 @@ local vape
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err then
-		error('VapePrivate: '..tostring(err))
+		error('LarpV4: '..tostring(err))
 	end
 	return res
 end
@@ -29,7 +29,7 @@ local httpService = cloneref(game:GetService("HttpService"))
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/'..select(1, path:gsub('VapePrivate/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -47,7 +47,7 @@ local function downloadSplit(base)
 	local data = {}
 	for i = 0, 1 do
 		local ok, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/'..select(1, base:gsub('^VapePrivate/', ''))..'.'..i, true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
 		end)
 		if not ok or typeof(res) ~= 'string' or res == '404: Not Found' then
 			error('Failed to download '..base..'.'..i..(ok and '' or ': '..tostring(res)))
@@ -71,9 +71,9 @@ local function finishLoading()
 			local teleportScript = [[
 				shared.vapereload = true
 				if shared.VapeDeveloper then
-					loadstring(readfile('VapePrivate/main.lua'), 'main')(_scriptconfig)
+					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/init.lua', true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua', true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)
@@ -97,27 +97,27 @@ local function finishLoading()
 		if not shared.vapereload then
 			vape:CreateNotification('Finished Loading', (vape.VapeButton and 'Press the button in the top right' or 'Press '..table.concat(vape.Keybind, ' + '):upper())..' to open GUI', 5)
 			task.delay(1, function()
-				vape:CreateNotification('Vape Private Loaded (BETA)', 'Vape Private is now loaded', 5, 'info')
+				vape:CreateNotification('Larp V4 Loaded (BETA)', 'Larp V4 is now loaded', 5, 'info')
 			end)
 			task.delay(0.05 + cloneref(game:GetService('RunService')).PostSimulation:Wait(), function()
 				if shared.updated then
-					local commit = isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or 'unknown'
-					vape:CreateNotification('Vape Private', `Script has updated from {shared.updated} to {commit}`, 10, 'info')
+					local commit = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'unknown'
+					vape:CreateNotification('Larp V4', `Script has updated from {shared.updated} to {commit}`, 10, 'info')
 				end
 			end)
 		end	
 	end
 end
 
-if not isfile('VapePrivate/profiles/gui.txt') then
-	writefile('VapePrivate/profiles/gui.txt', 'new')
+if not isfile('LarpV4/profiles/gui.txt') then
+	writefile('LarpV4/profiles/gui.txt', 'new')
 end
-local gui = 'new'--readfile('VapePrivate/profiles/gui.txt')
+local gui = 'new'--readfile('LarpV4/profiles/gui.txt')
 
-if not isfolder('VapePrivate/assets/'..gui) then
-	makefolder('VapePrivate/assets/'..gui)
+if not isfolder('LarpV4/assets/'..gui) then
+	makefolder('LarpV4/assets/'..gui)
 end
-vape = loadstring(downloadSplit('VapePrivate/guis/'..gui..'.lua'), 'gui')(license)
+vape = loadstring(downloadSplit('LarpV4/guis/'..gui..'.lua'), 'gui')(license)
 shared.vape = vape
 _G.vape = vape
 getgenv().used_init = true
@@ -136,16 +136,16 @@ if hookmetamethod then
 end
 
 if not shared.VapeIndependent then
-	loadstring(downloadFile('VapePrivate/games/universal.lua'), 'universal')(license)
-	if isfile('VapePrivate/games/'..game.PlaceId..'.lua') then
-		loadstring(readfile('VapePrivate/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+	loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
+	if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
+		loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
 	else
 		if not shared.VapeDeveloper then
 			local suc, res = pcall(function()
-				return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
+				return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
 			end)
 			if suc and res ~= '404: Not Found' then
-				loadstring(downloadFile('VapePrivate/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+				loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
 			end
 		end
 	end

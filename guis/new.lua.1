@@ -1,6 +1,3 @@
-		dotsbutton.Name = 'Dots'
-		dotsbutton.Size = UDim2.fromOffset(25, 40)
-		dotsbutton.Position = UDim2.new(1, -25, 0, 0)
 		dotsbutton.BackgroundTransparency = 1
 		dotsbutton.Text = ''
 		dotsbutton.Parent = modulebutton
@@ -9,7 +6,7 @@
 		dots.Size = UDim2.fromOffset(3, 16)
 		dots.Position = UDim2.fromOffset(4, 12)
 		dots.BackgroundTransparency = 1
-		dots.Image = getcustomasset('VapePrivate/assets/new/dots.png')
+		dots.Image = getcustomasset('LarpV4/assets/new/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = dotsbutton
 		local pinicon = Instance.new('ImageLabel')
@@ -17,7 +14,7 @@
 		pinicon.Size = UDim2.fromOffset(16, 16)
 		pinicon.Position = UDim2.new(1, -48, 0, 12)
 		pinicon.BackgroundTransparency = 1
-		pinicon.Image = getcustomasset('VapePrivate/assets/new/pin.png')
+		pinicon.Image = getcustomasset('LarpV4/assets/new/pin.png')
 		pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		pinicon.Visible = false
 		pinicon.ZIndex = 2
@@ -146,13 +143,13 @@
 		bind.MouseEnter:Connect(function()
 			bindtext.Visible = false
 			bindicon.Visible = not bindtext.Visible
-			bindicon.Image = getcustomasset('VapePrivate/assets/new/edit.png')
+			bindicon.Image = getcustomasset('LarpV4/assets/new/edit.png')
 			if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16) end
 		end)
 		bind.MouseLeave:Connect(function()
 			bindtext.Visible = #moduleapi.Bind > 0
 			bindicon.Visible = not bindtext.Visible
-			bindicon.Image = getcustomasset('VapePrivate/assets/new/bind.png')
+			bindicon.Image = getcustomasset('LarpV4/assets/new/bind.png')
 			if not moduleapi.Enabled then
 				bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			end
@@ -424,7 +421,7 @@ function mainapi:CreateOverlay(categorysettings)
 	pin.Position = UDim2.new(1, -47, 0, 12)
 	pin.BackgroundTransparency = 1
 	pin.AutoButtonColor = false
-	pin.Image = getcustomasset('VapePrivate/assets/new/pin.png')
+	pin.Image = getcustomasset('LarpV4/assets/new/pin.png')
 	pin.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 	pin.Parent = window
 	local dotsbutton = Instance.new('TextButton')
@@ -439,7 +436,7 @@ function mainapi:CreateOverlay(categorysettings)
 	dots.Size = UDim2.fromOffset(3, 16)
 	dots.Position = UDim2.fromOffset(4, 12)
 	dots.BackgroundTransparency = 1
-	dots.Image = getcustomasset('VapePrivate/assets/new/dots.png')
+	dots.Image = getcustomasset('LarpV4/assets/new/dots.png')
 	dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	dots.Parent = dotsbutton
 	local customchildren = Instance.new('Frame')
@@ -609,7 +606,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	arrow.Size = UDim2.fromOffset(9, 4)
 	arrow.Position = UDim2.fromOffset(20, 19)
 	arrow.BackgroundTransparency = 1
-	arrow.Image = getcustomasset('VapePrivate/assets/new/expandup.png')
+	arrow.Image = getcustomasset('LarpV4/assets/new/expandup.png')
 	arrow.ImageColor3 = Color3.fromRGB(140, 140, 140)
 	arrow.Rotation = 180
 	arrow.Parent = arrowbutton
@@ -636,7 +633,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	settings.Position = UDim2.new(1, -52, 0, 13)
 	settings.BackgroundTransparency = 1
 	settings.AutoButtonColor = false
-	settings.Image = getcustomasset('VapePrivate/assets/new/customsettings.png')
+	settings.Image = getcustomasset('LarpV4/assets/new/customsettings.png')
 	settings.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 	settings.Parent = window
 	local divider = Instance.new('Frame')
@@ -686,7 +683,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	addbutton.Size = UDim2.fromOffset(16, 16)
 	addbutton.Position = UDim2.new(1, -26, 0, 8)
 	addbutton.BackgroundTransparency = 1
-	addbutton.Image = getcustomasset('VapePrivate/assets/new/add.png')
+	addbutton.Image = getcustomasset('LarpV4/assets/new/add.png')
 	addbutton.ImageColor3 = categorysettings.Color
 	addbutton.ImageTransparency = 0.3
 	addbutton.Parent = addbkg
@@ -703,8 +700,8 @@ function mainapi:CreateCategoryList(categorysettings)
 				if ind then
 					if val ~= 'default' then
 						table.remove(mainapi.Profiles, ind)
-						if isfile('VapePrivate/profiles/'..val..mainapi.Place..'.txt') and delfile then
-							delfile('VapePrivate/profiles/'..val..mainapi.Place..'.txt')
+						if isfile('LarpV4/profiles/'..val..mainapi.Place..'.txt') and delfile then
+							delfile('LarpV4/profiles/'..val..mainapi.Place..'.txt')
 						end
 					end
 				else
@@ -770,7 +767,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				dots.Size = UDim2.fromOffset(3, 16)
 				dots.Position = UDim2.fromOffset(10, 9)
 				dots.BackgroundTransparency = 1
-				dots.Image = getcustomasset('VapePrivate/assets/new/dots.png')
+				dots.Image = getcustomasset('LarpV4/assets/new/dots.png')
 				dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 				dots.Parent = dotsbutton
 				local bind = Instance.new('TextButton')
@@ -791,7 +788,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				bindicon.Size = UDim2.fromOffset(12, 12)
 				bindicon.Position = UDim2.new(0.5, -6, 0, 5)
 				bindicon.BackgroundTransparency = 1
-				bindicon.Image = getcustomasset('VapePrivate/assets/new/bind.png')
+				bindicon.Image = getcustomasset('LarpV4/assets/new/bind.png')
 				bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 				bindicon.Parent = bind
 				local bindtext = Instance.new('TextLabel')
@@ -807,7 +804,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				bind.MouseEnter:Connect(function()
 					bindtext.Visible = false
 					bindicon.Visible = not bindtext.Visible
-					bindicon.Image = getcustomasset('VapePrivate/assets/new/edit.png')
+					bindicon.Image = getcustomasset('LarpV4/assets/new/edit.png')
 					if v.Name ~= mainapi.Profile then
 						bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16)
 					end
@@ -815,7 +812,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				bind.MouseLeave:Connect(function()
 					bindtext.Visible = #v.Bind > 0
 					bindicon.Visible = not bindtext.Visible
-					bindicon.Image = getcustomasset('VapePrivate/assets/new/bind.png')
+					bindicon.Image = getcustomasset('LarpV4/assets/new/bind.png')
 					if v.Name ~= mainapi.Profile then
 						bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 					end
@@ -825,7 +822,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				bindcover.Size = UDim2.fromOffset(154, 33)
 				bindcover.BackgroundTransparency = 1
 				bindcover.Visible = false
-				bindcover.Image = getcustomasset('VapePrivate/assets/new/bindbkg.png')
+				bindcover.Image = getcustomasset('LarpV4/assets/new/bindbkg.png')
 				bindcover.ScaleType = Enum.ScaleType.Slice
 				bindcover.SliceCenter = Rect.new(0, 0, 141, 40)
 				bindcover.Parent = object
@@ -958,7 +955,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				close.BackgroundColor3 = Color3.new(1, 1, 1)
 				close.BackgroundTransparency = 1
 				close.AutoButtonColor = false
-				close.Image = getcustomasset('VapePrivate/assets/new/closemini.png')
+				close.Image = getcustomasset('LarpV4/assets/new/closemini.png')
 				close.ImageColor3 = color.Light(uipallet.Text, 0.2)
 				close.ImageTransparency = 0.5
 				close.Parent = object
@@ -1125,7 +1122,7 @@ function mainapi:CreateSearch()
 	searchicon.Size = UDim2.fromOffset(14, 14)
 	searchicon.Position = UDim2.new(1, -23, 0, 11)
 	searchicon.BackgroundTransparency = 1
-	searchicon.Image = getcustomasset('VapePrivate/assets/new/search.png')
+	searchicon.Image = getcustomasset('LarpV4/assets/new/search.png')
 	searchicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	searchicon.Parent = searchbkg
 	local legiticon = Instance.new('ImageButton')
@@ -1133,7 +1130,7 @@ function mainapi:CreateSearch()
 	legiticon.Size = UDim2.fromOffset(29, 16)
 	legiticon.Position = UDim2.fromOffset(8, 11)
 	legiticon.BackgroundTransparency = 1
-	legiticon.Image = getcustomasset('VapePrivate/assets/new/legit.png')
+	legiticon.Image = getcustomasset('LarpV4/assets/new/legit.png')
 	legiticon.Parent = searchbkg
 	local legitdivider = Instance.new('Frame')
 	legitdivider.Name = 'LegitDivider'
@@ -1270,7 +1267,7 @@ function mainapi:CreateLegit()
 	icon.Size = UDim2.fromOffset(16, 16)
 	icon.Position = UDim2.fromOffset(18, 13)
 	icon.BackgroundTransparency = 1
-	icon.Image = getcustomasset('VapePrivate/assets/new/legittab.png')
+	icon.Image = getcustomasset('LarpV4/assets/new/legittab.png')
 	icon.ImageColor3 = uipallet.Text
 	icon.Parent = window
 	local close = addCloseButton(window)
@@ -1345,7 +1342,7 @@ function mainapi:CreateLegit()
 		dots.Size = UDim2.fromOffset(2, 12)
 		dots.Position = UDim2.fromOffset(6, 6)
 		dots.BackgroundTransparency = 1
-		dots.Image = getcustomasset('VapePrivate/assets/new/dots.png')
+		dots.Image = getcustomasset('LarpV4/assets/new/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = dotsbutton
 		local shadow = Instance.new('TextButton')
@@ -1382,7 +1379,7 @@ function mainapi:CreateLegit()
 		back.Size = UDim2.fromOffset(16, 16)
 		back.Position = UDim2.fromOffset(11, 13)
 		back.BackgroundTransparency = 1
-		back.Image = getcustomasset('VapePrivate/assets/new/back.png')
+		back.Image = getcustomasset('LarpV4/assets/new/back.png')
 		back.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		back.Parent = settingspane
 		addCorner(settingspane)
@@ -1578,7 +1575,7 @@ function mainapi:CreateNotification(title, text, duration, type)
 		notification.Position = UDim2.new(1, 0, 1, -(29 + (78 * i)))
 		notification.ZIndex = 5
 		notification.BackgroundTransparency = 1
-		notification.Image = getcustomasset('VapePrivate/assets/new/notification.png')
+		notification.Image = getcustomasset('LarpV4/assets/new/notification.png')
 		notification.ScaleType = Enum.ScaleType.Slice
 		notification.SliceCenter = Rect.new(7, 7, 9, 9)
 		notification.Parent = notifications
@@ -1589,7 +1586,7 @@ function mainapi:CreateNotification(title, text, duration, type)
 		iconshadow.Position = UDim2.fromOffset(-5, -8)
 		iconshadow.ZIndex = 5
 		iconshadow.BackgroundTransparency = 1
-		iconshadow.Image = getcustomasset('VapePrivate/assets/new/'..(type or 'info')..'.png')
+		iconshadow.Image = getcustomasset('LarpV4/assets/new/'..(type or 'info')..'.png')
 		iconshadow.ImageColor3 = Color3.new()
 		iconshadow.ImageTransparency = 0.5
 		iconshadow.Parent = notification
@@ -1688,7 +1685,7 @@ function mainapi:CreatePrompt(promptsettings)
 	icon.Position = UDim2.fromOffset(20, 20)
 	icon.ZIndex = 12
 	icon.BackgroundTransparency = 1
-	icon.Image = getcustomasset('VapePrivate/assets/new/'..(promptsettings.Icon or 'info')..'.png')
+	icon.Image = getcustomasset('LarpV4/assets/new/'..(promptsettings.Icon or 'info')..'.png')
 	icon.ImageColor3 = uipallet.Text
 	icon.Parent = window
 	local title = Instance.new('TextLabel')
@@ -1787,8 +1784,8 @@ function mainapi:Load(skipgui, profile)
 	local savecheck = true
 	local savenew
 
-	if isfile('VapePrivate/profiles/'..game.GameId..'.gui.txt') then
-		guidata = loadJson('VapePrivate/profiles/'..game.GameId..'.gui.txt')
+	if isfile('LarpV4/profiles/'..game.GameId..'.gui.txt') then
+		guidata = loadJson('LarpV4/profiles/'..game.GameId..'.gui.txt')
 		if not guidata then
 			guidata = {Categories = {}}
 			self:CreateNotification('Vape', 'Failed to load GUI settings.', 10, 'alert')
@@ -1834,8 +1831,8 @@ function mainapi:Load(skipgui, profile)
 		self.ProfileLabel.Size = UDim2.fromOffset(getfontsize(self.ProfileLabel.Text, self.ProfileLabel.TextSize, self.ProfileLabel.Font).X + 16, 24)
 	end
 
-	if isfile('VapePrivate/profiles/'..self.Profile..self.Place..'.txt') then
-		local savedata = loadJson('VapePrivate/profiles/'..self.Profile..self.Place..'.txt')
+	if isfile('LarpV4/profiles/'..self.Profile..self.Place..'.txt') then
+		local savedata = loadJson('LarpV4/profiles/'..self.Profile..self.Place..'.txt')
 		if not savedata then
 			savedata = {Categories = {}, Modules = {}, Legit = {}}
 			self:CreateNotification('Vape', 'Failed to load '..self.Profile..' profile.', 10, 'alert')
@@ -1924,7 +1921,7 @@ function mainapi:Load(skipgui, profile)
 	end
 
 	if not inputService.KeyboardEnabled or shared.VapeDeveloper then
-		local hide = isfile('VapePrivate/profiles/hide.txt') and readfile('VapePrivate/profiles/hide.txt') or nil
+		local hide = isfile('LarpV4/profiles/hide.txt') and readfile('LarpV4/profiles/hide.txt') or nil
 		if hide ~= nil then
 			hide = hide == 'true' and true or false
 		end
@@ -1945,7 +1942,7 @@ function mainapi:Load(skipgui, profile)
 		image.Size = UDim2.fromOffset(22, 22)
 		image.Position = UDim2.fromScale(0.5, 0.5)
 		image.BackgroundTransparency = 1
-		image.Image = getcustomasset('VapePrivate/assets/new/vape.png')
+		image.Image = getcustomasset('LarpV4/assets/new/vape.png')
 		image.ImageTransparency = hide and 1 or 0
 		image.Parent = button
 		local buttoncorner = Instance.new('UICorner')
@@ -1976,7 +1973,7 @@ function mainapi:Load(skipgui, profile)
 				Function = function(call)
 					button.BackgroundTransparency = call and 1 or 0.35
 					image.ImageTransparency = call and 1 or 0
-					writefile('VapePrivate/profiles/hide.txt', tostring(call))
+					writefile('LarpV4/profiles/hide.txt', tostring(call))
 				end
 			})
 		end
@@ -2061,8 +2058,8 @@ function mainapi:Save(newprofile)
 		end
 	end
 
-	writeSave('VapePrivate/profiles/'..game.GameId..'.gui.txt', httpService:JSONEncode(guidata))
-	writeSave('VapePrivate/profiles/'..self.Profile..self.Place..'.txt', httpService:JSONEncode(savedata))
+	writeSave('LarpV4/profiles/'..game.GameId..'.gui.txt', httpService:JSONEncode(guidata))
+	writeSave('LarpV4/profiles/'..self.Profile..self.Place..'.txt', httpService:JSONEncode(savedata))
 end
 
 function mainapi:QueueSave()
@@ -2245,7 +2242,7 @@ end))
 mainapi:CreateGUI()
 local pinnedcategory = mainapi:CreateCategory({
 	Name = 'Pinned',
-	Icon = getcustomasset('VapePrivate/assets/new/pin.png'),
+	Icon = getcustomasset('LarpV4/assets/new/pin.png'),
 	Size = UDim2.fromOffset(16, 16)
 })
 pinnedcategory.Button.Object.MouseButton1Click:Connect(function()
@@ -2315,7 +2312,7 @@ function mainapi:UpdatePinned()
 							if bindtext then bindtext.Visible = false end
 							if bindicon then
 								bindicon.Visible = true
-								bindicon.Image = getcustomasset('VapePrivate/assets/new/edit.png')
+								bindicon.Image = getcustomasset('LarpV4/assets/new/edit.png')
 								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16) end
 							end
 						end)
@@ -2323,7 +2320,7 @@ function mainapi:UpdatePinned()
 							if bindtext then bindtext.Visible = #moduleapi.Bind > 0 end
 							if bindicon then
 								bindicon.Visible = not (bindtext and bindtext.Visible)
-								bindicon.Image = getcustomasset('VapePrivate/assets/new/bind.png')
+								bindicon.Image = getcustomasset('LarpV4/assets/new/bind.png')
 								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43) end
 							end
 						end)
@@ -2435,37 +2432,37 @@ end
 mainapi.Categories.Main:CreateDivider()
 mainapi:CreateCategory({
 	Name = 'Combat',
-	Icon = getcustomasset('VapePrivate/assets/new/combaticon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/combaticon.png'),
 	Size = UDim2.fromOffset(13, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Blatant',
-	Icon = getcustomasset('VapePrivate/assets/new/blatanticon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/blatanticon.png'),
 	Size = UDim2.fromOffset(14, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Render',
-	Icon = getcustomasset('VapePrivate/assets/new/rendericon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/rendericon.png'),
 	Size = UDim2.fromOffset(15, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Utility',
-	Icon = getcustomasset('VapePrivate/assets/new/utilityicon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/utilityicon.png'),
 	Size = UDim2.fromOffset(15, 14)
 })
 mainapi:CreateCategory({
 	Name = 'World',
-	Icon = getcustomasset('VapePrivate/assets/new/worldicon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/worldicon.png'),
 	Size = UDim2.fromOffset(14, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Inventory',
-	Icon = getcustomasset('VapePrivate/assets/new/inventoryicon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/inventoryicon.png'),
 	Size = UDim2.fromOffset(15, 14)
 })
 mainapi:CreateCategory({
 	Name = 'Minigames',
-	Icon = getcustomasset('VapePrivate/assets/new/miniicon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
 mainapi.Categories.Main:CreateDivider('misc')
@@ -2481,7 +2478,7 @@ local friendscolor = {
 }
 local friendssettings = {
 	Name = 'Friends',
-	Icon = getcustomasset('VapePrivate/assets/new/friendstab.png'),
+	Icon = getcustomasset('LarpV4/assets/new/friendstab.png'),
 	Size = UDim2.fromOffset(17, 16),
 	Placeholder = 'Roblox username',
 	Color = Color3.fromRGB(5, 134, 105),
@@ -2534,7 +2531,7 @@ mainapi:Clean(friends.ColorUpdate)
 ]]
 local Profiles = mainapi:CreateCategoryList({
 	Name = 'Profiles',
-	Icon = getcustomasset('VapePrivate/assets/new/profilesicon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/profilesicon.png'),
 	Size = UDim2.fromOffset(17, 10),
 	Position = UDim2.fromOffset(12, 16),
 	Placeholder = 'Type name',
@@ -2543,17 +2540,17 @@ local Profiles = mainapi:CreateCategoryList({
 Profiles:CreateButton({
 	Name = 'Reset Profile',
 	LayoutOrder = 7,
-	Icon = getcustomasset('VapePrivate/assets/new/warning.png'),
+	Icon = getcustomasset('LarpV4/assets/new/warning.png'),
 	Function = function()
 		mainapi.Save = function() end
-		if isfile('VapePrivate/profiles/'..mainapi.Profile..mainapi.Place..'.txt') and delfile then
-			delfile('VapePrivate/profiles/'..mainapi.Profile..mainapi.Place..'.txt')
+		if isfile('LarpV4/profiles/'..mainapi.Profile..mainapi.Place..'.txt') and delfile then
+			delfile('LarpV4/profiles/'..mainapi.Profile..mainapi.Place..'.txt')
 		end
 		shared.vapereload = true
 		if shared.VapeDeveloper then
-			loadstring(readfile('VapePrivate/init.lua'), 'init')(license)
+			loadstring(readfile('LarpV4/init.lua'), 'init')(license)
 		else
-			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/init.lua', true))(license)
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua', true))(license)
 		end
 	end,
 	Tooltip = 'Resets the current profile back to default settings'
@@ -2565,7 +2562,7 @@ Profiles:CreateButton({
 local targets
 targets = mainapi:CreateCategoryList({
 	Name = 'Targets',
-	Icon = getcustomasset('VapePrivate/assets/new/friendstab.png'),
+	Icon = getcustomasset('LarpV4/assets/new/friendstab.png'),
 	Size = UDim2.fromOffset(17, 16),
 	Placeholder = 'Roblox username',
 	Function = function()
@@ -2601,9 +2598,9 @@ general:CreateButton({
 	Function = function()
 		shared.vapereload = true
 		if shared.VapeDeveloper then
-			loadstring(readfile('VapePrivate/init.lua'), 'init')()
+			loadstring(readfile('LarpV4/init.lua'), 'init')()
 		else
-			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/init.lua', true))()
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua', true))()
 		end
 	end,
 	Tooltip = 'Reloads vape for debugging purposes'
@@ -2706,12 +2703,12 @@ guipane:CreateDropdown({
 	List = inputService.TouchEnabled and {'new', 'old'} or {'new', 'old', 'rise'},
 	Function = function(val, mouse)
 		if mouse then
-			writefile('VapePrivate/profiles/gui.txt', val)
+			writefile('LarpV4/profiles/gui.txt', val)
 			shared.vapereload = true
 			if shared.VapeDeveloper then
-				loadstring(readfile('VapePrivate/init.lua'), 'loader')()
+				loadstring(readfile('LarpV4/init.lua'), 'loader')()
 			else
-				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/init.lua', true))()
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua', true))()
 			end
 		end
 	end,
@@ -2820,7 +2817,7 @@ mainapi.Categories.Main:CreateBind()
 
 local textgui = mainapi:CreateOverlay({
 	Name = 'Text GUI',
-	Icon = getcustomasset('VapePrivate/assets/new/textguiicon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/textguiicon.png'),
 	Size = UDim2.fromOffset(16, 12),
 	Position = UDim2.fromOffset(12, 14),
 	Function = function()
@@ -2954,8 +2951,8 @@ local textguimodules = textgui:CreateToggle({
 textguimoduleslist = textgui:CreateTextList({
 	Name = 'Blacklist',
 	Tooltip = 'Name of module to hide.',
-	Icon = getcustomasset('VapePrivate/assets/new/blockedicon.png'),
-	Tab = getcustomasset('VapePrivate/assets/new/blockedtab.png'),
+	Icon = getcustomasset('LarpV4/assets/new/blockedicon.png'),
+	Tab = getcustomasset('LarpV4/assets/new/blockedtab.png'),
 	TabSize = UDim2.fromOffset(21, 16),
 	Color = Color3.fromRGB(250, 50, 56),
 	Function = function()
@@ -3032,7 +3029,7 @@ VapeLogo.BackgroundTransparency = 1
 VapeLogo.BorderSizePixel = 0
 VapeLogo.Visible = false
 VapeLogo.BackgroundColor3 = Color3.new()
-VapeLogo.Image = getcustomasset('VapePrivate/assets/new/VapePriv.png')
+VapeLogo.Image = getcustomasset('LarpV4/assets/new/Larp.png')
 VapeLogo.Parent = textgui.Children
 
 local lastside = textgui.Children.AbsolutePosition.X > (gui.AbsoluteSize.X / 2)
@@ -3054,7 +3051,7 @@ VapeLogoV4.Position = UDim2.new(1, 1, 0, 1)
 VapeLogoV4.BackgroundColor3 = Color3.new()
 VapeLogoV4.BackgroundTransparency = 1
 VapeLogoV4.BorderSizePixel = 0
-VapeLogoV4.Image = getcustomasset('VapePrivate/assets/new/Textv4.png')
+VapeLogoV4.Image = getcustomasset('LarpV4/assets/new/Textv4.png')
 VapeLogoV4.Parent = VapeLogo
 local VapeLogoShadow = VapeLogo:Clone()
 VapeLogoShadow.Position = UDim2.fromOffset(1, 1)
@@ -3126,7 +3123,7 @@ local targetinfobkg
 local targetinfofollow
 targetinfoobj = mainapi:CreateOverlay({
 	Name = 'Target Info',
-	Icon = getcustomasset('VapePrivate/assets/new/targetinfoicon.png'),
+	Icon = getcustomasset('LarpV4/assets/new/targetinfoicon.png'),
 	Size = UDim2.fromOffset(14, 14),
 	Position = UDim2.fromOffset(12, 14),
 	CategorySize = 240,
@@ -3357,14 +3354,14 @@ local TargetInfoHealthExtraCorner = Instance.new('UICorner')
 TargetInfoHealthExtraCorner.CornerRadius = UDim.new(0, 8)
 TargetInfoHealthExtraCorner.Parent = TargetInfoImage
 
-local TargetInfoHud = isfile('VapePrivate/profiles/hud.txt') and readfile('VapePrivate/profiles/hud.txt') or 'new'
+local TargetInfoHud = isfile('LarpV4/profiles/hud.txt') and readfile('LarpV4/profiles/hud.txt') or 'new'
 targetinfoobj:CreateDropdown({
 	Name = 'Gui Mode',
 	List = {'old', 'new'},
 	Default = 'new',
 	Function = function(val)
 		TargetInfoHud = val
-		writefile('VapePrivate/profiles/hud.txt', val)
+		writefile('LarpV4/profiles/hud.txt', val)
 		TargetInfoMainFrame.Visible = val == 'old'
 		handler.Visible = val == 'new'
 	end

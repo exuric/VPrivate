@@ -3,7 +3,7 @@ UPLOAD THESE FILES AS-IS (same paths) to a PUBLIC GitHub repo:
   main.lua            <- loader entry (URLs already swapped to YOURUSERNAME/YOURREPO)
   games/  libraries/  guis/  profiles/
 
-1. Create repo "VapePrivate" (Public).
+1. Create repo "LarpV4" (Public).
 2. Upload all folders as shown (preserve paths).
 3. Replace YOURUSERNAME/YOURREPO inside init.lua + main.lua with your actual user/repo (find-replace).
 4. profiles/commit.txt stays "main" so it pins to your branch.

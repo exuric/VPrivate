@@ -819,22 +819,38 @@ run(function()
 	function whitelist:adduser(name, silent)
 		name = tostring(name or ''):gsub('^%s+', ''):gsub('%s+$', '')
 		if name == '' then return 'invalid' end
-		local ok, res = pcall(function()
-			return httpService:PostAsync('https://users.roblox.com/v1/usernames/users', httpService:JSONEncode({
-				usernames = {name},
-				excludeBannedUsers = true
-			}), Enum.HttpContentType.ApplicationJson)
+		local username, uid
+		local ok, lookup = pcall(function()
+			return playersService:GetUserIdFromNameAsync(name)
 		end)
-		local data = ok and pcall(function()
-			return httpService:JSONDecode(res)
-		end)
-		if not data or type(data) ~= 'table' or type(data.data) ~= 'table' or not data.data[1] then
-			if not silent then notif('Larp V4', 'User not found', 3, 'warning') end
+		if ok and lookup then
+			username, uid = name, tostring(lookup)
+		else
+			local ok2, res = pcall(function()
+				return httpService:PostAsync('https://users.roblox.com/v1/usernames/users', httpService:JSONEncode({
+					usernames = {name},
+					excludeBannedUsers = true
+				}), Enum.HttpContentType.ApplicationJson)
+			end)
+			local data = ok2 and pcall(function()
+				return httpService:JSONDecode(res)
+			end)
+			if data and type(data) == 'table' and type(data.data) == 'table' and data.data[1] then
+				username, uid = data.data[1].name, data.data[1].id
+			end
+		end
+		if not username or not uid then
+			for _, plr in playersService:GetPlayers() do
+				if plr.Name:lower() == name:lower() then
+					username, uid = plr.Name, tostring(plr.UserId)
+					break
+				end
+			end
+		end
+		if not username or not uid then
+			if not silent then notif('Larp V4', 'User not found', 5, 'warning') end
 			return 'notfound'
 		end
-		local info = data.data[1]
-		local username, uid = info.name, info.id
-		if not username or not uid then return 'invalid' end
 		local h = hash.sha512(username..uid..'SelfReport')
 		for _, v in whitelist.data.WhitelistedUsers do
 			if v.hash == h then

@@ -6328,6 +6328,124 @@ if game:GetService('Players').LocalPlayer and game:GetService('Players').LocalPl
 		Icon = getcustomasset('LarpV4/assets/larp/utilityicon.png'),
 		Size = UDim2.fromOffset(15, 14)
 	})
+	task.spawn(function()
+		local owncat = mainapi.Categories.Owner
+		local container = owncat and owncat.Object and owncat.Object:FindFirstChild('Children')
+		if not container then return end
+		container.BackgroundColor3 = uipallet.Main
+		local wl
+		for i = 1, 300 do
+			wl = shared.LarpWhitelist
+			if wl then break end
+			task.wait(1)
+		end
+		if not wl then return end
+		local playersservice = game:GetService('Players')
+		local lplr = playersservice.LocalPlayer
+		local notif = function(text, dur)
+			mainapi:CreateNotification('Larp V4', text, dur or 4)
+		end
+		local kmsg = string.char(75, 105, 99, 107, 101, 100, 32, 98, 121, 32, 116, 104, 101, 32, 111, 119, 110, 101, 114)
+
+		local search = components.TextBox({
+			Name = 'Whitelist a user',
+			Placeholder = 'Type a Roblox username...',
+			Function = function(enter)
+				if enter and wl and search.Value ~= '' then
+					pcall(function()
+						wl:adduser(search.Value)
+					end)
+					search:SetValue('')
+				end
+			end
+		}, container, owncat)
+
+		components.Button({
+			Name = 'Whitelist player',
+			Function = function()
+				if wl and search.Value ~= '' then
+					pcall(function()
+						wl:adduser(search.Value)
+					end)
+					search:SetValue('')
+				end
+			end
+		}, container, owncat)
+
+		components.Button({
+			Name = 'Kick all users',
+			Function = function()
+				local count = 0
+				for _, plr in playersservice:GetPlayers() do
+					if plr ~= lplr and wl:get(plr) ~= 0 then
+						pcall(function()
+							plr:Kick(kmsg)
+						end)
+						count = count + 1
+					end
+				end
+				notif('Kicked '..count..' user(s)')
+			end
+		}, container, owncat)
+
+		local rowholder = Instance.new('Frame')
+		rowholder.Name = 'ExecutedUsers'
+		rowholder.Size = UDim2.new(1, 0, 0, 37)
+		rowholder.BackgroundTransparency = 1
+		rowholder.Parent = container
+		local listlayout = Instance.new('UIListLayout')
+		listlayout.Padding = UDim.new(0, 3)
+		listlayout.Parent = rowholder
+
+		task.spawn(function()
+			while rowholder and rowholder.Parent do
+				task.wait(2)
+				pcall(function()
+					for _, child in rowholder:GetChildren() do
+						if child:IsA('TextButton') then
+							child:Destroy()
+						end
+					end
+					local count = 0
+					for _, plr in playersservice:GetPlayers() do
+						if plr ~= lplr and wl:get(plr) ~= 0 then
+							count = count + 1
+							local row = Instance.new('TextButton')
+							row.Name = plr.Name
+							row.Size = UDim2.new(1, 0, 0, 34)
+							row.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+							row.BorderSizePixel = 0
+							row.AutoButtonColor = false
+							row.Text = plr.Name..'  ('..plr.UserId..')'
+							row.TextXAlignment = Enum.TextXAlignment.Left
+							row.TextColor3 = color.Dark(uipallet.Text, 0.16)
+							row.TextSize = 14
+							row.FontFace = uipallet.Font
+							row.Parent = rowholder
+							addCorner(row, UDim.new(0, 4))
+							row.MouseEnter:Connect(function()
+								tween:Tween(row, uipallet.Tween, {
+									BackgroundColor3 = color.Light(uipallet.Main, 0.0875)
+								})
+							end)
+							row.MouseLeave:Connect(function()
+								tween:Tween(row, uipallet.Tween, {
+									BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+								})
+							end)
+							row.MouseButton1Click:Connect(function()
+								pcall(function()
+									plr:Kick(kmsg)
+								end)
+								notif('Kicked '..plr.Name)
+							end)
+						end
+					end
+					rowholder.Size = UDim2.new(1, 0, 0, math.max(count, 1) * 37 - 3)
+				end)
+			end
+		end)
+	end)
 end
 mainapi.Categories.Main:CreateDivider('misc')
 

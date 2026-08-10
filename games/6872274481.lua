@@ -3365,8 +3365,10 @@ run(function()
 	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
 
 	local function getTarget()
-		local selfpos = entitylib.character.HumanoidRootPart.Position
-		local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+		local character = entitylib.character
+		if not character or not character.HumanoidRootPart or not character.RootPart then return end
+		local selfpos = character.HumanoidRootPart.Position
+		local localfacing = character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
 		local halfangle = MaxAngle.Value >= 360 and math.pi * 2 or math.rad(MaxAngle.Value) / 2
 		local nearest, nearestmag
 		for _, ent in entitylib.List do
@@ -3374,7 +3376,9 @@ run(function()
 			if ent.NPC and not Targets.NPCs.Enabled then continue end
 			if not ent.Targetable then continue end
 			if not entitylib.isVulnerable(ent) then continue end
-			local delta = ent.RootPart.Position - selfpos
+			local rp = ent.RootPart
+			if not rp or not rp.Position then continue end
+			local delta = rp.Position - selfpos
 			local mag = delta.Magnitude
 			if mag > SwingRange.Value then continue end
 			local horizontal = delta * Vector3.new(1, 0, 1)
@@ -3382,7 +3386,7 @@ run(function()
 				local dot = localfacing:Dot(horizontal.Unit)
 				if math.acos(math.clamp(dot, -1, 1)) > halfangle then continue end
 			end
-			if Targets.Walls.Enabled and entitylib.Wallcheck(selfpos, ent.RootPart.Position) then continue end
+			if Targets.Walls.Enabled and entitylib.Wallcheck(selfpos, rp.Position) then continue end
 			if not nearest or mag < nearestmag then
 				nearest = ent
 				nearestmag = mag
@@ -3405,6 +3409,18 @@ run(function()
 				realSwingInRegion = SwordController.swingSwordInRegion
 				SwordController.swingSwordInRegion = function(self, ...)
 					lastManualSwing = tick()
+					if SwingOnly.Enabled then
+						local target = getTarget()
+						if target then
+							store.KillauraTarget = target
+							local root = entitylib.character.RootPart
+							local oldcf = root.CFrame
+							root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
+							local result = realSwingInRegion(self, ...)
+							root.CFrame = oldcf
+							return result
+						end
+					end
 					return realSwingInRegion(self, ...)
 				end
 				swingRadius = AttackRange.Value / 3
@@ -3413,11 +3429,11 @@ run(function()
 				repeat
 					local target
 					if entitylib.isAlive and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-						if store.hand.toolType == 'sword' and store.hand.tool and (not LimitItems.Enabled or table.find(swordNames, store.hand.tool.Name)) then
-							if not SwingOnly.Enabled or (tick() - lastManualSwing) <= 0.25 then
-								target = getTarget()
-								if target then
-									store.KillauraTarget = target
+						if not LimitItems.Enabled or (store.hand.toolType == 'sword' and store.hand.tool and table.find(swordNames, store.hand.tool.Name)) then
+							target = getTarget()
+							if target then
+								store.KillauraTarget = target
+								if not SwingOnly.Enabled then
 									local now = tick()
 									if now - lastSwing >= math.max(0.05, math.min(1 / CPS.Value, SwingTime.Value)) then
 										lastSwing = now
@@ -3455,11 +3471,11 @@ run(function()
 	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
-		Tooltip = 'Only attacks when sword is held'
+		Tooltip = 'Only attacks when a sword is held.\nOff: attacks with anything held (or nothing)'
 	})
 	SwingOnly = Killaura:CreateToggle({
 		Name = 'Swing only',
-		Tooltip = 'Only attacks when you are swinging'
+		Tooltip = 'Only attacks when you are swinging.\nYour swing gets redirected to the target'
 	})
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
@@ -3469,7 +3485,7 @@ run(function()
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
-		Tooltip = 'Range at which the killaura starts swinging'
+		Tooltip = 'Range at which the killaura starts swinging\n(Not when you start attacking)'
 	})
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
@@ -3484,7 +3500,7 @@ run(function()
 			swingRadius = val / 3
 			setSwingRadius()
 		end,
-		Tooltip = 'Range at which attacks land.\nMax 18.1 studs'
+		Tooltip = 'Range at which attacks land'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',
@@ -3508,12 +3524,12 @@ run(function()
 		Name = 'Attacks per second (CPS)',
 		Min = 1,
 		Max = 20,
-		Default = 9.4,
+		Default = 12,
 		Decimal = 10,
 		Suffix = function(val)
 			return 'cps'
 		end,
-		Tooltip = 'Swings attempted per second.\nDefault 9.4 = ~34 hits/s'
+		Tooltip = 'Swings attempted per second.\nDefault 12 keeps 34 hits/s consistent. Raise if it dips to 33'
 	})
 end)
 

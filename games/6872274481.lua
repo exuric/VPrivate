@@ -13600,19 +13600,6 @@ run(function()
 	local AutoTool
 	local Priority
 	local customlist, parts = {}, {}
-	local stats, statsLabel = {}, nil
-
-	local statsOrder = {'Bed', 'Hive', 'Tesla', 'Custom', 'Lucky Block', 'Iron Ore'}
-	local function updateStatsLabel()
-		if not statsLabel or not statsLabel.Parent then return end
-		local text = {}
-		for _, name in statsOrder do
-			if stats[name] and stats[name] > 0 then
-				table.insert(text, name .. ': ' .. stats[name])
-			end
-		end
-		statsLabel.Text = #text > 0 and table.concat(text, '   |   ') or 'No blocks broken yet'
-	end
 	
 	local function customHealthbar(self, blockRef, health, maxHealth, changeHealth, block)
 	    xpcall(function()
@@ -13776,21 +13763,6 @@ run(function()
 table.insert(parts, part)
 			end
 
-			stats = {}
-			statsLabel = Instance.new('TextLabel')
-			statsLabel.Name = 'BreakStats'
-			statsLabel.Size = UDim2.new(1, -8, 0, 26)
-			statsLabel.LayoutOrder = 100
-			statsLabel.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
-			statsLabel.BackgroundTransparency = 0.5
-			statsLabel.BorderSizePixel = 0
-			statsLabel.Text = 'No blocks broken yet'
-			statsLabel.TextColor3 = Color3.fromRGB(210, 210, 210)
-			statsLabel.TextSize = 12
-			statsLabel.Font = Enum.Font.Gotham
-			statsLabel.TextTruncate = Enum.TextTruncate.AtEnd
-			statsLabel.Parent = Breaker.Children
-
 			local beds = collection('bed', Breaker)
 				local teslas = collection('tesla-trap', Breaker, function(tab, obj)
 	                task.delay(0.1, function()
@@ -13839,14 +13811,12 @@ repeat
 							break
 						end
 					end
-					for i = 1, #order do
-						local v = order[((i0 + i - 2) % #order) + 1]
-						if (v.Toggle == nil or v.Toggle.Enabled) and v.List and attemptBreak(v.List, localPosition) then
-							stats[v.Name] = (stats[v.Name] or 0) + 1
-							updateStatsLabel()
-							break
-						end
+for i = 1, #order do
+					local v = order[((i0 + i - 2) % #order) + 1]
+					if (v.Toggle == nil or v.Toggle.Enabled) and v.List and attemptBreak(v.List, localPosition) then
+						break
 					end
+				end
 
 					for _, v in parts do
 						v.Position = Vector3.zero
@@ -13859,11 +13829,6 @@ repeat
 				v:Destroy()
 			end
 			table.clear(parts)
-			if statsLabel then
-				statsLabel:Destroy()
-				statsLabel = nil
-			end
-			table.clear(stats)
 		end
 		end,
 		Tooltip = 'Break blocks around you automatically'

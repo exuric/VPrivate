@@ -70,7 +70,7 @@ if not shared.VapeDeveloper then
 	local commit = 'main'
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	local version = isfile('LarpV4/.version') and readfile('LarpV4/.version') or ''
-	if commit ~= stored or version ~= '48' then
+	if commit ~= stored or version ~= '49' then
 		if stored ~= '' and stored ~= commit then
 			shared.updated = stored
 		end
@@ -86,7 +86,7 @@ if not shared.VapeDeveloper then
 			end
 		end
 	end
-	writefile('LarpV4/.version', '48')
+	writefile('LarpV4/.version', '49')
 	writefile('LarpV4/profiles/commit.txt', commit)
 	if #listfiles('LarpV4/profiles') < 4 then
 		shared.VapePresetInstall = function()

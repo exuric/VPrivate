@@ -3401,75 +3401,12 @@ run(function()
 		end
 	end
 
-	local function showCenterNotice(text)
-		local libs = vape.Libraries
-		if not libs or not libs.getcustomasset then return end
-		pcall(function()
-			local tw = game:GetService('TweenService')
-			local notice = Instance.new('Frame')
-			notice.Name = 'KillAuraNotice'
-			notice.AnchorPoint = Vector2.new(0.5, 0.5)
-			notice.Size = UDim2.fromOffset(440, 56)
-			notice.Position = UDim2.new(0.5, 0, 0.40, 0)
-			notice.BackgroundTransparency = 1
-			notice.GroupTransparency = 1
-			local box = Instance.new('ImageLabel')
-			box.Size = UDim2.fromScale(1, 1)
-			box.BackgroundTransparency = 1
-			box.Image = libs.getcustomasset('LarpV4/assets/new/notification.png')
-			box.ScaleType = Enum.ScaleType.Slice
-			box.SliceCenter = Rect.new(7, 7, 9, 9)
-			box.Parent = notice
-			local icon = Instance.new('ImageLabel')
-			icon.Size = UDim2.fromOffset(26, 26)
-			icon.Position = UDim2.new(0, 20, 0.5, 0)
-			icon.AnchorPoint = Vector2.new(0, 0.5)
-			icon.BackgroundTransparency = 1
-			icon.Image = libs.getcustomasset('LarpV4/assets/new/warning.png')
-			icon.Parent = box
-			local label = Instance.new('TextLabel')
-			label.Size = UDim2.new(1, -110, 1, 0)
-			label.Position = UDim2.new(0, 56, 0, 0)
-			label.BackgroundTransparency = 1
-			label.Text = text
-			label.TextWrapped = true
-			label.TextXAlignment = Enum.TextXAlignment.Center
-			label.TextColor3 = Color3.new(1, 1, 1)
-			label.TextSize = 15
-			label.FontFace = Font.fromEnum(Enum.Font.Arial, Enum.FontWeight.SemiBold)
-			label.Parent = box
-			local shadow = label:Clone()
-			shadow.Name = 'Shadow'
-			shadow.Position = UDim2.new(0, 56, 0, 1)
-			shadow.TextColor3 = Color3.new(0, 0, 0)
-			shadow.TextTransparency = 0.6
-			shadow.ZIndex = 0
-			shadow.Parent = box
-			label.ZIndex = 1
-			local scaledgui = vape.gui and vape.gui:FindFirstChild('ScaledGui')
-			notice.Parent = scaledgui or game:GetService('Players').LocalPlayer.PlayerGui
-			notice.ZIndex = 50
-			local ease = TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
-			tw:Create(notice, ease, {Position = UDim2.new(0.5, 0, 0.42, 0), GroupTransparency = 0}):Play()
-			task.delay(2.5, function()
-				if notice and notice.Parent then
-					tw:Create(notice, ease, {Position = UDim2.new(0.5, 0, 0.44, 0), GroupTransparency = 1}):Play()
-					task.delay(0.3, function()
-						pcall(function()
-							notice:Destroy()
-						end)
-					end)
-				end
-			end)
-		end)
-	end
-
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'KillAura (Testing)',
 		WarningIcon = true,
 		Function = function(callback)
 			if callback then
-				showCenterNotice("KillAura isn't fully optimized or coded yet")
+				notif('KillAura (Testing)', "isn't fully optimized or coded yet", 4, 'alert')
 				SwordController = bedwars.SwordController
 				realSwingInRegion = SwordController.swingSwordInRegion
 				local ok, r = pcall(function()

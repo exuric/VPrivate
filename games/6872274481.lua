@@ -2115,9 +2115,17 @@ run(function()
 	local BreakRange
 	local SwordReach
 	local SwordRange
+	local Randomize
+	local Chance
 	
-	local old
-	
+	local old, oldswing
+	local rng = Random.new()
+
+	local function useBoosted()
+		if not Randomize.Enabled then return true end
+		return rng:NextNumber(0, 100) <= Chance.Value
+	end
+
 	Reach = vape.Categories.Combat:CreateModule({
 		Name = 'Reach',
 		Tooltip = 'Allows you to place, attack, and break further',
@@ -2131,15 +2139,26 @@ run(function()
 						Args = {}
 					end
 					if Select == 0 then
-						Args.range = BlockReach.Enabled and BlockRange.Value or 24
+						Args.range = useBoosted() and (BlockReach.Enabled and BlockRange.Value or 24) or 24
 					elseif Select == 1 then
-						Args.range = BreakReach.Enabled and BreakRange.Value or 18
+						Args.range = useBoosted() and (BreakReach.Enabled and BreakRange.Value or 18) or 18
 					end
 					return old(Self, Select, Args)
+				end
+				oldswing = bedwars.SwordController.swingSwordAtMouse
+				bedwars.SwordController.swingSwordAtMouse = function(...)
+					if useBoosted() then
+						bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = SwordReach.Enabled and SwordRange.Value + 2 or 14.4
+					else
+						bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4
+					end
+					return oldswing(...)
 				end
 			else
 				bedwars.BlockSelector.getMouseInfo = old
 				old = nil
+				bedwars.SwordController.swingSwordAtMouse = oldswing
+				oldswing = nil
 			end
 		end,
 	})
@@ -2201,6 +2220,27 @@ run(function()
 			return val <= 1 and 'stud' or 'studs'
 		end,
 		Visible = false
+	})
+	Randomize = Reach:CreateToggle({
+		Name = 'Randomize reach',
+		Default = false,
+		Tooltip = 'Randomizes reach per swing/click. The boosted range only applies when the chance roll succeeds, otherwise reach stops at vanilla values',
+		Function = function(callback)
+			pcall(function()
+				Chance.Object.Visible = callback
+			end)
+		end
+	})
+	Chance = Reach:CreateSlider({
+		Name = 'Chance',
+		Min = 10,
+		Max = 100,
+		Default = 60,
+		Suffix = function()
+			return '%'
+		end,
+		Darker = true,
+		Tooltip = 'Chance to get the boosted reach on each swing/click'
 	})
 	Reach:CreateButton({
 		Name = 'Reset to default reach',

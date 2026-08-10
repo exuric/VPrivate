@@ -70,7 +70,7 @@ if not shared.LarpDeveloper then
 	local commit = 'main'
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	local version = isfile('LarpV4/.version') and readfile('LarpV4/.version') or ''
-	if commit ~= stored or version ~= '52' then
+	if commit ~= stored or version ~= '53' then
 		if stored ~= '' and stored ~= commit then
 			shared.updated = stored
 		end
@@ -86,7 +86,7 @@ if not shared.LarpDeveloper then
 			end
 		end
 	end
-	writefile('LarpV4/.version', '52')
+	writefile('LarpV4/.version', '53')
 	writefile('LarpV4/profiles/commit.txt', commit)
 	if #listfiles('LarpV4/profiles') < 4 then
 		shared.LarpPresetInstall = function()

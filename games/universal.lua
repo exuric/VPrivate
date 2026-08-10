@@ -901,12 +901,6 @@ run(function()
 			return true
 		end
 
-		whitelist.localprio = whitelist:get(lplr)
-		if whitelist.localprio == 0 then
-			whitelist:reject()
-			return true
-		end
-
 		local remote = nil
 		pcall(function()
 			local raw = game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/whitelist.json', true)
@@ -948,6 +942,12 @@ run(function()
 					tag.color = Color3.fromRGB(unpack(tag.color))
 				end
 			end
+		end
+
+		whitelist.localprio = whitelist:get(lplr)
+		if whitelist.localprio == 0 then
+			whitelist:reject()
+			return true
 		end
 
 		if not whitelist.connection then

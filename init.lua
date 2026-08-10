@@ -26,10 +26,10 @@ downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(ga
 local function downloadFile(path, func)
 	if not isfile(path) then
 		if not license.Closet then
-			downloader.Text = 'Downloading '.. (path:gsub('^VapePrivate/', 'Vape Private/'))
+			downloader.Text = 'Downloading '.. (path:gsub('^LarpV4/', 'LarpV4/'))
 		end
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/'..select(1, path:gsub('VapePrivate/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -58,36 +58,36 @@ local function wipeFolder(path)
 end
 
 
-for _, folder in {'VapePrivate', 'VapePrivate/games', 'VapePrivate/profiles', 'VapePrivate/assets', 'VapePrivate/libraries', 'VapePrivate/guis'} do
+for _, folder in {'LarpV4', 'LarpV4/games', 'LarpV4/profiles', 'LarpV4/assets', 'LarpV4/libraries', 'LarpV4/guis'} do
 	if not isfolder(folder) then
-		downloader.Text = 'Downloading '.. (folder:gsub('^VapePrivate/', 'Vape Private/'))
+		downloader.Text = 'Downloading '.. (folder:gsub('^LarpV4/', 'LarpV4/'))
 		makefolder(folder)
 	end
 end
 
 if not shared.VapeDeveloper then
 	local commit = 'main'
-	local stored = isfile('VapePrivate/profiles/commit.txt') and readfile('VapePrivate/profiles/commit.txt') or ''
-	local version = isfile('VapePrivate/.version') and readfile('VapePrivate/.version') or ''
-	if commit ~= stored or version ~= '36' then
+	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
+	local version = isfile('LarpV4/.version') and readfile('LarpV4/.version') or ''
+	if commit ~= stored or version ~= '37' then
 		if stored ~= '' and stored ~= commit then
 			shared.updated = stored
 		end
-		pcall(delfile, 'VapePrivate/main.lua')
-		pcall(delfile, 'VapePrivate/guis/new.lua')
-		wipeFolder('VapePrivate')
-		wipeFolder('VapePrivate/games')
-		wipeFolder('VapePrivate/guis')
-		wipeFolder('VapePrivate/libraries')
-		for _, file in {'VapePrivate/assets/new/VapePriv.png', 'VapePrivate/assets/new/Textv4.png', 'VapePrivate/profiles/default6872274481.txt'} do
+		pcall(delfile, 'LarpV4/main.lua')
+		pcall(delfile, 'LarpV4/guis/new.lua')
+		wipeFolder('LarpV4')
+		wipeFolder('LarpV4/games')
+		wipeFolder('LarpV4/guis')
+		wipeFolder('LarpV4/libraries')
+		for _, file in {'LarpV4/assets/new/Larp.png', 'LarpV4/assets/new/Textv4.png', 'LarpV4/profiles/default6872274481.txt'} do
 			if isfile(file) then
 				pcall(delfile, file)
 			end
 		end
 	end
-	writefile('VapePrivate/.version', '36')
-	writefile('VapePrivate/profiles/commit.txt', commit)
-	if #listfiles('VapePrivate/profiles') < 4 then
+	writefile('LarpV4/.version', '37')
+	writefile('LarpV4/profiles/commit.txt', commit)
+	if #listfiles('LarpV4/profiles') < 4 then
 		shared.VapePresetInstall = function()
 			local suc, req = pcall(request, {
 				Url = 'https://api.github.com/repos/exuric/VPrivate/contents/profiles',
@@ -98,7 +98,7 @@ if not shared.VapeDeveloper then
 			if not body or typeof(body) ~= 'table' then return false end
 			local installed = false
 			for _, v in body do
-				if v.type == 'file' and pcall(downloadFile, 'VapePrivate/'.. ({v.path:gsub(' ', '%%20')})[1]) then
+				if v.type == 'file' and pcall(downloadFile, 'LarpV4/'.. ({v.path:gsub(' ', '%%20')})[1]) then
 					installed = true
 				end
 			end
@@ -108,12 +108,12 @@ if not shared.VapeDeveloper then
 end
 
 downloader.Text = ''
-local _vapechunk, _vapeerr = loadstring(downloadFile('VapePrivate/main.lua'), 'main')
+local _vapechunk, _vapeerr = loadstring(downloadFile('LarpV4/main.lua'), 'main')
 if not _vapechunk then
-	error('VapePrivate/main.lua failed to compile: '..tostring(_vapeerr))
+	error('LarpV4/main.lua failed to compile: '..tostring(_vapeerr))
 end
 local _vapeok, _vaperes = pcall(_vapechunk, license)
 if not _vapeok then
-	error('VapePrivate/main.lua: '..tostring(_vaperes))
+	error('LarpV4/main.lua: '..tostring(_vaperes))
 end
 return _vaperes

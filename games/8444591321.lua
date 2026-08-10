@@ -16,7 +16,7 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/'..select(1, path:gsub('VapePrivate/', '')), true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -30,15 +30,15 @@ local function downloadFile(path, func)
 end
 
 vape.Place = 6872274481
-if isfile('VapePrivate/games/'..vape.Place..'.lua') then
-	loadstring(readfile('VapePrivate/games/'..vape.Place..'.lua'), 'bedwars')()
+if isfile('LarpV4/games/'..vape.Place..'.lua') then
+	loadstring(readfile('LarpV4/games/'..vape.Place..'.lua'), 'bedwars')()
 else
 	if not shared.VapeDeveloper then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('VapePrivate/profiles/commit.txt')..'/games/'..vape.Place..'.lua', true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/games/'..vape.Place..'.lua', true)
 		end)
 		if suc and res ~= '404: Not Found' then
-			loadstring(downloadFile('VapePrivate/games/'..vape.Place..'.lua'), 'bedwars')()
+			loadstring(downloadFile('LarpV4/games/'..vape.Place..'.lua'), 'bedwars')()
 		end
 	end
 end

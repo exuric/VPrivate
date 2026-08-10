@@ -1,23 +1,23 @@
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local run = function(func)
 	func()
 end
 local cloneref = cloneref or function(obj)
 	return obj
 end
-local vapeEvents = setmetatable({}, {
+local larpEvents = setmetatable({}, {
 	__index = function(self, index)
 		self[index] = Instance.new('BindableEvent')
 		return self[index]
 	end
 })
-getgenv().vapeEvents = vapeEvents
+getgenv().larpEvents = larpEvents
 
 local playersService = cloneref(game:GetService('Players'))
 local replicatedStorage = cloneref(game:GetService('ReplicatedStorage'))
@@ -40,17 +40,17 @@ local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
 local assetfunction = getcustomasset
 
-local vape = shared.vape
-local entitylib = vape.Libraries.entity
-local targetinfo = vape.Libraries.targetinfo
-local sessioninfo = vape.Libraries.sessioninfo
-local uipallet = vape.Libraries.uipallet
-local tween = vape.Libraries.tween
-local color = vape.Libraries.color
-local whitelist = vape.Libraries.whitelist
-local prediction = vape.Libraries.prediction
-local getfontsize = vape.Libraries.getfontsize
-local getcustomasset = vape.Libraries.getcustomasset
+local larp = shared.larp
+local entitylib = larp.Libraries.entity
+local targetinfo = larp.Libraries.targetinfo
+local sessioninfo = larp.Libraries.sessioninfo
+local uipallet = larp.Libraries.uipallet
+local tween = larp.Libraries.tween
+local color = larp.Libraries.color
+local whitelist = larp.Libraries.whitelist
+local prediction = larp.Libraries.prediction
+local getfontsize = larp.Libraries.getfontsize
+local getcustomasset = larp.Libraries.getcustomasset
 
 local rankCache = {}
 local store = {
@@ -104,7 +104,7 @@ local function addBlur(parent)
 	blur.Size = UDim2.new(1, 89, 1, 52)
 	blur.Position = UDim2.fromOffset(-48, -31)
 	blur.BackgroundTransparency = 1
-	blur.Image = getcustomasset('LarpV4/assets/new/blur.png')
+	blur.Image = getcustomasset('LarpV4/assets/larp/blur.png')
 	blur.ScaleType = Enum.ScaleType.Slice
 	blur.SliceCenter = Rect.new(52, 31, 261, 502)
 	blur.Parent = parent
@@ -443,7 +443,7 @@ local function hotbarSwitch(slot)
 			type = 'InventorySelectHotbarSlot',
 			slot = slot
 		})
-		vapeEvents.InventoryChanged.Event:Wait()
+		larpEvents.InventoryChanged.Event:Wait()
 		return true
 	end
 	return false
@@ -451,10 +451,10 @@ end
 getgenv().hotbarSwitch = hotbarSwitch
 
 local function isFriend(plr, recolor)
-	if vape.Categories.Friends.Options['Use friends'].Enabled then
-		local friend = table.find(vape.Categories.Friends.ListEnabled, plr.Name) and true
+	if larp.Categories.Friends.Options['Use friends'].Enabled then
+		local friend = table.find(larp.Categories.Friends.ListEnabled, plr.Name) and true
 		if recolor then
-			friend = friend and vape.Categories.Friends.Options['Recolor visuals'].Enabled
+			friend = friend and larp.Categories.Friends.Options['Recolor visuals'].Enabled
 		end
 		return friend
 	end
@@ -462,11 +462,11 @@ local function isFriend(plr, recolor)
 end
 
 local function isTarget(plr)
-	return table.find(vape.Categories.Targets.ListEnabled, plr.Name) and true
+	return table.find(larp.Categories.Targets.ListEnabled, plr.Name) and true
 end
 
 local function notif(...) return
-	vape:CreateNotification(...)
+	larp:CreateNotification(...)
 end
 getgenv().notif = notif
 
@@ -701,7 +701,7 @@ run(function()
 					entitylib.isAlive = true
 					entitylib.Events.LocalAdded:Fire(entity)
 					table.insert(entitylib.Connections, char.AttributeChanged:Connect(function(attr)
-						vapeEvents.AttributeChanged:Fire(attr)
+						larpEvents.AttributeChanged:Fire(attr)
 					end))
 				else
 					entity.Targetable = entitylib.targetCheck(entity)
@@ -803,7 +803,7 @@ run(function()
 		if not select(2, whitelist:get(ent.Player)) then return false end
 		return lplr:GetAttribute('Team') ~= ent.Player:GetAttribute('Team')
 	end
-	vape:Clean(entitylib.Events.LocalAdded:Connect(updateVelocity))
+	larp:Clean(entitylib.Events.LocalAdded:Connect(updateVelocity))
 end)
 entitylib.start()
 
@@ -1432,11 +1432,11 @@ run(function()
 			store.inventory = newinv
 
 			if newinv ~= oldinv then
-				vapeEvents.InventoryChanged:Fire()
+				larpEvents.InventoryChanged:Fire()
 			end
 
 			if newinv.inventory.items ~= oldinv.inventory.items then
-				vapeEvents.InventoryAmountChanged:Fire()
+				larpEvents.InventoryAmountChanged:Fire()
 				store.tools.sword = getSword()
 				for _, v in {'stone', 'wood', 'wool'} do
 					store.tools[v] = getTool(v)
@@ -1463,16 +1463,16 @@ run(function()
 	updateStore(bedwars.Store:getState(), {})
 
 	for _, event in {'MatchEndEvent', 'EntityDeathEvent', 'BedwarsBedBreak', 'BalloonPopped', 'AngelProgress', 'GrapplingHookFunctions'} do
-		if not vape.Connections then return end
+		if not larp.Connections then return end
 		bedwars.Client:WaitFor(event):andThen(function(connection)
-			vape:Clean(connection:Connect(function(...)
-				vapeEvents[event]:Fire(...)
+			larp:Clean(connection:Connect(function(...)
+				larpEvents[event]:Fire(...)
 			end))
 		end)
 	end
 
-	vape:Clean(bedwars.ZapNetworking.EntityDamageEventZap.On(function(...)
-		vapeEvents.EntityDamageEvent:Fire({
+	larp:Clean(bedwars.ZapNetworking.EntityDamageEventZap.On(function(...)
+		larpEvents.EntityDamageEvent:Fire({
 			entityInstance = ...,
 			damage = select(2, ...),
 			damageType = select(3, ...),
@@ -1484,7 +1484,7 @@ run(function()
 		})
 	end))
 
-	vape:Clean(bedwars.ZapNetworking.BreakBlockEventZap.On(function(...)
+	larp:Clean(bedwars.ZapNetworking.BreakBlockEventZap.On(function(...)
 		local data = {
 			blockRef = {
 				blockPosition = ...,
@@ -1498,11 +1498,11 @@ run(function()
 				cache[i] = nil
 			end
 		end
-		vapeEvents.BreakBlockEvent:Fire(data)
+		larpEvents.BreakBlockEvent:Fire(data)
 	end))
 
-	store.blocks = collection('block', vape)
-	store.shop = collection({'BedwarsItemShop', 'TeamUpgradeShopkeeper'}, vape, function(tab, obj)
+	store.blocks = collection('block', larp)
+	store.shop = collection({'BedwarsItemShop', 'TeamUpgradeShopkeeper'}, larp, function(tab, obj)
 		table.insert(tab, {
 			Id = obj.Name,
 			RootPart = obj,
@@ -1510,7 +1510,7 @@ run(function()
 			Upgrades = obj:HasTag('TeamUpgradeShopkeeper')
 		})
 	end)
-	store.enchant = collection({'enchant-table', 'broken-enchant-table'}, vape, nil, function(tab, obj, tag)
+	store.enchant = collection({'enchant-table', 'broken-enchant-table'}, larp, nil, function(tab, obj, tag)
 		if obj:HasTag('enchant-table') and tag == 'broken-enchant-table' then return end
 		obj = table.find(tab, obj)
 		if obj then
@@ -1534,17 +1534,17 @@ run(function()
 
 	task.spawn(function()
 		pcall(function()
-			repeat task.wait() until store.matchState ~= 0 or vape.Loaded == nil
-			if vape.Loaded == nil then return end
+			repeat task.wait() until store.matchState ~= 0 or larp.Loaded == nil
+			if larp.Loaded == nil then return end
 			local map = workspace:WaitForChild('Map', 9e9):WaitForChild('Worlds', 9e9):GetChildren()[1]
 			mapname = map.Name
 			mapname = string.gsub(string.split(mapname, '_')[2] or mapname, '-', '') or 'Blank'
 			store.map = map
-			vape:Clean(map.Blocks.ChildAdded:Connect(function(v)
+			larp:Clean(map.Blocks.ChildAdded:Connect(function(v)
 				task.defer(function()
 					if v:IsA('BasePart') and v:GetAttribute('Block') and (v:GetAttribute('PlacedByUserId') or 0) ~= 0 then
 						local pos = v.Position / 3
-						vapeEvents.PlaceBlockEvent:Fire({
+						larpEvents.PlaceBlockEvent:Fire({
 							blockRef = {blockPosition = Vector3.new(math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))},
 							player = playersService:GetPlayerByUserId(v:GetAttribute('PlacedByUserId'))
 						})
@@ -1554,19 +1554,19 @@ run(function()
 		end)
 	end)
 
-	vape:Clean(vapeEvents.BedwarsBedBreak.Event:Connect(function(bedTable)
+	larp:Clean(larpEvents.BedwarsBedBreak.Event:Connect(function(bedTable)
 		if bedTable.player and bedTable.player.UserId == lplr.UserId then
 			beds:Increment()
 		end
 	end))
 
-	vape:Clean(vapeEvents.MatchEndEvent.Event:Connect(function(winTable)
+	larp:Clean(larpEvents.MatchEndEvent.Event:Connect(function(winTable)
 		if (bedwars.Store:getState().Game.myTeam or {}).id == winTable.winningTeamId or lplr.Neutral then
 			wins:Increment()
 		end
 	end))
 
-	vape:Clean(vapeEvents.EntityDeathEvent.Event:Connect(function(deathTable)
+	larp:Clean(larpEvents.EntityDeathEvent.Event:Connect(function(deathTable)
 		local killer = playersService:GetPlayerFromCharacter(deathTable.fromEntity)
 		local killed = playersService:GetPlayerFromCharacter(deathTable.entityInstance)
 		if not killed or not killer then return end
@@ -1577,8 +1577,8 @@ run(function()
 	end))
 
 	task.spawn(function()
-		repeat task.wait() until store.map or vape.Loaded == nil
-		if vape.Loaded == nil then return end
+		repeat task.wait() until store.map or larp.Loaded == nil
+		if larp.Loaded == nil then return end
 		local rayParams = RaycastParams.new()
 		rayParams.FilterType = Enum.RaycastFilterType.Include
 		rayParams.FilterDescendantsInstances = {store.map}
@@ -1597,7 +1597,7 @@ run(function()
 				end
 			end
 			task.wait()
-		until vape.Loaded == nil
+		until larp.Loaded == nil
 	end)
 
 	pcall(function()
@@ -1615,7 +1615,7 @@ run(function()
 			task.spawn(function()
 				repeat
 					task.wait(0.1)
-				until vape.Loaded == nil or bedwars.AppController:isAppOpen('BedwarsItemShopApp')
+				until larp.Loaded == nil or bedwars.AppController:isAppOpen('BedwarsItemShopApp')
 
 				bedwars.Shop = require(replicatedStorage.TS.games.bedwars.shop['bedwars-shop']).BedwarsShop
 				bedwars.ShopItems = debug.getupvalue(debug.getupvalue(bedwars.Shop.getShopItem, 1), 2)
@@ -1624,13 +1624,13 @@ run(function()
 		end
 	end)
 
-	vape:Clean(function()
+	larp:Clean(function()
 		task.wait(1)
 		Client.Get = OldGet
 		bedwars.BlockBreaker.hitBlock = OldHit
 		bedwars.BlockController.isBlockBreakable = OldBreak
 		store.blockPlacer:disable()
-		for _, v in vapeEvents do
+		for _, v in larpEvents do
 			v:Destroy()
 		end
 		for _, v in cache do
@@ -1638,7 +1638,7 @@ run(function()
 			table.clear(v)
 		end
 		table.clear(store.blockPlacer)
-		table.clear(vapeEvents)
+		table.clear(larpEvents)
 		table.clear(bedwars)
 		table.clear(store)
 		table.clear(cache)
@@ -1663,7 +1663,7 @@ end
 getgenv().getFunctionRange = getFunctionRange
 
 for _, v in {'AntiRagdoll', 'TriggerBot', 'SafeWalk', 'SilentAim', 'Jesus', 'AutoRejoin', 'Rejoin', 'Disabler', 'Timer', 'ServerHop', 'Wallhop', 'Xray', 'MouseTP', 'MurderMystery'} do
-	vape:Remove(v)
+	larp:Remove(v)
 end
 
 run(function()
@@ -1863,7 +1863,7 @@ run(function()
 		return ent
 	end
 	
-	AimAssist = vape.Categories.Combat:CreateModule({
+	AimAssist = larp.Categories.Combat:CreateModule({
 		Name = 'AimAssist',
 		Function = function(callback)
 			if callback then
@@ -2077,7 +2077,7 @@ run(function()
 		end)
 	end
 	
-	AutoClicker = vape.Categories.Combat:CreateModule({
+	AutoClicker = larp.Categories.Combat:CreateModule({
 		Name = 'AutoClicker',
 		Function = function(callback)
 			if callback then
@@ -2176,7 +2176,7 @@ run(function()
 		return rng:NextNumber(0, 100) <= Chance.Value
 	end
 
-	Reach = vape.Categories.Combat:CreateModule({
+	Reach = larp.Categories.Combat:CreateModule({
 		Name = 'Reach',
 		Tooltip = 'Allows you to place, attack, and break further',
 		Function = function(callback)
@@ -2406,7 +2406,7 @@ run(function()
 		return CFrame.lookAt(origin, calc).LookVector * speed
 	end
 	
-	SilentAim = vape.Categories.Combat:CreateModule({
+	SilentAim = larp.Categories.Combat:CreateModule({
 		Name = 'SilentAim',
 		Function = function(callback)
 			hookVersion += 1
@@ -2480,7 +2480,7 @@ run(function()
 	local Sprint
 	local old
 	
-	Sprint = vape.Categories.Combat:CreateModule({
+	Sprint = larp.Categories.Combat:CreateModule({
 		Name = 'Sprint',
 		Function = function(callback)
 			if callback then
@@ -2510,7 +2510,7 @@ run(function()
 	local CPS
 	local rayParams = RaycastParams.new()
 	
-	TriggerBot = vape.Categories.Combat:CreateModule({
+	TriggerBot = larp.Categories.Combat:CreateModule({
 		Name = 'TriggerBot',
 		Function = function(callback)
 			if callback then
@@ -2565,7 +2565,7 @@ run(function()
 	local TargetCheck
 	local rand, old = Random.new()
 	
-	Velocity = vape.Categories.Combat:CreateModule({
+	Velocity = larp.Categories.Combat:CreateModule({
 		Name = 'Velocity',
 		Function = function(callback)
 			if callback then
@@ -2680,7 +2680,7 @@ run(function()
 	
 	local Paused, Activated = 0, 0
 	
-	AntiDeath = vape.Categories.Blatant:CreateModule({
+	AntiDeath = larp.Categories.Blatant:CreateModule({
 	    Name = 'AntiDeath',
 	    Function = function(call)
 	        if call then
@@ -2799,7 +2799,7 @@ run(function()
 		return mag
 	end
 
-	AntiFall = vape.Categories.Blatant:CreateModule({
+	AntiFall = larp.Categories.Blatant:CreateModule({
 		Name = 'AntiFall',
 		Function = function(callback)
 			if callback then
@@ -2828,7 +2828,7 @@ run(function()
 									local lastTeleport = lplr:GetAttribute('LastTeleported')
 									local connection
 									connection = runService.PreSimulation:Connect(function()
-										if vape.Modules.Fly.Enabled or vape.Modules.LongJump.Enabled then
+										if larp.Modules.Fly.Enabled or larp.Modules.LongJump.Enabled then
 											connection:Disconnect() -- i fixed, inffly doesnt exist
 											AntiFallDirection = nil
 											return
@@ -2924,7 +2924,7 @@ run(function()
 
     local old
 
-    AutoChargeProj = vape.Categories.Blatant:CreateModule({
+    AutoChargeProj = larp.Categories.Blatant:CreateModule({
         Name = 'AutoChargeProj',
         Function = function(callback)
             if callback then
@@ -2956,7 +2956,7 @@ run(function()
 	local CannonSpeed
 	local Value
 	
-	CannonSpeed = vape.Categories.Blatant:CreateModule({
+	CannonSpeed = larp.Categories.Blatant:CreateModule({
 	    Name = 'CannonSpeed',
 	    Function = function(callback)
 	        debug.setconstant(bedwars.CannonHandController.launchSelf, 15, callback and Value.Value or 200)
@@ -2990,12 +2990,12 @@ run(function()
 	local DamageBoost
 	local stack
 	
-	DamageBoost = vape.Categories.Blatant:CreateModule({
+	DamageBoost = larp.Categories.Blatant:CreateModule({
 		Name = 'DamageBoost',
 		Function = function(callback)
 			if callback then
-				DamageBoost:Clean(vapeEvents.EntityDamageEvent.Event:Connect(function(damageTable)
-					if entitylib.isAlive and tick() > (stack or 0) and damageTable.entityInstance == lplr.Character and not vape.Modules.LongJump.Enabled then
+				DamageBoost:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+					if entitylib.isAlive and tick() > (stack or 0) and damageTable.entityInstance == lplr.Character and not larp.Modules.LongJump.Enabled then
 						local horizontal = (damageTable.knockbackMultiplier and damageTable.knockbackMultiplier.horizontal or 0)
 						knockbackSpeed = bedwars.KnockbackUtil.calculateKnockbackVelocity(Vector3.one, 1, {
 							vertical = 0,
@@ -3028,7 +3028,7 @@ run(function()
 		return nil
 	end
 	
-	FastBreak = vape.Categories.Blatant:CreateModule({
+	FastBreak = larp.Categories.Blatant:CreateModule({
 		Name = 'FastBreak',
 		Function = function(callback)
 			if callback then
@@ -3114,7 +3114,7 @@ run(function()
 	rayCheck.RespectCanCollide = true
 	local up, down, old = 0, 0
 
-	Fly = vape.Categories.Blatant:CreateModule({
+	Fly = larp.Categories.Blatant:CreateModule({
 		Name = 'Fly',
 		Function = function(callback)
 			frictionTable.Fly = callback or nil
@@ -3127,7 +3127,7 @@ run(function()
 				if lplr.Character and (lplr.Character:GetAttribute('InflatedBalloons') or 0) == 0 and getItem('balloon') then
 					bedwars.BalloonController:inflateBalloon()
 				end
-				Fly:Clean(vapeEvents.AttributeChanged.Event:Connect(function(changed)
+				Fly:Clean(larpEvents.AttributeChanged.Event:Connect(function(changed)
 					if changed == 'InflatedBalloons' and (lplr.Character:GetAttribute('InflatedBalloons') or 0) == 0 and getItem('balloon') then
 						bedwars.BalloonController:inflateBalloon()
 					end
@@ -3273,7 +3273,7 @@ run(function()
 		end
 	end
 	
-	HitBoxes = vape.Categories.Blatant:CreateModule({
+	HitBoxes = larp.Categories.Blatant:CreateModule({
 		Name = 'HitBoxes',
 		Function = function(callback)
 			if callback then
@@ -3340,7 +3340,7 @@ run(function()
 end)
 
 run(function()
-	vape.Categories.Blatant:CreateModule({
+	larp.Categories.Blatant:CreateModule({
 		Name = 'KeepSprint',
 		Function = function(callback)
 			debug.setconstant(bedwars.SprintController.startSprinting, 5, callback and 'blockSprinting' or 'blockSprint')
@@ -3402,7 +3402,7 @@ run(function()
 		end
 	end
 
-	Killaura = vape.Categories.Blatant:CreateModule({
+	Killaura = larp.Categories.Blatant:CreateModule({
 		Name = 'KillAura',
 		Function = function(callback)
 			if callback then
@@ -3617,7 +3617,7 @@ run(function()
 			end)
 		end,
 		cat = function(_, _, dir)
-			LongJump:Clean(vapeEvents.CatPounce.Event:Connect(function()
+			LongJump:Clean(larpEvents.CatPounce.Event:Connect(function()
 				JumpSpeed = 4 * Value.Value
 				JumpTick = tick() + 2.5
 				Direction = Vector3.new(dir.X, 0, dir.Z).Unit
@@ -3682,13 +3682,13 @@ run(function()
 	LongJumpMethods.siege_tnt = LongJumpMethods.tnt
 	LongJumpMethods.pirate_gunpowder_barrel = LongJumpMethods.tnt
 	
-	LongJump = vape.Categories.Blatant:CreateModule({
+	LongJump = larp.Categories.Blatant:CreateModule({
 		Name = 'LongJump',
 		Function = function(callback)
 			frictionTable.LongJump = callback or nil
 			updateVelocity()
 			if callback then
-				LongJump:Clean(vapeEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+				LongJump:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
 					if damageTable.entityInstance == lplr.Character and damageTable.fromEntity == lplr.Character and (not damageTable.knockbackMultiplier or not damageTable.knockbackMultiplier.disabled) then
 						local knockbackBoost = bedwars.KnockbackUtil.calculateKnockbackVelocity(Vector3.one, 1, {
 							vertical = 0,
@@ -3705,7 +3705,7 @@ run(function()
 						end
 					end
 				end))
-				LongJump:Clean(vapeEvents.GrapplingHookFunctions.Event:Connect(function(dataTable)
+				LongJump:Clean(larpEvents.GrapplingHookFunctions.Event:Connect(function(dataTable)
 					if dataTable.hookFunction == 'PLAYER_IN_TRANSIT' then
 						local vec = entitylib.character.RootPart.CFrame.LookVector
 						JumpSpeed = 2.5 * Value.Value
@@ -3779,7 +3779,7 @@ end)
 run(function()
 	local NoFall
 	
-	NoFall = vape.Categories.Blatant:CreateModule({
+	NoFall = larp.Categories.Blatant:CreateModule({
 		Name = 'NoFall',
 		Function = function(callback)
 			if callback then
@@ -3814,7 +3814,7 @@ end)
 run(function()
 	local old
 	
-	vape.Categories.Blatant:CreateModule({
+	larp.Categories.Blatant:CreateModule({
 		Name = 'NoSlow',
 		Function = function(callback)
 			local modifier = bedwars.SprintController:getMovementStatusModifier()
@@ -3847,7 +3847,7 @@ run(function()
 	local Mode
 	local Range
 	
-	OwlAura = vape.Categories.Blatant:CreateModule({
+	OwlAura = larp.Categories.Blatant:CreateModule({
 	    Name = 'OwlAura',
 	    Function = function(callback)
 	        if callback then
@@ -3962,7 +3962,7 @@ run(function()
 		end
 	end
 	
-	local ProjectileAimbot = vape.Categories.Blatant:CreateModule({
+	local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
 			if callback then
@@ -4114,7 +4114,7 @@ run(function()
 		projectileRemote = bedwars.Handler:Get('ProjectileFire').Remote.instance
 	end)
 	
-	ProjectileAura = vape.Categories.Blatant:CreateModule({
+	ProjectileAura = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAura',
 		Function = function(callback)
 			if callback then
@@ -4210,7 +4210,7 @@ run(function()
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 	
-	Speed = vape.Categories.Blatant:CreateModule({
+	Speed = larp.Categories.Blatant:CreateModule({
 		Name = 'Speed',
 		Function = function(callback)
 			frictionTable.Speed = callback or nil
@@ -4283,7 +4283,7 @@ run(function()
 	local BedESP
 	local Reference = {}
 	local Folder = Instance.new('Folder')
-	Folder.Parent = vape.gui
+	Folder.Parent = larp.gui
 	
 	local function Added(bed)
 		if not BedESP.Enabled then return end
@@ -4317,7 +4317,7 @@ run(function()
 		table.clear(parts)
 	end
 	
-	BedESP = vape.Categories.Render:CreateModule({
+	BedESP = larp.Categories.Render:CreateModule({
 		Name = 'BedESP',
 		Function = function(callback)
 			if callback then
@@ -4349,7 +4349,7 @@ run(function()
 	local Scale
 	
 	local Folder = Instance.new('Folder')
-	Folder.Parent = vape.gui
+	Folder.Parent = larp.gui
 	
 	local Reference, Strings = {}, {}
 	local function Added(ent)
@@ -4388,7 +4388,7 @@ run(function()
 		end
 	end
 	
-	HiveESP = vape.Categories.Render:CreateModule({
+	HiveESP = larp.Categories.Render:CreateModule({
 		Name = 'BeehiveESP',
 		Function = function(call)
 			if call then
@@ -4468,7 +4468,7 @@ run(function()
 	local Whitelisted = {}
 	
 	local Folder = Instance.new('Folder')
-	Folder.Parent = vape.gui
+	Folder.Parent = larp.gui
 	
 	local Reference, Strings, Cooldown = {}, {}, {}
 	
@@ -4541,7 +4541,7 @@ run(function()
 		end
 	end
 	
-	GeneratorESP = vape.Categories.Render:CreateModule({
+	GeneratorESP = larp.Categories.Render:CreateModule({
 		Name = 'GeneratorESP',
 		Function = function(callback)
 			if callback then
@@ -4620,7 +4620,7 @@ end)
 run(function()
 	local Health
 	
-	Health = vape.Categories.Render:CreateModule({
+	Health = larp.Categories.Render:CreateModule({
 		Name = 'Health',
 		Function = function(callback)
 			if callback then
@@ -4633,9 +4633,9 @@ run(function()
 				label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				label.TextSize = 18
 				label.Font = Enum.Font.Arial
-				label.Parent = vape.gui
+				label.Parent = larp.gui
 				Health:Clean(label)
-				Health:Clean(vapeEvents.AttributeChanged.Event:Connect(function()
+				Health:Clean(larpEvents.AttributeChanged.Event:Connect(function()
 					label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' or ''
 					label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				end))
@@ -4654,7 +4654,7 @@ run(function()
 	local Whitelist = {}
 	
 	local Folder = Instance.new('Folder')
-	Folder.Parent = vape.gui
+	Folder.Parent = larp.gui
 	
 	local Reference, Strings, Sizes = {}, {}, {}
 	local function Added(ent)
@@ -4698,7 +4698,7 @@ run(function()
 		end
 	end
 	
-	ItemESP = vape.Categories.Render:CreateModule({
+	ItemESP = larp.Categories.Render:CreateModule({
 		Name = 'ItemESP',
 		Function = function(call)
 			if call then
@@ -4817,7 +4817,7 @@ run(function()
 	local Color = {}
 	local Reference = {}
 	local Folder = Instance.new('Folder')
-	Folder.Parent = vape.gui
+	Folder.Parent = larp.gui
 	
 	local function scanSide(self, start, tab)
 		for _, side in sides do
@@ -4898,15 +4898,15 @@ run(function()
 		end
 	end
 	
-	ItemPlates = vape.Categories.Render:CreateModule({
+	ItemPlates = larp.Categories.Render:CreateModule({
 		Name = 'ItemPlates',
 		Function = function(callback)
 			if callback then
 				for _, v in collectionService:GetTagged('block') do
 					task.spawn(Added, v)
 				end
-				ItemPlates:Clean(vapeEvents.PlaceBlockEvent.Event:Connect(refreshNear))
-				ItemPlates:Clean(vapeEvents.BreakBlockEvent.Event:Connect(refreshNear))
+				ItemPlates:Clean(larpEvents.PlaceBlockEvent.Event:Connect(refreshNear))
+				ItemPlates:Clean(larpEvents.BreakBlockEvent.Event:Connect(refreshNear))
 				ItemPlates:Clean(collectionService:GetInstanceAddedSignal('block'):Connect(Added))
 				ItemPlates:Clean(collectionService:GetInstanceRemovedSignal('block'):Connect(function(v)
 					if Reference[v] then
@@ -5048,7 +5048,7 @@ run(function()
 	    end
 	end
 	
-	KitDisplay = vape.Categories.Render:CreateModule({
+	KitDisplay = larp.Categories.Render:CreateModule({
 	    Name = 'KitDisplay',
 	    Function = function(callback)
 	        if callback then
@@ -5085,7 +5085,7 @@ run(function()
 	local Color = {}
 	local Reference = {}
 	local Folder = Instance.new('Folder')
-	Folder.Parent = vape.gui
+	Folder.Parent = larp.gui
 	
 	local ESPKits = {
 		alchemist = {'alchemist_ingedients', 'wild_flower'},
@@ -5139,7 +5139,7 @@ run(function()
 		end
 	end
 	
-	KitESP = vape.Categories.Render:CreateModule({
+	KitESP = larp.Categories.Render:CreateModule({
 		Name = 'KitESP',
 		Function = function(callback)
 			if callback then
@@ -5199,7 +5199,7 @@ run(function()
 	local DistanceLimit
 	local Strings, Sizes, Reference = {}, {}, {}
 	local Folder = Instance.new('Folder')
-	Folder.Parent = vape.gui
+	Folder.Parent = larp.gui
 	local methodused
 	
 	local Added = {
@@ -5368,7 +5368,7 @@ run(function()
 		Drawing = function(ent)
 			local nametag = Reference[ent]
 			if nametag then
-				if vape.ThreadFix then
+				if larp.ThreadFix then
 					setthreadidentity(8)
 				end
 				Sizes[ent] = nil
@@ -5467,7 +5467,7 @@ run(function()
 		end
 	}
 	
-	NameTags = vape.Categories.Render:CreateModule({
+	NameTags = larp.Categories.Render:CreateModule({
 		Name = 'NameTags',
 		Function = function(callback)
 			if callback then
@@ -5496,7 +5496,7 @@ run(function()
 					end
 				end
 				if ColorFunc[methodused] then
-					NameTags:Clean(vape.Categories.Friends.ColorUpdate.Event:Connect(function()
+					NameTags:Clean(larp.Categories.Friends.ColorUpdate.Event:Connect(function()
 						ColorFunc[methodused](Color.Hue, Color.Sat, Color.Value)
 					end))
 				end
@@ -5746,7 +5746,7 @@ run(function()
 		scan()
 	end
 	
-	NoTextures = vape.Categories.Render:CreateModule({
+	NoTextures = larp.Categories.Render:CreateModule({
 		Name = 'NoTextures',
 		Function = function(callback)
 			if callback then
@@ -5803,7 +5803,7 @@ run(function()
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Exclude
 	
-	BulletTracers = vape.Categories.Render:CreateModule({
+	BulletTracers = larp.Categories.Render:CreateModule({
 		Name = 'ProjectileTracers',
 		Function = function(callback)
 			if callback then
@@ -5957,11 +5957,11 @@ run(function()
 		bedwars.InventoryViewmodelController:handleStore(bedwars.Store:getState())
 	end
 	
-	SkinChanger = vape.Categories.Render:CreateModule({
+	SkinChanger = larp.Categories.Render:CreateModule({
 		Name = 'SkinChanger',
 		Function = function(callback)
 			if callback then
-				SkinChanger:Clean(vapeEvents.InventoryChanged.Event:Connect(applySkins))
+				SkinChanger:Clean(larpEvents.InventoryChanged.Event:Connect(applySkins))
 			end
 			applySkins()
 		end,
@@ -5997,7 +5997,7 @@ run(function()
 	local Color = {}
 	local Reference = {}
 	local Folder = Instance.new('Folder')
-	Folder.Parent = vape.gui
+	Folder.Parent = larp.gui
 	
 	local function nearStorageItem(item)
 		for _, v in List.ListEnabled do
@@ -6081,7 +6081,7 @@ run(function()
 		task.spawn(refreshAdornee, billboard)
 	end
 	
-	StorageESP = vape.Categories.Render:CreateModule({
+	StorageESP = larp.Categories.Render:CreateModule({
 		Name = 'StorageESP',
 		Function = function(callback)
 			if callback then
@@ -6150,7 +6150,7 @@ run(function()
 	    end))
 	end
 	
-	AntiLasso = vape.Categories.Utility:CreateModule({
+	AntiLasso = larp.Categories.Utility:CreateModule({
 	    Name = 'AntiLasso',
 	    Function = function(callback)
 	        if callback then
@@ -6180,7 +6180,7 @@ end)
 run(function()
 	local AutoBalloon
 	
-	AutoBalloon = vape.Categories.Utility:CreateModule({
+	AutoBalloon = larp.Categories.Utility:CreateModule({
 		Name = 'AutoBalloon',
 		Function = function(callback)
 			if callback then
@@ -6234,7 +6234,7 @@ run(function()
 		return nil
 	end
 	
-	AutoBlockUp = vape.Categories.Utility:CreateModule({
+	AutoBlockUp = larp.Categories.Utility:CreateModule({
 		Name = 'AutoBlockUp',
 		Function = function(callback)
 			if callback then
@@ -6297,7 +6297,7 @@ run(function()
 	    return item and item.tool or nil
 	end
 	
-	AutoCounter = vape.Categories.Utility:CreateModule({
+	AutoCounter = larp.Categories.Utility:CreateModule({
 	    Name = 'AutoCounterTNT',
 	    Function = function(callback)
 	        if callback then
@@ -6396,16 +6396,16 @@ run(function()
 	    end
 	end
 	
-	AutoHonor = vape.Categories.Utility:CreateModule({
+	AutoHonor = larp.Categories.Utility:CreateModule({
 	    Name = 'AutoHonor',
 	    Function = function(callback)
 	        if callback then
-	            AutoHonor:Clean(vapeEvents.EntityDeathEvent.Event:Connect(function(deathTable)
+	            AutoHonor:Clean(larpEvents.EntityDeathEvent.Event:Connect(function(deathTable)
 	                if deathTable.finalKill and deathTable.entityInstance == lplr.Character and #bedwars.Store:getState().Party.members <= 0 and store.matchState ~= 2 then
 	                    honor()
 	                end
 	            end))
-	            AutoHonor:Clean(vapeEvents.MatchEndEvent.Event:Connect(honor))
+	            AutoHonor:Clean(larpEvents.MatchEndEvent.Event:Connect(honor))
 	        end
 	    end,
 	    Tooltip = 'Automatically honor your teammates'
@@ -6506,7 +6506,7 @@ run(function()
 		cat = function()
 			local old = bedwars.CatController.leap
 			bedwars.CatController.leap = function(...)
-				vapeEvents.CatPounce:Fire()
+				larpEvents.CatPounce:Fire()
 				return old(...)
 			end
 	
@@ -6770,7 +6770,7 @@ run(function()
 		end
 	}
 	
-	AutoKit = vape.Categories.Utility:CreateModule({
+	AutoKit = larp.Categories.Utility:CreateModule({
 		Name = 'AutoKit',
 		Function = function(callback)
 			if callback then
@@ -6889,7 +6889,7 @@ run(function()
 		return nil
 	end
 	
-	AutoPearl = vape.Categories.Utility:CreateModule({
+	AutoPearl = larp.Categories.Utility:CreateModule({
 		Name = 'AutoPearl',
 		Function = function(callback)
 			if callback then
@@ -6990,16 +6990,16 @@ run(function()
 		end
 	end
 	
-	AutoPlay = vape.Categories.Utility:CreateModule({
+	AutoPlay = larp.Categories.Utility:CreateModule({
 		Name = 'AutoPlay',
 		Function = function(callback)
 			if callback then
-				AutoPlay:Clean(vapeEvents.EntityDeathEvent.Event:Connect(function(deathTable)
+				AutoPlay:Clean(larpEvents.EntityDeathEvent.Event:Connect(function(deathTable)
 					if deathTable.finalKill and deathTable.entityInstance == lplr.Character and isEveryoneDead() and store.matchState ~= 2 then
 						joinQueue()
 					end
 				end))
-				AutoPlay:Clean(vapeEvents.MatchEndEvent.Event:Connect(joinQueue))
+				AutoPlay:Clean(larpEvents.MatchEndEvent.Event:Connect(joinQueue))
 			end
 		end,
 		Tooltip = 'Automatically queues after the match ends.'
@@ -7043,7 +7043,7 @@ run(function()
 		return nil
 	end
 	
-	AutoShoot = vape.Categories.Utility:CreateModule({
+	AutoShoot = larp.Categories.Utility:CreateModule({
 		Name = 'AutoShoot',
 		Function = function(callback)
 			if callback then
@@ -7155,11 +7155,11 @@ run(function()
 		end
 	end
 	
-	AutoToxic = vape.Categories.Utility:CreateModule({
+	AutoToxic = larp.Categories.Utility:CreateModule({
 		Name = 'AutoToxic',
 		Function = function(callback)
 			if callback then
-				AutoToxic:Clean(vapeEvents.BedwarsBedBreak.Event:Connect(function(bedTable)
+				AutoToxic:Clean(larpEvents.BedwarsBedBreak.Event:Connect(function(bedTable)
 					if Toggles.BedDestroyed.Enabled and bedTable.brokenBedTeam.id == lplr:GetAttribute('Team') then
 						sendMessage('BedDestroyed', (bedTable.player.DisplayName or bedTable.player.Name), 'how dare you >:( | <obj>')
 					elseif Toggles.Bed.Enabled and bedTable.player.UserId == lplr.UserId then
@@ -7167,7 +7167,7 @@ run(function()
 						sendMessage('Bed', team and team.displayName:lower() or 'white', 'nice bed lul | <obj>')
 					end
 				end))
-				AutoToxic:Clean(vapeEvents.EntityDeathEvent.Event:Connect(function(deathTable)
+				AutoToxic:Clean(larpEvents.EntityDeathEvent.Event:Connect(function(deathTable)
 					if deathTable.finalKill then
 						local killer = playersService:GetPlayerFromCharacter(deathTable.fromEntity)
 						local killed = playersService:GetPlayerFromCharacter(deathTable.entityInstance)
@@ -7182,7 +7182,7 @@ run(function()
 						end
 					end
 				end))
-				AutoToxic:Clean(vapeEvents.MatchEndEvent.Event:Connect(function(winstuff)
+				AutoToxic:Clean(larpEvents.MatchEndEvent.Event:Connect(function(winstuff)
 					if GG.Enabled then
 						if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
 							textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync('gg')
@@ -7227,7 +7227,7 @@ run(function()
 	local AutoVoidDrop
 	local OwlCheck
 	
-	AutoVoidDrop = vape.Categories.Utility:CreateModule({
+	AutoVoidDrop = larp.Categories.Utility:CreateModule({
 		Name = 'AutoVoidDrop',
 		Function = function(callback)
 			if callback then
@@ -7282,7 +7282,7 @@ run(function()
 	local Device
 	local oldDevice, old
 	
-	DeviceSpoofer = vape.Categories.Utility:CreateModule({
+	DeviceSpoofer = larp.Categories.Utility:CreateModule({
 		Name = 'DeviceSpoofer',
 		Function = function(callback)
 			if callback then
@@ -7319,7 +7319,7 @@ run(function()
 	
 	local old = {}
 	
-	EquipKit = vape.Categories.Utility:CreateModule({
+	EquipKit = larp.Categories.Utility:CreateModule({
 	    Name = 'EquipKit',
 	    Function = function(callback)
 	        if callback then
@@ -7357,7 +7357,7 @@ run(function()
 		return old(root, mass, dir, knockback, select(5, ...))
 	end
 	
-	KnockbackDelay = vape.Categories.Utility:CreateModule({
+	KnockbackDelay = larp.Categories.Utility:CreateModule({
 		Name = 'KnockbackDelay',
 		Function = function(callback)
 			if callback then
@@ -7412,7 +7412,7 @@ run(function()
 end)
 
 run(function()
-	local LeaveParty; LeaveParty = vape.Categories.Utility:CreateModule({
+	local LeaveParty; LeaveParty = larp.Categories.Utility:CreateModule({
 	    Name = 'LeaveParty',
 	    Function = function(callback)
 	        if callback then
@@ -7426,7 +7426,7 @@ end)
 run(function()
 	local MissileTP
 	
-	MissileTP = vape.Categories.Utility:CreateModule({
+	MissileTP = larp.Categories.Utility:CreateModule({
 		Name = 'MissileTP',
 		Function = function(callback)
 			if callback then
@@ -7471,7 +7471,7 @@ run(function()
 	local Lower
 	local Picked = {}
 	
-	PickupRange = vape.Categories.Utility:CreateModule({
+	PickupRange = larp.Categories.Utility:CreateModule({
 		Name = 'PickupRange',
 		Function = function(callback)
 			if callback then
@@ -7534,7 +7534,7 @@ end)
 run(function()
 	local RavenTP
 	
-	RavenTP = vape.Categories.Utility:CreateModule({
+	RavenTP = larp.Categories.Utility:CreateModule({
 		Name = 'RavenTP',
 		Function = function(callback)
 			if callback then
@@ -7653,7 +7653,7 @@ run(function()
 		end
 	end
 	
-	Scaffold = vape.Categories.Utility:CreateModule({
+	Scaffold = larp.Categories.Utility:CreateModule({
 		Name = 'Scaffold',
 		Function = function(callback)
 			if label then
@@ -7806,7 +7806,7 @@ run(function()
 				label.RichText = true
 				label.Font = Enum.Font.Arial
 				label.Visible = Scaffold.Enabled
-				label.Parent = vape.gui
+				label.Parent = larp.gui
 			else
 				label:Destroy()
 				label = nil
@@ -7842,7 +7842,7 @@ run(function()
 	    end
 	end
 	
-	SetEmote = vape.Categories.Utility:CreateModule({
+	SetEmote = larp.Categories.Utility:CreateModule({
 	    Name = 'SetEmote',
 	    Function = function(callback)
 	        if callback then
@@ -7932,7 +7932,7 @@ run(function()
 	local old = bedwars.SettingsController.settings or {}
 	local options = {}
 	
-	SetSettings = vape.Categories.Utility:CreateModule({
+	SetSettings = larp.Categories.Utility:CreateModule({
 	    Name = 'SetSettings',
 	    Function = function(callback)
 	        if callback then
@@ -7944,7 +7944,7 @@ run(function()
 	            end
 	        end
 	    end,
-	    Tooltip = 'Adds bedwars settings options to cat vape (also carries the settings with your cv config).'
+	    Tooltip = 'Adds bedwars settings options to cat larp (also carries the settings with your cv config).'
 	})
 	
 	for i, v in old do
@@ -7965,8 +7965,8 @@ run(function()
 	                end
 	            end
 	        })
-	    elseif shared.VapeDeveloper then
-	        notif('Vape', 'Unknown bedwars setting detected ('.. i.. ')', 20, 'alert')
+	    elseif shared.LarpDeveloper then
+	        notif('Larp', 'Unknown bedwars setting detected ('.. i.. ')', 20, 'alert')
 	    end
 	end
 end)
@@ -8055,7 +8055,7 @@ run(function()
 	    end)
 	end
 	
-	ShopQuickBuy = vape.Categories.Utility:CreateModule({
+	ShopQuickBuy = larp.Categories.Utility:CreateModule({
 	    Name = 'ShopClicker',
 	    Function = function(callback)
 	        if callback then
@@ -8128,8 +8128,8 @@ run(function()
 	end
 	
 	local function staffFunction(plr, checktype)
-		if not vape.Loaded then
-			repeat task.wait() until vape.Loaded
+		if not larp.Loaded then
+			repeat task.wait() until larp.Loaded
 		end
 	
 		notif('StaffDetector', 'Staff Detected ('..checktype..'): '..plr.Name..' ('..plr.UserId..')', 60, 'alert')
@@ -8141,7 +8141,7 @@ run(function()
 	
 		if Mode.Value == 'Uninject' then
 			task.spawn(function()
-				vape:Uninject()
+				larp:Uninject()
 			end)
 			game:GetService('StarterGui'):SetCore('SendNotification', {
 				Title = 'StaffDetector',
@@ -8151,14 +8151,14 @@ run(function()
 		elseif Mode.Value == 'Requeue' then
 			bedwars.QueueController:joinQueue(store.queueType)
 		elseif Mode.Value == 'Profile' then
-			vape.Save = function() end
-			if vape.Profile ~= Profile.Value then
-				vape:Load(true, Profile.Value)
+			larp.Save = function() end
+			if larp.Profile ~= Profile.Value then
+				larp:Load(true, Profile.Value)
 			end
 		elseif Mode.Value == 'AutoConfig' then
 			local safe = {'AutoClicker', 'Reach', 'Sprint', 'HitFix', 'StaffDetector'}
-			vape.Save = function() end
-			for i, v in vape.Modules do
+			larp.Save = function() end
+			for i, v in larp.Modules do
 				if not (table.find(safe, i) or v.Category == 'Render') then
 					if v.Enabled then
 						v:Toggle()
@@ -8222,14 +8222,14 @@ run(function()
 				plr:GetAttributeChangedSignal('ClanTag'):Wait()
 			end
 	
-			if table.find(blacklistedclans, plr:GetAttribute('ClanTag')) and vape.Loaded and Clans.Enabled then
+			if table.find(blacklistedclans, plr:GetAttribute('ClanTag')) and larp.Loaded and Clans.Enabled then
 				connection:Disconnect()
 				staffFunction(plr, 'blacklisted_clan_'..plr:GetAttribute('ClanTag'):lower())
 			end
 		end
 	end
 	
-	StaffDetector = vape.Categories.Utility:CreateModule({
+	StaffDetector = larp.Categories.Utility:CreateModule({
 		Name = 'StaffDetector',
 		Function = function(callback)
 			if callback then
@@ -8271,22 +8271,22 @@ run(function()
 	})
 	
 	task.spawn(function()
-		repeat task.wait(1) until vape.Loaded or vape.Loaded == nil
-		if vape.Loaded and not StaffDetector.Enabled then
+		repeat task.wait(1) until larp.Loaded or larp.Loaded == nil
+		if larp.Loaded and not StaffDetector.Enabled then
 			StaffDetector:Toggle()
 		end
 	end)
 end)
 
 run(function()
-	TrapDisabler = vape.Categories.Utility:CreateModule({
+	TrapDisabler = larp.Categories.Utility:CreateModule({
 		Name = 'TrapDisabler',
 		Tooltip = 'Disables Snap Traps'
 	})
 end)
 
 run(function()
-	vape.Categories.World:CreateModule({
+	larp.Categories.World:CreateModule({
 		Name = 'Anti-AFK',
 		Function = function(callback)
 			if callback then
@@ -8331,7 +8331,7 @@ run(function()
 		end
 	end
 	
-	AutoTool = vape.Categories.World:CreateModule({
+	AutoTool = larp.Categories.World:CreateModule({
 		Name = 'AutoTool',
 		Function = function(callback)
 			if callback then
@@ -8405,7 +8405,7 @@ run(function()
 	    return nil
 	end
 	
-	BedAssist = vape.Categories.World:CreateModule({
+	BedAssist = larp.Categories.World:CreateModule({
 	    Name = 'BedAssist',
 	    Function = function(call)
 	        if call then
@@ -8553,7 +8553,7 @@ run(function()
 	    return positions
 	end
 	
-	BedPatcher = vape.Categories.World:CreateModule({
+	BedPatcher = larp.Categories.World:CreateModule({
 	    Name = 'BedPatcher',
 	    Function = function(callback)
 	        if callback then
@@ -8665,7 +8665,7 @@ run(function()
 	    return positions
 	end
 	
-	BedProtector = vape.Categories.World:CreateModule({
+	BedProtector = larp.Categories.World:CreateModule({
 	    Name = 'BedProtector',
 	    Function = function(callback)
 	        if callback then
@@ -8857,7 +8857,7 @@ run(function()
 	    return blocks
 	end
 	
-	BlockIn = vape.Categories.World:CreateModule({
+	BlockIn = larp.Categories.World:CreateModule({
 	    Name = 'Block-In',
 	    Function = function(callback)
 	        if callback then
@@ -8946,7 +8946,7 @@ run(function()
 		end
 	end
 	
-	ChestSteal = vape.Categories.World:CreateModule({
+	ChestSteal = larp.Categories.World:CreateModule({
 		Name = 'ChestSteal',
 		Function = function(callback)
 			if callback then
@@ -9002,7 +9002,7 @@ run(function()
 	local FastPlace
 	local CPS
 	
-	FastPlace = vape.Categories.World:CreateModule({
+	FastPlace = larp.Categories.World:CreateModule({
 		Name = 'FastPlace',
 		Function = function(callback)
 			bedwars.SharedConstants.BLOCK_PLACE_CPS = callback and CPS.Value or 12
@@ -9034,7 +9034,7 @@ run(function()
 	local Targets
 	local Range
 	
-	ArmorSwitch = vape.Categories.Inventory:CreateModule({
+	ArmorSwitch = larp.Categories.Inventory:CreateModule({
 		Name = 'ArmorSwitch',
 		Function = function(callback)
 			if callback then
@@ -9055,7 +9055,7 @@ run(function()
 									item = store.inventory.inventory.armor[i + 1] == 'empty' and state and getBestArmor(i) or nil,
 									armorSlot = i
 								})
-								vapeEvents.InventoryChanged.Event:Wait()
+								larpEvents.InventoryChanged.Event:Wait()
 							end
 						end
 						task.wait(0.1)
@@ -9068,7 +9068,7 @@ run(function()
 							item = store.inventory.inventory.armor[i + 1] == 'empty' and getBestArmor(i) or nil,
 							armorSlot = i
 						})
-						vapeEvents.InventoryChanged.Event:Wait()
+						larpEvents.InventoryChanged.Event:Wait()
 					end
 				end
 			end
@@ -9247,7 +9247,7 @@ run(function()
 		return bought
 	end
 	
-	AutoBuy = vape.Categories.Inventory:CreateModule({
+	AutoBuy = larp.Categories.Inventory:CreateModule({
 		Name = 'AutoBuy',
 		Function = function(callback)
 			if callback then
@@ -9255,7 +9255,7 @@ run(function()
 				if BedwarsCheck.Enabled and not store.queueType:find('bedwars') then return end
 	
 				local lastupgrades
-				AutoBuy:Clean(vapeEvents.InventoryAmountChanged.Event:Connect(function()
+				AutoBuy:Clean(larpEvents.InventoryAmountChanged.Event:Connect(function()
 					if (npctick - tick()) > 1 then npctick = tick() end
 				end))
 	
@@ -9473,12 +9473,12 @@ run(function()
 		end
 	end
 	
-	AutoConsume = vape.Categories.Inventory:CreateModule({
+	AutoConsume = larp.Categories.Inventory:CreateModule({
 		Name = 'AutoConsume',
 		Function = function(callback)
 			if callback then
-				AutoConsume:Clean(vapeEvents.InventoryAmountChanged.Event:Connect(consumeCheck))
-				AutoConsume:Clean(vapeEvents.AttributeChanged.Event:Connect(function(attribute)
+				AutoConsume:Clean(larpEvents.InventoryAmountChanged.Event:Connect(consumeCheck))
+				AutoConsume:Clean(larpEvents.AttributeChanged.Event:Connect(function(attribute)
 					if attribute:find('Shield') or attribute:find('Health') or attribute == 'StatusEffect_speed' then
 						consumeCheck(attribute)
 					end
@@ -9528,7 +9528,7 @@ run(function()
 		return nil
 	end
 	
-	AutoFish = vape.Categories.Inventory:CreateModule({
+	AutoFish = larp.Categories.Inventory:CreateModule({
 		Name = 'AutoFish',
 		Function = function(call)
 			if call then
@@ -9643,7 +9643,7 @@ run(function()
 		window.BackgroundColor3 = uipallet.Main
 		window.AnchorPoint = Vector2.new(0.5, 0.5)
 		window.Visible = false
-		window.Parent = vape.gui.ScaledGui
+		window.Parent = larp.gui.ScaledGui
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
 		title.Size = UDim2.new(1, -10, 0, 20)
@@ -9677,7 +9677,7 @@ run(function()
 		close.Position = UDim2.new(1, -35, 0, 9)
 		close.BackgroundColor3 = Color3.new(1, 1, 1)
 		close.BackgroundTransparency = 1
-		close.Image = getcustomasset('LarpV4/assets/new/close.png')
+		close.Image = getcustomasset('LarpV4/assets/larp/close.png')
 		close.ImageColor3 = color.Light(uipallet.Text, 0.2)
 		close.ImageTransparency = 0.5
 		close.AutoButtonColor = false
@@ -9696,7 +9696,7 @@ run(function()
 		end)
 		close.MouseButton1Click:Connect(function()
 			window.Visible = false
-			vape.gui.ScaledGui.ClickGui.Visible = true
+			larp.gui.ScaledGui.ClickGui.Visible = true
 		end)
 		local closecorner = Instance.new('UICorner')
 		closecorner.CornerRadius = UDim.new(1, 0)
@@ -9791,7 +9791,7 @@ run(function()
 		searchicon.Size = UDim2.fromOffset(14, 14)
 		searchicon.Position = UDim2.new(1, -26, 0, 8)
 		searchicon.BackgroundTransparency = 1
-		searchicon.Image = getcustomasset('LarpV4/assets/new/search.png')
+		searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 		searchicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		searchicon.Parent = searchbkg
 		local children = Instance.new('ScrollingFrame')
@@ -9811,12 +9811,12 @@ run(function()
 		windowlist.CellPadding = UDim2.fromOffset(4, 3)
 		windowlist.Parent = children
 		windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-			if vape.ThreadFix then
+			if larp.ThreadFix then
 				setthreadidentity(8)
 			end
-			children.CanvasSize = UDim2.fromOffset(0, windowlist.AbsoluteContentSize.Y / vape.guiscale.Scale)
+			children.CanvasSize = UDim2.fromOffset(0, windowlist.AbsoluteContentSize.Y / larp.guiscale.Scale)
 		end)
-		table.insert(vape.Windows, window)
+		table.insert(larp.Windows, window)
 	
 		local function createitem(id, image)
 			local slotbkg = Instance.new('TextButton')
@@ -9880,8 +9880,8 @@ run(function()
 		return window
 	end
 	
-	vape.Components.HotbarList = function(optionsettings, children, api)
-		if vape.ThreadFix then
+	larp.Components.HotbarList = function(optionsettings, children, api)
+		if larp.ThreadFix then
 			setthreadidentity(8)
 		end
 		local optionapi = {
@@ -9932,7 +9932,7 @@ run(function()
 		textbuttonicon.Position = UDim2.fromScale(0.5, 0.5)
 		textbuttonicon.AnchorPoint = Vector2.new(0.5, 0.5)
 		textbuttonicon.BackgroundTransparency = 1
-		textbuttonicon.Image = getcustomasset('LarpV4/assets/new/add.png')
+		textbuttonicon.Image = getcustomasset('LarpV4/assets/larp/add.png')
 		textbuttonicon.ImageColor3 = Color3.fromHSV(0.46, 0.96, 0.52)
 		textbuttonicon.Parent = textbutton
 		local childrenlist = Instance.new('Frame')
@@ -9946,10 +9946,10 @@ run(function()
 		windowlist.Padding = UDim.new(0, 3)
 		windowlist.Parent = childrenlist
 		windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-			if vape.ThreadFix then
+			if larp.ThreadFix then
 				setthreadidentity(8)
 			end
-			hotbarlist.Size = UDim2.fromOffset(220, math.min(43 + windowlist.AbsoluteContentSize.Y / vape.guiscale.Scale, 603))
+			hotbarlist.Size = UDim2.fromOffset(220, math.min(43 + windowlist.AbsoluteContentSize.Y / larp.guiscale.Scale, 603))
 		end)
 		textbutton.MouseButton1Click:Connect(function()
 			optionapi:AddHotbar()
@@ -10006,7 +10006,7 @@ run(function()
 			hotbar.MouseButton1Click:Connect(function()
 				local ind = table.find(optionapi.Hotbars, hotbardata)
 				if ind == optionapi.Selected then
-					vape.gui.ScaledGui.ClickGui.Visible = false
+					larp.gui.ScaledGui.ClickGui.Visible = false
 					optionapi.Window.Visible = true
 					for i = 1, 9 do
 						optionapi.Window['Slot'..i].ImageLabel.Image = hotbardata.Hotbar[tostring(i)] and bedwars.getIcon({itemType = hotbardata.Hotbar[tostring(i)]}, true) or ''
@@ -10025,7 +10025,7 @@ run(function()
 			close.Position = UDim2.new(1, -23, 0, 6)
 			close.BackgroundColor3 = Color3.new(1, 1, 1)
 			close.BackgroundTransparency = 1
-			close.Image = getcustomasset('LarpV4/assets/new/closemini.png')
+			close.Image = getcustomasset('LarpV4/assets/larp/closemini.png')
 			close.ImageColor3 = color.Light(uipallet.Text, 0.2)
 			close.ImageTransparency = 0.5
 			close.AutoButtonColor = false
@@ -10125,7 +10125,7 @@ run(function()
 	
 	local function dispatch(...)
 		bedwars.Store:dispatch(...)
-		vapeEvents.InventoryChanged.Event:Wait()
+		larpEvents.InventoryChanged.Event:Wait()
 	end
 	
 	local function sortCallback()
@@ -10179,7 +10179,7 @@ run(function()
 		Active = false
 	end
 	
-	AutoHotbar = vape.Categories.Inventory:CreateModule({
+	AutoHotbar = larp.Categories.Inventory:CreateModule({
 		Name = 'AutoHotbar',
 		Function = function(callback)
 			if callback then
@@ -10189,7 +10189,7 @@ run(function()
 					return
 				end
 	
-				AutoHotbar:Clean(vapeEvents.InventoryAmountChanged.Event:Connect(sortCallback))
+				AutoHotbar:Clean(larpEvents.InventoryAmountChanged.Event:Connect(sortCallback))
 			end
 		end,
 		Tooltip = 'Automatically arranges hotbar to your liking.'
@@ -10270,7 +10270,7 @@ run(function()
 		end
 	end
 	
-	AutoSteal = vape.Categories.Inventory:CreateModule({
+	AutoSteal = larp.Categories.Inventory:CreateModule({
 		Name = 'AutoSteal',
 		Function = function(callback)
 			if callback then
@@ -10335,7 +10335,7 @@ run(function()
 	local Value
 	local oldclickhold, oldshowprogress
 	
-	local FastConsume = vape.Categories.Inventory:CreateModule({
+	local FastConsume = larp.Categories.Inventory:CreateModule({
 		Name = 'FastConsume',
 		Function = function(callback)
 			if callback then
@@ -10406,7 +10406,7 @@ end)
 run(function()
 	local FastDrop
 	
-	FastDrop = vape.Categories.Inventory:CreateModule({
+	FastDrop = larp.Categories.Inventory:CreateModule({
 		Name = 'FastDrop',
 		Function = function(callback)
 			if callback then
@@ -10427,7 +10427,7 @@ end)
 run(function()
 	local AutoAdetunde
 	
-	AutoAdetunde = vape.Categories.Minigames:CreateModule({
+	AutoAdetunde = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoAdetunde',
 		Function = function(callback)
 			if callback then
@@ -10476,7 +10476,7 @@ run(function()
 	local DepositRange
 	local DepositDelay
 	
-	AutoBee = vape.Categories.Minigames:CreateModule({
+	AutoBee = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoBeekeeper',
 		Function = function(callback)
 			if callback then
@@ -10606,7 +10606,7 @@ run(function()
 		return bed, lastmag
 	end
 	
-	AutoBuilder = vape.Categories.Minigames:CreateModule({
+	AutoBuilder = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoBuilder',
 		Function = function(callback)
 			if callback then
@@ -10864,7 +10864,7 @@ run(function()
 		selectContract(session, contract)
 	end
 	
-	AutoCaitlyn = vape.Categories.Minigames:CreateModule({
+	AutoCaitlyn = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoCaitlyn',
 		Function = function(callback)
 			if callback then
@@ -10876,7 +10876,7 @@ run(function()
 				}
 				activeSession = session
 	
-				AutoCaitlyn:Clean(vapeEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+				AutoCaitlyn:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
 					if activeSession ~= session then
 						return
 					end
@@ -10892,7 +10892,7 @@ run(function()
 					end
 				end))
 	
-				AutoCaitlyn:Clean(vapeEvents.BedwarsBedBreak.Event:Connect(function()
+				AutoCaitlyn:Clean(larpEvents.BedwarsBedBreak.Event:Connect(function()
 					table.clear(session.beds)
 				end))
 	
@@ -10972,7 +10972,7 @@ run(function()
 	
 	local old
 	
-	AutoDavey = vape.Categories.Minigames:CreateModule({
+	AutoDavey = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoDavey',
 		Function = function(call)
 			if call then
@@ -11122,7 +11122,7 @@ run(function()
 		end)
 	end
 	
-	AutoDrill = vape.Categories.Minigames:CreateModule({
+	AutoDrill = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoDrill',
 		Function = function(callback)
 			if callback then
@@ -11253,7 +11253,7 @@ run(function()
 	
 	local Legit = getFunctionRange(bedwars.EldertreeController.createTreeOrbInteraction) or 10
 	
-	AutoElder = vape.Categories.Minigames:CreateModule({
+	AutoElder = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoElder',
 		Function = function(call)
 			if call then
@@ -11343,7 +11343,7 @@ run(function()
 	local Delay
 	local Limit
 	
-	AutoEmber = vape.Categories.Minigames:CreateModule({
+	AutoEmber = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoEmber',
 		Function = function(call)
 			if call then
@@ -11425,7 +11425,7 @@ run(function()
 		return (block.Position - entitylib.character.RootPart.Position).Magnitude <= Range.Value
 	end
 	
-	AutoGingerbread = vape.Categories.Minigames:CreateModule({
+	AutoGingerbread = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoGingerbreadMan',
 		Function = function(callback)
 			if callback then
@@ -11520,7 +11520,7 @@ run(function()
 	
 	local Legit = getFunctionRange(bedwars.GrimReaperController.registerSoulInteractions) or 0
 	
-	AutoGrim = vape.Categories.Minigames:CreateModule({
+	AutoGrim = larp.Categories.Minigames:CreateModule({
 	    Name = 'AutoGrim',
 	    Function = function(callback)
 	        if callback then
@@ -11574,7 +11574,7 @@ run(function()
 	local AutoHannah
 	local Range
 	
-	AutoHannah = vape.Categories.Minigames:CreateModule({
+	AutoHannah = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoHannah',
 		Function = function(callback)
 			if callback then
@@ -11638,7 +11638,7 @@ run(function()
 	local AutoHephaestus
 	local lastRepair = 0
 	
-	AutoHephaestus = vape.Categories.Minigames:CreateModule({
+	AutoHephaestus = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoHephaestus',
 		Function = function(callback)
 			if callback then
@@ -11704,7 +11704,7 @@ run(function()
 		})
 	end
 	
-	AutoKaliyah = vape.Categories.Minigames:CreateModule({
+	AutoKaliyah = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoKaliyah',
 		Function = function(call)
 			if call then
@@ -11774,7 +11774,7 @@ run(function()
 	    return nil
 	end
 	
-	AutoKrystal = vape.Categories.Minigames:CreateModule({
+	AutoKrystal = larp.Categories.Minigames:CreateModule({
 	    Name = 'AutoKrystal',
 	    Function = function(callback)
 	        if callback then
@@ -11810,7 +11810,7 @@ run(function()
 		Request = bedwars.Handler:Get('PaladinAbilityRequest')
 	end)
 	
-	AutoLani = vape.Categories.Minigames:CreateModule({
+	AutoLani = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoLani',
 		Function = function(callback)
 			if callback then
@@ -11886,15 +11886,15 @@ run(function()
 	for _, v in playersService:GetPlayers() do
 		addConnection(v)
 	end
-	vape:Clean(playersService.PlayerAdded:Connect(addConnection))
-	vape:Clean(playersService.PlayerRemoving:Connect(function(plr)
+	larp:Clean(playersService.PlayerAdded:Connect(addConnection))
+	larp:Clean(playersService.PlayerRemoving:Connect(function(plr)
 		if teamConnections[plr] then
 			teamConnections[plr]:Disconnect()
 			teamConnections[plr] = nil
 		end
 		rebuildPlayers()
 	end))
-	vape:Clean(function()
+	larp:Clean(function()
 		for _, connection in teamConnections do
 			connection:Disconnect()
 		end
@@ -11918,7 +11918,7 @@ run(function()
 	local AutoMarina
 	local Range
 	
-	AutoMarina = vape.Categories.Minigames:CreateModule({
+	AutoMarina = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoMarina',
 		Function = function(call)
 			if call then
@@ -11968,7 +11968,7 @@ run(function()
 	local Targets
 	local Range
 	
-	AutoMartin = vape.Categories.Minigames:CreateModule({
+	AutoMartin = larp.Categories.Minigames:CreateModule({
 	    Name = 'AutoMartin',
 	    Function = function(callback)
 	        if callback then
@@ -12012,7 +12012,7 @@ run(function()
 	local SelfHeal
 	local TeammateHeal
 	
-	AutoMelody = vape.Categories.Minigames:CreateModule({
+	AutoMelody = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoMelody',
 		Function = function(callback)
 			if callback then
@@ -12071,7 +12071,7 @@ run(function()
 	local Legit = getFunctionRange(bedwars.HiddenMetalController.onKitLocalActivated) or 0
 	local Delay = {}
 	
-	AutoMetal = vape.Categories.Minigames:CreateModule({
+	AutoMetal = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoMetal',
 		Function = function(call)
 			if call then
@@ -12165,7 +12165,7 @@ run(function()
 	
 	local Legit = getFunctionRange(bedwars.MinerController.setupMinerPrompts) or 0
 	
-	AutoMiner = vape.Categories.Minigames:CreateModule({
+	AutoMiner = larp.Categories.Minigames:CreateModule({
 	    Name = 'AutoMiner',
 	    Function = function(callback)
 	        if callback then
@@ -12258,7 +12258,7 @@ run(function()
 		return
 	end
 	
-	AutoNoelle = vape.Categories.Minigames:CreateModule({
+	AutoNoelle = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoNoelle',
 		Function = function(call)
 			if call then
@@ -12304,7 +12304,7 @@ run(function()
 			VoidSlime:Change(friends)
 		end
 	
-		vape:Clean(plr:GetAttributeChangedSignal('Team'):Connect(function()
+		larp:Clean(plr:GetAttributeChangedSignal('Team'):Connect(function()
 			if plr:GetAttribute('Team') == lplr:GetAttribute('Team') then
 				table.insert(friends, `{plr.DisplayName} ({plr.Name})`)
 				FrostySlime:Change(friends)
@@ -12341,18 +12341,18 @@ run(function()
 	for _, v in playersService:GetPlayers() do
 		addConnection(v)
 	end
-	vape:Clean(playersService.PlayerAdded:Connect(addConnection))
+	larp:Clean(playersService.PlayerAdded:Connect(addConnection))
 end)
 
 run(function()
 	local AutoNyx
 	local Targets
 	
-	AutoNyx = vape.Categories.Minigames:CreateModule({
+	AutoNyx = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoNyx',
 		Function = function(call)
 			if call then
-				AutoNyx:Clean(vapeEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+				AutoNyx:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
 					if damageTable.damageType == 0 and damageTable.fromEntity and damageTable.fromEntity.Name == lplr.Name and entitylib.EntityPosition({
 						Range = 14.4,
 						Part = 'RootPart',
@@ -12378,7 +12378,7 @@ run(function()
 	
 	local list = {'Range', 'Heat', 'Power'}
 	
-	AutoPyro = vape.Categories.Minigames:CreateModule({
+	AutoPyro = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoPyro',
 		Function = function(callback)
 			if callback then
@@ -12434,7 +12434,7 @@ run(function()
 	    return nil
 	end
 	
-	AutoRagnar = vape.Categories.Minigames:CreateModule({
+	AutoRagnar = larp.Categories.Minigames:CreateModule({
 	    Name = 'AutoRagnar',
 	    Function = function(callback)
 	        if callback then
@@ -12461,7 +12461,7 @@ run(function()
 	local UseTornando
 	local TonradoRange
 	
-	AutoRamil = vape.Categories.Minigames:CreateModule({
+	AutoRamil = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoRamil',
 		Function = function(callback)
 			if callback then
@@ -12549,7 +12549,7 @@ run(function()
 		tameSheep = bedwars.Client:GetNamespace('SheepHerder'):Get('TameSheep')
 	end)
 	
-	AutoSheep = vape.Categories.Minigames:CreateModule({
+	AutoSheep = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoSheepHerder',
 		Function = function(callback)
 			if callback then
@@ -12599,7 +12599,7 @@ run(function()
 	local Animation
 	local Delay
 	
-	AutoStar = vape.Categories.Minigames:CreateModule({
+	AutoStar = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoStarCollector',
 		Function = function(callback)
 			if callback then
@@ -12699,7 +12699,7 @@ run(function()
 		return shop, items, upgrades, newid
 	end
 	
-	AutoTaliyah = vape.Categories.Minigames:CreateModule({
+	AutoTaliyah = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoTaliyah',
 		Tooltip = 'Automatically buy chickens when it sells for emerald',
 		Function = function(callback)
@@ -12839,7 +12839,7 @@ run(function()
 		return nil
 	end
 	
-	AutoTriton = vape.Categories.Minigames:CreateModule({
+	AutoTriton = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoTriton',
 		Function = function(callback)
 			if callback then
@@ -12943,7 +12943,7 @@ run(function()
 		return drop
 	end
 	
-	AutoUma = vape.Categories.Minigames:CreateModule({
+	AutoUma = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoUma',
 		Function = function(call)
 			if call then
@@ -13071,7 +13071,7 @@ run(function()
 	local AutoVanessa
 	local oldGetChargeTime, newGetChargeTime, oldOverchargeStartTime, hookedController
 	
-	AutoVanessa = vape.Categories.Minigames:CreateModule({
+	AutoVanessa = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoVanessa',
 		Function = function(callback)
 			if callback then
@@ -13115,7 +13115,7 @@ run(function()
 	local Fly
 	local Level
 	
-	AutoWhisper = vape.Categories.Minigames:CreateModule({
+	AutoWhisper = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoWhisper',
 		Function = function(callback)
 			if callback then
@@ -13254,7 +13254,7 @@ run(function()
 		return pcall(bedwars.AbilityController.useAbility, bedwars.AbilityController, ability, newproxy(true), data)
 	end
 	
-	AutoZeno = vape.Categories.Minigames:CreateModule({
+	AutoZeno = larp.Categories.Minigames:CreateModule({
 		Name = 'AutoZeno',
 		Function = function(callback)
 			if callback then
@@ -13380,7 +13380,7 @@ run(function()
 	local LayerColor
 	local Reference = {}
 	local Folder = Instance.new('Folder')
-	Folder.Parent = vape.gui
+	Folder.Parent = larp.gui
 	
 	local function getBlockLayerHealth(block)
 		local meta = bedwars.ItemMeta[block]
@@ -13511,15 +13511,15 @@ run(function()
 		end
 	end
 	
-	BedPlates = vape.Categories.Minigames:CreateModule({
+	BedPlates = larp.Categories.Minigames:CreateModule({
 		Name = 'BedPlates',
 		Function = function(callback)
 			if callback then
 				for _, v in collectionService:GetTagged('bed') do
 					task.spawn(Added, v)
 				end
-				BedPlates:Clean(vapeEvents.PlaceBlockEvent.Event:Connect(refreshNear))
-				BedPlates:Clean(vapeEvents.BreakBlockEvent.Event:Connect(refreshNear))
+				BedPlates:Clean(larpEvents.PlaceBlockEvent.Event:Connect(refreshNear))
+				BedPlates:Clean(larpEvents.BreakBlockEvent.Event:Connect(refreshNear))
 				BedPlates:Clean(collectionService:GetInstanceAddedSignal('bed'):Connect(Added))
 				BedPlates:Clean(collectionService:GetInstanceRemovedSignal('bed'):Connect(function(v)
 					if Reference[v] then
@@ -13643,7 +13643,7 @@ run(function()
 	                        Size = UDim2.new(1, 89, 1, 52),
 	                        Position = UDim2.fromOffset(-48, -31),
 	                        BackgroundTransparency = 1,
-	                        Image = getcustomasset('LarpV4/assets/new/blur.png'),
+	                        Image = getcustomasset('LarpV4/assets/larp/blur.png'),
 	                        ScaleType = Enum.ScaleType.Slice,
 	                        SliceCenter = Rect.new(52, 31, 261, 502)
 	                    }),
@@ -13706,7 +13706,7 @@ run(function()
 	            Size = UDim2.fromScale(newpercent, 1), BackgroundColor3 = Color3.fromHSV(math.clamp(newpercent / 2.5, 0, 1), 0.89, 0.75)
 	        }):Play()
 	    end, function(...)
-	        if shared.VapeDeveloper then
+	        if shared.LarpDeveloper then
 	            warn(...)
 	        end
 	    end)
@@ -13744,7 +13744,7 @@ run(function()
 		return false
 	end
 	
-	Breaker = vape.Categories.Minigames:CreateModule({
+	Breaker = larp.Categories.Minigames:CreateModule({
 		Name = 'Nuker',
 		Function = function(callback)
 			if callback then
@@ -13943,7 +13943,7 @@ run(function()
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 	
-	DaveyAim = vape.Categories.Minigames:CreateModule({
+	DaveyAim = larp.Categories.Minigames:CreateModule({
 		Name = 'DaveyAim',
 		Function = function(callback)
 			if callback then
@@ -14036,7 +14036,7 @@ run(function()
 	local FishermanSpy
 	local Teammates
 	
-	FishermanSpy = vape.Categories.Minigames:CreateModule({
+	FishermanSpy = larp.Categories.Minigames:CreateModule({
 		Name = 'FishermanSpy',
 		Function = function(call)
 			if call then
@@ -14067,7 +14067,7 @@ run(function()
 	local InfiniteKrystal
 	local old, newMomentum
 	
-	InfiniteKrystal = vape.Categories.Minigames:CreateModule({
+	InfiniteKrystal = larp.Categories.Minigames:CreateModule({
 		Name = 'InfiniteKrystal',
 		Tooltip = 'Gives you max momentum forever',
 		Function = function(call)
@@ -14101,7 +14101,7 @@ run(function()
 	
 	local oldUseJadeHammer, newUseJadeHammer, hookedController
 	
-	JadeExtender = vape.Categories.Minigames:CreateModule({
+	JadeExtender = larp.Categories.Minigames:CreateModule({
 		Name = 'JadeExtender',
 		Function = function(callback)
 			if callback then
@@ -14153,7 +14153,7 @@ run(function()
 	local Legit = getFunctionRange(bedwars.MimicController.onKitLocalActivated) or 25
 	local mimicPickPocket = bedwars.Handler:Get('MimicBlockPickPocketPlayer')
 	
-	AutoPickpocket = vape.Categories.Minigames:CreateModule({
+	AutoPickpocket = larp.Categories.Minigames:CreateModule({
 	    Name = 'AutoPickpocket',
 	    Function = function(callback)
 	        if callback then
@@ -14220,7 +14220,7 @@ run(function()
 	    end))
 	end
 	
-	PhaseMine = vape.Categories.Minigames:CreateModule({
+	PhaseMine = larp.Categories.Minigames:CreateModule({
 	    Name = 'PhaseMine',
 	    Function = function(callback)
 	        if callback then
@@ -14253,7 +14253,7 @@ run(function()
 	
 	local oldUseVoidAxe, newUseVoidAxe, hookedController
 	
-	VoidRegentExtender = vape.Categories.Minigames:CreateModule({
+	VoidRegentExtender = larp.Categories.Minigames:CreateModule({
 		Name = 'VoidRegentExtender',
 		Function = function(callback)
 			if callback then
@@ -14303,7 +14303,7 @@ run(function()
 	local Range
 	local Sort
 	
-	VulcanAimbot = vape.Categories.Minigames:CreateModule({
+	VulcanAimbot = larp.Categories.Minigames:CreateModule({
 	    Name = 'VulcanAssist',
 	    Function = function(callback)
 	        if callback then
@@ -14364,7 +14364,7 @@ run(function()
 	
 	local oldLeap, newLeap, hookedController
 	
-	YaminiExtender = vape.Categories.Minigames:CreateModule({
+	YaminiExtender = larp.Categories.Minigames:CreateModule({
 		Name = 'YaminiExtender',
 		Function = function(callback)
 			if callback then
@@ -14418,7 +14418,7 @@ run(function()
 	
 	local oldDashForward, newDashForward, hookedController
 	
-	YuziExtender = vape.Categories.Minigames:CreateModule({
+	YuziExtender = larp.Categories.Minigames:CreateModule({
 		Name = 'YuziExtender',
 		Function = function(callback)
 			if callback then
@@ -14470,11 +14470,11 @@ run(function()
 	local List
 	local NameToId = {}
 	
-	BedBreakEffect = vape.Legit:CreateModule({
+	BedBreakEffect = larp.Legit:CreateModule({
 		Name = 'Bed Break Effect',
 		Function = function(callback)
 			if callback then
-	            BedBreakEffect:Clean(vapeEvents.BedwarsBedBreak.Event:Connect(function(data)
+	            BedBreakEffect:Clean(larpEvents.BedwarsBedBreak.Event:Connect(function(data)
 	                firesignal(bedwars.Handler:Get('BedBreakEffectTriggered').Remote.instance.OnClientEvent, {
 	                    player = data.player,
 	                    position = data.bedBlockPosition * 3,
@@ -14500,7 +14500,7 @@ run(function()
 end)
 
 run(function()
-	vape.Legit:CreateModule({
+	larp.Legit:CreateModule({
 		Name = 'Clean Kit',
 		Function = function(callback)
 			if callback then
@@ -14519,7 +14519,7 @@ run(function()
 	local old
 	local Image
 	
-	local Crosshair = vape.Legit:CreateModule({
+	local Crosshair = larp.Legit:CreateModule({
 		Name = 'Crosshair',
 		Function = function(callback)
 			if callback then
@@ -14564,7 +14564,7 @@ run(function()
 	tab = suc and tab or {}
 	local oldvalues, oldfont = {}
 	
-	DamageIndicator = vape.Legit:CreateModule({
+	DamageIndicator = larp.Legit:CreateModule({
 		Name = 'Damage Indicator',
 		Function = function(callback)
 			if callback then
@@ -14652,7 +14652,7 @@ run(function()
 	local Value
 	local old, old2
 	
-	FOV = vape.Legit:CreateModule({
+	FOV = larp.Legit:CreateModule({
 		Name = 'FOV',
 		Function = function(callback)
 			if callback then
@@ -14686,7 +14686,7 @@ run(function()
 	local Visualizer
 	local effects, util = {}, {}
 	
-	FPSBoost = vape.Legit:CreateModule({
+	FPSBoost = larp.Legit:CreateModule({
 		Name = 'FPS Boost',
 		Function = function(callback)
 			if callback then
@@ -14763,7 +14763,7 @@ run(function()
 	local Color
 	local done = {}
 	
-	HitColor = vape.Legit:CreateModule({
+	HitColor = larp.Legit:CreateModule({
 		Name = 'Hit Color',
 		Function = function(callback)
 			if callback then 
@@ -14797,7 +14797,7 @@ run(function()
 end)
 
 run(function()
-	vape.Legit:CreateModule({
+	larp.Legit:CreateModule({
 		Name = 'HitFix',
 		Function = function(callback)
 			debug.setconstant(bedwars.SwordController.swingSwordAtMouse, 23, callback and 'raycast' or 'Raycast')
@@ -14814,7 +14814,7 @@ run(function()
 	local HotbarApp = getRoactRender(require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-app']).HotbarApp.render)
 	local old, new = {}, {}
 	
-	vape:Clean(function()
+	larp:Clean(function()
 		for _, v in new do
 			table.clear(v)
 		end
@@ -14845,7 +14845,7 @@ run(function()
 		end
 	end
 	
-	Interface = vape.Legit:CreateModule({
+	Interface = larp.Legit:CreateModule({
 		Name = 'Interface',
 		Function = function(callback)
 			for i, v in (callback and new or old) do
@@ -15003,7 +15003,7 @@ run(function()
 		end
 	}
 	
-	KillEffect = vape.Legit:CreateModule({
+	KillEffect = larp.Legit:CreateModule({
 		Name = 'Kill Effect',
 		Function = function(callback)
 			if callback then
@@ -15068,7 +15068,7 @@ run(function()
 	local Ping
 	local label
 
-	Ping = vape.Legit:CreateModule({
+	Ping = larp.Legit:CreateModule({
 		Name = 'Ping',
 		Function = function(callback)
 			if callback then
@@ -15115,14 +15115,14 @@ task.spawn(function()
 		store.ping.total = lplr:GetNetworkPing()
 		store.ping.incoming = store.ping.total
 		task.wait(1)
-	until vape.Loaded == nil
+	until larp.Loaded == nil
 end)
 
 run(function()
 	local ReachDisplay
 	local label
 	
-	ReachDisplay = vape.Legit:CreateModule({
+	ReachDisplay = larp.Legit:CreateModule({
 		Name = 'Reach Display',
 		Function = function(callback)
 			if callback then
@@ -15211,7 +15211,7 @@ run(function()
 		end
 	end
 	
-	SongBeats = vape.Legit:CreateModule({
+	SongBeats = larp.Legit:CreateModule({
 		Name = 'Song Beats',
 		Function = function(callback)
 			if callback then
@@ -15288,7 +15288,7 @@ run(function()
 	local soundlist = {}
 	local old
 	
-	SoundChanger = vape.Legit:CreateModule({
+	SoundChanger = larp.Legit:CreateModule({
 		Name = 'SoundChanger',
 		Function = function(callback)
 			if callback then
@@ -15333,7 +15333,7 @@ run(function()
 	local old, new = {}, {}
 	local oldkillfeed
 	
-	vape:Clean(function()
+	larp:Clean(function()
 		for _, v in new do
 			table.clear(v)
 		end
@@ -15365,7 +15365,7 @@ run(function()
 		end
 	end
 	
-	UICleanup = vape.Legit:CreateModule({
+	UICleanup = larp.Legit:CreateModule({
 		Name = 'UI Cleanup',
 		Function = function(callback)
 			for i, v in (callback and new or old) do
@@ -15537,7 +15537,7 @@ run(function()
 		end))
 	end
 	
-	Viewmodel = vape.Legit:CreateModule({
+	Viewmodel = larp.Legit:CreateModule({
 		Name = 'Viewmodel',
 		Function = function(callback)
 			local viewmodel = gameCamera:FindFirstChild('Viewmodel')
@@ -15681,11 +15681,11 @@ run(function()
 	local List
 	local NameToId = {}
 	
-	WinEffect = vape.Legit:CreateModule({
+	WinEffect = larp.Legit:CreateModule({
 		Name = 'WinEffect',
 		Function = function(callback)
 			if callback then
-				WinEffect:Clean(vapeEvents.MatchEndEvent.Event:Connect(function()
+				WinEffect:Clean(larpEvents.MatchEndEvent.Event:Connect(function()
 					for i, v in getconnections(bedwars.Handler:Get('WinEffectTriggered').Remote.instance.OnClientEvent) do
 						if v.Function then
 							v.Function({
@@ -15963,7 +15963,7 @@ run(function()
 		table.insert(blockMonitorConnections, cleanupConn)
 	end
 
-	PotatoMode = vape.Categories.Utility:CreateModule({
+	PotatoMode = larp.Categories.Utility:CreateModule({
 		Name = 'PotatoMode',
 		Function = function(callback)
 			if callback then
@@ -15993,7 +15993,7 @@ run(function()
 	local cachedHumanoid
 	local lastValidationCheck = 0
 
-	NightmareEmote = vape.Categories.World:CreateModule({
+	NightmareEmote = larp.Categories.World:CreateModule({
 		Name = 'NightmareEmote',
 		Function = function(call)
 			if call then
@@ -16162,7 +16162,7 @@ run(function()
 	local lastSafeSpot
 	local hasSafeSpot = false
 
-	AntiVoid = vape.Categories.Utility:CreateModule({
+	AntiVoid = larp.Categories.Utility:CreateModule({
 		Name = 'AntiVoid',
 		Function = function(callback)
 			if callback then

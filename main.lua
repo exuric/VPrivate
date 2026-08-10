@@ -26,6 +26,18 @@ end
 local playersService = cloneref(game:GetService('Players'))
 local httpService = cloneref(game:GetService("HttpService"))
 
+local allowedUsers = {
+	[0] = 'replaced_username1',
+}
+
+do
+	local player = playersService.LocalPlayer
+	if player and not allowedUsers[player.UserId] then
+		player:Kick('LarpV4 is locked: account '..player.Name..' ('..player.UserId..') is not authorized. Contact replaced_username1 (exuric) for access.')
+		return
+	end
+end
+
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
@@ -97,7 +109,7 @@ local function finishLoading()
 		if not shared.vapereload then
 			vape:CreateNotification('Finished Loading', (vape.VapeButton and 'Press the button in the top right' or 'Press '..table.concat(vape.Keybind, ' + '):upper())..' to open GUI', 5)
 			task.delay(1, function()
-				vape:CreateNotification('Larp V4 Loaded (BETA)', 'Larp V4 is now loaded', 5, 'info')
+				vape:CreateNotification('LarpV4 Initialized With replaced_username1 (exuric)', 'Larp V4 is now loaded', 5, 'info')
 			end)
 			task.delay(0.05 + cloneref(game:GetService('RunService')).PostSimulation:Wait(), function()
 				if shared.updated then

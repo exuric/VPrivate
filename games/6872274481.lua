@@ -1678,6 +1678,8 @@ run(function()
 	local Smoothness
 	local Overshoot
 	local Reaction
+	local MaxTurn
+	local VerticalAim
 	local Distance
 	local AngleSlider
 	local StrafeIncrease
@@ -1727,52 +1729,85 @@ run(function()
 	end
 	
 	local started, lasttarget, nextsearch = 0, nil, 0
-	local human = {
-		target = false,
-		previousAim = nil,
+	local humanState = {
+		lastEnt = nil,
+		prevAim = nil,
+		prevTime = 0,
 		bias = Vector3.new(0, 0, 0),
 		reactUntil = 0
 	}
-	local function humanize(localcframe, aimPoint, fps)
-		local dt = math.max(fps, 1e-4)
-		if tick() < human.reactUntil then
-			return localcframe, 1
+
+	local function getSmoothPoint(ent, rawAim, dt)
+		if humanState.lastEnt ~= ent then
+			humanState.lastEnt = ent
+			humanState.prevAim = rawAim
+			humanState.prevTime = tick()
+			humanState.bias = Vector3.new(0, 0, 0)
 		end
-		if human.target then
-			local prev = human.previousAim or aimPoint
-			local vel = (aimPoint - prev) / dt
-			human.bias = human.bias * math.exp(-dt * 2.5) + vel * (Overshoot.Value / 100) * 0.3 * dt
-			human.previousAim = aimPoint
-		else
-			human.bias = Vector3.new(0, 0, 0)
+		if Overshoot.Value > 0 then
+			local prev = humanState.prevAim or rawAim
+			local deltaT = math.min(tick() - humanState.prevTime, 0.25)
+			local vel = deltaT > 0 and (rawAim - prev) / deltaT or Vector3.new(0, 0, 0)
+			if vel.Magnitude > 60 then
+				vel = vel.Unit * 60
+			end
+			humanState.bias = humanState.bias * math.exp(-dt * 3) + vel * (Overshoot.Value / 100) * 0.25 * dt
+			humanState.prevAim = rawAim
+			humanState.prevTime = tick()
 		end
-		human.target = true
-		local desired = CFrame.lookAt(localcframe.Position, aimPoint + human.bias)
-		local forward = localcframe.LookVector
-		local want = desired.LookVector
-		local ang = forward.Magnitude > 0 and want.Magnitude > 0 and math.acos(math.clamp(forward.Unit:Dot(want.Unit), -1, 1)) or 0
-		local ease = math.clamp(ang / math.rad(50), 0, 1)
-		return desired, 0.15 + 0.85 * ease
+		return rawAim + humanState.bias
 	end
+
+	local function smoothedLook(localcframe, targetPoint, dt, factor)
+		if not VerticalAim.Enabled then
+			targetPoint = Vector3.new(targetPoint.X, localcframe.Position.Y, targetPoint.Z)
+		end
+		local forward = localcframe.LookVector
+		local want = (targetPoint - localcframe.Position)
+		if want.Magnitude < 1e-4 then
+			return localcframe
+		end
+		want = want.Unit
+		local ang = math.acos(math.clamp(forward:Dot(want), -1, 1))
+		if ang < math.rad(0.02) then
+			return localcframe
+		end
+		local direction = want
+		if MaxTurn.Value > 0 then
+			local maxStep = math.rad(MaxTurn.Value) * dt
+			if ang > maxStep then
+				direction = (forward + (want - forward) * (maxStep / ang)).Unit
+			end
+		end
+		local remaining = math.acos(math.clamp(forward.Unit:Dot(direction.Unit), -1, 1))
+		local easef = math.clamp(remaining / math.rad(AngleSlider.Value), 0, 1)
+		local alpha = math.clamp(1 - math.exp(-factor * dt * (0.25 + 0.75 * easef)), 0, 1)
+		return localcframe:Lerp(CFrame.lookAt(localcframe.Position, localcframe.Position + direction * 100), alpha)
+	end
+
+	local function applyHumanAim(localcframe, ent, aimPoint, dt, speed)
+		if tick() < humanState.reactUntil then
+			return localcframe
+		end
+		local factor = math.max(speed, 0.01) * 8 * (Smoothness.Value / 100)
+		return smoothedLook(localcframe, getSmoothPoint(ent, aimPoint, dt), dt, factor)
+	end
+
 	local aimfuncs = {
 		Simple = function(localcframe, ent, fps)
 			local rng = Random.new()
 			local speed = (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0))
 			local jitter = Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
-			local desired, ease = humanize(localcframe, getAim(ent) + jitter, fps)
-			local alpha = math.clamp(speed * fps * ease * (Smoothness.Value / 100), 0, 1)
-			return localcframe:Lerp(desired, alpha), speed
+			return applyHumanAim(localcframe, ent, getAim(ent) + jitter, fps, speed), speed
 		end,
 		Adaptive = function(localcframe, ent, fps)
 			local prog, rng = ease(math.min(tick() - started, 1)), Random.new()
 			local speed = (AimSpeed.Value * 0.1 * prog) + (1 - prog) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 5)
 			local jitter = Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
-			local desired, ease = humanize(localcframe, getAim(ent) + jitter, fps)
-			local alpha = math.clamp(speed * fps * ease * (Smoothness.Value / 100), 0, 1)
-			return localcframe:Lerp(desired, alpha), speed
+			return applyHumanAim(localcframe, ent, getAim(ent) + jitter, fps, speed), speed
 		end
 	}
-	
+
 	local function isValid(ent)
 		if not entitylib.isAlive then return false end
 		if not ent or not ent.Character or not ent.Character.Parent then return false end
@@ -1820,7 +1855,7 @@ run(function()
 		if ent ~= lasttarget then
 			started = tick()
 			if Reaction.Value > 0 then
-				human.reactUntil = tick() + (Reaction.Value / 1000) * Random.new():NextNumber(0.75, 1.25)
+				humanState.reactUntil = tick() + (Reaction.Value / 1000) * Random.new():NextNumber(0.75, 1.25)
 			end
 		end
 		lasttarget = ent
@@ -1875,12 +1910,12 @@ run(function()
 						end
 					else
 						lasttarget = nil
-						human.target = false
+						humanState.lastEnt = nil
 					end
 				end))
 			else
 				lasttarget = nil
-				human.target = false
+				humanState.lastEnt = nil
 				if entitylib.isAlive then
 					entitylib.character.Humanoid.AutoRotate = true
 				end
@@ -1967,6 +2002,21 @@ run(function()
 			return 'ms'
 		end,
 		Tooltip = 'Randomized delay before starting to aim on a new target, in ms. 0 = off',
+	})
+	MaxTurn = AimAssist:CreateSlider({
+		Name = 'Max turn speed',
+		Min = 0,
+		Max = 360,
+		Default = 0,
+		Suffix = function()
+			return 'deg/s'
+		end,
+		Tooltip = 'Hard cap on how fast the crosshair can rotate, in degrees per second. 0 = unlimited',
+	})
+	VerticalAim = AimAssist:CreateToggle({
+		Name = 'Vertical aim',
+		Default = true,
+		Tooltip = 'When disabled, aims on the horizontal plane only (pitch is left untouched)',
 	})
 	AngleSlider = AimAssist:CreateSlider({
 		Name = 'Max angle',
@@ -4667,14 +4717,14 @@ run(function()
 				label.Position = UDim2.new(0.5, 6, 0.5, 30)
 				label.BackgroundTransparency = 1
 				label.AnchorPoint = Vector2.new(0.5, 0)
-				label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' or ''
+				label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' or ''
 				label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				label.TextSize = 18
 				label.Font = Enum.Font.Arial
 				label.Parent = vape.gui
 				Health:Clean(label)
 				Health:Clean(vapeEvents.AttributeChanged.Event:Connect(function()
-					label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' or ''
+					label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â' or ''
 					label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				end))
 			end

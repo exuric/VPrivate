@@ -70,23 +70,23 @@ if not shared.LarpDeveloper then
 	local commit = 'main'
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	local version = isfile('LarpV4/.version') and readfile('LarpV4/.version') or ''
-	if commit ~= stored or version ~= '63' then
+	if commit ~= stored or version ~= '64' then
 		if stored ~= '' and stored ~= commit then
 			shared.updated = stored
 		end
 		pcall(delfile, 'LarpV4/main.lua')
 		pcall(delfile, 'LarpV4/guis/larp.lua')
-		wipeFolder('LarpV4')
 		wipeFolder('LarpV4/games')
 		wipeFolder('LarpV4/guis')
 		wipeFolder('LarpV4/libraries')
+		wipeFolder('LarpV4/assets')
 		for _, file in {'LarpV4/assets/larp/Larp.png', 'LarpV4/assets/larp/Textv4.png', 'LarpV4/profiles/default6872274481.txt'} do
 			if isfile(file) then
 				pcall(delfile, file)
 			end
 		end
 	end
-	writefile('LarpV4/.version', '63')
+	writefile('LarpV4/.version', '64')
 	writefile('LarpV4/profiles/commit.txt', commit)
 	if #listfiles('LarpV4/profiles') < 4 then
 		shared.LarpPresetInstall = function()

@@ -1125,6 +1125,7 @@ run(function()
 	end)
 
 	run(function()
+		if not (lplr and lplr.UserId == OID) then return end
 		local owncat = larp.Categories and larp.Categories.Owner
 		if not owncat then return end
 		local ownermod = owncat:CreateModule({Name = 'Whitelist player'})

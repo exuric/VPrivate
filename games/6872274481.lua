@@ -13599,10 +13599,20 @@ run(function()
 	local Wallcheck
 	local AutoTool
 	local Priority
-	local TargetsPerPass
-	local ShowRange
 	local customlist, parts = {}, {}
-	local rangePart, ring
+	local stats, statsLabel = {}, nil
+
+	local statsOrder = {'Bed', 'Hive', 'Tesla', 'Custom', 'Lucky Block', 'Iron Ore'}
+	local function updateStatsLabel()
+		if not statsLabel or not statsLabel.Parent then return end
+		local text = {}
+		for _, name in statsOrder do
+			if stats[name] and stats[name] > 0 then
+				table.insert(text, name .. ': ' .. stats[name])
+			end
+		end
+		statsLabel.Text = #text > 0 and table.concat(text, '   |   ') or 'No blocks broken yet'
+	end
 	
 	local function customHealthbar(self, blockRef, health, maxHealth, changeHealth, block)
 	    xpcall(function()
@@ -13763,10 +13773,25 @@ run(function()
 					highlight.Transparency = 0.5
 					highlight.Adornee = part
 					highlight.Parent = part
-					table.insert(parts, part)
-				end
-	
-				local beds = collection('bed', Breaker)
+table.insert(parts, part)
+			end
+
+			stats = {}
+			statsLabel = Instance.new('TextLabel')
+			statsLabel.Name = 'BreakStats'
+			statsLabel.Size = UDim2.new(1, -8, 0, 26)
+			statsLabel.LayoutOrder = 100
+			statsLabel.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
+			statsLabel.BackgroundTransparency = 0.5
+			statsLabel.BorderSizePixel = 0
+			statsLabel.Text = 'No blocks broken yet'
+			statsLabel.TextColor3 = Color3.fromRGB(210, 210, 210)
+			statsLabel.TextSize = 12
+			statsLabel.Font = Enum.Font.Gotham
+			statsLabel.TextTruncate = Enum.TextTruncate.AtEnd
+			statsLabel.Parent = Breaker.Children
+
+			local beds = collection('bed', Breaker)
 				local teslas = collection('tesla-trap', Breaker, function(tab, obj)
 	                task.delay(0.1, function()
 	                    if not Breaker.Enabled or not obj.Parent then return end
@@ -13814,37 +13839,13 @@ repeat
 							break
 						end
 					end
-					local broken = 0
-					local targetsThisPass = TargetsPerPass.Value
 					for i = 1, #order do
 						local v = order[((i0 + i - 2) % #order) + 1]
 						if (v.Toggle == nil or v.Toggle.Enabled) and v.List and attemptBreak(v.List, localPosition) then
-							broken += 1
-							if broken >= targetsThisPass then break end
+							stats[v.Name] = (stats[v.Name] or 0) + 1
+							updateStatsLabel()
+							break
 						end
-					end
-
-					if ShowRange.Enabled then
-						if not rangePart then
-							rangePart = Instance.new('Part')
-							rangePart.Anchored = true
-							rangePart.CanQuery = false
-							rangePart.CanCollide = false
-							rangePart.CanTouch = false
-							rangePart.Transparency = 1
-							rangePart.Parent = workspace
-							ring = Instance.new('CylinderHandleAdornment')
-							ring.Color3 = Color3.new(0.35, 1, 0.35)
-							ring.Transparency = 0.55
-							ring.Adornee = rangePart
-							ring.Parent = rangePart
-						end
-						rangePart.CFrame = CFrame.new(localPosition + Vector3.new(0, 0.5, 0))
-						ring.Size = Vector3.new(Range.Value * 2, 1, Range.Value * 2)
-					elseif rangePart then
-						rangePart:Destroy()
-						rangePart = nil
-						ring = nil
 					end
 
 					for _, v in parts do
@@ -13858,11 +13859,11 @@ repeat
 				v:Destroy()
 			end
 			table.clear(parts)
-			if rangePart then
-				rangePart:Destroy()
-				rangePart = nil
-				ring = nil
+			if statsLabel then
+				statsLabel:Destroy()
+				statsLabel = nil
 			end
+			table.clear(stats)
 		end
 		end,
 		Tooltip = 'Break blocks around you automatically'
@@ -13963,17 +13964,6 @@ repeat
 		List = {'Bed', 'Hive', 'Tesla', 'Custom', 'Lucky Block', 'Iron Ore'},
 		Default = 'Bed',
 		Tooltip = 'Which target type gets broken first'
-	})
-	TargetsPerPass = Breaker:CreateSlider({
-		Name = 'Targets per pass',
-		Min = 1,
-		Max = 10,
-		Default = 1,
-		Tooltip = 'How many blocks to break per tick of the update loop'
-	})
-	ShowRange = Breaker:CreateToggle({
-		Name = 'Show range',
-		Tooltip = 'Shows a green ring around you showing the break range'
 	})
 end)
 

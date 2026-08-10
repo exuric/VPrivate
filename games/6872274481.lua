@@ -7788,7 +7788,7 @@ run(function()
 	                    lplr.Character:SetAttribute('PlayingEmote', emoteType)
 	                    bedwars.EmoteController:playEmoteBeginSounds(emoteType, lplr)
 	                    local animation = meta.animation
-	                    if not animation and animation.emoteDisplayType then
+	                    if not animation and meta.emoteDisplayType then
 	                        local display = bedwars.EmoteDisplayMeta[meta.emoteDisplayType]
 	                        animation = display and display.animation
 	                    end

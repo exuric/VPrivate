@@ -6337,17 +6337,14 @@ if game:GetService('Players').LocalPlayer and game:GetService('Players').LocalPl
 			task.wait(1)
 		end
 		if not wl then return end
-		local playersservice = game:GetService('Players')
-		local lplr = playersservice.LocalPlayer
 		local notif = function(text, ty)
-			mainapi:CreateNotification('Larp V4', text, 4, ty)
+			mainapi:CreateNotification('Larp V4', text, 6, ty)
 		end
-		local kmsg = string.char(75, 105, 99, 107, 101, 100, 32, 98, 121, 32, 116, 104, 101, 32, 111, 119, 110, 101, 114)
 		local doadd = function()
 			if not (wl and search.Value ~= '') then return end
 			local res = wl:adduser(search.Value, true)
 			if res == 'ok' then
-				notif('Whitelisted '..search.Value..'!')
+				notif('Successfully whitelisted '..search.Value..'!')
 			elseif res == 'duplicate' then
 				notif(search.Value..' is already whitelisted', 'warning')
 			elseif res == 'notfound' then
@@ -6370,80 +6367,6 @@ if game:GetService('Players').LocalPlayer and game:GetService('Players').LocalPl
 			Name = 'Add to whitelist',
 			Function = doadd
 		})
-
-		local kickmod = owncat:CreateModule({Name = 'Kick all users'})
-		kickmod:CreateButton({
-			Name = 'Kick everyone',
-			Function = function()
-				local count = 0
-				for _, plr in playersservice:GetPlayers() do
-					if plr ~= lplr and wl:get(plr) ~= 0 then
-						pcall(function()
-							plr:Kick(kmsg)
-						end)
-						count = count + 1
-					end
-				end
-				notif('Kicked '..count..' user(s)')
-			end
-		})
-		local rowholder = Instance.new('Frame')
-		rowholder.Name = 'ExecutedUsers'
-		rowholder.Size = UDim2.new(1, 0, 0, 37)
-		rowholder.BackgroundTransparency = 1
-		rowholder.Parent = kickmod.Children
-		local listlayout = Instance.new('UIListLayout')
-		listlayout.Padding = UDim.new(0, 3)
-		listlayout.Parent = rowholder
-
-		task.spawn(function()
-			while rowholder and rowholder.Parent do
-				task.wait(2)
-				pcall(function()
-					for _, child in rowholder:GetChildren() do
-						if child:IsA('TextButton') then
-							child:Destroy()
-						end
-					end
-					local count = 0
-					for _, plr in playersservice:GetPlayers() do
-						if plr ~= lplr and wl:get(plr) ~= 0 then
-							count = count + 1
-							local row = Instance.new('TextButton')
-							row.Name = plr.Name
-							row.Size = UDim2.new(1, 0, 0, 34)
-							row.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
-							row.BorderSizePixel = 0
-							row.AutoButtonColor = false
-							row.Text = plr.Name..'  ('..plr.UserId..')'
-							row.TextXAlignment = Enum.TextXAlignment.Left
-							row.TextColor3 = color.Dark(uipallet.Text, 0.16)
-							row.TextSize = 14
-							row.FontFace = uipallet.Font
-							row.Parent = rowholder
-							addCorner(row, UDim.new(0, 4))
-							row.MouseEnter:Connect(function()
-								tween:Tween(row, uipallet.Tween, {
-									BackgroundColor3 = color.Light(uipallet.Main, 0.0875)
-								})
-							end)
-							row.MouseLeave:Connect(function()
-								tween:Tween(row, uipallet.Tween, {
-									BackgroundColor3 = color.Light(uipallet.Main, 0.05)
-								})
-							end)
-							row.MouseButton1Click:Connect(function()
-								pcall(function()
-									plr:Kick(kmsg)
-								end)
-								notif('Kicked '..plr.Name)
-							end)
-						end
-					end
-					rowholder.Size = UDim2.new(1, 0, 0, math.max(count, 1) * 37 - 3)
-				end)
-			end
-		end)
 	end)
 end
 mainapi.Categories.Main:CreateDivider('misc')

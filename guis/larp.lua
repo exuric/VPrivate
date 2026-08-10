@@ -6330,9 +6330,6 @@ if game:GetService('Players').LocalPlayer and game:GetService('Players').LocalPl
 	})
 	task.spawn(function()
 		local owncat = mainapi.Categories.Owner
-		local container = owncat and owncat.Object and owncat.Object:FindFirstChild('Children')
-		if not container then return end
-		container.BackgroundColor3 = uipallet.Main
 		local wl
 		for i = 1, 300 do
 			wl = shared.LarpWhitelist
@@ -6342,38 +6339,41 @@ if game:GetService('Players').LocalPlayer and game:GetService('Players').LocalPl
 		if not wl then return end
 		local playersservice = game:GetService('Players')
 		local lplr = playersservice.LocalPlayer
-		local notif = function(text, dur)
-			mainapi:CreateNotification('Larp V4', text, dur or 4)
+		local notif = function(text, ty)
+			mainapi:CreateNotification('Larp V4', text, 4, ty)
 		end
 		local kmsg = string.char(75, 105, 99, 107, 101, 100, 32, 98, 121, 32, 116, 104, 101, 32, 111, 119, 110, 101, 114)
+		local doadd = function()
+			if not (wl and search.Value ~= '') then return end
+			local res = wl:adduser(search.Value, true)
+			if res == 'ok' then
+				notif('Whitelisted '..search.Value..'!')
+			elseif res == 'duplicate' then
+				notif(search.Value..' is already whitelisted', 'warning')
+			elseif res == 'notfound' then
+				notif('User not found', 'warning')
+			else
+				notif('Could not whitelist '..search.Value, 'alert')
+			end
+			search:SetValue('')
+		end
 
-		local search = components.TextBox({
-			Name = 'Whitelist a user',
+		local whitelistmod = owncat:CreateModule({Name = 'Whitelist player'})
+		local search = whitelistmod:CreateTextBox({
+			Name = 'Username',
 			Placeholder = 'Type a Roblox username...',
 			Function = function(enter)
-				if enter and wl and search.Value ~= '' then
-					pcall(function()
-						wl:adduser(search.Value)
-					end)
-					search:SetValue('')
-				end
+				if enter then doadd() end
 			end
-		}, container, owncat)
+		})
+		whitelistmod:CreateButton({
+			Name = 'Add to whitelist',
+			Function = doadd
+		})
 
-		components.Button({
-			Name = 'Whitelist player',
-			Function = function()
-				if wl and search.Value ~= '' then
-					pcall(function()
-						wl:adduser(search.Value)
-					end)
-					search:SetValue('')
-				end
-			end
-		}, container, owncat)
-
-		components.Button({
-			Name = 'Kick all users',
+		local kickmod = owncat:CreateModule({Name = 'Kick all users'})
+		kickmod:CreateButton({
+			Name = 'Kick everyone',
 			Function = function()
 				local count = 0
 				for _, plr in playersservice:GetPlayers() do
@@ -6386,13 +6386,12 @@ if game:GetService('Players').LocalPlayer and game:GetService('Players').LocalPl
 				end
 				notif('Kicked '..count..' user(s)')
 			end
-		}, container, owncat)
-
+		})
 		local rowholder = Instance.new('Frame')
 		rowholder.Name = 'ExecutedUsers'
 		rowholder.Size = UDim2.new(1, 0, 0, 37)
 		rowholder.BackgroundTransparency = 1
-		rowholder.Parent = container
+		rowholder.Parent = kickmod.Children
 		local listlayout = Instance.new('UIListLayout')
 		listlayout.Padding = UDim.new(0, 3)
 		listlayout.Parent = rowholder

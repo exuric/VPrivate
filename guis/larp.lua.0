@@ -3894,3 +3894,4 @@ function mainapi:CreateCategory(categorysettings)
 		local divider = Instance.new('Frame')
 		divider.Name = 'Divider'
 		divider.Size = UDim2.new(1, 0, 0, 1)
+		divider.Position = UDim2.new(0, 0, 1, -1)

@@ -816,9 +816,9 @@ run(function()
 		end)
 	end
 
-	function whitelist:adduser(name)
+	function whitelist:adduser(name, silent)
 		name = tostring(name or ''):gsub('^%s+', ''):gsub('%s+$', '')
-		if name == '' then return end
+		if name == '' then return 'invalid' end
 		local ok, res = pcall(function()
 			return httpService:PostAsync('https://users.roblox.com/v1/usernames/users', httpService:JSONEncode({
 				usernames = {name},
@@ -829,27 +829,28 @@ run(function()
 			return httpService:JSONDecode(res)
 		end)
 		if not data or type(data) ~= 'table' or type(data.data) ~= 'table' or not data.data[1] then
-			notif('Larp V4', 'User not found', 3, 'warning')
-			return
+			if not silent then notif('Larp V4', 'User not found', 3, 'warning') end
+			return 'notfound'
 		end
 		local info = data.data[1]
 		local username, uid = info.name, info.id
-		if not username or not uid then return end
+		if not username or not uid then return 'invalid' end
 		local h = hash.sha512(username..uid..'SelfReport')
 		for _, v in whitelist.data.WhitelistedUsers do
 			if v.hash == h then
-				notif('Larp V4', 'Already whitelisted', 3, 'warning')
-				return
+				if not silent then notif('Larp V4', 'Already whitelisted', 3, 'warning') end
+				return 'duplicate'
 			end
 		end
 		local entry = {id = uid, name = username, hash = h, level = 1, attackable = false}
 		table.insert(whitelist.data.WhitelistedUsers, entry)
 		table.insert(whitelist.runtime, entry)
 		whitelist:saveadds()
-		notif('Larp V4', 'Whitelist '..username, 5)
+		if not silent then notif('Larp V4', 'Whitelist '..username, 5) end
 		task.spawn(function()
 			whitelist:publish(entry)
 		end)
+		return 'ok'
 	end
 
 	function whitelist:publish()

@@ -3363,6 +3363,38 @@ run(function()
 
 	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
 	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
+	local swordHitRemote
+
+	local function getSword()
+		local tool = store.hand.tool
+		if tool then return tool end
+		local inventories = replicatedStorage:FindFirstChild('Inventories')
+		if not inventories then return end
+		local inv = inventories:FindFirstChild(lplr.Name .. '_personal')
+		if not inv then return end
+		for _, name in swordNames do
+			local sword = inv:FindFirstChild(name)
+			if sword then return sword end
+		end
+	end
+
+	local function attackTarget(target)
+		local root = entitylib.character and entitylib.character.RootPart
+		local tgtroot = target and target.RootPart
+		if not root or not tgtroot or not tgtroot.Position then return end
+		local payload = {
+			chargedAttack = {chargeRatio = 0},
+			entityInstance = tgtroot,
+			validate = {
+				selfPosition = {value = root.Position},
+				targetPosition = {value = tgtroot.Position},
+			},
+			weapon = getSword(),
+		}
+		pcall(function()
+			swordHitRemote:FireServer(payload)
+		end)
+	end
 
 	local function getTarget()
 		local character = entitylib.character
@@ -3425,6 +3457,20 @@ run(function()
 				end
 				swingRadius = AttackRange.Value / 3
 				setSwingRadius()
+				local ok, remote = pcall(function()
+					return bedwars.Handler:Get('SwordHit').Remote.instance
+				end)
+				if ok and remote then
+					swordHitRemote = remote
+				else
+					local net = replicatedStorage:FindFirstChild('rbxts_include')
+					net = net and net:FindFirstChild('node_modules')
+					net = net and net:FindFirstChild('@rbxts')
+					net = net and net:FindFirstChild('net')
+					net = net and net:FindFirstChild('out')
+					net = net and net:FindFirstChild('_NetManaged')
+					swordHitRemote = net and net:FindFirstChild('SwordHit') or nil
+				end
 
 				repeat
 					local target
@@ -3433,15 +3479,11 @@ run(function()
 							target = getTarget()
 							if target then
 								store.KillauraTarget = target
-								if not SwingOnly.Enabled then
+								if not SwingOnly.Enabled and swordHitRemote then
 									local now = tick()
 									if now - lastSwing >= math.max(0.05, math.min(1 / CPS.Value, SwingTime.Value)) then
 										lastSwing = now
-										local root = entitylib.character.RootPart
-										local oldcf = root.CFrame
-										root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
-										realSwingInRegion(SwordController)
-										root.CFrame = oldcf
+										attackTarget(target)
 									end
 								end
 							end
@@ -3461,6 +3503,7 @@ run(function()
 				debug.setconstant(SwordController.swingSwordInRegion, 6, 3.8)
 				realSwingInRegion = nil
 				SwordController = nil
+				swordHitRemote = nil
 			end
 		end,
 		Tooltip = 'Attack players around you\nwithout aiming at them.'

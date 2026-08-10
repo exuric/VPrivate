@@ -3353,24 +3353,16 @@ end)
 run(function()
 	local Killaura
 	local Targets
-	local Invisible
 	local LimitItems
 	local SwingOnly
 	local SwingRange
 	local AttackRange
 	local MaxAngle
+	local CPS
+	local SwingTime
 
-	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone__sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
+	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
 	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing = nil, 3.8, 0, 0
-
-	local function isInvisible(ent)
-		local char = ent.Character
-		for _, name in {'HumanoidRootPart', 'Head', 'UpperTorso'} do
-			local part = char and char:FindFirstChild(name)
-			if part and part.Transparency < 1 then return false end
-		end
-		return true
-	end
 
 	local function getTarget()
 		local selfpos = entitylib.character.HumanoidRootPart.Position
@@ -3381,7 +3373,6 @@ run(function()
 			if ent.Player and not Targets.Players.Enabled then continue end
 			if ent.NPC and not Targets.NPCs.Enabled then continue end
 			if not ent.Targetable then continue end
-			if Invisible.Enabled and isInvisible(ent) then continue end
 			if not entitylib.isVulnerable(ent) then continue end
 			local delta = ent.RootPart.Position - selfpos
 			local mag = delta.Magnitude
@@ -3415,7 +3406,7 @@ run(function()
 					lastManualSwing = tick()
 					return realSwingInRegion(self, ...)
 				end
-				swingRadius = math.min(AttackRange.Value, 14.4) / 3
+				swingRadius = AttackRange.Value / 3
 				setSwingRadius()
 
 				repeat
@@ -3427,9 +3418,13 @@ run(function()
 								if target then
 									store.KillauraTarget = target
 									local now = tick()
-									if now - lastSwing >= 0.32 + math.random() * 0.08 then
+									if now - lastSwing >= math.max(1 / CPS.Value, SwingTime.Value) then
 										lastSwing = now
+										local root = entitylib.character.RootPart
+										local oldcf = root.CFrame
+										root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
 										realSwingInRegion(bedwars.SwordController)
+										root.CFrame = oldcf
 									end
 								end
 							end
@@ -3456,11 +3451,6 @@ run(function()
 		Players = true,
 		NPCs = true
 	})
-	Invisible = Killaura:CreateToggle({
-		Name = 'Ignore invisible',
-		Default = true,
-		Tooltip = 'Skips entities that are fully invisible'
-	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
 		Tooltip = 'Only attacks when sword is held'
@@ -3472,8 +3462,8 @@ run(function()
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
 		Min = 1,
-		Max = 30,
-		Default = 13,
+		Max = 20,
+		Default = 15,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
@@ -3482,16 +3472,17 @@ run(function()
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
 		Min = 1,
-		Max = 30,
-		Default = 13,
+		Max = 18.1,
+		Default = 15,
+		Decimal = 10,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
 		Function = function(val)
-			swingRadius = math.min(val, 14.4) / 3
+			swingRadius = val / 3
 			setSwingRadius()
 		end,
-		Tooltip = 'Range at which attacks land.\nHard capped at 14.4 studs by the game'
+		Tooltip = 'Range at which attacks land.\nMax 18.1 studs'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',
@@ -3499,6 +3490,24 @@ run(function()
 		Max = 360,
 		Default = 360,
 		Tooltip = 'Maximum angle between your view and the target.\n360 hits targets behind you'
+	})
+	CPS = Killaura:CreateSlider({
+		Name = 'Attacks per second',
+		Min = 2,
+		Max = 20,
+		Default = 14,
+		Tooltip = 'How many swings the killaura attempts per second'
+	})
+	SwingTime = Killaura:CreateSlider({
+		Name = 'Swing time',
+		Min = 0.1,
+		Max = 1,
+		Default = 0.25,
+		Decimal = 100,
+		Suffix = function(val)
+			return 's'
+		end,
+		Tooltip = 'Minimum time between two swings.\nThe slower of this and Attacks per second wins'
 	})
 end)
 

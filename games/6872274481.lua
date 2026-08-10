@@ -13598,7 +13598,11 @@ run(function()
 	local LimitItem
 	local Wallcheck
 	local AutoTool
+	local Priority
+	local TargetsPerPass
+	local ShowRange
 	local customlist, parts = {}, {}
+	local rangePart, ring
 	
 	local function customHealthbar(self, blockRef, health, maxHealth, changeHealth, block)
 	    xpcall(function()
@@ -13789,31 +13793,77 @@ run(function()
 					end
 				end)
 	
-				repeat
-					task.wait(1 / UpdateRate.Value)
-					if not Breaker.Enabled then break end
-					if entitylib.isAlive then
-						local localPosition = entitylib.character.RootPart.Position
-	
-						if attemptBreak(Bed.Enabled and beds, localPosition) then continue end
-						if attemptBreak(Hive.Enabled and hives, localPosition) then continue end
-						if attemptBreak(Tesla.Enabled and teslas, localPosition) then continue end
-						if attemptBreak(customlist, localPosition) then continue end
-						if attemptBreak(LuckyBlock.Enabled and luckyblock, localPosition) then continue end
-						if attemptBreak(IronOre.Enabled and ironores, localPosition) then continue end
-	
-						for _, v in parts do
-							v.Position = Vector3.zero
+repeat
+				task.wait(1 / UpdateRate.Value)
+				if not Breaker.Enabled then break end
+				if entitylib.isAlive then
+					local localPosition = entitylib.character.RootPart.Position
+
+					local order = {
+						{Name = 'Bed', List = beds, Toggle = Bed},
+						{Name = 'Hive', List = hives, Toggle = Hive},
+						{Name = 'Tesla', List = teslas, Toggle = Tesla},
+						{Name = 'Custom', List = customlist, Toggle = nil},
+						{Name = 'Lucky Block', List = luckyblock, Toggle = LuckyBlock},
+						{Name = 'Iron Ore', List = ironores, Toggle = IronOre}
+					}
+					local i0 = 1
+					for i, v in ipairs(order) do
+						if v.Name == Priority.Value then
+							i0 = i
+							break
 						end
 					end
-				until not Breaker.Enabled
-			else
-				for _, v in parts do
-					v:ClearAllChildren()
-					v:Destroy()
+					local broken = 0
+					local targetsThisPass = TargetsPerPass.Value
+					for i = 1, #order do
+						local v = order[((i0 + i - 2) % #order) + 1]
+						if (v.Toggle == nil or v.Toggle.Enabled) and v.List and attemptBreak(v.List, localPosition) then
+							broken += 1
+							if broken >= targetsThisPass then break end
+						end
+					end
+
+					if ShowRange.Enabled then
+						if not rangePart then
+							rangePart = Instance.new('Part')
+							rangePart.Anchored = true
+							rangePart.CanQuery = false
+							rangePart.CanCollide = false
+							rangePart.CanTouch = false
+							rangePart.Transparency = 1
+							rangePart.Parent = workspace
+							ring = Instance.new('CylinderHandleAdornment')
+							ring.Color3 = Color3.new(0.35, 1, 0.35)
+							ring.Transparency = 0.55
+							ring.Adornee = rangePart
+							ring.Parent = rangePart
+						end
+						rangePart.CFrame = CFrame.new(localPosition + Vector3.new(0, 0.5, 0))
+						ring.Size = Vector3.new(Range.Value * 2, 1, Range.Value * 2)
+					elseif rangePart then
+						rangePart:Destroy()
+						rangePart = nil
+						ring = nil
+					end
+
+					for _, v in parts do
+						v.Position = Vector3.zero
+					end
 				end
-				table.clear(parts)
+			until not Breaker.Enabled
+		else
+			for _, v in parts do
+				v:ClearAllChildren()
+				v:Destroy()
 			end
+			table.clear(parts)
+			if rangePart then
+				rangePart:Destroy()
+				rangePart = nil
+				ring = nil
+			end
+		end
 		end,
 		Tooltip = 'Break blocks around you automatically'
 	})
@@ -13907,6 +13957,23 @@ run(function()
 	LimitItem = Breaker:CreateToggle({
 		Name = 'Limit to items',
 		Tooltip = 'Only breaks when tools are held'
+	})
+	Priority = Breaker:CreateDropdown({
+		Name = 'Priority',
+		List = {'Bed', 'Hive', 'Tesla', 'Custom', 'Lucky Block', 'Iron Ore'},
+		Default = 'Bed',
+		Tooltip = 'Which target type gets broken first'
+	})
+	TargetsPerPass = Breaker:CreateSlider({
+		Name = 'Targets per pass',
+		Min = 1,
+		Max = 10,
+		Default = 1,
+		Tooltip = 'How many blocks to break per tick of the update loop'
+	})
+	ShowRange = Breaker:CreateToggle({
+		Name = 'Show range',
+		Tooltip = 'Shows a green ring around you showing the break range'
 	})
 end)
 
@@ -16129,5 +16196,55 @@ run(function()
 			end
 		end,
 		Tooltip = 'Spins the Nightmare Emote effect around your character'
+	})
+end)
+
+run(function()
+	local AntiVoid
+	local FallDepth
+	local lastSafeSpot
+	local hasSafeSpot = false
+
+	AntiVoid = vape.Categories.Utility:CreateModule({
+		Name = 'AntiVoid',
+		Function = function(callback)
+			if callback then
+				lastSafeSpot = nil
+				hasSafeSpot = false
+				AntiVoid:Clean(runService.Heartbeat:Connect(function()
+					if not entitylib.isAlive then
+						hasSafeSpot = false
+						return
+					end
+					local character = entitylib.character
+					local humanoid = character.Humanoid
+					local root = character.RootPart
+					local floor = humanoid.FloorMaterial
+					if floor ~= Enum.Material.Air and not humanoid:GetStateEnabled(Enum.HumanoidStateType.Falling) then
+						lastSafeSpot = root.Position
+						hasSafeSpot = true
+					end
+					if hasSafeSpot and root.Position.Y < (lastSafeSpot.Y - FallDepth.Value) then
+						root.CFrame = CFrame.new(lastSafeSpot):ToWorldSpace(CFrame.new(0, 3, 0))
+						root.Velocity = Vector3.new(0, 0, 0)
+						root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+					end
+				end))
+			else
+				hasSafeSpot = false
+				lastSafeSpot = nil
+			end
+		end,
+		Tooltip = 'Teleports you back to the last safe spot when you fall into the void'
+	})
+	FallDepth = AntiVoid:CreateSlider({
+		Name = 'Fall depth',
+		Min = 1,
+		Max = 100,
+		Default = 20,
+		Suffix = function()
+			return 'studs'
+		end,
+		Tooltip = 'How far below your last safe position counts as void'
 	})
 end)

@@ -1095,6 +1095,37 @@ run(function()
 		table.clear(whitelist)
 		shared.LarpWhitelist = nil
 	end)
+
+	run(function()
+		local owncat = larp.Categories and larp.Categories.Owner
+		if not owncat then return end
+		local ownermod = owncat:CreateModule({Name = 'Whitelist player'})
+		local search = ownermod:CreateTextBox({
+			Name = 'Username',
+			Placeholder = 'Type a Roblox username...',
+			Function = function(enter)
+				if enter then doadd() end
+			end
+		})
+		local function doadd()
+			if not (whitelist and search and search.Value ~= '') then return end
+			local res = whitelist:adduser(search.Value, true)
+			if res == 'ok' then
+				notif('Larp V4', 'Successfully whitelisted '..search.Value..'!', 6)
+			elseif res == 'duplicate' then
+				notif('Larp V4', search.Value..' is already whitelisted', 5, 'warning')
+			elseif res == 'notfound' then
+				notif('Larp V4', 'User not found', 5, 'warning')
+			else
+				notif('Larp V4', 'Could not whitelist '..search.Value, 5, 'alert')
+			end
+			search:SetValue('')
+		end
+		ownermod:CreateButton({
+			Name = 'Add to whitelist',
+			Function = doadd
+		})
+	end)
 end)
 entitylib.start()
 

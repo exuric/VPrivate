@@ -1,3 +1,16 @@
+		dots.Name = 'Dots'
+		dots.Size = UDim2.fromOffset(3, 16)
+		dots.Position = UDim2.fromOffset(4, 12)
+		dots.BackgroundTransparency = 1
+		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
+		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		dots.Parent = dotsbutton
+		local pinicon = Instance.new('ImageLabel')
+		pinicon.Name = 'Pin'
+		pinicon.Size = UDim2.fromOffset(16, 16)
+		pinicon.Position = UDim2.new(1, -48, 0, 12)
+		pinicon.BackgroundTransparency = 1
+		pinicon.Image = getcustomasset('LarpV4/assets/larp/pin.png')
 		pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		pinicon.Visible = false
 		pinicon.ZIndex = 2
@@ -2461,46 +2474,6 @@ if game:GetService('Players').LocalPlayer and game:GetService('Players').LocalPl
 		Icon = getcustomasset('LarpV4/assets/larp/utilityicon.png'),
 		Size = UDim2.fromOffset(15, 14)
 	})
-	task.spawn(function()
-		local owncat = mainapi.Categories.Owner
-		local wl
-		for i = 1, 300 do
-			wl = shared.LarpWhitelist
-			if wl then break end
-			task.wait(1)
-		end
-		if not wl then return end
-		local notif = function(text, ty)
-			mainapi:CreateNotification('Larp V4', text, 6, ty)
-		end
-		local doadd = function()
-			if not (wl and search.Value ~= '') then return end
-			local res = wl:adduser(search.Value, true)
-			if res == 'ok' then
-				notif('Successfully whitelisted '..search.Value..'!')
-			elseif res == 'duplicate' then
-				notif(search.Value..' is already whitelisted', 'warning')
-			elseif res == 'notfound' then
-				notif('User not found', 'warning')
-			else
-				notif('Could not whitelist '..search.Value, 'alert')
-			end
-			search:SetValue('')
-		end
-
-		local whitelistmod = owncat:CreateModule({Name = 'Whitelist player'})
-		local search = whitelistmod:CreateTextBox({
-			Name = 'Username',
-			Placeholder = 'Type a Roblox username...',
-			Function = function(enter)
-				if enter then doadd() end
-			end
-		})
-		whitelistmod:CreateButton({
-			Name = 'Add to whitelist',
-			Function = doadd
-		})
-	end)
 end
 mainapi.Categories.Main:CreateDivider('misc')
 

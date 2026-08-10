@@ -3852,16 +3852,3 @@ function mainapi:CreateCategory(categorysettings)
 		dotsbutton.Text = ''
 		dotsbutton.Parent = modulebutton
 		local dots = Instance.new('ImageLabel')
-		dots.Name = 'Dots'
-		dots.Size = UDim2.fromOffset(3, 16)
-		dots.Position = UDim2.fromOffset(4, 12)
-		dots.BackgroundTransparency = 1
-		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
-		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
-		dots.Parent = dotsbutton
-		local pinicon = Instance.new('ImageLabel')
-		pinicon.Name = 'Pin'
-		pinicon.Size = UDim2.fromOffset(16, 16)
-		pinicon.Position = UDim2.new(1, -48, 0, 12)
-		pinicon.BackgroundTransparency = 1
-		pinicon.Image = getcustomasset('LarpV4/assets/larp/pin.png')

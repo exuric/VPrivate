@@ -1675,6 +1675,9 @@ run(function()
 	local AimPart
 	local AimSpeed
 	local Shake
+	local Smoothness
+	local Overshoot
+	local Reaction
 	local Distance
 	local AngleSlider
 	local StrafeIncrease
@@ -1724,17 +1727,49 @@ run(function()
 	end
 	
 	local started, lasttarget, nextsearch = 0, nil, 0
+	local human = {
+		target = false,
+		previousAim = nil,
+		bias = Vector3.new(0, 0, 0),
+		reactUntil = 0
+	}
+	local function humanize(localcframe, aimPoint, fps)
+		local dt = math.max(fps, 1e-4)
+		if tick() < human.reactUntil then
+			return localcframe, 1
+		end
+		if human.target then
+			local prev = human.previousAim or aimPoint
+			local vel = (aimPoint - prev) / dt
+			human.bias = human.bias * math.exp(-dt * 2.5) + vel * (Overshoot.Value / 100) * 0.3 * dt
+			human.previousAim = aimPoint
+		else
+			human.bias = Vector3.new(0, 0, 0)
+		end
+		human.target = true
+		local desired = CFrame.lookAt(localcframe.Position, aimPoint + human.bias)
+		local forward = localcframe.LookVector
+		local want = desired.LookVector
+		local ang = forward.Magnitude > 0 and want.Magnitude > 0 and math.acos(math.clamp(forward.Unit:Dot(want.Unit), -1, 1)) or 0
+		local ease = math.clamp(ang / math.rad(50), 0, 1)
+		return desired, 0.15 + 0.85 * ease
+	end
 	local aimfuncs = {
 		Simple = function(localcframe, ent, fps)
 			local rng = Random.new()
 			local speed = (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0))
-	
-			return localcframe:Lerp(CFrame.lookAt(localcframe.p, getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)), speed * fps), speed
+			local jitter = Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
+			local desired, ease = humanize(localcframe, getAim(ent) + jitter, fps)
+			local alpha = math.clamp(speed * fps * ease * (Smoothness.Value / 100), 0, 1)
+			return localcframe:Lerp(desired, alpha), speed
 		end,
 		Adaptive = function(localcframe, ent, fps)
 			local prog, rng = ease(math.min(tick() - started, 1)), Random.new()
 			local speed = (AimSpeed.Value * 0.1 * prog) + (1 - prog) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 5)
-			return localcframe:Lerp(CFrame.lookAt(localcframe.p, getAim(ent) + Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)), speed * fps), speed
+			local jitter = Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
+			local desired, ease = humanize(localcframe, getAim(ent) + jitter, fps)
+			local alpha = math.clamp(speed * fps * ease * (Smoothness.Value / 100), 0, 1)
+			return localcframe:Lerp(desired, alpha), speed
 		end
 	}
 	
@@ -1784,6 +1819,9 @@ run(function()
 	
 		if ent ~= lasttarget then
 			started = tick()
+			if Reaction.Value > 0 then
+				human.reactUntil = tick() + (Reaction.Value / 1000) * Random.new():NextNumber(0.75, 1.25)
+			end
 		end
 		lasttarget = ent
 		nextsearch = tick() + 1
@@ -1837,10 +1875,12 @@ run(function()
 						end
 					else
 						lasttarget = nil
+						human.target = false
 					end
 				end))
 			else
 				lasttarget = nil
+				human.target = false
 				if entitylib.isAlive then
 					entitylib.character.Humanoid.AutoRotate = true
 				end
@@ -1903,6 +1943,30 @@ run(function()
 		Max = 100,
 		Default = 0,
 		Tooltip = 'Adds random jitter to simulate human aim',
+	})
+	Smoothness = AimAssist:CreateSlider({
+		Name = 'Smoothness',
+		Min = 1,
+		Max = 100,
+		Default = 100,
+		Tooltip = 'How gradually the crosshair eases into the target. Lower values decelerate more near the target, feeling more human',
+	})
+	Overshoot = AimAssist:CreateSlider({
+		Name = 'Overshoot',
+		Min = 0,
+		Max = 100,
+		Default = 50,
+		Tooltip = 'Flicks slightly past the target and settles back, like a human flick. 0 = off',
+	})
+	Reaction = AimAssist:CreateSlider({
+		Name = 'Reaction delay',
+		Min = 0,
+		Max = 400,
+		Default = 150,
+		Suffix = function()
+			return 'ms'
+		end,
+		Tooltip = 'Randomized delay before starting to aim on a new target, in ms. 0 = off',
 	})
 	AngleSlider = AimAssist:CreateSlider({
 		Name = 'Max angle',

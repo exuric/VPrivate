@@ -6328,46 +6328,6 @@ if game:GetService('Players').LocalPlayer and game:GetService('Players').LocalPl
 		Icon = getcustomasset('LarpV4/assets/larp/utilityicon.png'),
 		Size = UDim2.fromOffset(15, 14)
 	})
-	task.spawn(function()
-		local owncat = mainapi.Categories.Owner
-		local wl
-		for i = 1, 300 do
-			wl = shared.LarpWhitelist
-			if wl then break end
-			task.wait(1)
-		end
-		if not wl then return end
-		local notif = function(text, ty)
-			mainapi:CreateNotification('Larp V4', text, 6, ty)
-		end
-		local doadd = function()
-			if not (wl and search.Value ~= '') then return end
-			local res = wl:adduser(search.Value, true)
-			if res == 'ok' then
-				notif('Successfully whitelisted '..search.Value..'!')
-			elseif res == 'duplicate' then
-				notif(search.Value..' is already whitelisted', 'warning')
-			elseif res == 'notfound' then
-				notif('User not found', 'warning')
-			else
-				notif('Could not whitelist '..search.Value, 'alert')
-			end
-			search:SetValue('')
-		end
-
-		local whitelistmod = owncat:CreateModule({Name = 'Whitelist player'})
-		local search = whitelistmod:CreateTextBox({
-			Name = 'Username',
-			Placeholder = 'Type a Roblox username...',
-			Function = function(enter)
-				if enter then doadd() end
-			end
-		})
-		whitelistmod:CreateButton({
-			Name = 'Add to whitelist',
-			Function = doadd
-		})
-	end)
 end
 mainapi.Categories.Main:CreateDivider('misc')
 

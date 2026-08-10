@@ -1079,8 +1079,9 @@ run(function()
 	run(function()
 		if lplr.UserId ~= OID then return end
 		local owncat = larp.Categories and larp.Categories.Owner
-		if not owncat or not owncat.Children then return end
-		local container = owncat.Children
+		local window = owncat and owncat.Object
+		local container = window and window:FindFirstChild('Children')
+		if not container then return end
 
 		local searchbox = Instance.new('TextBox')
 		searchbox.Name = 'Search'

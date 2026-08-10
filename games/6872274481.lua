@@ -7836,7 +7836,28 @@ run(function()
 	Emote = SetEmote:CreateDropdown({
 	    Name = 'Emote',
 	    List = list,
-	    Default = 'nightmare'
+	    Default = 'nightmare',
+	    LayoutOrder = 2
+	})
+
+	local EmoteSearch
+	local function updateEmoteList()
+	    local query = (EmoteSearch.Value or ''):lower()
+	    local filtered = {}
+	    for _, name in list do
+	        if query == '' or name:lower():find(query, 1, true) then
+	            table.insert(filtered, name)
+	        end
+	    end
+	    Emote:Change(filtered)
+	end
+
+	EmoteSearch = SetEmote:CreateTextBox({
+	    Name = 'Search Emote',
+	    Default = '',
+	    Placeholder = 'Type to search...',
+	    LayoutOrder = 1,
+	    Function = updateEmoteList
 	})
 end)
 

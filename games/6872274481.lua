@@ -3360,6 +3360,7 @@ run(function()
 	local MaxAngle
 	local CPS
 	local SwingTime
+	local KillauraNotified
 
 	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
 	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
@@ -3402,11 +3403,15 @@ run(function()
 	end
 
 	Killaura = vape.Categories.Blatant:CreateModule({
-		Name = 'KillAura (Testing)',
-		WarningIcon = true,
+		Name = 'KillAura',
 		Function = function(callback)
 			if callback then
-				notif('KillAura (Testing)', "isn't fully optimized or coded yet", 4, 'alert')
+				if not KillauraNotified then
+					KillauraNotified = true
+					task.spawn(function()
+						pcall(notif, 'KillAura', 'KillAura is bugged', 4, 'alert')
+					end)
+				end
 				SwordController = bedwars.SwordController
 				realSwingInRegion = SwordController.swingSwordInRegion
 				local ok, r = pcall(function()

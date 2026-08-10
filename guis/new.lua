@@ -3743,17 +3743,6 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.FontFace = uipallet.Font
 		modulebutton.Parent = children
 		addCorner(modulebutton, UDim.new(0, 6))
-		local warningicon
-		if modulesettings.WarningIcon then
-			warningicon = Instance.new('ImageLabel')
-			warningicon.Name = 'Warning'
-			warningicon.Size = UDim2.fromOffset(16, 16)
-			warningicon.Position = UDim2.new(1, -75, 0, 12)
-			warningicon.BackgroundTransparency = 1
-			warningicon.Image = getcustomasset('LarpV4/assets/new/warning.png')
-			warningicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
-			warningicon.Parent = modulebutton
-		end
 		local indicatorholder = Instance.new('Frame')
 		indicatorholder.Parent = modulebutton
 		indicatorholder.Size = UDim2.fromOffset(0, 21)
@@ -3956,9 +3945,6 @@ function mainapi:CreateCategory(categorysettings)
 			pinicon.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
-			if warningicon then
-				warningicon.ImageColor3 = self.Enabled and modulebutton.TextColor3 or color.Dark(uipallet.Text, 0.16)
-			end
 			if not self.Enabled then
 				for _, v in self.Connections do
 					v:Disconnect()
@@ -3987,9 +3973,6 @@ function mainapi:CreateCategory(categorysettings)
 				pinicon.ImageColor3 = modulebutton.TextColor3
 				bindicon.ImageColor3 = modulebutton.TextColor3
 				bindtext.TextColor3 = modulebutton.TextColor3
-				if warningicon then
-					warningicon.ImageColor3 = modulebutton.TextColor3
-				end
 				if mainapi.Loaded ~= nil then
 					mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
 				end
@@ -4045,9 +4028,6 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		modulebutton.MouseEnter:Connect(function()
 			hovered = true
-			if warningicon then
-				warningicon.ImageColor3 = modulebutton.TextColor3
-			end
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = uipallet.Text
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
@@ -4057,9 +4037,6 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		modulebutton.MouseLeave:Connect(function()
 			hovered = false
-			if warningicon then
-				warningicon.ImageColor3 = modulebutton.TextColor3
-			end
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)

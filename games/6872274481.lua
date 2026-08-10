@@ -3362,7 +3362,7 @@ run(function()
 	local SwingTime
 
 	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
-	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing = nil, 3.8, 0, 0
+	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
 
 	local function getTarget()
 		local selfpos = entitylib.character.HumanoidRootPart.Position
@@ -3401,8 +3401,9 @@ run(function()
 		Name = 'Killaura',
 		Function = function(callback)
 			if callback then
-				realSwingInRegion = bedwars.SwordController.swingSwordInRegion
-				bedwars.SwordController.swingSwordInRegion = function(self, ...)
+				SwordController = bedwars.SwordController
+				realSwingInRegion = SwordController.swingSwordInRegion
+				SwordController.swingSwordInRegion = function(self, ...)
 					lastManualSwing = tick()
 					return realSwingInRegion(self, ...)
 				end
@@ -3418,12 +3419,12 @@ run(function()
 								if target then
 									store.KillauraTarget = target
 									local now = tick()
-									if now - lastSwing >= math.max(1 / CPS.Value, SwingTime.Value) then
+									if now - lastSwing >= math.max(0.05, math.min(1 / CPS.Value, SwingTime.Value)) then
 										lastSwing = now
 										local root = entitylib.character.RootPart
 										local oldcf = root.CFrame
 										root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
-										realSwingInRegion(bedwars.SwordController)
+										realSwingInRegion(SwordController)
 										root.CFrame = oldcf
 									end
 								end
@@ -3439,10 +3440,11 @@ run(function()
 			else
 				store.KillauraTarget = nil
 				if realSwingInRegion then
-					bedwars.SwordController.swingSwordInRegion = realSwingInRegion
+					SwordController.swingSwordInRegion = realSwingInRegion
 				end
-				debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, 3.8)
+				debug.setconstant(SwordController.swingSwordInRegion, 6, 3.8)
 				realSwingInRegion = nil
+				SwordController = nil
 			end
 		end,
 		Tooltip = 'Attack players around you\nwithout aiming at them.'
@@ -3491,23 +3493,27 @@ run(function()
 		Default = 360,
 		Tooltip = 'Maximum angle between your view and the target.\n360 hits targets behind you'
 	})
-	CPS = Killaura:CreateSlider({
-		Name = 'Attacks per second',
-		Min = 2,
-		Max = 20,
-		Default = 14,
-		Tooltip = 'How many swings the killaura attempts per second'
-	})
 	SwingTime = Killaura:CreateSlider({
 		Name = 'Swing time',
-		Min = 0.1,
+		Min = 0.01,
 		Max = 1,
-		Default = 0.25,
+		Default = 0.11,
 		Decimal = 100,
 		Suffix = function(val)
 			return 's'
 		end,
-		Tooltip = 'Minimum time between two swings.\nThe slower of this and Attacks per second wins'
+		Tooltip = 'Cap on the delay between swings'
+	})
+	CPS = Killaura:CreateSlider({
+		Name = 'Attacks per second (CPS)',
+		Min = 1,
+		Max = 20,
+		Default = 9.4,
+		Decimal = 10,
+		Suffix = function(val)
+			return 'cps'
+		end,
+		Tooltip = 'Swings attempted per second.\nDefault 9.4 = ~34 hits/s'
 	})
 end)
 

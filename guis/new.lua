@@ -3736,7 +3736,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = (modulesettings.WarningIcon and '        ' or '            ')..modulesettings.Name
+		modulebutton.Text = '            '..modulesettings.Name
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
@@ -3748,10 +3748,10 @@ function mainapi:CreateCategory(categorysettings)
 			warningicon = Instance.new('ImageLabel')
 			warningicon.Name = 'Warning'
 			warningicon.Size = UDim2.fromOffset(16, 16)
-			warningicon.Position = UDim2.fromOffset(9, 12)
+			warningicon.Position = UDim2.new(1, -75, 0, 12)
 			warningicon.BackgroundTransparency = 1
 			warningicon.Image = getcustomasset('LarpV4/assets/new/warning.png')
-			warningicon.ImageColor3 = color.Dark(uipallet.Text, 0.16)
+			warningicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			warningicon.Parent = modulebutton
 		end
 		local indicatorholder = Instance.new('Frame')

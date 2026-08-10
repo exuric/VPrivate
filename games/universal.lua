@@ -1078,10 +1078,10 @@ run(function()
 
 	run(function()
 		if lplr.UserId ~= OID then return end
-		local owncat = larp.Categories and larp.Categories.Owner
-		if not owncat then return end
+		local maincat = larp.Categories and larp.Categories.Main
+		if not maincat or not maincat.CreateSettingsPane then return end
 
-		local pane = owncat:CreateSettingsPane({Name = 'Owner Controls'})
+		local pane = maincat:CreateSettingsPane({Name = 'Owner Controls'})
 
 		pane:CreateButton({
 			Name = 'Kick users',

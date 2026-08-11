@@ -65,7 +65,7 @@ getgenv().LarpReadRoot = ROOT
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('ROOT..'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
+			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -82,7 +82,7 @@ local hash
 local function allowedsync()
 	pcall(function()
 		hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
-		local raw = game:HttpGet('ROOT..main/whitelist.json', true)
+		local raw = game:HttpGet(ROOT..'main/whitelist.json', true)
 		local d = httpService:JSONDecode(raw)
 		if
 			type(d) == 'table'
@@ -119,7 +119,7 @@ local function downloadSplit(base)
 	local data = {}
 	for i = 0, 1 do
 		local ok, res = pcall(function()
-			return game:HttpGet('ROOT..'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
+			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
 		end)
 		if not ok or typeof(res) ~= 'string' or res == '404: Not Found' then
 			error('Failed to download '..base..'.'..i..(ok and '' or ': '..tostring(res)))
@@ -214,7 +214,7 @@ if not shared.LarpIndependent then
 	else
 		if not shared.LarpDeveloper then
 			local suc, res = pcall(function()
-				return game:HttpGet('ROOT..'..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
+				return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
 			end)
 			if suc and res ~= '404: Not Found' then
 				loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)

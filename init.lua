@@ -33,7 +33,7 @@ local function downloadFile(path, func)
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end
 		local suc, res = pcall(function()
-			return game:HttpGet('ROOT..'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
+			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -73,7 +73,7 @@ if not shared.LarpDeveloper then
 	local commit = 'main'
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	local version = isfile('LarpV4/.version') and readfile('LarpV4/.version') or ''
-	if commit ~= stored or version ~= '68' then
+	if commit ~= stored or version ~= '69' then
 		if stored ~= '' and stored ~= commit then
 			shared.updated = stored
 		end
@@ -89,7 +89,7 @@ if not shared.LarpDeveloper then
 			end
 		end
 	end
-	writefile('LarpV4/.version', '68')
+	writefile('LarpV4/.version', '69')
 	writefile('LarpV4/profiles/commit.txt', commit)
 	if #listfiles('LarpV4/profiles') < 4 then
 		shared.LarpPresetInstall = function()

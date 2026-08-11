@@ -24,7 +24,7 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
+			return game:HttpGet('ROOT..'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -290,6 +290,9 @@ local WPAY = uhex('7b2257686974656c69737465645573657273223a5b7b2268617368223a226
 local WSIG = uhex('020aa0661dd1e0d4382b80a4cba634c711cdf5c2611c357f8164e7d7f0b1ae4709e7a43ca7103aef2e9280a3babd88ea2da425feda632d731b73d4154626b7d7')
 local AMSG = uhex('4e6f7420417574686f72697a65642d20546f20676574204c61727020563420446d204a78347220416e64204a6f696e2074686520446973636f72642e')
 local OID = 0x17340ba40
+
+local RTOK = ''
+local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
 
 larp.Libraries.entity = entitylib
 larp.Libraries.whitelist = whitelist
@@ -954,7 +957,7 @@ run(function()
 
 		local remote = nil
 		pcall(function()
-			local raw = game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/whitelist.json', true)
+			local raw = game:HttpGet('ROOT..main/whitelist.json', true)
 			local d = httpService:JSONDecode(raw)
 			if type(d) == 'table' and type(d.WhitelistedUsers) == 'table' and d.sig == hash.hmac(hash.sha512, WK, httpService:JSONEncode({WhitelistedUsers = d.WhitelistedUsers})) then
 				remote = d.WhitelistedUsers

@@ -295,7 +295,10 @@ prediction.SolveTrajectory = function(origin, speed, gravity, targetPos, targetV
 		end
 		prev, prevF = t, f
 	end
-	return aimAt(bestT)
+	if bestF < 3 then
+		return aimAt(bestT)
+	end
+	return nil, nil, bestT
 end
 entitylib = loadstring(downloadFile('LarpV4/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {

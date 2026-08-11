@@ -3949,6 +3949,7 @@ run(function()
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
+	local velocities = {}
 	local old
 	
 	local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
@@ -3999,14 +4000,23 @@ run(function()
 									end
 								end
 								local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-								local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity * (Predict.Value / 100)
-								local calc = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								local tv = projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity
+								if projmeta.projectile ~= 'telepearl' then
+									local key = plr.Player or plr.RootPart
+									local last = velocities[key]
+									if last then
+										tv = Vector3.new(tv.X * 0.7 + last.X * 0.3, tv.Y, tv.Z * 0.7 + last.Z * 0.3)
+									end
+									velocities[key] = tv
+								end
+								local targetVel = tv * (Predict.Value / 100)
+								local calc, _, travelT = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 								if calc then
 									if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 									return {
 										initialVelocity = (CFrame.new(newlook.Position, calc).LookVector * projSpeed) * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
 										positionFrom = offsetpos,
-										deltaT = lifetime,
+										deltaT = math.max(lifetime, (travelT or 0) + 0.15),
 										gravitationalAcceleration = gravity,
 										drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
 									}
@@ -4019,9 +4029,10 @@ run(function()
 					end
 					return old(...)
 				end
-			else
-				bedwars.ProjectileController.calculateImportantLaunchValues = old
-			end
+		else
+			bedwars.ProjectileController.calculateImportantLaunchValues = old
+			table.clear(velocities)
+		end
 		end,
 		Tooltip = 'Silently adjusts your aim towards the enemy'
 	})

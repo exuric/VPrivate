@@ -261,27 +261,41 @@ prediction.SolveTrajectory = function(origin, speed, gravity, targetPos, targetV
 	local function delta(t)
 		return (pointAt(t) - origin - down * (0.5 * gravity * t * t)).Magnitude - speed * t
 	end
+	local function aimAt(T)
+		local aim = pointAt(T) - down * (0.5 * gravity * T * T)
+		if rayCheck and workspace:Raycast(origin, aim - origin, rayCheck) then
+			return nil, nil, T
+		end
+		return aim, aim, T
+	end
 	local prev = 0.05
 	local prevF = delta(prev)
-	for t = 0.1, 12, 0.1 do
+	if prevF < 0 then
+		local a, b = 0.005, 0.05
+		for _ = 1, 40 do
+			local m = (a + b) / 2
+			if delta(m) < 0 then b = m else a = m end
+		end
+		return aimAt((a + b) / 2)
+	end
+	local bestT, bestF = 0.05, math.abs(prevF)
+	for t = 0.1, 15, 0.05 do
 		local f = delta(t)
-		if (f < 0 and prevF >= 0) or (f >= 0 and prevF < 0) then
+		local af = math.abs(f)
+		if af < bestF then
+			bestF, bestT = af, t
+		end
+		if f < 0 then
 			local a, b = prev, t
 			for _ = 1, 40 do
 				local m = (a + b) / 2
 				if delta(m) < 0 then b = m else a = m end
 			end
-			local T = (a + b) / 2
-			local aim = pointAt(T) - down * (0.5 * gravity * T * T)
-			if rayCheck and workspace:Raycast(origin, aim - origin, rayCheck) then
-				return nil, nil, T
-			end
-			return aim, aim, T
+			return aimAt((a + b) / 2)
 		end
 		prev, prevF = t, f
 	end
-	local T = math.clamp((targetPos - origin).Magnitude / math.max(speed, 1), 0.1, 4)
-	return pointAt(T) - down * (0.5 * gravity * T * T), pointAt(T), T
+	return aimAt(bestT)
 end
 entitylib = loadstring(downloadFile('LarpV4/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {

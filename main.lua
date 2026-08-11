@@ -95,12 +95,16 @@ for _, v in d.WhitelistedUsers do
 	end)
 end
 
-allowedsync()
+for i = 1, 20 do
+	allowedsync()
+	if hash then break end
+	task.wait(0.5)
+end
 
 do
 	local player = playersService.LocalPlayer
 	local h = player and hash and hash.sha512(player.Name..player.UserId..'SelfReport') or nil
-	if player and h and not allowedHashes[h] then
+	if player and not (h and allowedHashes[h]) then
 		player:Kick(AMSG)
 		return
 	end

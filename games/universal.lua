@@ -939,7 +939,12 @@ run(function()
 	end
 
 	function whitelist:update(first)
-		if not hash or type(hash.hmac) ~= 'function' or not whitelist.get then return true end
+		if not hash or type(hash.hmac) ~= 'function' or not whitelist.get then
+			if not (lplr and lplr.UserId == OID) then
+				whitelist:reject()
+			end
+			return true
+		end
 		whitelist.loaded = true
 
 		if not (lplr and lplr.UserId == OID) and hash.hmac(hash.sha512, WK, WPAY) ~= WSIG then

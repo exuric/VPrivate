@@ -3944,6 +3944,15 @@ run(function()
 	local AutoCharge
 	local Aim = {}
 	local OtherProjectiles
+	local Blacklist
+	local TargetMode
+	local MaxRange = {}
+	local AimMode
+	local AimSpeed = {}
+	local AutoFire
+	local FireDelay
+	local RequireDown
+	local Projectiles
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
@@ -3951,7 +3960,10 @@ run(function()
 	local Predict
 	local PredictJumping
 	local PartFallback
-	
+	local ProjectileAimbot
+	local holding = false
+	local firing = false
+
 	local function trySolve(offsetpos, projSpeed, gravity, plr, partName, projmeta, playerGravity)
 		local targetPart = plr[partName] or plr.RootPart
 		if not targetPart then return end
@@ -3963,90 +3975,190 @@ run(function()
 			return calc, newlook
 		end
 	end
-	
-	local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
+
+	local function getTarget(shootpos)
+		local pos = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero
+		if TargetMode.Value == 'Cursor' then
+			return entitylib.EntityMouse({
+				Part = 'RootPart',
+				Range = FOV.Value,
+				Players = Targets.Players.Enabled,
+				NPCs = Targets.NPCs.Enabled,
+				Wallcheck = Targets.Walls.Enabled,
+				Origin = pos
+			})
+		end
+		local list = entitylib.AllPosition({
+			Origin = pos,
+			Part = 'RootPart',
+			Range = MaxRange.Value,
+			Players = Targets.Players.Enabled,
+			NPCs = Targets.NPCs.Enabled,
+			Wallcheck = Targets.Walls.Enabled,
+			Limit = 1,
+			Sort = TargetMode.Value == 'Lowest HP' and function(a, b)
+				local ah = a.Entity.Humanoid and a.Entity.Humanoid.Health or math.huge
+				local bh = b.Entity.Humanoid and b.Entity.Humanoid.Health or math.huge
+				return ah < bh
+			end or nil
+		})
+		return list and list[1]
+	end
+
+	local function mouseClick(down)
+		local ok = pcall(down and mouse1down or mouse1up)
+		if not ok then
+			pcall(function()
+				local vim = game:GetService('VirtualInputManager')
+				local size = gameCamera.ViewportSize
+				vim:SendMouseButtonEvent(size.X / 2, size.Y / 2, 0, down, game, 0)
+			end)
+		end
+	end
+
+	local function compute(...)
+		local self, projmeta, worldmeta, origin, shootpos = ...
+		local plr = getTarget(shootpos)
+		if not plr or not plr.Character then
+			return
+		end
+		local pos = shootpos or self:getLaunchPosition(origin)
+		if not pos then
+			return
+		end
+		if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') then
+			return
+		end
+		if Blacklist and table.find(Blacklist.ListEnabled or {}, ((projmeta.projectile == 'glue_trap' or projmeta.projectile == 'glue_projectile') and 'gloop' or projmeta.projectile)) then
+			return
+		end
+		local meta = projmeta:getProjectileMeta()
+		local lifetime = (worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3)
+		local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
+		local projSpeed = (meta.launchVelocity or 100)
+		local offsetpos = pos + (projmeta.projectile == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
+		local balloons = plr.Character:GetAttribute('InflatedBalloons')
+		local playerGravity = workspace.Gravity
+		if balloons and balloons > 0 then
+			playerGravity = (workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))))
+		end
+		if plr.Character.PrimaryPart and plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
+			playerGravity = 6
+		end
+		if plr.Player and plr.Player:GetAttribute('IsOwlTarget') then
+			for _, owl in collectionService:GetTagged('Owl') do
+				if owl:GetAttribute('Target') == plr.Player.UserId and owl:GetAttribute('Status') == 2 then
+					playerGravity = 0
+				end
+			end
+		end
+		local calc, newlook = trySolve(offsetpos, projSpeed, gravity, plr, TargetPart.Value, projmeta, playerGravity)
+		if not calc and PartFallback.Enabled and TargetPart.Value ~= 'RootPart' then
+			calc, newlook = trySolve(offsetpos, projSpeed, gravity, plr, 'RootPart', projmeta, playerGravity)
+		end
+		if not calc and PartFallback.Enabled and TargetPart.Value ~= 'Head' then
+			calc, newlook = trySolve(offsetpos, projSpeed, gravity, plr, 'Head', projmeta, playerGravity)
+		end
+		if calc then
+			targetinfo.Targets[plr] = tick() + 1
+			return {
+				initialVelocity = (CFrame.new(newlook.Position, calc).LookVector * projSpeed) * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
+				positionFrom = offsetpos,
+				deltaT = lifetime,
+				gravitationalAcceleration = gravity,
+				drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+			}
+		end
+	end
+
+	ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
 			if callback then
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
-					local self, projmeta, worldmeta, origin, shootpos = ...
-					local plr = entitylib.EntityMouse({
-						Part = 'RootPart',
-						Range = FOV.Value,
-						Players = Targets.Players.Enabled,
-						NPCs = Targets.NPCs.Enabled,
-						Wallcheck = Targets.Walls.Enabled,
-						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero
-					})
-					if plr then
-						local pos = shootpos or self:getLaunchPosition(origin)
-						if not pos then
-							return old(...)
+					local ok, result = pcall(compute, ...)
+					if ok and result then
+						return result
+					end
+					return old(...)
+				end
+				ProjectileAimbot:Clean(inputService.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						holding = true
+					end
+				end))
+				ProjectileAimbot:Clean(inputService.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						holding = false
+					end
+				end))
+				if AimMode.Value == 'Camera' then
+					ProjectileAimbot:Clean(runService.RenderStepped:Connect(function()
+						if not ProjectileAimbot.Enabled or (RequireDown.Enabled and not holding) then
+							return
 						end
-	
-						if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') then
-							return old(...)
+						local plr = getTarget()
+						if not plr then
+							return
 						end
-	
-						if table.find(Blacklist.ListEnabled or {}, ((projmeta.projectile == 'glue_trap' or projmeta.projectile == 'glue_projectile') and 'gloop' or projmeta.projectile)) then
-							return old(...)
+						local part = plr[TargetPart.Value] or plr.RootPart
+						if not part then
+							return
 						end
-	
-						local meta = projmeta:getProjectileMeta()
-						local lifetime = (worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3)
-						local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
-						local projSpeed = (meta.launchVelocity or 100)
-						local offsetpos = pos + (projmeta.projectile == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
-						local balloons = plr.Character:GetAttribute('InflatedBalloons')
-						local playerGravity = workspace.Gravity
-	
-						if balloons and balloons > 0 then
-							playerGravity = (workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))))
-						end
-	
-						if plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
-							playerGravity = 6
-						end
-	
-						if plr.Player and plr.Player:GetAttribute('IsOwlTarget') then
-							for _, owl in collectionService:GetTagged('Owl') do
-								if owl:GetAttribute('Target') == plr.Player.UserId and owl:GetAttribute('Status') == 2 then
-									playerGravity = 0
+						local look = CFrame.lookAt(gameCamera.CFrame.Position, part.Position + (plr.RootPart.Velocity or Vector3.zero) * ((Predict.Value - 1) * 0.5))
+						gameCamera.CFrame = gameCamera.CFrame:Lerp(look, math.clamp(AimSpeed.Value / 100, 0.05, 1))
+					end))
+				end
+				if AutoFire.Enabled then
+					ProjectileAimbot:Clean(task.spawn(function()
+						while ProjectileAimbot.Enabled do
+							task.wait(0.05)
+							if ProjectileAimbot.Enabled and not firing and (not RequireDown.Enabled or holding) and getTarget() then
+								local owned = Projectiles and getProjectiles(Projectiles.ListEnabled) or nil
+								if owned and owned[1] then
+									firing = true
+									task.spawn(function()
+										pcall(switchItem, owned[1][1].tool)
+										mouseClick(true)
+										task.wait(FireDelay.Value / 1000)
+										mouseClick(false)
+										firing = false
+									end)
 								end
 							end
 						end
-	
-						local calc, newlook = trySolve(offsetpos, projSpeed, gravity, plr, TargetPart.Value, projmeta, playerGravity)
-						if not calc and PartFallback.Enabled and TargetPart.Value ~= 'RootPart' then
-							calc, newlook = trySolve(offsetpos, projSpeed, gravity, plr, 'RootPart', projmeta, playerGravity)
-						end
-						if not calc and PartFallback.Enabled and TargetPart.Value ~= 'Head' then
-							calc, newlook = trySolve(offsetpos, projSpeed, gravity, plr, 'Head', projmeta, playerGravity)
-						end
-						if calc then
-							targetinfo.Targets[plr] = tick() + 1
-							return {
-								initialVelocity = (CFrame.new(newlook.Position, calc).LookVector * projSpeed) * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
-								positionFrom = offsetpos,
-								deltaT = lifetime,
-								gravitationalAcceleration = gravity,
-								drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
-							}
-						end
-					end
-	
-					return old(...)
+					end))
 				end
 			else
 				bedwars.ProjectileController.calculateImportantLaunchValues = old
 			end
 		end,
-		Tooltip = 'Silently adjusts your aim towards the enemy'
+		Tooltip = 'Projectile aimbot: corrects every shot silently, optional camera aim and auto fire'
 	})
 	Targets = ProjectileAimbot:CreateTargets({
 		Players = true,
 		Walls = true
+	})
+	TargetMode = ProjectileAimbot:CreateDropdown({
+		Name = 'Target mode',
+		List = {'Cursor', 'Nearest', 'Lowest HP'},
+		Default = 'Cursor',
+		Function = function(val)
+			if MaxRange.Object then
+				MaxRange.Object.Visible = val ~= 'Cursor'
+			end
+		end
+	})
+	MaxRange = ProjectileAimbot:CreateSlider({
+		Name = 'Max Range',
+		Min = 1,
+		Max = 80,
+		Default = 60,
+		Visible = false,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
 	})
 	TargetPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Part',
@@ -4057,6 +4169,26 @@ run(function()
 		Min = 1,
 		Max = 1000,
 		Default = 1000
+	})
+	AimMode = ProjectileAimbot:CreateDropdown({
+		Name = 'Aim mode',
+		List = {'Silent', 'Camera'},
+		Default = 'Silent',
+		Tooltip = 'Silent corrects your shots invisibly, Camera also moves your view to the target',
+		Function = function(val)
+			if AimSpeed.Object then
+				AimSpeed.Object.Visible = val == 'Camera'
+			end
+		end
+	})
+	AimSpeed = ProjectileAimbot:CreateSlider({
+		Name = 'Aim speed',
+		Min = 1,
+		Max = 100,
+		Default = 100,
+		Visible = false,
+		Suffix = '%',
+		Tooltip = 'How fast the camera locks on. 100% = instant snap.'
 	})
 	Predict = ProjectileAimbot:CreateSlider({
 		Name = 'Predict',
@@ -4091,6 +4223,29 @@ run(function()
 		Default = true,
 		Darker = true,
 		Tooltip = 'Changes your trajectory to match charge percentage.'
+	})
+	AutoFire = ProjectileAimbot:CreateToggle({
+		Name = 'Auto Fire',
+		Default = false,
+		Tooltip = 'Automatically shoots targets with a projectile from the list'
+	})
+	FireDelay = ProjectileAimbot:CreateSlider({
+		Name = 'Fire Delay',
+		Min = 100,
+		Max = 1500,
+		Default = 500,
+		Suffix = 'ms',
+		Tooltip = 'How long each auto shot is held (charge time)'
+	})
+	RequireDown = ProjectileAimbot:CreateToggle({
+		Name = 'Require mouse down',
+		Default = false,
+		Tooltip = 'Only aim and fire while you hold the left mouse button'
+	})
+	Projectiles = ProjectileAimbot:CreateTextList({
+		Name = 'Projectiles',
+		Default = {'arrow', 'snowball'},
+		Tooltip = 'Projectiles used by Auto Fire'
 	})
 	OtherProjectiles = ProjectileAimbot:CreateToggle({
 		Name = 'Other Projectiles',

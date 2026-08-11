@@ -26,10 +26,10 @@ end
 local playersService = cloneref(game:GetService('Players'))
 local httpService = cloneref(game:GetService("HttpService"))
 
-local allowedUsers = {
-	[0x17340ba40] = 'replaced_username1',
-	[0x0] = 'replaced_username2',
-	[0x0] = 'replaced_username3',
+local allowedHashes = {
+	['b7a894c17309ab18100a84176a2509a3a252f90836bf7ab0966a7a57e9d6e35d9eec46ac1fe23e708803d210bc484dbf6cbc0adf5d1d71978ade3ef99730300d'] = true,
+	['d0df64863cec281cae0bea56913c5b4c8e098eda47e4f0f84ce079da0b5771a9907d9b8a10905c7f68dda1e1b1137773031a805931054bbee46b0bd99c7d3297'] = true,
+	['bd98019077797dfe8b12212c7edc12be7998d8b225888b4e37838be16c3a729f9c14694931c396addf05f29a1234f4e3a130b87a8e4311b94b96b1fc9c4fcd93'] = true,
 }
 
 local function uhex(s)
@@ -74,9 +74,10 @@ local function downloadFile(path, func)
 	return (func or readfile)(path)
 end
 
+local hash
 local function allowedsync()
 	pcall(function()
-		local hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
+		hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
 		local raw = game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/whitelist.json', true)
 		local d = httpService:JSONDecode(raw)
 		if
@@ -86,11 +87,8 @@ local function allowedsync()
 			and d.sig == hash.hmac(hash.sha512, WK, httpService:JSONEncode({WhitelistedUsers = d.WhitelistedUsers}))
 		then
 for _, v in d.WhitelistedUsers do
-			if v.id then
-				local uid = tonumber(v.id)
-				if uid then
-					allowedUsers[uid] = v.name or true
-				end
+			if type(v.hash) == 'string' and v.hash ~= '' then
+				allowedHashes[v.hash] = true
 			end
 		end
 		end
@@ -101,8 +99,8 @@ allowedsync()
 
 do
 	local player = playersService.LocalPlayer
-	local pid = player and tonumber(player.UserId)
-	if player and pid and not allowedUsers[pid] then
+	local h = player and hash and hash.sha512(player.Name..player.UserId..'SelfReport') or nil
+	if player and h and not allowedHashes[h] then
 		player:Kick(AMSG)
 		return
 	end
@@ -163,12 +161,12 @@ local function finishLoading()
 		if not shared.larpreload then
 			larp:CreateNotification('Finished Loading', (larp.LarpButton and 'Press the button in the top right' or 'Press '..table.concat(larp.Keybind, ' + '):upper())..' to open GUI', 5)
 			task.delay(1, function()
-				larp:CreateNotification('LarpV4 Initialized With replaced_username1', 'Larp V4 is now loaded', 5, 'info')
+				larp:CreateNotification('LarpV4 Initialized', 'Larp V4 is now loaded', 5, 'info')
 			end)
 			task.delay(0.05 + cloneref(game:GetService('RunService')).PostSimulation:Wait(), function()
 				if shared.updated then
 					local commit = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'unknown'
-					larp:CreateNotification('Larp V4', `Script has updated from {shared.updated} to {commit}`, 10, 'info')
+					larp:CreateNotification('Larp V4', 'Script has updated from '..tostring(shared.updated)..' to '..commit, 10, 'info')
 				end
 			end)
 		end	

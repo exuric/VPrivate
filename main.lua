@@ -77,7 +77,7 @@ end
 local hash
 local wlset = {}
 local function wlseed()
-	local k2 = uhex('2f581d2058125e')
+	local k2 = uhex('4433764b337935')
 	return {
 		{xr(uhex('365617276c0a50295819'), k2), 5},
 		{xr(uhex('005a05285a0959217c100c5c1d51'), k2), 1}
@@ -95,7 +95,7 @@ local function wlapply(list)
 end
 
 local function wlfetch()
-	local k1 = uhex('3a1152133f590625531d20')
+	local k1 = uhex('517a397854326d4e38764b')
 	local url = xr(uhex('390e4d08270842615c1f3832154b1c7a51022317173b38554e1d365a0221530564604f0a4e6106557c0d407b634d0c49620b5e7617170a0519142d0c763a0a0b3f011c186827035a371d5d26721328403735001e18420c7920176d1907780a2749342f154c733735630228670c1c0457760817461c164d1d3a7e175c0b27530a2b4b49273817500c69035d7e'), k1)
 	local ok, res = pcall(function()
 		return game:HttpGet(url, true)
@@ -111,10 +111,12 @@ local function wlfetch()
 	local ok3, msgs = pcall(function()
 		return httpService:JSONDecode(res)
 	end)
-	if not ok3 or type(msgs) ~= 'table' then return nil end
-	table.sort(msgs, function(a, b)
-		return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
-	end)
+	if not ok3 or type(msgs) ~= 'table' or not msgs[1] and next(msgs) then return nil end
+	if next(msgs) then
+		pcall(table.sort, msgs, function(a, b)
+			return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
+		end)
+	end
 	return msgs
 end
 
@@ -137,7 +139,7 @@ local function wlsync()
 		wlapply(list)
 		return
 	end
-	local k3 = uhex('285b0f58')
+	local k3 = uhex('43306433')
 	local function dec(s)
 		return xr(uhex(s), k3)
 	end

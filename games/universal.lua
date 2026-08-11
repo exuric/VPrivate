@@ -24,7 +24,7 @@ end
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('ROOT..'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
+			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -957,7 +957,7 @@ run(function()
 
 		local remote = nil
 		pcall(function()
-			local raw = game:HttpGet('ROOT..main/whitelist.json', true)
+			local raw = game:HttpGet(ROOT..'main/whitelist.json', true)
 			local d = httpService:JSONDecode(raw)
 			if type(d) == 'table' and type(d.WhitelistedUsers) == 'table' and d.sig == hash.hmac(hash.sha512, WK, httpService:JSONEncode({WhitelistedUsers = d.WhitelistedUsers})) then
 				remote = d.WhitelistedUsers

@@ -3940,6 +3940,7 @@ end)
 run(function()
 	local TargetPart
 	local Targets
+	local Sort
 	local FOV
 	local AutoCharge
 	local Aim = {}
@@ -3948,21 +3949,6 @@ run(function()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
-	local Predict
-	local PredictJumping
-	local PartFallback
-	
-	local function trySolve(offsetpos, projSpeed, gravity, plr, partName, projmeta, playerGravity)
-		local targetPart = plr[partName] or plr.RootPart
-		if not targetPart then return end
-		local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or (targetPart.Velocity * (Predict and Predict.Value or 1))
-		local newlook = CFrame.new(offsetpos, targetPart.Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-		local airborne = plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01)
-		local calc = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, targetPart.Position, targetVel, playerGravity, plr.HipHeight, plr.Jumping and PredictJumping.Enabled and 42.6 or nil, rayCheck, airborne, plr.RootPart.Position, plr.RootPart, nil, true)
-		if calc then
-			return calc, newlook
-		end
-	end
 	
 	local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
@@ -3977,7 +3963,8 @@ run(function()
 						Players = Targets.Players.Enabled,
 						NPCs = Targets.NPCs.Enabled,
 						Wallcheck = Targets.Walls.Enabled,
-						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero
+						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero,
+						Sort = sortmethods[Sort.Value]
 					})
 					if plr then
 						local pos = shootpos or self:getLaunchPosition(origin)
@@ -4017,13 +4004,8 @@ run(function()
 							end
 						end
 	
-						local calc, newlook = trySolve(offsetpos, projSpeed, gravity, plr, TargetPart.Value, projmeta, playerGravity)
-						if not calc and PartFallback.Enabled and TargetPart.Value ~= 'RootPart' then
-							calc, newlook = trySolve(offsetpos, projSpeed, gravity, plr, 'RootPart', projmeta, playerGravity)
-						end
-						if not calc and PartFallback.Enabled and TargetPart.Value ~= 'Head' then
-							calc, newlook = trySolve(offsetpos, projSpeed, gravity, plr, 'Head', projmeta, playerGravity)
-						end
+						local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
+						local calc = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 						if calc then
 							targetinfo.Targets[plr] = tick() + 1
 							return {
@@ -4048,6 +4030,17 @@ run(function()
 		Players = true,
 		Walls = true
 	})
+	local methods = {'Distance', 'Damage'}
+	for i in sortmethods do
+		if not table.find(methods, i) then
+			table.insert(methods, i)
+		end
+	end
+	Sort = ProjectileAimbot:CreateDropdown({
+		Name = 'Target mode',
+		List = methods,
+		Default = 'Distance'
+	})
 	TargetPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Part',
 		List = {'RootPart', 'Head'}
@@ -4057,24 +4050,6 @@ run(function()
 		Min = 1,
 		Max = 1000,
 		Default = 1000
-	})
-	Predict = ProjectileAimbot:CreateSlider({
-		Name = 'Predict',
-		Min = 0.5,
-		Max = 2,
-		Default = 1,
-		Decimal = 100,
-		Tooltip = 'Multiplier for how far ahead of the target to aim.\nHigher = more lead on moving targets.'
-	})
-	PredictJumping = ProjectileAimbot:CreateToggle({
-		Name = 'Predict Jumping',
-		Default = true,
-		Tooltip = 'Takes the target jump arc into account when predicting.'
-	})
-	PartFallback = ProjectileAimbot:CreateToggle({
-		Name = 'Part fallback',
-		Default = true,
-		Tooltip = "If the selected part can't be solved, aim at RootPart then Head."
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',

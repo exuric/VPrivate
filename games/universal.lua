@@ -3292,9 +3292,17 @@ run(function()
 	local SearchRange
 	local StrafeRange
 	local YFactor
+	local StrafeSpeed
+	local StrafeMode
+	local SwitchInterval
+	local Randomize
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 	local module, old
+	local ang, oldent
+	local direction = 1
+	local lastSwitch = 0
+	local rng = Random.new()
 	
 	TargetStrafe = larp.Categories.Blatant:CreateModule({
 		Name = 'TargetStrafe',
@@ -3308,7 +3316,9 @@ run(function()
 				end
 	
 				old = module.moveFunction
-				local flymod, ang, oldent = larp.Modules.Fly or {Enabled = false}
+				local flymod = larp.Modules.Fly or {Enabled = false}
+				lastSwitch = tick()
+				direction = rng:NextInteger(0, 1) == 0 and 1 or -1
 				module.moveFunction = function(self, vec, face)
 					local wallcheck = Targets.Walls.Enabled
 					local ent = not inputService:IsKeyDown(Enum.KeyCode.S) and entitylib.EntityPosition({
@@ -3328,6 +3338,22 @@ run(function()
 							local factor, localPosition = 0, root.Position
 							if ent ~= oldent then
 								ang = math.deg(select(2, CFrame.lookAt(targetPos, localPosition):ToEulerAnglesYXZ()))
+								if Randomize.Enabled then
+									ang = ang + rng:NextInteger(-90, 90)
+								end
+							end
+	
+							if StrafeMode.Value ~= 'Circle' then
+								local now = tick()
+								if now - lastSwitch >= SwitchInterval.Value then
+									lastSwitch = now
+									if StrafeMode.Value == 'Switch' then
+										direction = -direction
+										ang = ang + (direction * 45)
+									elseif StrafeMode.Value == 'Random' then
+										ang = ang + rng:NextInteger(-180, 180)
+									end
+								end
 							end
 	
 							local yFactor = math.abs(localPosition.Y - targetPos.Y) * (YFactor.Value / 100)
@@ -3353,7 +3379,7 @@ run(function()
 								factor = 40
 							end
 	
-							ang += factor % 360
+							ang += factor * (StrafeSpeed.Value / 10) % 360
 							vec = ((newPos - localPosition) * Vector3.new(1, 0, 1)).Unit
 							vec = vec == vec and vec or Vector3.zero
 							TargetStrafeVector = vec
@@ -3372,6 +3398,7 @@ run(function()
 					module.moveFunction = old
 				end
 				TargetStrafeVector = nil
+				oldent = nil
 			end
 		end,
 		Tooltip = 'Automatically strafes around the opponent'
@@ -3404,6 +3431,32 @@ run(function()
 		Max = 100,
 		Default = 100,
 		Suffix = '%'
+	})
+	StrafeSpeed = TargetStrafe:CreateSlider({
+		Name = 'Strafe Speed',
+		Min = 1,
+		Max = 30,
+		Default = 10,
+		Tooltip = 'How fast the circle angle rotates'
+	})
+	StrafeMode = TargetStrafe:CreateDropdown({
+		Name = 'Mode',
+		List = {'Circle', 'Switch', 'Random'},
+		Default = 'Circle',
+		Tooltip = 'Circle rotates around the enemy, Switch zigzags sides, Random jumps around'
+	})
+	SwitchInterval = TargetStrafe:CreateSlider({
+		Name = 'Switch Interval',
+		Min = 1,
+		Max = 30,
+		Decimal = 10,
+		Default = 15,
+		Suffix = 'seconds',
+		Tooltip = 'How often Switch / Random changes direction (0.1s steps)'
+	})
+	Randomize = TargetStrafe:CreateToggle({
+		Name = 'Randomize',
+		Tooltip = 'Randomizes the starting angle for every new target'
 	})
 end)
 

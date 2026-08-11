@@ -58,10 +58,14 @@ end
 local WK = xr(uhex('a62d63876c044b9a74407d6e2cd20c6422d42f7fd8207ff3'), 'L4rp')
 local AMSG = uhex('4e6f7420417574686f72697a65642d20546f20676574204c61727020563420446d204a78347220416e64204a6f696e2074686520446973636f72642e')
 
+local RTOK = ''
+local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
+getgenv().LarpReadRoot = ROOT
+
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
+			return game:HttpGet('ROOT..'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -78,7 +82,7 @@ local hash
 local function allowedsync()
 	pcall(function()
 		hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
-		local raw = game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/whitelist.json', true)
+		local raw = game:HttpGet('ROOT..main/whitelist.json', true)
 		local d = httpService:JSONDecode(raw)
 		if
 			type(d) == 'table'
@@ -115,7 +119,7 @@ local function downloadSplit(base)
 	local data = {}
 	for i = 0, 1 do
 		local ok, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
+			return game:HttpGet('ROOT..'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
 		end)
 		if not ok or typeof(res) ~= 'string' or res == '404: Not Found' then
 			error('Failed to download '..base..'.'..i..(ok and '' or ': '..tostring(res)))
@@ -141,7 +145,7 @@ local function finishLoading()
 				if shared.LarpDeveloper then
 					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua', true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet(']]..ROOT..[['..readfile('LarpV4/profiles/commit.txt')..'/init.lua', true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)
@@ -210,7 +214,7 @@ if not shared.LarpIndependent then
 	else
 		if not shared.LarpDeveloper then
 			local suc, res = pcall(function()
-				return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
+				return game:HttpGet('ROOT..'..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
 			end)
 			if suc and res ~= '404: Not Found' then
 				loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)

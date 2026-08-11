@@ -7004,6 +7004,199 @@ run(function()
 end)
 
 run(function()
+	local anim
+	local asset
+	local trackingConnection
+	local lastPosition
+	local NightmareEmote
+	local cachedRootPart
+	local cachedHumanoid
+	local lastValidationCheck = 0
+
+	local function findNightmareAsset()
+		for i = 1, 50 do
+			local assets = replicatedStorage:FindFirstChild('Assets')
+			local effects = assets and assets:FindFirstChild('Effects')
+			local target = effects and effects:FindFirstChild('NightmareEmote')
+			if target then
+				return target
+			end
+			task.wait(0.1)
+		end
+		return nil
+	end
+
+	NightmareEmote = larp.Categories.World:CreateModule({
+		Name = 'NightmareEmote',
+		Function = function(call)
+			if call then
+				local ok, GameQueryUtil = pcall(function()
+					return require(game:GetService('ReplicatedStorage'):WaitForChild('rbxts_include'):WaitForChild('node_modules'):WaitForChild('@easy-games'):WaitForChild('game-core').out).GameQueryUtil
+				end)
+				if not ok or not GameQueryUtil then
+					local backup = {}
+					function backup:setQueryIgnored() end
+					GameQueryUtil = backup
+				end
+
+				local player = playersService.LocalPlayer
+				local character = player.Character
+
+				if not character then
+					NightmareEmote:Toggle()
+					return
+				end
+
+				local humanoid = character:WaitForChild('Humanoid')
+				local rootPart = character.PrimaryPart or character:FindFirstChild('HumanoidRootPart')
+
+				if not rootPart then
+					NightmareEmote:Toggle()
+					return
+				end
+
+				local source = findNightmareAsset()
+				if not source then
+					notif('Larp V4', 'NightmareEmote effect not found', 4, 'warning')
+					NightmareEmote:Toggle()
+					return
+				end
+
+				cachedRootPart = rootPart
+				cachedHumanoid = humanoid
+				lastPosition = rootPart.Position
+				lastValidationCheck = 0
+
+				local cloned = source:Clone()
+				asset = cloned
+				cloned.Parent = workspace
+
+				local descendants = cloned:GetDescendants()
+				for _, part in ipairs(descendants) do
+					if part:IsA('BasePart') then
+						GameQueryUtil:setQueryIgnored(part, true)
+						part.CanCollide = false
+						part.Anchored = true
+					end
+				end
+
+				local outer = cloned:FindFirstChild('Outer')
+				if outer then
+					tweenService:Create(outer, TweenInfo.new(1.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {
+						Orientation = outer.Orientation + Vector3.new(0, 360, 0)
+					}):Play()
+				end
+
+				local middle = cloned:FindFirstChild('Middle')
+				if middle then
+					tweenService:Create(middle, TweenInfo.new(12.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {
+						Orientation = middle.Orientation + Vector3.new(0, -360, 0)
+					}):Play()
+				end
+
+				anim = Instance.new('Animation')
+				anim.AnimationId = 'rbxassetid://9191822700'
+				anim = humanoid:LoadAnimation(anim)
+				anim:Play()
+
+				local movementThresholdSq = 0.1 * 0.1
+
+				trackingConnection = runService.RenderStepped:Connect(function()
+					if not asset or not asset.Parent then
+						if trackingConnection then
+							trackingConnection:Disconnect()
+						end
+						return
+					end
+
+					local currentTime = tick()
+
+					if (currentTime - lastValidationCheck) > 0.5 then
+						if not character or not character.Parent then
+							asset:Destroy()
+							asset = nil
+							if trackingConnection then
+								trackingConnection:Disconnect()
+							end
+							NightmareEmote:Toggle()
+							return
+						end
+
+						if not cachedRootPart or not cachedRootPart.Parent then
+							cachedRootPart = character.PrimaryPart or character:FindFirstChild('HumanoidRootPart')
+						end
+
+						if not cachedHumanoid or not cachedHumanoid.Parent then
+							cachedHumanoid = character:FindFirstChildOfClass('Humanoid')
+						end
+
+						if not cachedRootPart or not cachedHumanoid or cachedHumanoid.Health <= 0 then
+							asset:Destroy()
+							asset = nil
+							if trackingConnection then
+								trackingConnection:Disconnect()
+							end
+							NightmareEmote:Toggle()
+							return
+						end
+
+						lastValidationCheck = currentTime
+					end
+
+					if lastPosition and cachedRootPart then
+						local currentPosition = cachedRootPart.Position
+						local dx = currentPosition.X - lastPosition.X
+						local dy = currentPosition.Y - lastPosition.Y
+						local dz = currentPosition.Z - lastPosition.Z
+						local distanceMovedSq = dx * dx + dy * dy + dz * dz
+
+						if distanceMovedSq > movementThresholdSq then
+							asset:Destroy()
+							asset = nil
+							if trackingConnection then
+								trackingConnection:Disconnect()
+							end
+							NightmareEmote:Toggle()
+							return
+						end
+
+						lastPosition = currentPosition
+					end
+
+					if cachedRootPart then
+						cloned:SetPrimaryPartCFrame(cachedRootPart.CFrame * CFrame.new(0, -3, 0))
+					end
+				end)
+
+				NightmareEmote:Clean(trackingConnection)
+
+			else
+				if trackingConnection then
+					trackingConnection:Disconnect()
+					trackingConnection = nil
+				end
+
+				if anim then
+					anim:Stop()
+					anim = nil
+				end
+
+				if asset then
+					asset:Destroy()
+					asset = nil
+				end
+
+				lastPosition = nil
+				cachedRootPart = nil
+				cachedHumanoid = nil
+				lastValidationCheck = 0
+			end
+		end,
+		Tooltip = 'Spins the Nightmare Emote effect around your character'
+	})
+end)
+
+run(function()
 	local MurderMystery
 	local murderer, sheriff, oldtargetable, oldgetcolor
 	

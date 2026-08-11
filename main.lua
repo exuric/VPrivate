@@ -26,11 +26,7 @@ end
 local playersService = cloneref(game:GetService('Players'))
 local httpService = cloneref(game:GetService("HttpService"))
 
-local allowedHashes = {
-	['b7a894c17309ab18100a84176a2509a3a252f90836bf7ab0966a7a57e9d6e35d9eec46ac1fe23e708803d210bc484dbf6cbc0adf5d1d71978ade3ef99730300d'] = true,
-	['d0df64863cec281cae0bea56913c5b4c8e098eda47e4f0f84ce079da0b5771a9907d9b8a10905c7f68dda1e1b1137773031a805931054bbee46b0bd99c7d3297'] = true,
-	['bd98019077797dfe8b12212c7edc12be7998d8b225888b4e37838be16c3a729f9c14694931c396addf05f29a1234f4e3a130b87a8e4311b94b96b1fc9c4fcd93'] = true,
-}
+local allowedHashes = {}
 
 local function uhex(s)
 	local b = {}
@@ -79,23 +75,114 @@ local function downloadFile(path, func)
 end
 
 local hash
+local wlset = {}
+local function wlseed()
+	local k2 = uhex('2f581d2058125e')
+	return {
+		{xr(uhex('365617276c0a50295819'), k2), 5},
+		{xr(uhex('005a05285a0959217c100c5c1d51'), k2), 1}
+	}
+end
+
+local function wlapply(list)
+	table.clear(wlset)
+	for _, v in list do
+		if type(v) == 'table' then
+			if type(v.name) == 'string' then wlset[v.name:lower()] = v.level end
+			if type(v.hash) == 'string' then allowedHashes[v.hash] = true end
+		end
+	end
+end
+
+local function wlfetch()
+	local k1 = uhex('3a1152133f590625531d20')
+	local url = xr(uhex('390e4d08270842615c1f3832154b1c7a51022317173b38554e1d365a0221530564604f0a4e6106557c0d407b634d0c49620b5e7617170a0519142d0c763a0a0b3f011c186827035a371d5d26721328403735001e18420c7920176d1907780a2749342f154c733735630228670c1c0457760817461c164d1d3a7e175c0b27530a2b4b49273817500c69035d7e'), k1)
+	local ok, res = pcall(function()
+		return game:HttpGet(url, true)
+	end)
+	if not ok or typeof(res) ~= 'string' then
+		local ok2, res2 = pcall(function()
+			local req = request and request({Url = url, Method = 'GET', Headers = {['User-Agent'] = 'Mozilla/5.0'}}) or http_request and http_request({Url = url, Method = 'GET'})
+			return req and (req.Body or req.body)
+		end)
+		if not ok2 or typeof(res2) ~= 'string' or res2 == '' then return nil end
+		res = res2
+	end
+	local ok3, msgs = pcall(function()
+		return httpService:JSONDecode(res)
+	end)
+	if not ok3 or type(msgs) ~= 'table' then return nil end
+	table.sort(msgs, function(a, b)
+		return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
+	end)
+	return msgs
+end
+
+local function wlsync()
+	local msgs = wlfetch()
+	if not msgs then
+		local list = {}
+		for _, s in wlseed() do
+			table.insert(list, {name = s[1], level = s[2]})
+		end
+		pcall(function()
+			local raw = readfile('LarpV4/profiles/whitelist.json')
+			local d = httpService:JSONDecode(raw)
+			if type(d) == 'table' and type(d.users) == 'table' and hash and hash.hmac and hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = d.users})) == d.sig then
+				for _, v in d.users do
+					table.insert(list, v)
+				end
+			end
+		end)
+		wlapply(list)
+		return
+	end
+	local k3 = uhex('285b0f58')
+	local function dec(s)
+		return xr(uhex(s), k3)
+	end
+	local adds = {}
+	for _, m in msgs do
+		if type(m) == 'table' and type(m.content) == 'string' then
+			for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
+				local c = line:match('^%s*(%S+)')
+				local a1 = line:match('^%s*%S+%s+(%S+)')
+				local a2 = line:match('^%s*%S+%s+%S+%s+(%S+)')
+				if c then
+					if c:lower() == dec('225400') and a1 and a2 then
+						local lvl = a2:lower() == dec('2c470a5631') and 5 or 1
+						adds[a1:lower()] = {name = a1, level = lvl}
+					elseif c:lower() == dec('275508') and a1 then
+						if adds[a1:lower()] then adds[a1:lower()] = nil end
+					elseif c:lower() == dec('3155175637') then
+						table.clear(adds)
+					end
+				end
+			end
+		end
+	end
+	for _, s in wlseed() do
+		if not adds[s[1]:lower()] then
+			adds[s[1]:lower()] = {name = s[1], level = s[2]}
+		end
+	end
+	local list = {}
+	for _, v in adds do
+		table.insert(list, v)
+	end
+	wlapply(list)
+	pcall(function()
+		if hash and hash.hmac then
+			local sig = hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = list}))
+			writefile('LarpV4/profiles/whitelist.json', httpService:JSONEncode({users = list, sig = sig}))
+		end
+	end)
+end
+
 local function allowedsync()
 	pcall(function()
 		hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
-		local raw = game:HttpGet(ROOT..'main/whitelist.json', true)
-		local d = httpService:JSONDecode(raw)
-		if
-			type(d) == 'table'
-			and type(d.WhitelistedUsers) == 'table'
-			and type(hash.hmac) == 'function'
-			and d.sig == hash.hmac(hash.sha512, WK, httpService:JSONEncode({WhitelistedUsers = d.WhitelistedUsers}))
-		then
-for _, v in d.WhitelistedUsers do
-			if type(v.hash) == 'string' and v.hash ~= '' then
-				allowedHashes[v.hash] = true
-			end
-		end
-		end
+		wlsync()
 	end)
 end
 
@@ -107,8 +194,9 @@ end
 
 do
 	local player = playersService.LocalPlayer
+	local own = player and wlset[player.Name:lower()] or nil
 	local h = player and hash and hash.sha512(player.Name..player.UserId..'SelfReport') or nil
-	if player and not (h and allowedHashes[h]) then
+	if player and not (own or (h and allowedHashes[h])) then
 		player:Kick(AMSG)
 		return
 	end

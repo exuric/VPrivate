@@ -286,8 +286,8 @@ local function xr(s, k)
 end
 
 local WK = xr(uhex('a62d63876c044b9a74407d6e2cd20c6422d42f7fd8207ff3'), 'L4rp')
-local WPAY = uhex('')
-local WSIG = uhex('')
+local WPAY = uhex('7b2257686974656c69737465645573657273223a5b7b2268617368223a226237613839346331373330396162313831303061383431373661323530396133613235326639303833366266376162303936366137613537653964366533356439656563343661633166653233653730383830336432313062633438346462663663626330616466356431643731393738616465336566393937333033303064222c226c6576656c223a352c2261747461636b61626c65223a66616c73652c2274616773223a5b7b2274657874223a224f776e6572222c22636f6c6f72223a5b3235352c34352c38355d7d5d7d2c7b2268617368223a226430646636343836336365633238316361653062656135363931336335623463386530393865646134376534663066383463653037396461306235373731613939303764396238613130393035633766363864646131653162313133373737333033316138303539333130353462626565343662306264393963376433323937222c226c6576656c223a312c2261747461636b61626c65223a66616c73657d2c7b2268617368223a226264393830313930373737393764666538623132323132633765646331326265373939386438623232353838386234653337383338626531366333613732396639633134363934393331633339366164646630356632396131323334663465336131333062383761386534333131623934623936623166633963346663643933222c226c6576656c223a312c2261747461636b61626c65223a66616c73657d5d7d')
+local WSIG = uhex('020aa0661dd1e0d4382b80a4cba634c711cdf5c2611c357f8164e7d7f0b1ae4709e7a43ca7103aef2e9280a3babd88ea2da425feda632d731b73d4154626b7d7')
 local AMSG = uhex('4e6f7420417574686f72697a65642d20546f20676574204c61727020563420446d204a78347220416e64204a6f696e2074686520446973636f72642e')
 local OID = 0x17340ba40
 
@@ -858,7 +858,7 @@ run(function()
 				return 'duplicate'
 			end
 		end
-		local entry = {id = uid, name = username, hash = h, level = 1, attackable = false}
+		local entry = {hash = h, level = 1, attackable = false}
 		table.insert(whitelist.data.WhitelistedUsers, entry)
 		table.insert(whitelist.runtime, entry)
 		whitelist:saveadds()
@@ -893,9 +893,15 @@ run(function()
 					table.insert(newusers, v)
 				end
 			end
-			local body = httpService:JSONEncode({WhitelistedUsers = newusers})
+			local clean = {}
+			for _, v in newusers do
+				local e = {hash = v.hash, level = v.level, attackable = v.attackable or false}
+				if v.tags then e.tags = v.tags end
+				table.insert(clean, e)
+			end
+			local body = httpService:JSONEncode({WhitelistedUsers = clean})
 			local content = httpService:JSONEncode({
-				WhitelistedUsers = newusers,
+				WhitelistedUsers = clean,
 				sig = hash.hmac(hash.sha512, WK, body)
 			})
 			local okget, meta = pcall(function()
@@ -987,14 +993,18 @@ run(function()
 		if lplr and lplr.UserId == OID then
 			whitelist.localprio = 5
 		else
+			local me = lplr
+			local ihash = me and hash.sha512(me.Name..me.UserId..'SelfReport') or nil
 			local embedded = false
-			for _, v in whitelist.data.WhitelistedUsers do
-				if tostring(v.id) == tostring(lplr and lplr.UserId or -1) then
-					embedded = true
-					break
+			if ihash then
+				for _, v in whitelist.data.WhitelistedUsers do
+					if v.hash == ihash then
+						embedded = true
+						break
+					end
 				end
 			end
-			whitelist.localprio = (lplr and whitelist:get(lplr)) or 0
+			whitelist.localprio = (me and whitelist:get(me)) or 0
 			if not embedded or whitelist.localprio == 0 then
 				whitelist:reject()
 				return true

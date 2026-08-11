@@ -2311,6 +2311,7 @@ run(function()
 	local Prediction
 	local FOV
 	local OtherProjectiles
+	local Predict
 	local Blacklist
 	
 	local rayCheck = RaycastParams.new()
@@ -3998,7 +3999,8 @@ run(function()
 									end
 								end
 								local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-								local calc = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity * (Predict.Value / 100)
+								local calc = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 								if calc then
 									if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 									return {
@@ -4047,6 +4049,13 @@ run(function()
 		Min = 1,
 		Max = 1000,
 		Default = 1000
+	})
+	Predict = ProjectileAimbot:CreateSlider({
+		Name = 'Prediction',
+		Min = 0,
+		Max = 100,
+		Default = 100,
+		Tooltip = 'How much the aim leads the target (100 = full prediction, 0 = aim at current position)'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',

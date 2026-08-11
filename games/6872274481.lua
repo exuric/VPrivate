@@ -10517,7 +10517,7 @@ for _, v in crates do
 		Default = true,
 		Tooltip = 'Skips enemy crates when another player is nearby',
 		Function = function(callback)
-			if SafetyRange.Object then
+			if SafetyRange and SafetyRange.Object then
 				SafetyRange.Object.Visible = callback
 			end
 		end

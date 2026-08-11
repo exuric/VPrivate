@@ -3981,7 +3981,7 @@ run(function()
 								end
 								local meta = projmeta:getProjectileMeta()
 								local lifetime = (worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3)
-								local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
+								local gravity = (meta.gravitationalAcceleration or 196.2)
 								local projSpeed = (meta.launchVelocity or 100)
 								local offsetpos = pos + (projmeta.projectile == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
 								local balloons = plr.Character:GetAttribute('InflatedBalloons')
@@ -4009,9 +4009,10 @@ run(function()
 									end
 									velocities[key] = tv
 								end
-								local targetVel = tv * (Predict.Value / 100)
+								local targetVel = tv * (Predict.Value / 10)
 								local calc, _, travelT = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 								if calc then
+									if (travelT or 0) > lifetime then return end
 									if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 									return {
 										initialVelocity = (CFrame.new(newlook.Position, calc).LookVector * projSpeed) * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
@@ -4063,10 +4064,10 @@ run(function()
 	})
 	Predict = ProjectileAimbot:CreateSlider({
 		Name = 'Prediction',
-		Min = 0,
-		Max = 100,
-		Default = 100,
-		Tooltip = 'How much the aim leads the target (100 = full prediction, 0 = aim at current position)'
+		Min = 1,
+		Max = 10,
+		Default = 10,
+		Tooltip = 'How much the aim leads the target (10 = full prediction, 1 = almost no lead)'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',
@@ -4180,7 +4181,7 @@ run(function()
 	local function fireAt(ent, item, ammo, projectile, itemMeta, launchSpeed, gravity)
 		local pos = entitylib.character.RootPart.Position
 		local part = getAimPart(ent)
-		local targetVel = ent.RootPart.Velocity * (Predict.Value / 100)
+		local targetVel = ent.RootPart.Velocity * (Predict.Value / 10)
 		local okCalc, calc = pcall(prediction.SolveTrajectory, pos, launchSpeed, gravity, part.Position, targetVel, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, part.Position, ent.RootPart, nil, true)
 		if not okCalc or not calc then
 			return false

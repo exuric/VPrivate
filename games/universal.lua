@@ -7192,7 +7192,7 @@ run(function()
 				lastValidationCheck = 0
 			end
 		end,
-		Tooltip = 'Spins the Nightmare Emote effect around your character'
+		Tooltip = 'Nothing'
 	})
 end)
 

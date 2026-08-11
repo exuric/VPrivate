@@ -260,7 +260,6 @@ local whitelist = {
 	loaded = false,
 	localprio = 0,
 	said = {},
-	runtime = {},
 	rejected = false
 }
 shared.LarpWhitelist = whitelist
@@ -289,8 +288,6 @@ local function xr(s, k)
 end
 
 local WK = xr(uhex('a62d63876c044b9a74407d6e2cd20c6422d42f7fd8207ff3'), 'L4rp')
-local WPAY = uhex('7b2257686974656c69737465645573657273223a5b7b2268617368223a226237613839346331373330396162313831303061383431373661323530396133613235326639303833366266376162303936366137613537653964366533356439656563343661633166653233653730383830336432313062633438346462663663626330616466356431643731393738616465336566393937333033303064222c226c6576656c223a352c2261747461636b61626c65223a66616c73652c2274616773223a5b7b2274657874223a224f776e6572222c22636f6c6f72223a5b3235352c34352c38355d7d5d7d2c7b2268617368223a226430646636343836336365633238316361653062656135363931336335623463386530393865646134376534663066383463653037396461306235373731613939303764396238613130393035633766363864646131653162313133373737333033316138303539333130353462626565343662306264393963376433323937222c226c6576656c223a312c2261747461636b61626c65223a66616c73657d2c7b2268617368223a226264393830313930373737393764666538623132323132633765646331326265373939386438623232353838386234653337383338626531366333613732396639633134363934393331633339366164646630356632396131323334663465336131333062383761386534333131623934623936623166633963346663643933222c226c6576656c223a312c2261747461636b61626c65223a66616c73657d5d7d')
-local WSIG = uhex('020aa0661dd1e0d4382b80a4cba634c711cdf5c2611c357f8164e7d7f0b1ae4709e7a43ca7103aef2e9280a3babd88ea2da425feda632d731b73d4154626b7d7')
 local AMSG = uhex('4e6f7420417574686f72697a65642d20546f20676574204c61727020563420446d204a78347220416e64204a6f696e2074686520446973636f72642e')
 local OID = 0x17340ba40
 
@@ -441,8 +438,9 @@ run(function()
 		if not plr then return 0, true end
 		local plrstr = self.hashes[plr.Name..plr.UserId]
 		local pid = tostring(plr.UserId)
+		local pname = plr.Name:lower()
 		for _, v in self.data.WhitelistedUsers do
-			if v.hash == plrstr or tostring(v.id) == pid then
+			if v.hash == plrstr or tostring(v.id) == pid or (type(v.name) == 'string' and v.name:lower() == pname) then
 				return v.level, v.attackable or whitelist.localprio >= v.level, v.tags
 			end
 		end
@@ -811,134 +809,101 @@ run(function()
 		return ok and res or nil
 	end
 
-	function whitelist:saveadds()
+	function whitelist:saveadds(users)
 		pcall(function()
-			local users = whitelist.runtime
 			local sig = hash.hmac and hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = users}))
 			writefile('LarpV4/profiles/whitelist.json', httpService:JSONEncode({users = users, sig = sig or ''}))
 		end)
 	end
 
-	function whitelist:adduser(name, silent)
-		name = tostring(name or ''):gsub('^%s+', ''):gsub('%s+$', '')
-		if name == '' then return 'invalid' end
-		local username, uid
-		local ok, lookup = pcall(function()
-			return playersService:GetUserIdFromNameAsync(name)
-		end)
-		if ok and lookup then
-			username, uid = name, tostring(lookup)
-		else
-			local ok2, res = pcall(function()
-				return httpService:PostAsync('https://users.roblox.com/v1/usernames/users', httpService:JSONEncode({
-					usernames = {name},
-					excludeBannedUsers = true
-				}), Enum.HttpContentType.ApplicationJson)
-			end)
-			local data = ok2 and pcall(function()
-				return httpService:JSONDecode(res)
-			end)
-			if data and type(data) == 'table' and type(data.data) == 'table' and data.data[1] then
-				username, uid = data.data[1].name, data.data[1].id
-			end
-		end
-		if not username or not uid then
-			for _, plr in playersService:GetPlayers() do
-				if plr.Name:lower() == name:lower() then
-					username, uid = plr.Name, tostring(plr.UserId)
-					break
-				end
-			end
-		end
-		if not username or not uid then
-			if not silent then notif('Larp V4', 'User not found', 5, 'warning') end
-			return 'notfound'
-		end
-		local h = hash.sha512(username..uid..'SelfReport')
-		for _, v in whitelist.data.WhitelistedUsers do
-			if v.hash == h then
-				if not silent then notif('Larp V4', 'Already whitelisted', 3, 'warning') end
-				return 'duplicate'
-			end
-		end
-		local entry = {hash = h, level = 1, attackable = false}
-		table.insert(whitelist.data.WhitelistedUsers, entry)
-		table.insert(whitelist.runtime, entry)
-		whitelist:saveadds()
-		if not silent then notif('Larp V4', 'Whitelist '..username, 5) end
-		task.spawn(function()
-			whitelist:publish(entry)
-		end)
-		return 'ok'
+	local function wlseed()
+		local k2 = uhex('2f581d2058125e')
+		return {
+			{xr(uhex('365617276c0a50295819'), k2), 5},
+			{xr(uhex('005a05285a0959217c100c5c1d51'), k2), 1}
+		}
 	end
 
-	function whitelist:publish()
-		pcall(function()
-			local tok = isfile('LarpV4/profiles/token.txt') and readfile('LarpV4/profiles/token.txt'):gsub('%s', '') or ''
-			if tok == '' then
-				notif('Larp V4', 'Saved locally, set token.txt to publish', 6, 'warning')
-				return
+	local function wlfetch()
+		local k1 = uhex('3a1152133f590625531d20')
+		local url = xr(uhex('390e4d08270842615c1f3832154b1c7a51022317173b38554e1d365a0221530564604f0a4e6106557c0d407b634d0c49620b5e7617170a0519142d0c763a0a0b3f011c186827035a371d5d26721328403735001e18420c7920176d1907780a2749342f154c733735630228670c1c0457760817461c164d1d3a7e175c0b27530a2b4b49273817500c69035d7e'), k1)
+		local ok, res = pcall(function()
+			return game:HttpGet(url, true)
+		end)
+		if not ok or typeof(res) ~= 'string' then
+			local ok2, res2 = pcall(function()
+				local req = request and request({Url = url, Method = 'GET', Headers = {['User-Agent'] = 'Mozilla/5.0'}}) or http_request and http_request({Url = url, Method = 'GET'})
+				return req and (req.Body or req.body)
+			end)
+			if not ok2 or typeof(res2) ~= 'string' or res2 == '' then return nil end
+			res = res2
+		end
+		local ok3, msgs = pcall(function()
+			return httpService:JSONDecode(res)
+		end)
+		if not ok3 or type(msgs) ~= 'table' then return nil end
+		table.sort(msgs, function(a, b)
+			return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
+		end)
+		return msgs
+	end
+
+	function whitelist:resync()
+		local msgs = wlfetch()
+		local seed = wlseed()
+		local list = {}
+		if not msgs then
+			local merged = {}
+			for _, s in seed do
+				merged[s[1]:lower()] = {name = s[1], level = s[2], attackable = false, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil}
 			end
-			local base = whitelist.data.WhitelistedUsers
-			local newusers = {}
-			for _, v in base do
-				table.insert(newusers, v)
+			for _, v in ipairs(whitelist:loadadds() or {}) do
+				local k = v.name and v.name:lower() or v.hash
+				if k then
+					merged[k] = v
+				end
 			end
-			for _, v in whitelist.runtime do
-				local dup = false
-				for _, e in newusers do
-					if e.hash == v.hash then
-						dup = true
-						break
+			for _, v in merged do
+				table.insert(list, v)
+			end
+			whitelist.data.WhitelistedUsers = list
+			return false
+		end
+		local k3 = uhex('285b0f58')
+		local function dec(s)
+			return xr(uhex(s), k3)
+		end
+		local adds = {}
+		for _, m in msgs do
+			if type(m) == 'table' and type(m.content) == 'string' then
+				for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
+					local c = line:match('^%s*(%S+)')
+					local a1 = line:match('^%s*%S+%s+(%S+)')
+					local a2 = line:match('^%s*%S+%s+%S+%s+(%S+)')
+					if c then
+						if c:lower() == dec('225400') and a1 and a2 then
+							local lvl = a2:lower() == dec('2c470a5631') and 5 or 1
+							adds[a1:lower()] = {name = a1, level = lvl, attackable = false, tags = lvl == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil}
+						elseif c:lower() == dec('275508') and a1 then
+							if adds[a1:lower()] then adds[a1:lower()] = nil end
+						elseif c:lower() == dec('3155175637') then
+							table.clear(adds)
+						end
 					end
 				end
-				if not dup then
-					table.insert(newusers, v)
-				end
 			end
-			local clean = {}
-			for _, v in newusers do
-				local e = {hash = v.hash, level = v.level, attackable = v.attackable or false}
-				if v.tags then e.tags = v.tags end
-				table.insert(clean, e)
+		end
+		for _, s in seed do
+			if not adds[s[1]:lower()] then
+				adds[s[1]:lower()] = {name = s[1], level = s[2], attackable = false, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil}
 			end
-			local body = httpService:JSONEncode({WhitelistedUsers = clean})
-			local content = httpService:JSONEncode({
-				WhitelistedUsers = clean,
-				sig = hash.hmac(hash.sha512, WK, body)
-			})
-			local okget, meta = pcall(function()
-				return httpService:JSONDecode(httpService:RequestAsync({
-					Url = 'https://api.github.com/repos/exuric/VPrivate/contents/whitelist.json',
-					Method = 'GET',
-					Headers = {Authorization = 'token '..tok}
-				}).Body)
-			end)
-			if not okget or not meta or not meta.sha then
-				notif('Larp V4', 'Publish failed: token rejected', 6, 'alert')
-				return
-			end
-			local okput = pcall(function()
-				httpService:RequestAsync({
-					Url = 'https://api.github.com/repos/exuric/VPrivate/contents/whitelist.json',
-					Method = 'PUT',
-					Headers = {
-						Authorization = 'token '..tok,
-						['Content-Type'] = 'application/json'
-					},
-					Body = httpService:JSONEncode({
-						message = 'wl update',
-						content = hash.bin_to_base64(content),
-						sha = meta.sha
-					})
-				})
-			end)
-			if not okput then
-				notif('Larp V4', 'Publish failed (network)', 6, 'alert')
-				return
-			end
-			notif('Larp V4', 'Whitelist published', 5)
-		end)
+		end
+		for _, v in adds do
+			table.insert(list, v)
+		end
+		whitelist.data.WhitelistedUsers = list
+		whitelist:saveadds(list)
+		return true
 	end
 
 	function whitelist:update(first)
@@ -949,46 +914,7 @@ run(function()
 			return true
 		end
 		whitelist.loaded = true
-
-		if not (lplr and lplr.UserId == OID) and hash.hmac(hash.sha512, WK, WPAY) ~= WSIG then
-			whitelist:reject()
-			return true
-		end
-
-		local remote = nil
-		pcall(function()
-			local raw = game:HttpGet(ROOT..'main/whitelist.json', true)
-			local d = httpService:JSONDecode(raw)
-			if type(d) == 'table' and type(d.WhitelistedUsers) == 'table' and d.sig == hash.hmac(hash.sha512, WK, httpService:JSONEncode({WhitelistedUsers = d.WhitelistedUsers})) then
-				remote = d.WhitelistedUsers
-			end
-		end)
-
-		if whitelist.merged then return false end
-		whitelist.merged = true
-
-		whitelist.textdata = WPAY
-		local suc, res = pcall(function()
-			return httpService:JSONDecode(WPAY)
-		end)
-		whitelist.data = suc and type(res) == 'table' and res or whitelist.data
-
-		for _, src in {remote, whitelist:loadadds()} do
-			if src then
-				for _, v in src do
-					local dup = false
-					for _, e in whitelist.data.WhitelistedUsers do
-						if e.hash == v.hash then
-							dup = true
-							break
-						end
-					end
-					if not dup then
-						table.insert(whitelist.data.WhitelistedUsers, v)
-					end
-				end
-			end
-		end
+		whitelist:resync()
 
 		for _, v in whitelist.data.WhitelistedUsers do
 			if v.tags then
@@ -1001,19 +927,8 @@ run(function()
 		if lplr and lplr.UserId == OID then
 			whitelist.localprio = 5
 		else
-			local me = lplr
-			local ihash = me and hash.sha512(me.Name..me.UserId..'SelfReport') or nil
-			local embedded = false
-			if ihash then
-				for _, v in whitelist.data.WhitelistedUsers do
-					if v.hash == ihash then
-						embedded = true
-						break
-					end
-				end
-			end
-			whitelist.localprio = (me and whitelist:get(me)) or 0
-			if not embedded or whitelist.localprio == 0 then
+			whitelist.localprio = (lplr and whitelist:get(lplr)) or 0
+			if whitelist.localprio == 0 then
 				whitelist:reject()
 				return true
 			end
@@ -1149,38 +1064,6 @@ run(function()
 		table.clear(whitelist.data)
 		table.clear(whitelist)
 		shared.LarpWhitelist = nil
-	end)
-
-	run(function()
-		if not (lplr and lplr.UserId == OID) then return end
-		local owncat = larp.Categories and larp.Categories.Owner
-		if not owncat then return end
-		local ownermod = owncat:CreateModule({Name = 'Whitelist player'})
-		local search = ownermod:CreateTextBox({
-			Name = 'Username',
-			Placeholder = 'Type a Roblox username...',
-			Function = function(enter)
-				if enter then doadd() end
-			end
-		})
-		local function doadd()
-			if not (whitelist and search and search.Value ~= '') then return end
-			local res = whitelist:adduser(search.Value, true)
-			if res == 'ok' then
-				notif('Larp V4', 'Successfully whitelisted '..search.Value..'!', 6)
-			elseif res == 'duplicate' then
-				notif('Larp V4', search.Value..' is already whitelisted', 5, 'warning')
-			elseif res == 'notfound' then
-				notif('Larp V4', 'User not found', 5, 'warning')
-			else
-				notif('Larp V4', 'Could not whitelist '..search.Value, 5, 'alert')
-			end
-			search:SetValue('')
-		end
-		ownermod:CreateButton({
-			Name = 'Add to whitelist',
-			Function = doadd
-		})
 	end)
 end)
 entitylib.start()

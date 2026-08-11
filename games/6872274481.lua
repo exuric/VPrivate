@@ -4110,109 +4110,183 @@ run(function()
 	local AttackDelay
 	local Targeting
 	local Predict
+	local Speed
 	local FireMode
 	local SwitchDelay
 	local RefireDelay
+	local MaxTargets
+	local AimPart
+	local Burst
+	local BurstDelay
+	local NoSwordCheck
+	local Trail
+	local Lock
+	local TargetFOV
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Exclude
-	local projectileRemote = {InvokeServer = function() end}
+	local StubRemote = {InvokeServer = function() end}
+	local projectileRemote = StubRemote
 	local FireDelays = {}
+	local LockedTarget
 	task.spawn(function()
-		projectileRemote = bedwars.Handler:Get('ProjectileFire').Remote.instance
+		pcall(function()
+			projectileRemote = bedwars.Handler:Get('ProjectileFire').Remote.instance
+		end)
 	end)
 
-	local function getEntity()
+	local function getAimPart(ent)
+		if AimPart.Value == 'Head' then
+			return ent.Head or ent.RootPart
+		end
+		return ent.RootPart
+	end
+
+	local function getEntities()
+		local pos = entitylib.character.RootPart.Position
+
 		if Targeting.Value == 'Cursor' then
-			return entitylib.EntityMouse({
-				Range = Range.Value,
+			local ent = entitylib.EntityMouse({
+				Range = TargetFOV.Value,
 				Players = Targets.Players.Enabled,
 				NPCs = Targets.NPCs.Enabled,
 				Wallcheck = Targets.Walls.Enabled,
 				Part = 'RootPart'
 			})
+			if ent then
+				return {ent}
+			end
+			return {}
 		end
 
-		local sort
-		if Targeting.Value == 'Lowest Health' then
-			sort = function(a, b)
-				local ah = a.Entity.Humanoid and a.Entity.Humanoid.Health or math.huge
-				local bh = b.Entity.Humanoid and b.Entity.Humanoid.Health or math.huge
-				return ah < bh
-			end
+		if Lock.Enabled and LockedTarget and LockedTarget.RootPart and LockedTarget.RootPart.Parent
+			and entitylib.isVulnerable(LockedTarget)
+			and (LockedTarget.RootPart.Position - pos).Magnitude <= Range.Value then
+			return {LockedTarget}
 		end
-		return entitylib.EntityPosition({
+		LockedTarget = nil
+
+		local list = entitylib.AllPosition({
+			Origin = pos,
 			Part = 'RootPart',
 			Range = Range.Value,
 			Players = Targets.Players.Enabled,
 			NPCs = Targets.NPCs.Enabled,
 			Wallcheck = Targets.Walls.Enabled,
-			Sort = sort
+			Limit = MaxTargets.Value,
+			Sort = Targeting.Value == 'Lowest Health' and function(a, b)
+				local ah = a.Entity.Humanoid and a.Entity.Humanoid.Health or math.huge
+				local bh = b.Entity.Humanoid and b.Entity.Humanoid.Health or math.huge
+				return ah < bh
+			end or nil
 		})
+		if Lock.Enabled and list[1] then
+			LockedTarget = list[1]
+		end
+		return list
+	end
+
+	local function fireAt(ent, item, ammo, projectile, itemMeta, launchSpeed, gravity)
+		local pos = entitylib.character.RootPart.Position
+		local part = getAimPart(ent)
+		local targetVel = ent.RootPart.Velocity * (Predict.Value / 100)
+		local okCalc, calc = pcall(prediction.SolveTrajectory, pos, launchSpeed, gravity, part.Position, targetVel, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, part.Position, ent.RootPart, nil, true)
+		if not okCalc or not calc then
+			return false
+		end
+
+		targetinfo.Targets[ent] = tick() + 1
+		local draw = Trail.Enabled and 1 or 0.05
+		local remote = projectileRemote
+		if remote == StubRemote then
+			pcall(function()
+				remote = bedwars.Handler:Get('ProjectileFire').Remote.instance
+			end)
+		end
+
+		for i = 1, math.floor(Burst.Value) do
+			task.spawn(function()
+				if i > 1 then
+					task.wait((i - 1) * (BurstDelay.Value / 1000))
+				end
+				if not ProjectileAura.Enabled or not calc then
+					return
+				end
+				local dir, id = CFrame.lookAt(pos, calc).LookVector, httpService:GenerateGUID(true)
+				local shootPosition = (CFrame.new(pos, calc) * CFrame.new(Vector3.new(-bedwars.BowConstantsTable.RelX, -bedwars.BowConstantsTable.RelY, -bedwars.BowConstantsTable.RelZ))).Position
+				local vel = dir * launchSpeed
+				bedwars.ProjectileController:createLocalProjectile(meta, ammo, projectile, shootPosition, id, vel, {drawDurationSeconds = draw})
+				local res
+				pcall(function()
+					res = remote:InvokeServer(item.tool, ammo, projectile, shootPosition, pos, vel, id, {drawDurationSeconds = draw, shotId = httpService:GenerateGUID(false)}, workspace:GetServerTimeNow() - 0.045)
+				end)
+				if res then
+					pcall(function() res.Parent = replicatedStorage end)
+					local shoot = itemMeta.launchSound
+					shoot = shoot and shoot[math.random(1, #shoot)] or nil
+					if shoot then
+						bedwars.SoundManager:playSound(shoot)
+					end
+				end
+			end)
+		end
+		return true
 	end
 
 	ProjectileAura = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAura',
 		Function = function(callback)
 			if callback then
+				LockedTarget = nil
 				repeat
-					if (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) > AttackDelay.Value then
-						local ent = getEntity()
-						if ent then
-							local pos = entitylib.character.RootPart.Position
-							local projectiles = getProjectiles(List.ListEnabled)
-							if FireMode.Value == 'Best' and #projectiles > 1 then
-								local best, bestDamage = 1, -1
-								for i = 1, #projectiles do
-									local meta = bedwars.ProjectileMeta[projectiles[i][3]]
-									local damage = meta and meta.damage or 0
-									if damage > bestDamage then
-										best, bestDamage = i, damage
-									end
+					local ok = pcall(function()
+						local now = workspace:GetServerTimeNow()
+						local sinceAttack = now - bedwars.SwordController.lastAttack
+						if sinceAttack < 0 then
+							sinceAttack = 0
+						end
+						if NoSwordCheck.Enabled or sinceAttack > AttackDelay.Value then
+							local ents = getEntities()
+							for _, ent in ents do
+								if not ProjectileAura.Enabled then
+									break
 								end
-								projectiles = {projectiles[best]}
-							end
-
-							for _, data in projectiles do
-								local item, ammo, projectile, itemMeta = unpack(data)
-								if (FireDelays[item.itemType] or 0) < tick() then
-									rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera}
-									local meta = bedwars.ProjectileMeta[projectile]
-									local projSpeed, gravity = meta.launchVelocity, meta.gravitationalAcceleration or 196.2
-									local switched = switchItem(item.tool)
-									local targetVel = ent.RootPart.Velocity * (Predict.Value / 100)
-									local calc = prediction.SolveTrajectory(pos, projSpeed, gravity, ent.RootPart.Position, targetVel, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
-									if calc then
-										targetinfo.Targets[ent] = tick() + 1
-
-										task.spawn(function()
-											local dir, id = CFrame.lookAt(pos, calc).LookVector, httpService:GenerateGUID(true)
-											local shootPosition = (CFrame.new(pos, calc) * CFrame.new(Vector3.new(-bedwars.BowConstantsTable.RelX, -bedwars.BowConstantsTable.RelY, -bedwars.BowConstantsTable.RelZ))).Position
-											bedwars.ProjectileController:createLocalProjectile(meta, ammo, projectile, shootPosition, id, dir * projSpeed, {drawDurationSeconds = 1})
-											local res = projectileRemote:InvokeServer(item.tool, ammo, projectile, shootPosition, pos, dir * projSpeed, id, {drawDurationSeconds = 1, shotId = httpService:GenerateGUID(false)}, workspace:GetServerTimeNow() - 0.045)
-											if not res then
-												FireDelays[item.itemType] = tick()
-											else
-												pcall(function() res.Parent = replicatedStorage end)
-												local shoot = itemMeta.launchSound
-												shoot = shoot and shoot[math.random(1, #shoot)] or nil
-												if shoot then
-													bedwars.SoundManager:playSound(shoot)
-												end
+								local projectiles = getProjectiles(List.ListEnabled)
+								if FireMode.Value == 'Best' and #projectiles > 1 then
+									local best, bestDamage = 1, -1
+									for i = 1, #projectiles do
+										local meta = bedwars.ProjectileMeta[projectiles[i][3]]
+										local damage = meta and meta.damage or 0
+										if damage > bestDamage then
+											best, bestDamage = i, damage
+										end
+									end
+									projectiles = {projectiles[best]}
+								end
+								for _, data in projectiles do
+									local item, ammo, projectile, itemMeta = unpack(data)
+									if (FireDelays[item.itemType] or 0) < tick() then
+										rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera}
+										local meta = bedwars.ProjectileMeta[projectile]
+										local gravity = meta.gravitationalAcceleration or 196.2
+										local launchSpeed = meta.launchVelocity * (Speed.Value / 100)
+										local switched = switchItem(item.tool)
+										if fireAt(ent, item, ammo, projectile, itemMeta, launchSpeed, gravity) then
+											FireDelays[item.itemType] = tick() + itemMeta.fireDelaySec
+											if switched then
+												task.wait(SwitchDelay.Value / 1000)
 											end
-										end)
-
-										FireDelays[item.itemType] = tick() + itemMeta.fireDelaySec
-										if switched then
-											task.wait(SwitchDelay.Value / 1000)
 										end
 									end
 								end
+								task.wait(0.05)
 							end
-							task.wait(RefireDelay.Value / 1000)
+							task.wait(RefireDelay:GetRandomValue() / 1000)
 						end
-					end
+					end)
 					task.wait(0.03)
 				until not ProjectileAura.Enabled
+			else
+				LockedTarget = nil
 			end
 		end,
 		Tooltip = 'Shoots people around you'
@@ -4225,11 +4299,46 @@ run(function()
 		Name = 'Projectiles',
 		Default = {'arrow', 'snowball'}
 	})
+	Range = ProjectileAura:CreateSlider({
+		Name = 'Range',
+		Min = 1,
+		Max = 80,
+		Default = 60,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
 	Targeting = ProjectileAura:CreateDropdown({
 		Name = 'Targeting',
 		List = {'Nearest', 'Lowest Health', 'Cursor'},
 		Default = 'Nearest',
-		Tooltip = 'How ProjectileAura picks its target'
+		Tooltip = 'How ProjectileAura picks its targets',
+		Function = function(val)
+			if TargetFOV and TargetFOV.Object then
+				TargetFOV.Object.Visible = val == 'Cursor'
+			end
+		end
+	})
+	MaxTargets = ProjectileAura:CreateSlider({
+		Name = 'Max Targets',
+		Min = 1,
+		Max = 5,
+		Default = 1,
+		Tooltip = 'Shoot up to this many enemies at once'
+	})
+	AimPart = ProjectileAura:CreateDropdown({
+		Name = 'Aim Part',
+		List = {'Head', 'Root'},
+		Default = 'Head',
+		Tooltip = 'Aim at the head for headshots or the root part'
+	})
+	TargetFOV = ProjectileAura:CreateSlider({
+		Name = 'Target FOV',
+		Min = 10,
+		Max = 180,
+		Default = 180,
+		Visible = false,
+		Tooltip = 'Screen range for Cursor targeting'
 	})
 	Predict = ProjectileAura:CreateSlider({
 		Name = 'Predict',
@@ -4237,13 +4346,50 @@ run(function()
 		Max = 300,
 		Default = 150,
 		Suffix = '%',
-		Tooltip = 'Extra velocity lead on the target for guaranteed hits'
+		Tooltip = 'Multiplies target velocity for extra lead, makes hits guaranteed'
+	})
+	Speed = ProjectileAura:CreateSlider({
+		Name = 'Projectile Speed',
+		Min = 25,
+		Max = 200,
+		Default = 100,
+		Suffix = '%',
+		Tooltip = 'Scales the launch velocity, faster projectiles are impossible to dodge'
 	})
 	FireMode = ProjectileAura:CreateDropdown({
 		Name = 'Fire Mode',
 		List = {'All', 'Best'},
 		Default = 'All',
 		Tooltip = 'All fires every projectile you own, Best only fires the strongest one'
+	})
+	Burst = ProjectileAura:CreateSlider({
+		Name = 'Burst',
+		Min = 1,
+		Max = 8,
+		Default = 1,
+		Tooltip = 'Shots per target per volley'
+	})
+	BurstDelay = ProjectileAura:CreateSlider({
+		Name = 'Burst Delay',
+		Min = 0,
+		Max = 200,
+		Default = 0,
+		Suffix = 'ms',
+		Tooltip = 'Delay between burst shots'
+	})
+	NoSwordCheck = ProjectileAura:CreateToggle({
+		Name = 'Ignore Sword',
+		Default = true,
+		Tooltip = 'Shoots without waiting for your sword cooldown'
+	})
+	AttackDelay = ProjectileAura:CreateSlider({
+		Name = 'Attack delay',
+		Suffix = 'seconds',
+		Min = 0,
+		Max = 1,
+		Decimal = 100,
+		Default = 0.1,
+		Tooltip = 'How long to wait after swinging your sword before shooting'
 	})
 	SwitchDelay = ProjectileAura:CreateSlider({
 		Name = 'Switch Delay',
@@ -4253,32 +4399,23 @@ run(function()
 		Suffix = 'ms',
 		Tooltip = 'Delay after switching to the projectile item'
 	})
-	RefireDelay = ProjectileAura:CreateSlider({
+	RefireDelay = ProjectileAura:CreateTwoSlider({
 		Name = 'Refire Delay',
 		Min = 0,
 		Max = 500,
-		Default = 0,
-		Decimal = 100,
-		Suffix = 'ms',
-		Tooltip = 'Extra wait after every full volley'
+		DefaultMin = 0,
+		DefaultMax = 50,
+		Tooltip = 'Random wait after every full volley'
 	})
-	Range = ProjectileAura:CreateSlider({
-		Name = 'Range',
-		Min = 1,
-		Max = 60,
-		Default = 50,
-		Suffix = function(val)
-			return val == 1 and 'stud' or 'studs'
-		end
+	Trail = ProjectileAura:CreateToggle({
+		Name = 'Trail',
+		Default = true,
+		Tooltip = 'Draws the projectile clientside'
 	})
-	AttackDelay = ProjectileAura:CreateSlider({
-		Name = 'Attack delay',
-		Suffix = 'seconds',
-		Min = 0,
-		Max = 1,
-		Decimal = 100,
-		Default = 0,
-		Tooltip = 'How long to wait after swinging your sword before shooting'
+	Lock = ProjectileAura:CreateToggle({
+		Name = 'Lock',
+		Default = true,
+		Tooltip = 'Keeps shooting the same target until it dies or leaves range'
 	})
 end)
 

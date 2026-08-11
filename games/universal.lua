@@ -245,6 +245,32 @@ end
 
 local hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
 local prediction = loadstring(downloadFile('LarpV4/libraries/prediction.lua'), 'prediction')()
+if not prediction then
+	prediction = {}
+end
+prediction.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVel, playerGravity, hipHeight, jumpHeight, rayCheck, airborne, ignorePos, ignorePart)
+	local down = Vector3.new(0, -1, 0)
+	local prev = 0.05
+	local prevF = (targetPos + targetVel * prev - origin - down * (0.5 * gravity * prev * prev)).Magnitude - speed * prev
+	for t = 0.1, 15, 0.1 do
+		local f = (targetPos + targetVel * t - origin - down * (0.5 * gravity * t * t)).Magnitude - speed * t
+		if (f < 0 and prevF >= 0) or (f >= 0 and prevF < 0) then
+			local a, b = prev, t
+			for _ = 1, 40 do
+				local m = (a + b) / 2
+				local fm = (targetPos + targetVel * m - origin - down * (0.5 * gravity * m * m)).Magnitude - speed * m
+				if fm < 0 then b = m else a = m end
+			end
+			local T = (a + b) / 2
+			local aim = targetPos + targetVel * T
+			if rayCheck and workspace:Raycast(origin, aim - origin, rayCheck) then
+				return nil, nil, T
+			end
+			return aim, aim, T
+		end
+		prev, prevF = t, f
+	end
+end
 entitylib = loadstring(downloadFile('LarpV4/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {
 	alreadychecked = {},

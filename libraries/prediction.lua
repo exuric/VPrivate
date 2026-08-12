@@ -149,56 +149,56 @@ local function solve(origin, speed, gravity, targetPos, targetVel, playerGravity
 		return p
 	end
 
-	local function delta(t)
-		local tx = px + vx * t
-		local tz = pz + vz * t
-		local ty = targetY(t) - origin.Y
-		local drop = 0.5 * gravity * t * t
-		local d2 = (tx * tx + tz * tz) + ((ty + drop) * (ty + drop))
-		local s2 = (speed * t) * (speed * t)
-		return d2 - s2
+	local function timeErr(t)
+		return (pointAt(t) - origin).Magnitude - speed * t
 	end
 
 	if speed <= 0 then
 		return nil, nil, nil
 	end
 
-	local prev, prevF = 0.05, delta(0.05)
-	if prevF < 0 then
-		local a, b = 0.005, 0.05
-		for _ = 1, 40 do
-			local m = (a + b) / 2
-			if delta(m) < 0 then b = m else a = m end
+	local prevT, prevE = 0.05, timeErr(0.05)
+	local T = 0.05
+	if prevE >= 0 then
+		local crossed = false
+		for t = 0.1, 12, 0.05 do
+			local e = timeErr(t)
+			if prevE >= 0 and e < 0 then
+				local a, b = prevT, t
+				for _ = 1, 30 do
+					local m = (a + b) / 2
+					if timeErr(m) < 0 then b = m else a = m end
+				end
+				T = (a + b) / 2
+				crossed = true
+				break
+			end
+			prevT, prevE = t, e
 		end
-		local T = (a + b) / 2
-		local aim = pointAt(T) - down * (0.5 * gravity * T * T)
-		return aim, aim, T
+		if not crossed then
+			if timeErr(12) >= 0 then
+				return nil, nil, nil
+			end
+			local bestT, bestE = 0.05, math.abs(prevE)
+			for t = 0.1, 12, 0.05 do
+				local ae = math.abs(timeErr(t))
+				if ae < bestE then
+					bestE, bestT = ae, t
+				end
+			end
+			T = bestT
+		end
+	else
+		local a, b = 0.005, 0.05
+		for _ = 1, 30 do
+			local m = (a + b) / 2
+			if timeErr(m) < 0 then b = m else a = m end
+		end
+		T = (a + b) / 2
 	end
 
-	local bestT, bestF = 0.05, math.abs(prevF)
-	for t = 0.1, 15, 0.05 do
-		local f = delta(t)
-		local af = math.abs(f)
-		if af < bestF then
-			bestF, bestT = af, t
-		end
-		if prevF < 0 and f >= 0 then
-			local a, b = prev, t
-			for _ = 1, 40 do
-				local m = (a + b) / 2
-				if delta(m) < 0 then a = m else b = m end
-			end
-			local T = (a + b) / 2
-			local aim = pointAt(T) - down * (0.5 * gravity * T * T)
-			return aim, aim, T
-		end
-		prev, prevF = t, f
-	end
-	if bestF < 4 then
-		local aim = pointAt(bestT) - down * (0.5 * gravity * bestT * bestT)
-		return aim, aim, bestT
-	end
-	return nil, nil, bestT
+	local aim = pointAt(T) - down * (0.5 * gravity * T * T)
+	return aim, aim, T
 end
 
 function prediction.SolveTrajectory(origin, speed, gravity, targetPos, targetVel, playerGravity, hipHeight, jumpHeight, rayCheck, airborne, ignorePos, ignorePart, _, _)

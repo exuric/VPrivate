@@ -251,11 +251,10 @@ end
 prediction.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVel, playerGravity, hipHeight, jumpHeight, rayCheck, airborne, ignorePos, ignorePart)
 	local down = Vector3.new(0, -1, 0)
 	playerGravity = playerGravity or workspace.Gravity
-	local vy = math.abs(targetVel.Y) > 2 and targetVel.Y or (jumpHeight or 0)
 	local function pointAt(t)
 		local p = targetPos + targetVel * t
-		if airborne then
-			p = Vector3.new(p.X, math.max(targetPos.Y + vy * t - 0.5 * playerGravity * t * t, targetPos.Y), p.Z)
+		if airborne or jumpHeight then
+			p = p + down * (0.5 * playerGravity * t * t - (jumpHeight or 0) * t)
 		end
 		return p
 	end

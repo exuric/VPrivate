@@ -4073,7 +4073,7 @@ run(function()
 	})
 	PredictOn = ProjectileAimbot:CreateToggle({
 		Name = 'Prediction',
-		Default = true,
+		Default = false,
 		Tooltip = 'Predicts where the enemy will be when the projectile arrives (off = aim directly at the enemy, no lead)'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({

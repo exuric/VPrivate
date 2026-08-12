@@ -259,7 +259,7 @@ local function finishLoading()
 		if not shared.larpreload then
 			larp:CreateNotification('Finished Loading', (larp.LarpButton and 'Press the button in the top right' or 'Press '..table.concat(larp.Keybind, ' + '):upper())..' to open GUI', 5)
 			task.delay(1, function()
-				larp:CreateNotification('LarpV4 Initialized', 'Larp V4 is now loaded', 5, 'info')
+				larp:CreateNotification('Larp V4 Beta Loaded', 'Larp V4 is now loaded', 5, 'warning')
 			end)
 			task.delay(0.05 + cloneref(game:GetService('RunService')).PostSimulation:Wait(), function()
 				if shared.updated then

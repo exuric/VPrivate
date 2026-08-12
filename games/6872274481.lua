@@ -1,4 +1,4 @@
-﻿--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
@@ -3945,7 +3945,8 @@ run(function()
 	local FOV
 	local AutoCharge
 	local Aim = {}
-local OtherProjectiles
+	local OtherProjectiles
+	local velocities = {}
 	local old
 	
 	local ProjectileAimbot = larp.Categories.Blatant:CreateModule({

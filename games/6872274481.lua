@@ -3956,7 +3956,7 @@ run(function()
 			if callback then
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
 				task.spawn(function()
-					while ProjectileAimbot.Enabled do
+					while ProjectileAimbot and ProjectileAimbot.Enabled do
 						task.wait(0.05)
 						local now = tick()
 						for _, ent in entitylib.List do

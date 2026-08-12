@@ -248,59 +248,6 @@ local prediction = loadstring(downloadFile('LarpV4/libraries/prediction.lua'), '
 if not prediction then
 	prediction = {}
 end
-prediction.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVel, playerGravity, hipHeight, jumpHeight, rayCheck, airborne, ignorePos, ignorePart)
-	local down = Vector3.new(0, -1, 0)
-	playerGravity = playerGravity or workspace.Gravity
-	local vy = math.abs(targetVel.Y) > 2 and targetVel.Y or (jumpHeight or 0)
-	local function pointAt(t)
-		local p = targetPos + targetVel * t
-		if airborne then
-			p = Vector3.new(p.X, math.max(targetPos.Y + vy * t - 0.5 * playerGravity * t * t, targetPos.Y), p.Z)
-		end
-		return p
-	end
-	local function delta(t)
-		return (pointAt(t) - origin - down * (0.5 * gravity * t * t)).Magnitude - speed * t
-	end
-	local function aimAt(T)
-		local aim = pointAt(T) - down * (0.5 * gravity * T * T)
-		if rayCheck and workspace:Raycast(origin, aim - origin, rayCheck) then
-			return nil, nil, T
-		end
-		return aim, aim, T
-	end
-	local prev = 0.05
-	local prevF = delta(prev)
-	if prevF < 0 then
-		local a, b = 0.005, 0.05
-		for _ = 1, 40 do
-			local m = (a + b) / 2
-			if delta(m) < 0 then b = m else a = m end
-		end
-		return aimAt((a + b) / 2)
-	end
-	local bestT, bestF = 0.05, math.abs(prevF)
-	for t = 0.1, 15, 0.05 do
-		local f = delta(t)
-		local af = math.abs(f)
-		if af < bestF then
-			bestF, bestT = af, t
-		end
-		if f < 0 then
-			local a, b = prev, t
-			for _ = 1, 40 do
-				local m = (a + b) / 2
-				if delta(m) < 0 then b = m else a = m end
-			end
-			return aimAt((a + b) / 2)
-		end
-		prev, prevF = t, f
-	end
-	if bestF < 3 then
-		return aimAt(bestT)
-	end
-	return nil, nil, bestT
-end
 entitylib = loadstring(downloadFile('LarpV4/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {
 	alreadychecked = {},
@@ -1457,7 +1404,8 @@ run(function()
 			if not ent then return end
 			local direction = CFrame.lookAt(origin, targetPart.Position)
 			if Projectile.Enabled then
-				local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, ent.HipHeight, nil, ProjectileRaycast)
+				local airborne = ent.Humanoid and ent.Humanoid.FloorMaterial == Enum.Material.Air or ent.RootPart and math.abs(ent.RootPart.AssemblyLinearVelocity.Y) > 0.01
+				local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, ent.HipHeight, nil, ProjectileRaycast, airborne, ent.RootPart and ent.RootPart.Position, ent.RootPart)
 				if not calc then return end
 				direction = CFrame.lookAt(origin, calc)
 			end
@@ -1467,7 +1415,8 @@ run(function()
 			local ent, targetPart, origin = getTarget(args[1])
 			if not ent then return end
 			if Projectile.Enabled then
-				local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, ent.HipHeight, nil, ProjectileRaycast)
+				local airborne = ent.Humanoid and ent.Humanoid.FloorMaterial == Enum.Material.Air or ent.RootPart and math.abs(ent.RootPart.AssemblyLinearVelocity.Y) > 0.01
+				local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, ent.HipHeight, nil, ProjectileRaycast, airborne, ent.RootPart and ent.RootPart.Position, ent.RootPart)
 				if not calc then return end
 				args[2] = CFrame.lookAt(origin, calc).LookVector * args[2].Magnitude
 			else

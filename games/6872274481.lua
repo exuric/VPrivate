@@ -3954,6 +3954,29 @@ run(function()
 		Function = function(callback)
 			if callback then
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
+				task.spawn(function()
+					while ProjectileAimbot.Enabled do
+						task.wait(0.05)
+						local now = tick()
+						for _, ent in entitylib.List do
+							local root = ent.RootPart
+							if ent.Targetable and root and root.Parent then
+								local key = ent.Player or root
+								local cur = root.AssemblyLinearVelocity or root.Velocity
+								local entry = velocities[key]
+								if entry then
+									entry.v = entry.v:Lerp(cur, 0.5)
+									table.insert(entry.hist, {v = cur, t = now})
+									while entry.hist[1] and now - entry.hist[1].t > 0.25 do
+										table.remove(entry.hist, 1)
+									end
+								else
+									velocities[key] = {v = cur, hist = {{v = cur, t = now}}}
+								end
+							end
+						end
+					end
+				end)
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local args = {...}
 					local results = table.pack(pcall(function()
@@ -4000,11 +4023,20 @@ run(function()
 								local tv = projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity
 								if projmeta.projectile ~= 'telepearl' then
 									local key = plr.Player or plr.RootPart
-									local last = velocities[key]
-									if last then
-										tv = Vector3.new(tv.X * 0.7 + last.X * 0.3, tv.Y, tv.Z * 0.7 + last.Z * 0.3)
+									local entry = velocities[key]
+									if entry then
+										local past
+										for i = #entry.hist, 1, -1 do
+											if tick() - entry.hist[i].t >= 0.12 then
+												past = entry.hist[i].v
+												break
+											end
+										end
+										local flipped = past and (past.X * tv.X + past.Z * tv.Z < 0)
+										if not flipped then
+											tv = Vector3.new(entry.v.X, tv.Y, entry.v.Z)
+										end
 									end
-									velocities[key] = tv
 								end
 								local targetVel = tv * (Predict.Value / 10)
 								local calc, _, travelT = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, nil, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)

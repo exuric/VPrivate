@@ -1,3 +1,74 @@
+				text.TextSize = 12
+				text.TextTransparency = 0
+				text.Parent = indicator
+				table.insert(moduleapi.Tags, indicator)
+				indicator.Visible = tag ~= 'MATCHED'
+			end
+		end)
+		local gradient = Instance.new('UIGradient')
+		gradient.Rotation = 90
+		gradient.Enabled = false
+		gradient.Parent = modulebutton
+		local modulechildren = Instance.new('Frame')
+		local bind = Instance.new('TextButton')
+		addTooltip(modulebutton, modulesettings.Tooltip)
+		addTooltip(bind, 'Click to bind')
+		bind.Name = 'Bind'
+		bind.Size = UDim2.fromOffset(20, 21)
+		bind.Position = UDim2.new(1, -36, 0, 9)
+		bind.AnchorPoint = Vector2.new(1, 0)
+		bind.BackgroundColor3 = Color3.new(1, 1, 1)
+		bind.BackgroundTransparency = 0.92
+		bind.BorderSizePixel = 0
+		bind.AutoButtonColor = false
+		bind.Visible = false
+		bind.Text = ''
+		addCorner(bind, UDim.new(0, 4))
+		local bindicon = Instance.new('ImageLabel')
+		bindicon.Name = 'Icon'
+		bindicon.Size = UDim2.fromOffset(12, 12)
+		bindicon.Position = UDim2.new(0.5, -6, 0, 5)
+		bindicon.BackgroundTransparency = 1
+		bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
+		bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+		bindicon.Parent = bind
+		local bindtext = Instance.new('TextLabel')
+		bindtext.Size = UDim2.fromScale(1, 1)
+		bindtext.Position = UDim2.fromOffset(0, 1)
+		bindtext.BackgroundTransparency = 1
+		bindtext.Visible = false
+		bindtext.Text = ''
+		bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
+		bindtext.TextSize = 12
+		bindtext.FontFace = uipallet.Font
+		bindtext.Parent = bind
+		local bindcover = Instance.new('ImageLabel')
+		bindcover.Name = 'Cover'
+		bindcover.Size = UDim2.fromOffset(154, 40)
+		bindcover.BackgroundTransparency = 1
+		bindcover.Visible = false
+		bindcover.Image = getcustomasset('LarpV4/assets/larp/bindbkg.png')
+		bindcover.ScaleType = Enum.ScaleType.Slice
+		bindcover.SliceCenter = Rect.new(0, 0, 141, 40)
+		bindcover.Parent = modulebutton
+		local bindcovertext = Instance.new('TextLabel')
+		bindcovertext.Name = 'Text'
+		bindcovertext.Size = UDim2.new(1, -10, 1, -3)
+		bindcovertext.BackgroundTransparency = 1
+		bindcovertext.Text = 'PRESS A KEY TO BIND'
+		bindcovertext.TextColor3 = uipallet.Text
+		bindcovertext.TextSize = 11
+		bindcovertext.FontFace = uipallet.Font
+		bindcovertext.Parent = bindcover
+		bind.Parent = modulebutton
+		local dotsbutton = Instance.new('TextButton')
+		dotsbutton.Name = 'Dots'
+		dotsbutton.Size = UDim2.fromOffset(25, 40)
+		dotsbutton.Position = UDim2.new(1, -25, 0, 0)
+		dotsbutton.BackgroundTransparency = 1
+		dotsbutton.Text = ''
+		dotsbutton.Parent = modulebutton
+		local dots = Instance.new('ImageLabel')
 		dots.Name = 'Dots'
 		dots.Size = UDim2.fromOffset(3, 16)
 		dots.Position = UDim2.fromOffset(4, 12)
@@ -390,7 +461,12 @@ function mainapi:CreateOverlay(categorysettings)
 	window.Text = ''
 	window.Parent = scaledgui
 	local blur = addBlur(window)
-	addCorner(window)
+	addCorner(window, UDim.new(0, 8))
+	local stroke = Instance.new('UIStroke')
+	stroke.Name = 'Stroke'
+	stroke.Color = color.Light(uipallet.Main, 0.28)
+	stroke.Thickness = 1
+	stroke.Parent = window
 	makeDraggable(window)
 	local icon = Instance.new('ImageLabel')
 	icon.Name = 'Icon'
@@ -408,8 +484,8 @@ function mainapi:CreateOverlay(categorysettings)
 	title.Text = categorysettings.Name
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = uipallet.Text
-	title.TextSize = 13
-	title.FontFace = uipallet.Font
+	title.TextSize = 14
+	title.FontFace = uipallet.FontSemiBold
 	title.Parent = window
 	local pin = Instance.new('ImageButton')
 	pin.Name = 'Pin'
@@ -420,6 +496,7 @@ function mainapi:CreateOverlay(categorysettings)
 	pin.Image = getcustomasset('LarpV4/assets/larp/pin.png')
 	pin.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 	pin.Parent = window
+	addTooltip(pin, 'Pin overlay')
 	local dotsbutton = Instance.new('TextButton')
 	dotsbutton.Name = 'Dots'
 	dotsbutton.Size = UDim2.fromOffset(17, 40)
@@ -427,6 +504,7 @@ function mainapi:CreateOverlay(categorysettings)
 	dotsbutton.BackgroundTransparency = 1
 	dotsbutton.Text = ''
 	dotsbutton.Parent = window
+	addTooltip(dotsbutton, 'Overlay options')
 	local dots = Instance.new('ImageLabel')
 	dots.Name = 'Dots'
 	dots.Size = UDim2.fromOffset(3, 16)
@@ -725,7 +803,12 @@ function mainapi:CreateCategoryList(categorysettings)
 		table.clear(self.Objects)
 		self.Selected = nil
 
-		for i, v in (categorysettings.Profiles and mainapi.Profiles or self.List) do
+		local list = categorysettings.Profiles and mainapi.Profiles or self.List
+		if list == self.List and #list > 0 then
+			list = table.clone(list)
+			table.sort(list)
+		end
+		for i, v in list do
 			if categorysettings.Profiles then
 				local object = Instance.new('TextButton')
 				object.Name = v.Name
@@ -1266,6 +1349,28 @@ function mainapi:CreateLegit()
 	icon.Image = getcustomasset('LarpV4/assets/larp/legittab.png')
 	icon.ImageColor3 = uipallet.Text
 	icon.Parent = window
+	local title = Instance.new('TextLabel')
+	title.Name = 'Title'
+	title.Size = UDim2.new(1, -90, 0, 20)
+	title.Position = UDim2.fromOffset(44, 11)
+	title.BackgroundTransparency = 1
+	title.Text = 'Legit Mode'
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextColor3 = uipallet.Text
+	title.TextSize = 14
+	title.FontFace = uipallet.FontSemiBold
+	title.Parent = window
+	local count = Instance.new('TextLabel')
+	count.Name = 'Count'
+	count.Size = UDim2.fromOffset(150, 20)
+	count.Position = UDim2.new(1, -66, 0, 11)
+	count.BackgroundTransparency = 1
+	count.Text = ''
+	count.TextXAlignment = Enum.TextXAlignment.Right
+	count.TextColor3 = color.Dark(uipallet.Text, 0.31)
+	count.TextSize = 13
+	count.FontFace = uipallet.Font
+	count.Parent = window
 	local close = addCloseButton(window)
 	local children = Instance.new('ScrollingFrame')
 	children.Name = 'Children'
@@ -1423,6 +1528,13 @@ function mainapi:CreateLegit()
 			tween:Tween(knobmain, uipallet.Tween, {
 				Position = UDim2.fromOffset(moduleapi.Enabled and 12 or 2, 2)
 			})
+			local enabled = 0
+			for _, m in legitapi.Modules do
+				if m.Enabled then
+					enabled += 1
+				end
+			end
+			count.Text = enabled > 0 and (enabled..' enabled') or ''
 			if not moduleapi.Enabled then
 				for _, v in moduleapi.Connections do
 					v:Disconnect()
@@ -1512,11 +1624,35 @@ function mainapi:CreateLegit()
 		moduleapi.Object = module
 		legitapi.Modules[modulesettings.Name] = moduleapi
 
+		local order = {
+			Speedmeter = 1,
+			Keystrokes = 2,
+			FPS = 3,
+			Memory = 4,
+			Ping = 5,
+			Clock = 6,
+			Cape = 7,
+			ChinaHat = 8,
+			Breadcrumbs = 9,
+			Disguise = 10,
+			SongBeats = 11,
+			FOV = 12,
+			TimeChanger = 13,
+			Atmosphere = 14,
+			PotatoMode = 15,
+			FFlag = 16
+		}
 		local sorting = {}
 		for _, v in legitapi.Modules do
 			table.insert(sorting, v.Name)
 		end
-		table.sort(sorting)
+		table.sort(sorting, function(a, b)
+			local oa, ob = order[a] or 100, order[b] or 100
+			if oa == ob then
+				return a < b
+			end
+			return oa < ob
+		end)
 
 		for i, v in sorting do
 			legitapi.Modules[v].Object.LayoutOrder = i
@@ -2494,6 +2630,15 @@ friends = mainapi:CreateCategoryList(friendssettings)
 friends.Update = Instance.new('BindableEvent')
 friends.ColorUpdate = Instance.new('BindableEvent')
 friends:CreateToggle({
+	Name = 'Use friends',
+	Darker = true,
+	Default = true,
+	Function = function()
+		friends.Update:Fire()
+		friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
+	end
+})
+friends:CreateToggle({
 	Name = 'Recolor visuals',
 	Darker = true,
 	Default = true,
@@ -2515,15 +2660,6 @@ friendscolor = friends:CreateColorSlider({
 		end
 		friendssettings.Color = Color3.fromHSV(hue, sat, val)
 		friends.ColorUpdate:Fire(hue, sat, val)
-	end
-})
-friends:CreateToggle({
-	Name = 'Use friends',
-	Darker = true,
-	Default = true,
-	Function = function()
-		friends.Update:Fire()
-		friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
 	end
 })
 mainapi:Clean(friends.Update)

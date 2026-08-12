@@ -76,6 +76,7 @@ end
 
 local hash
 local wlset = {}
+local wlapplied = false
 local function wlseed()
 	local k2 = uhex('4433764b337935')
 	return {
@@ -181,42 +182,82 @@ local function wlsync()
 	end)
 end
 
-local function allowedsync()
-	pcall(function()
-		hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
-		wlsync()
-	end)
-end
-
-for i = 1, 20 do
-	allowedsync()
-	if hash then break end
-	task.wait(0.5)
-end
-
-do
+local function wlkick()
 	local player = playersService.LocalPlayer
 	local own = player and wlset[player.Name:lower()] or nil
 	local h = player and hash and hash.sha512(player.Name..player.UserId..'SelfReport') or nil
 	if player and not (own or (h and allowedHashes[h])) then
 		player:Kick(AMSG)
-		return
+		return true
 	end
+	return false
 end
+
+local function allowedsync()
+	pcall(function()
+		hash = hash or loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
+		if not hash then return end
+		if not wlapplied then
+			local ok, cached = pcall(function()
+				local raw = readfile('LarpV4/profiles/whitelist.json')
+				local d = httpService:JSONDecode(raw)
+				if type(d) == 'table' and type(d.users) == 'table' and hash.hmac and hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = d.users})) == d.sig then
+					return d.users
+				end
+			end)
+			if ok and type(cached) == 'table' and #cached > 0 then
+				local list = {}
+				for _, s in wlseed() do
+					table.insert(list, {name = s[1], level = s[2]})
+				end
+				for _, v in cached do
+					table.insert(list, v)
+				end
+				wlapply(list)
+				wlapplied = true
+				task.spawn(function()
+					pcall(wlsync)
+					wlkick()
+				end)
+				return
+			end
+			wlsync()
+			wlapplied = true
+		end
+	end)
+end
+
+for i = 1, 20 do
+	allowedsync()
+	if wlapplied then break end
+	task.wait(0.5)
+end
+
+if wlkick() then return end
 
 local function downloadSplit(base)
 	if isfile(base) then return readfile(base) end
 	local data = {}
+	local remaining = 2
+	local failed = false
 	for i = 0, 1 do
-		local ok, res = pcall(function()
-			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
+		task.spawn(function()
+			local ok, res = pcall(function()
+				return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
+			end)
+			if not ok or typeof(res) ~= 'string' or res == '404: Not Found' then
+				failed = true
+			else
+				data[i] = res
+			end
+			remaining = remaining - 1
 		end)
-		if not ok or typeof(res) ~= 'string' or res == '404: Not Found' then
-			error('Failed to download '..base..'.'..i..(ok and '' or ': '..tostring(res)))
-		end
-		table.insert(data, res)
 	end
-	local content = table.concat(data)
+	repeat task.wait() until remaining == 0
+	if failed then
+		error('Failed to download '..base)
+	end
+	local content = table.concat({data[0], data[1]})
 	content = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..content
 	writefile(base, content)
 	return content
@@ -299,16 +340,17 @@ end
 
 if not shared.LarpIndependent then
 	loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
-	if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
-		loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
-	else
-		if not shared.LarpDeveloper then
-			local suc, res = pcall(function()
-				return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
-			end)
-			if suc and res ~= '404: Not Found' then
-				loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
-			end
+	local gamepath = 'LarpV4/games/'..game.PlaceId..'.lua'
+	if isfile(gamepath) then
+		loadstring(readfile(gamepath), tostring(game.PlaceId))(license)
+	elseif not shared.LarpDeveloper and not isfile('LarpV4/games/.missing.'..game.PlaceId) then
+		local suc, res = pcall(function()
+			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
+		end)
+		if suc and res ~= '404: Not Found' then
+			loadstring(downloadFile(gamepath), tostring(game.PlaceId))(license)
+		else
+			writefile('LarpV4/games/.missing.'..game.PlaceId, '1')
 		end
 	end
 	finishLoading()

@@ -105,28 +105,41 @@ end
 
 entitylib.IgnoreObject = RaycastParams.new()
 entitylib.IgnoreObject.RespectCanCollide = true
+entitylib.IgnoreList = {}
+entitylib.IgnoreDirty = true
 entitylib.Raycast = function(origin, direction, params)
 	return workspace:Raycast(origin, direction, params)
 end
-entitylib.Wallcheck = function(origin, position, ignoreobject)
-	if typeof(ignoreobject) ~= 'Instance' then
-		local ignorelist = {gameCamera, lplr.Character}
-		for _, entity in entitylib.List do
-			if entity.Targetable then
-				table.insert(ignorelist, entity.Character)
-			end
+entitylib.rebuildIgnore = function()
+	if not entitylib.IgnoreDirty then return end
+	local ignorelist = {gameCamera, lplr.Character}
+	for _, entity in entitylib.List do
+		if entity.Targetable then
+			table.insert(ignorelist, entity.Character)
 		end
-
-		if typeof(ignoreobject) == 'table' then
-			for _, obj in ignoreobject do
-				table.insert(ignorelist, obj)
-			end
-		end
-
-		ignoreobject = entitylib.IgnoreObject
-		ignoreobject.FilterDescendantsInstances = ignorelist
 	end
-	return entitylib.Raycast(origin, position - origin, ignoreobject)
+	entitylib.IgnoreList = ignorelist
+	entitylib.IgnoreObject.FilterDescendantsInstances = ignorelist
+	entitylib.IgnoreDirty = false
+end
+entitylib.Wallcheck = function(origin, position, ignoreobject)
+	if typeof(ignoreobject) == 'Instance' then
+		return entitylib.Raycast(origin, position - origin, ignoreobject)
+	end
+	if typeof(ignoreobject) == 'table' then
+		entitylib.rebuildIgnore()
+		local ignorelist = {}
+		for _, obj in entitylib.IgnoreList do
+			table.insert(ignorelist, obj)
+		end
+		for _, obj in ignoreobject do
+			table.insert(ignorelist, obj)
+		end
+		entitylib.IgnoreObject.FilterDescendantsInstances = ignorelist
+		return entitylib.Raycast(origin, position - origin, entitylib.IgnoreObject)
+	end
+	entitylib.rebuildIgnore()
+	return entitylib.Raycast(origin, position - origin, entitylib.IgnoreObject)
 end
 
 entitylib.EntityMouse = function(entitysettings)
@@ -272,6 +285,7 @@ entitylib.addEntity = function(char, plr, teamfunc, spawntime)
 			if plr == lplr then
 				entitylib.character = entity
 				entitylib.isAlive = true
+				entitylib.IgnoreDirty = true
 				entitylib.Events.LocalAdded:Fire(entity)
 			else
 				entity.Targetable = entitylib.targetCheck(entity)
@@ -285,6 +299,7 @@ entitylib.addEntity = function(char, plr, teamfunc, spawntime)
 				end
 
 				table.insert(entitylib.List, entity)
+				entitylib.IgnoreDirty = true
 				entitylib.Events.EntityAdded:Fire(entity)
 			end
 			--[[table.insert(entity.Connections, char.ChildRemoved:Connect(function(part)
@@ -319,6 +334,7 @@ entitylib.removeEntity = function(char, isLocal)
 				v:Disconnect()
 			end
 			table.clear(entitylib.character.Connections)
+			entitylib.IgnoreDirty = true
 			entitylib.Events.LocalRemoved:Fire(entitylib.character)
 			--table.clear(entitylib.character)
 		end
@@ -340,6 +356,7 @@ entitylib.removeEntity = function(char, isLocal)
 
 			table.clear(entity.Connections)
 			table.remove(entitylib.List, index)
+			entitylib.IgnoreDirty = true
 			entitylib.Events.EntityRemoved:Fire(entity)
 		end
 	end

@@ -2388,7 +2388,8 @@ run(function()
 		})
 		if not plr then return end
 	
-		local targetpart = plr[TargetPart.Value]
+		local aimName = TargetPart.Value == 'Random' and (math.random() < 0.5 and 'Head' or 'RootPart') or TargetPart.Value
+		local targetpart = plr[aimName]
 		local targetpos = getPosition(plr.Character) or targetpart and targetpart.Position
 		if not targetpos then return end
 		local playerGravity = workspace.Gravity
@@ -2434,7 +2435,7 @@ run(function()
 	})
 	TargetPart = SilentAim:CreateDropdown({
 		Name = 'Part',
-		List = {'RootPart', 'Head', 'Dynamic', 'Closest'},
+		List = {'RootPart', 'Head', 'Dynamic', 'Closest', 'Random'},
 	})
 	local methods = {'Damage', 'Distance'}
 	for i in sortmethods do
@@ -4019,8 +4020,10 @@ run(function()
 										end
 									end
 								end
-								local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-								local tv = projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity
+								local aimName = TargetPart.Value == 'Random' and (math.random() < 0.5 and 'Head' or 'RootPart') or TargetPart.Value
+								local aimPart = plr[aimName] or plr.RootPart
+								local newlook = CFrame.new(offsetpos, aimPart.Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
+								local tv = projmeta.projectile == 'telepearl' and Vector3.zero or aimPart.Velocity
 								if projmeta.projectile ~= 'telepearl' then
 									local key = plr.Player or plr.RootPart
 									local entry = velocities[key]
@@ -4039,7 +4042,7 @@ run(function()
 									end
 								end
 								local targetVel = tv * (Predict.Value / 10)
-								local calc, _, travelT = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, nil, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								local calc, _, travelT = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, aimPart.Position, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, nil, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 								if calc then
 									if (travelT or 0) > lifetime then return end
 									if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
@@ -4083,7 +4086,7 @@ run(function()
 	})
 	TargetPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Part',
-		List = {'RootPart', 'Head'}
+		List = {'RootPart', 'Head', 'Random'},
 	})
 	FOV = ProjectileAimbot:CreateSlider({
 		Name = 'FOV',
@@ -4097,6 +4100,56 @@ run(function()
 		Max = 10,
 		Default = 10,
 		Tooltip = 'How much the aim leads the target (10 = full prediction, 1 = almost no lead)'
+	})
+	CustomPrediction = ProjectileAimbot:CreateToggle({
+		Name = 'Custom Prediction',
+		Function = function(call)
+			prediction.Custom.Enabled = call
+			LeadMultiplier.Object.Visible = call
+			DropMultiplier.Object.Visible = call
+			CompStrength.Object.Visible = call
+			if not call then
+				prediction.Custom.Velocity = 1
+				prediction.Custom.Drop = 1
+				prediction.Compensation.Gain = 0.3
+				prediction.Compensation.Enabled = true
+			end
+		end,
+		Tooltip = 'Tune the lead and drop multipliers yourself instead of the auto values'
+	})
+	LeadMultiplier = ProjectileAimbot:CreateSlider({
+		Name = 'Lead Multiplier',
+		Min = 0,
+		Max = 2,
+		Default = 1,
+		Decimal = 100,
+		Visible = false,
+		Function = function(value)
+			prediction.Custom.Velocity = value
+		end
+	})
+	DropMultiplier = ProjectileAimbot:CreateSlider({
+		Name = 'Drop Multiplier',
+		Min = 0,
+		Max = 2,
+		Default = 1,
+		Decimal = 100,
+		Visible = false,
+		Function = function(value)
+			prediction.Custom.Drop = value
+		end
+	})
+	CompStrength = ProjectileAimbot:CreateSlider({
+		Name = 'Miss Correction',
+		Min = 0,
+		Max = 1,
+		Default = 0.3,
+		Decimal = 100,
+		Visible = false,
+		Function = function(value)
+			prediction.Compensation.Gain = value
+			prediction.Compensation.Enabled = value > 0
+		end
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',

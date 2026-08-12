@@ -4000,12 +4000,10 @@ run(function()
 								local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
 								local tv = projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity
 								if projmeta.projectile ~= 'telepearl' then
-									local key = plr.Player or plr.RootPart
-									local last = velocities[key]
-									if last then
-										tv = Vector3.new(tv.X * 0.7 + last.X * 0.3, tv.Y, tv.Z * 0.7 + last.Z * 0.3)
+									local tracked = velocities[plr.Player or plr.RootPart]
+									if tracked then
+										tv = Vector3.new(tv.X * 0.3 + tracked.X * 0.7, tv.Y, tv.Z * 0.3 + tracked.Z * 0.7)
 									end
-									velocities[key] = tv
 								end
 								local targetVel = PredictOn.Enabled and tv * (Predict.Value / 10) or Vector3.zero
 								local calc, _, travelT = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, targetVel, playerGravity, plr.HipHeight, PredictOn.Enabled and plr.Jumping and 42.6 or nil, nil, PredictOn.Enabled and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01), plr.RootPart.Position, plr.RootPart, nil, true)
@@ -4023,11 +4021,26 @@ run(function()
 							end
 						end
 					end))
-					if results[1] and results[2] then
-						return unpack(results, 2)
-					end
-					return old(...)
+if results[1] and results[2] then
+					return unpack(results, 2)
 				end
+				return old(...)
+			end
+				task.spawn(function()
+					while ProjectileAimbot.Enabled do
+						for _, ent in entitylib.List do
+							if not ent.Targetable or not ent.RootPart then continue end
+							local key = ent.Player or ent.RootPart
+							local v = ent.RootPart.Velocity
+							local last = velocities[key]
+							if last then
+								v = Vector3.new(v.X * 0.7 + last.X * 0.3, v.Y, v.Z * 0.7 + last.Z * 0.3)
+							end
+							velocities[key] = v
+						end
+						task.wait(0.1)
+					end
+				end)
 		else
 			bedwars.ProjectileController.calculateImportantLaunchValues = old
 			table.clear(velocities)
@@ -6071,7 +6084,10 @@ run(function()
 	})
 	Color = BulletTracers:CreateColorSlider({
 		Name = 'Tracer Color',
-		DefaultOpacity = 0.5
+		DefaultOpacity = 0.5,
+		DefaultHue = larp.GUIColor.Hue,
+		DefaultSat = larp.GUIColor.Sat,
+		DefaultValue = larp.GUIColor.Value
 	})
 	Thickness = BulletTracers:CreateSlider({
 		Name = 'Thickness',

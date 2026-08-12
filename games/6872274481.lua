@@ -3946,6 +3946,7 @@ run(function()
 	local AutoCharge
 	local Aim = {}
 	local OtherProjectiles
+	local PredictOn
 	local velocities = {}
 	local old
 	
@@ -4006,8 +4007,8 @@ run(function()
 									end
 									velocities[key] = tv
 								end
-								local targetVel = tv * (Predict.Value / 10)
-								local calc, _, travelT = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, nil, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								local targetVel = PredictOn.Enabled and tv * (Predict.Value / 10) or Vector3.zero
+								local calc, _, travelT = prediction.SolveTrajectory(newlook.p, projSpeed, gravity, plr[TargetPart.Value].Position, targetVel, playerGravity, plr.HipHeight, PredictOn.Enabled and plr.Jumping and 42.6 or nil, nil, PredictOn.Enabled and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01), plr.RootPart.Position, plr.RootPart, nil, true)
 								if calc then
 									if (travelT or 0) > lifetime then return end
 									if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
@@ -4065,6 +4066,11 @@ run(function()
 		Max = 10,
 		Default = 10,
 		Tooltip = 'How much the aim leads the target (10 = full prediction, 1 = almost no lead)'
+	})
+	PredictOn = ProjectileAimbot:CreateToggle({
+		Name = 'Prediction',
+		Default = true,
+		Tooltip = 'Predicts where the enemy will be when the projectile arrives (off = aim directly at the enemy, no lead)'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',

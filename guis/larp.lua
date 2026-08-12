@@ -5125,6 +5125,28 @@ function mainapi:CreateLegit()
 	icon.Image = getcustomasset('LarpV4/assets/larp/legittab.png')
 	icon.ImageColor3 = uipallet.Text
 	icon.Parent = window
+	local title = Instance.new('TextLabel')
+	title.Name = 'Title'
+	title.Size = UDim2.new(1, -90, 0, 20)
+	title.Position = UDim2.fromOffset(44, 11)
+	title.BackgroundTransparency = 1
+	title.Text = 'Legit Mode'
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextColor3 = uipallet.Text
+	title.TextSize = 14
+	title.FontFace = uipallet.FontSemiBold
+	title.Parent = window
+	local count = Instance.new('TextLabel')
+	count.Name = 'Count'
+	count.Size = UDim2.fromOffset(150, 20)
+	count.Position = UDim2.new(1, -66, 0, 11)
+	count.BackgroundTransparency = 1
+	count.Text = ''
+	count.TextXAlignment = Enum.TextXAlignment.Right
+	count.TextColor3 = color.Dark(uipallet.Text, 0.31)
+	count.TextSize = 13
+	count.FontFace = uipallet.Font
+	count.Parent = window
 	local close = addCloseButton(window)
 	local children = Instance.new('ScrollingFrame')
 	children.Name = 'Children'
@@ -5282,6 +5304,13 @@ function mainapi:CreateLegit()
 			tween:Tween(knobmain, uipallet.Tween, {
 				Position = UDim2.fromOffset(moduleapi.Enabled and 12 or 2, 2)
 			})
+			local enabled = 0
+			for _, m in legitapi.Modules do
+				if m.Enabled then
+					enabled += 1
+				end
+			end
+			count.Text = enabled > 0 and (enabled..' enabled') or ''
 			if not moduleapi.Enabled then
 				for _, v in moduleapi.Connections do
 					v:Disconnect()
@@ -5371,11 +5400,35 @@ function mainapi:CreateLegit()
 		moduleapi.Object = module
 		legitapi.Modules[modulesettings.Name] = moduleapi
 
+		local order = {
+			Speedmeter = 1,
+			Keystrokes = 2,
+			FPS = 3,
+			Memory = 4,
+			Ping = 5,
+			Clock = 6,
+			Cape = 7,
+			ChinaHat = 8,
+			Breadcrumbs = 9,
+			Disguise = 10,
+			SongBeats = 11,
+			FOV = 12,
+			TimeChanger = 13,
+			Atmosphere = 14,
+			PotatoMode = 15,
+			FFlag = 16
+		}
 		local sorting = {}
 		for _, v in legitapi.Modules do
 			table.insert(sorting, v.Name)
 		end
-		table.sort(sorting)
+		table.sort(sorting, function(a, b)
+			local oa, ob = order[a] or 100, order[b] or 100
+			if oa == ob then
+				return a < b
+			end
+			return oa < ob
+		end)
 
 		for i, v in sorting do
 			legitapi.Modules[v].Object.LayoutOrder = i

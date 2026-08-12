@@ -3743,6 +3743,12 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.FontFace = uipallet.Font
 		modulebutton.Parent = children
 		addCorner(modulebutton, UDim.new(0, 6))
+		local glows = Instance.new('UIStroke')
+		glows.Name = 'Glow'
+		glows.Color = uipallet.Text
+		glows.Thickness = 1
+		glows.Transparency = 1
+		glows.Parent = modulebutton
 		local indicatorholder = Instance.new('Frame')
 		indicatorholder.Parent = modulebutton
 		indicatorholder.Size = UDim2.fromOffset(0, 21)
@@ -4028,6 +4034,9 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		modulebutton.MouseEnter:Connect(function()
 			hovered = true
+			tween:Tween(glows, uipallet.Tween, {
+				Transparency = 0.55
+			})
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = uipallet.Text
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
@@ -4037,6 +4046,9 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		modulebutton.MouseLeave:Connect(function()
 			hovered = false
+			tween:Tween(glows, uipallet.Tween, {
+				Transparency = 1
+			})
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
@@ -6060,6 +6072,7 @@ clickgui.Size = UDim2.fromScale(1, 1)
 clickgui.BackgroundTransparency = 1
 clickgui.Visible = false
 clickgui.Parent = scaledgui
+local guifadeid = 0
 local scarcitybanner = Instance.new('TextLabel')
 scarcitybanner.Size = UDim2.fromScale(1, 0.02)
 scarcitybanner.Position = UDim2.fromScale(0, 0.97)
@@ -6628,6 +6641,25 @@ guipane:CreateDropdown({
 		end
 	end,
 	Tooltip = 'new - The newest larp theme to since v4.05\nold - The larp theme pre v4.05\nrise - Rise 6.0'
+})
+local themepresets = {
+	Synapse = {0.99, 0.9, 1},
+	Oxygen = {0.63, 0.8, 0.85},
+	Spectre = {0.76, 0.7, 1},
+	Neon = {0.33, 0.9, 1},
+	Rise = {0.07, 0.9, 1}
+}
+guipane:CreateDropdown({
+	Name = 'Theme Presets',
+	List = {'Synapse', 'Oxygen', 'Spectre', 'Neon', 'Rise'},
+	Function = function(val)
+		local p = themepresets[val]
+		if p then
+			mainapi.GUIColor:SetValue(p[1], p[2], p[3])
+			mainapi:UpdateGUI(p[1], p[2], p[3], true)
+		end
+	end,
+	Tooltip = 'One-click accent skins - pick a preset, or fine-tune with GUI Theme above'
 })
 mainapi.RainbowMode = guipane:CreateDropdown({
 	Name = 'Rainbow Mode',
@@ -7759,7 +7791,24 @@ mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
 			for _, v in mainapi.Windows do
 				v.Visible = false
 			end
-			clickgui.Visible = not clickgui.Visible
+			guifadeid += 1
+			local fade = guifadeid
+			if clickgui.Visible then
+				tween:Tween(clickgui, TweenInfo.new(0.1, Enum.EasingStyle.Linear), {
+					GroupTransparency = 1
+				})
+				task.wait(0.1)
+				if fade == guifadeid then
+					clickgui.Visible = false
+					clickgui.GroupTransparency = 0
+				end
+			else
+				clickgui.Visible = true
+				clickgui.GroupTransparency = 1
+				tween:Tween(clickgui, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					GroupTransparency = 0
+				})
+			end
 			tooltip.Visible = false
 			mainapi:BlurCheck()
 		end

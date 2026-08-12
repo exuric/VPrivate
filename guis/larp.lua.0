@@ -2921,17 +2921,11 @@ function mainapi:CreateGUI()
 			}
 
 			local hovered = false
-			local function padText()
-				local ox = togglesettings.Position and togglesettings.Position.X.Offset or 8
-				local ow = togglesettings.Size and togglesettings.Size.X.Offset or 14
-				toggle.Text = string.rep(' ', (ox + ow + 10) * scale.Scale)..togglesettings.Name
-			end
 			local toggle = Instance.new('TextButton')
 			toggle.Name = togglesettings.Name..'Toggle'
 			toggle.Size = UDim2.new(1, -16, 0, 42)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
-			padText()
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
 			toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			toggle.TextSize = 14
@@ -2959,6 +2953,13 @@ function mainapi:CreateGUI()
 			knobmain.BackgroundColor3 = uipallet.Main
 			knobmain.Parent = knob
 			toggleapi.Object = toggle
+
+			local function padText()
+				local ox = togglesettings.Position and togglesettings.Position.X.Offset or 8
+				local ow = togglesettings.Size and togglesettings.Size.X.Offset or 14
+				toggle.Text = string.rep(' ', (ox + ow + 10) * scale.Scale)..togglesettings.Name
+			end
+			padText()
 
 			local function refresh()
 				toggle.BackgroundColor3 = toggleapi.Enabled and color.Light(uipallet.Main, 0.035) or color.Light(uipallet.Main, 0)
@@ -3851,4 +3852,3 @@ function mainapi:CreateCategory(categorysettings)
 				text.Size = UDim2.fromScale(1, 1)
 				text.BackgroundTransparency = 1
 				text.Name = 'Text'
-				text.AnchorPoint = Vector2.new()

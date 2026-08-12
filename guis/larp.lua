@@ -2806,31 +2806,9 @@ function mainapi:CreateGUI()
 		bar.BorderSizePixel = 0
 		bar.Parent = children
 		components.Divider(bar)
-		local bartitle = Instance.new('TextLabel')
-		bartitle.Name = 'Title'
-		bartitle.Size = UDim2.new(1, -70, 0, 16)
-		bartitle.Position = UDim2.fromOffset(10, 10)
-		bartitle.BackgroundTransparency = 1
-		bartitle.Text = 'Overlays'
-		bartitle.TextXAlignment = Enum.TextXAlignment.Left
-		bartitle.TextColor3 = color.Dark(uipallet.Text, 0.31)
-		bartitle.TextSize = 13
-		bartitle.FontFace = uipallet.FontSemiBold
-		bartitle.Parent = bar
-		local barcount = Instance.new('TextLabel')
-		barcount.Name = 'Count'
-		barcount.Size = UDim2.fromOffset(60, 16)
-		barcount.Position = UDim2.new(1, -116, 0, 10)
-		barcount.BackgroundTransparency = 1
-		barcount.Text = ''
-		barcount.TextXAlignment = Enum.TextXAlignment.Right
-		barcount.TextColor3 = color.Dark(uipallet.Text, 0.43)
-		barcount.TextSize = 11
-		barcount.FontFace = uipallet.Font
-		barcount.Parent = bar
 		local button = Instance.new('ImageButton')
 		button.Size = UDim2.fromOffset(24, 24)
-		button.Position = UDim2.new(1, -30, 0, 6)
+		button.Position = UDim2.new(1, -29, 0, 7)
 		button.BackgroundTransparency = 1
 		button.AutoButtonColor = false
 		button.Image = getcustomasset('LarpV4/assets/larp/overlaysicon.png')
@@ -2848,71 +2826,48 @@ function mainapi:CreateGUI()
 		shadow.Visible = false
 		shadow.Text = ''
 		shadow.Parent = window
-		addCorner(shadow, UDim.new(0, 12))
+		addCorner(shadow)
 		local window = Instance.new('Frame')
-		window.Size = UDim2.fromOffset(220, 48)
+		window.Size = UDim2.fromOffset(220, 42)
 		window.Position = UDim2.fromScale(0, 1)
 		window.BackgroundColor3 = uipallet.Main
 		window.Parent = shadow
-		addCorner(window, UDim.new(0, 12))
+		addCorner(window)
 		local icon = Instance.new('ImageLabel')
 		icon.Name = 'Icon'
-		icon.Size = UDim2.fromOffset(15, 15)
-		icon.Position = UDim2.fromOffset(16, 16)
+		icon.Size = UDim2.fromOffset(14, 12)
+		icon.Position = UDim2.fromOffset(10, 13)
 		icon.BackgroundTransparency = 1
 		icon.Image = getcustomasset('LarpV4/assets/larp/overlaystab.png')
 		icon.ImageColor3 = uipallet.Text
 		icon.Parent = window
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
-		title.Size = UDim2.new(1, -98, 0, 26)
-		title.Position = UDim2.fromOffset(40, 11)
+		title.Size = UDim2.new(1, -36, 0, 38)
+		title.Position = UDim2.fromOffset(36, 0)
 		title.BackgroundTransparency = 1
 		title.Text = 'Overlays'
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = uipallet.Text
 		title.TextSize = 15
-		title.FontFace = uipallet.FontSemiBold
+		title.FontFace = uipallet.Font
 		title.Parent = window
-		local count = Instance.new('TextLabel')
-		count.Name = 'Count'
-		count.Size = UDim2.fromOffset(90, 14)
-		count.Position = UDim2.new(1, -98, 0, 17)
-		count.BackgroundTransparency = 1
-		count.Text = ''
-		count.TextXAlignment = Enum.TextXAlignment.Right
-		count.TextColor3 = color.Dark(uipallet.Text, 0.43)
-		count.TextSize = 11
-		count.FontFace = uipallet.Font
-		count.Parent = window
-		local close = addCloseButton(window, 12)
+		local close = addCloseButton(window, 7)
 		local divider = Instance.new('Frame')
 		divider.Name = 'Divider'
 		divider.Size = UDim2.new(1, 0, 0, 1)
-		divider.Position = UDim2.fromOffset(0, 47)
+		divider.Position = UDim2.fromOffset(0, 37)
 		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		divider.BorderSizePixel = 0
 		divider.Parent = window
 		local childrentoggle = Instance.new('Frame')
-		childrentoggle.Position = UDim2.fromOffset(0, 48)
+		childrentoggle.Position = UDim2.fromOffset(0, 38)
 		childrentoggle.BackgroundTransparency = 1
 		childrentoggle.Parent = window
 		local windowlist = Instance.new('UIListLayout')
 		windowlist.SortOrder = Enum.SortOrder.LayoutOrder
 		windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		windowlist.Padding = UDim.new(0, 5)
 		windowlist.Parent = childrentoggle
-
-		function optionapi:UpdateCount()
-			local enabled = 0
-			for _, t in self.Toggles do
-				if t.Enabled then
-					enabled += 1
-				end
-			end
-			count.Text = #self.Toggles > 0 and (enabled > 0 and (enabled..' of '..#self.Toggles..' on') or 'all off') or ''
-			barcount.Text = #self.Toggles > 0 and (enabled..'/'..#self.Toggles) or ''
-		end
 
 		function optionapi:CreateToggle(togglesettings)
 			local toggleapi = {
@@ -2923,53 +2878,36 @@ function mainapi:CreateGUI()
 			local hovered = false
 			local toggle = Instance.new('TextButton')
 			toggle.Name = togglesettings.Name..'Toggle'
-			toggle.Size = UDim2.new(1, -16, 0, 42)
+			toggle.Size = UDim2.new(1, 0, 0, 40)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
+			toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
 			toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			toggle.TextSize = 14
 			toggle.FontFace = uipallet.Font
 			toggle.Parent = childrentoggle
-			addCorner(toggle, UDim.new(0, 8))
 			local icon = Instance.new('ImageLabel')
 			icon.Name = 'Icon'
 			icon.Size = togglesettings.Size
 			icon.Position = togglesettings.Position
 			icon.BackgroundTransparency = 1
 			icon.Image = togglesettings.Icon
-			icon.ImageColor3 = color.Dark(uipallet.Text, 0.31)
+			icon.ImageColor3 = uipallet.Text
 			icon.Parent = toggle
 			local knob = Instance.new('Frame')
 			knob.Name = 'Knob'
-			knob.Size = UDim2.fromOffset(34, 18)
-			knob.Position = UDim2.new(1, -44, 0, 12)
+			knob.Size = UDim2.fromOffset(22, 12)
+			knob.Position = UDim2.new(1, -30, 0, 14)
 			knob.BackgroundColor3 = color.Light(uipallet.Main, 0.14)
 			knob.Parent = toggle
 			addCorner(knob, UDim.new(1, 0))
 			local knobmain = knob:Clone()
-			knobmain.Size = UDim2.fromOffset(14, 14)
+			knobmain.Size = UDim2.fromOffset(8, 8)
 			knobmain.Position = UDim2.fromOffset(2, 2)
 			knobmain.BackgroundColor3 = uipallet.Main
 			knobmain.Parent = knob
 			toggleapi.Object = toggle
-
-			local function padText()
-				local ox = togglesettings.Position and togglesettings.Position.X.Offset or 8
-				local ow = togglesettings.Size and togglesettings.Size.X.Offset or 14
-				toggle.Text = string.rep(' ', (ox + ow + 10) * scale.Scale)..togglesettings.Name
-			end
-			padText()
-
-			local function refresh()
-				toggle.BackgroundColor3 = toggleapi.Enabled and color.Light(uipallet.Main, 0.035) or color.Light(uipallet.Main, 0)
-				icon.ImageColor3 = toggleapi.Enabled and Color3.fromHSV(
-					mainapi.GUIColor.Hue,
-					mainapi.GUIColor.Sat,
-					mainapi.GUIColor.Value
-				) or color.Dark(uipallet.Text, 0.31)
-				toggle.TextColor3 = toggleapi.Enabled and uipallet.Text or color.Dark(uipallet.Text, 0.16)
-			end
 
 			function toggleapi:Toggle()
 				self.Enabled = not self.Enabled
@@ -2981,21 +2919,16 @@ function mainapi:CreateGUI()
 					) or (hovered and color.Light(uipallet.Main, 0.37) or color.Light(uipallet.Main, 0.14))
 				})
 				tween:Tween(knobmain, uipallet.Tween, {
-					Position = UDim2.fromOffset(self.Enabled and 18 or 2, 2)
+					Position = UDim2.fromOffset(self.Enabled and 12 or 2, 2)
 				})
-				refresh()
 				togglesettings.Function(self.Enabled)
-				optionapi:UpdateCount()
 			end
 
-scale:GetPropertyChangedSignal('Scale'):Connect(function()
-				padText()
+			scale:GetPropertyChangedSignal('Scale'):Connect(function()
+				toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
 			end)
 			toggle.MouseEnter:Connect(function()
 				hovered = true
-				tween:Tween(toggle, uipallet.Tween, {
-					BackgroundColor3 = color.Light(uipallet.Main, toggleapi.Enabled and 0.07 or 0.05)
-				})
 				if not toggleapi.Enabled then
 					tween:Tween(knob, uipallet.Tween, {
 						BackgroundColor3 = color.Light(uipallet.Main, 0.37)
@@ -3004,9 +2937,6 @@ scale:GetPropertyChangedSignal('Scale'):Connect(function()
 			end)
 			toggle.MouseLeave:Connect(function()
 				hovered = false
-				tween:Tween(toggle, uipallet.Tween, {
-					BackgroundColor3 = color.Light(uipallet.Main, toggleapi.Enabled and 0.035 or 0)
-				})
 				if not toggleapi.Enabled then
 					tween:Tween(knob, uipallet.Tween, {
 						BackgroundColor3 = color.Light(uipallet.Main, 0.14)
@@ -3067,11 +2997,9 @@ scale:GetPropertyChangedSignal('Scale'):Connect(function()
 			if mainapi.ThreadFix then
 				setthreadidentity(8)
 			end
-			window.Size = UDim2.fromOffset(220, math.min(58 + windowlist.AbsoluteContentSize.Y / scale.Scale, 605))
-			childrentoggle.Size = UDim2.fromOffset(220, window.Size.Y.Offset - 48)
+			window.Size = UDim2.fromOffset(220, math.min(37 + windowlist.AbsoluteContentSize.Y / scale.Scale, 605))
+			childrentoggle.Size = UDim2.fromOffset(220, window.Size.Y.Offset - 5)
 		end)
-
-		optionapi:UpdateCount()
 
 		mainapi.Overlays = optionapi
 
@@ -4316,12 +4244,7 @@ function mainapi:CreateOverlay(categorysettings)
 	window.Text = ''
 	window.Parent = scaledgui
 	local blur = addBlur(window)
-	addCorner(window, UDim.new(0, 8))
-	local stroke = Instance.new('UIStroke')
-	stroke.Name = 'Stroke'
-	stroke.Color = color.Light(uipallet.Main, 0.28)
-	stroke.Thickness = 1
-	stroke.Parent = window
+	addCorner(window)
 	makeDraggable(window)
 	local icon = Instance.new('ImageLabel')
 	icon.Name = 'Icon'
@@ -4339,8 +4262,8 @@ function mainapi:CreateOverlay(categorysettings)
 	title.Text = categorysettings.Name
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = uipallet.Text
-	title.TextSize = 14
-	title.FontFace = uipallet.FontSemiBold
+	title.TextSize = 13
+	title.FontFace = uipallet.Font
 	title.Parent = window
 	local pin = Instance.new('ImageButton')
 	pin.Name = 'Pin'
@@ -4351,7 +4274,6 @@ function mainapi:CreateOverlay(categorysettings)
 	pin.Image = getcustomasset('LarpV4/assets/larp/pin.png')
 	pin.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 	pin.Parent = window
-	addTooltip(pin, 'Pin overlay')
 	local dotsbutton = Instance.new('TextButton')
 	dotsbutton.Name = 'Dots'
 	dotsbutton.Size = UDim2.fromOffset(17, 40)
@@ -4359,7 +4281,6 @@ function mainapi:CreateOverlay(categorysettings)
 	dotsbutton.BackgroundTransparency = 1
 	dotsbutton.Text = ''
 	dotsbutton.Parent = window
-	addTooltip(dotsbutton, 'Overlay options')
 	local dots = Instance.new('ImageLabel')
 	dots.Name = 'Dots'
 	dots.Size = UDim2.fromOffset(3, 16)

@@ -4579,7 +4579,12 @@ function mainapi:CreateCategoryList(categorysettings)
 		table.clear(self.Objects)
 		self.Selected = nil
 
-		for i, v in (categorysettings.Profiles and mainapi.Profiles or self.List) do
+		local list = categorysettings.Profiles and mainapi.Profiles or self.List
+		if list == self.List and #list > 0 then
+			list = table.clone(list)
+			table.sort(list)
+		end
+		for i, v in list do
 			if categorysettings.Profiles then
 				local object = Instance.new('TextButton')
 				object.Name = v.Name
@@ -6348,6 +6353,15 @@ friends = mainapi:CreateCategoryList(friendssettings)
 friends.Update = Instance.new('BindableEvent')
 friends.ColorUpdate = Instance.new('BindableEvent')
 friends:CreateToggle({
+	Name = 'Use friends',
+	Darker = true,
+	Default = true,
+	Function = function()
+		friends.Update:Fire()
+		friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
+	end
+})
+friends:CreateToggle({
 	Name = 'Recolor visuals',
 	Darker = true,
 	Default = true,
@@ -6369,15 +6383,6 @@ friendscolor = friends:CreateColorSlider({
 		end
 		friendssettings.Color = Color3.fromHSV(hue, sat, val)
 		friends.ColorUpdate:Fire(hue, sat, val)
-	end
-})
-friends:CreateToggle({
-	Name = 'Use friends',
-	Darker = true,
-	Default = true,
-	Function = function()
-		friends.Update:Fire()
-		friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
 	end
 })
 mainapi:Clean(friends.Update)

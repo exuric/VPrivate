@@ -2313,6 +2313,9 @@ run(function()
 	local OtherProjectiles
 	local Blacklist
 	
+	local lockedTarget
+	local lockedTime
+	
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
@@ -2385,6 +2388,16 @@ run(function()
 			Sort = sortmethods[Sort.Value or 'Distance'],
 			Origin = origin,
 		})
+		if not plr then
+			if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.35 then
+				plr = lockedTarget
+			else
+				lockedTarget = nil
+				lockedTime = nil
+				return
+			end
+		end
+		lockedTarget, lockedTime = plr, tick()
 		if not plr then return end
 	
 		local targetpart = plr[TargetPart.Value]
@@ -2401,11 +2414,9 @@ run(function()
 		local targetAirborne = not pearl and plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(targetVelocity.Y) > 0.01
 local calc, _, travelTime = prediction.SolveTrajectory(origin, speed * Prediction.Value, gravity, targetpos, targetVelocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, targetAirborne, plr.RootPart.Position, plr.RootPart, nil, true)
 		if not calc or not travelTime or travelTime > (meta.lifetimeSec or 3) then return end
-		local aimDir = CFrame.lookAt(origin, calc).LookVector * speed
-		if not prediction.IsTrajectoryClear(origin, aimDir, gravity, travelTime, rayCheck) then return end
 
 		targetinfo.Targets[plr] = tick() + 1
-		return aimDir
+		return CFrame.lookAt(origin, calc).LookVector * speed
 	end
 	
 	SilentAim = larp.Categories.Combat:CreateModule({
@@ -3946,6 +3957,8 @@ run(function()
 	local FOV
 	local Prediction
 	local AutoCharge
+	local lockedTarget
+	local lockedTime
 	local Aim = {}
 	local OtherProjectiles
 	local rayCheck = RaycastParams.new()
@@ -3969,6 +3982,15 @@ run(function()
 						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero,
 						Sort = sortmethods[Sort.Value]
 					})
+					if not plr then
+						if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.35 then
+							plr = lockedTarget
+						else
+							lockedTarget = nil
+							lockedTime = nil
+						end
+					end
+					lockedTarget, lockedTime = plr, tick()
 					if plr then
 						local pos = shootpos or self:getLaunchPosition(origin)
 						if not pos then
@@ -4011,16 +4033,14 @@ local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.n
 						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeed * Prediction.Value, gravity, plr[TargetPart.Value].Position, projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 						if calc and travelTime and travelTime <= lifetime then
 							local dir = CFrame.new(newlook.Position, calc).LookVector * projSpeed
-							if prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck) then
-								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
-								return {
-									initialVelocity = dir * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
-									positionFrom = offsetpos,
-									deltaT = lifetime,
-									gravitationalAcceleration = gravity,
-									drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
-								}
-							end
+							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
+							return {
+								initialVelocity = dir * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
+								positionFrom = offsetpos,
+								deltaT = lifetime,
+								gravitationalAcceleration = gravity,
+								drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+							}
 						end
 					end
 	

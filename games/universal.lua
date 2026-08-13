@@ -245,9 +245,6 @@ end
 
 local hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
 local prediction = loadstring(downloadFile('LarpV4/libraries/prediction.lua'), 'prediction')()
-if not prediction then
-	prediction = {}
-end
 entitylib = loadstring(downloadFile('LarpV4/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {
 	alreadychecked = {},
@@ -1404,8 +1401,7 @@ run(function()
 			if not ent then return end
 			local direction = CFrame.lookAt(origin, targetPart.Position)
 			if Projectile.Enabled then
-				local airborne = ent.Humanoid and ent.Humanoid.FloorMaterial == Enum.Material.Air or ent.RootPart and math.abs(ent.RootPart.AssemblyLinearVelocity.Y) > 0.01
-				local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, ent.HipHeight, nil, ProjectileRaycast, airborne, ent.RootPart and ent.RootPart.Position, ent.RootPart)
+				local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, ent.HipHeight, nil, ProjectileRaycast)
 				if not calc then return end
 				direction = CFrame.lookAt(origin, calc)
 			end
@@ -1415,8 +1411,7 @@ run(function()
 			local ent, targetPart, origin = getTarget(args[1])
 			if not ent then return end
 			if Projectile.Enabled then
-				local airborne = ent.Humanoid and ent.Humanoid.FloorMaterial == Enum.Material.Air or ent.RootPart and math.abs(ent.RootPart.AssemblyLinearVelocity.Y) > 0.01
-				local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, ent.HipHeight, nil, ProjectileRaycast, airborne, ent.RootPart and ent.RootPart.Position, ent.RootPart)
+				local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, ent.HipHeight, nil, ProjectileRaycast)
 				if not calc then return end
 				args[2] = CFrame.lookAt(origin, calc).LookVector * args[2].Magnitude
 			else

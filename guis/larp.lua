@@ -7007,23 +7007,25 @@ targetinfoobj = mainapi:CreateOverlay({
 ]]
 
 local handler = Instance.new('Frame')
-handler.Size = UDim2.fromOffset(240, 89)
+handler.Size = UDim2.fromOffset(250, 90)
 handler.BackgroundColor3 = color.Dark(uipallet.Main, 0.1)
 handler.BackgroundTransparency = 1
 handler.Parent = targetinfoobj.Children
 
 targetinfobkg = Instance.new('Frame')
-targetinfobkg.Size = UDim2.fromOffset(240, 89)
+targetinfobkg.Size = UDim2.fromOffset(250, 90)
 targetinfobkg.BackgroundColor3 = color.Dark(uipallet.Main, 0.1)
 targetinfobkg.BackgroundTransparency = 0.5
 targetinfobkg.Parent = handler
+local targetinfouiscale = Instance.new('UIScale')
+targetinfouiscale.Parent = targetinfobkg
 
 local targetinfoblurobj = addBlur(targetinfobkg)
 targetinfoblurobj.Visible = true
 addCorner(targetinfobkg)
 local targetinfoshot = Instance.new('ImageLabel')
-targetinfoshot.Size = UDim2.fromOffset(26, 27)
-targetinfoshot.Position = UDim2.fromOffset(19, 17)
+targetinfoshot.Size = UDim2.fromOffset(34, 34)
+targetinfoshot.Position = UDim2.fromOffset(12, 15)
 targetinfoshot.BackgroundColor3 = uipallet.Main
 targetinfoshot.Image = 'rbxthumb://type=AvatarHeadShot&id=1&w=420&h=420'
 targetinfoshot.Parent = targetinfobkg
@@ -7037,8 +7039,8 @@ local targetinfoshotblur = addBlur(targetinfoshot)
 targetinfoshotblur.Visible = true
 addCorner(targetinfoshot)
 local targetinfoname = Instance.new('TextLabel')
-targetinfoname.Size = UDim2.fromOffset(145, 20)
-targetinfoname.Position = UDim2.fromOffset(54, 20)
+targetinfoname.Size = UDim2.fromOffset(150, 22)
+targetinfoname.Position = UDim2.fromOffset(56, 12)
 targetinfoname.BackgroundTransparency = 1
 targetinfoname.Text = 'Target name'
 targetinfoname.TextXAlignment = Enum.TextXAlignment.Left
@@ -7048,7 +7050,7 @@ targetinfoname.TextColor3 = color.Light(uipallet.Text, 0.4)
 targetinfoname.TextStrokeTransparency = 1
 targetinfoname.FontFace = uipallet.Font
 local targetinfoshadow = targetinfoname:Clone()
-targetinfoshadow.Position = UDim2.fromOffset(55, 21)
+targetinfoshadow.Position = UDim2.fromOffset(57, 13)
 targetinfoshadow.TextColor3 = Color3.new()
 targetinfoshadow.TextTransparency = 0.65
 targetinfoshadow.Visible = false
@@ -7063,10 +7065,32 @@ targetinfoname:GetPropertyChangedSignal('FontFace'):Connect(function()
 	targetinfoshadow.FontFace = targetinfoname.FontFace
 end)
 targetinfoname.Parent = targetinfobkg
+local targetinfohptext = Instance.new('TextLabel')
+targetinfohptext.Size = UDim2.fromOffset(44, 16)
+targetinfohptext.Position = UDim2.fromOffset(202, 40)
+targetinfohptext.BackgroundTransparency = 1
+targetinfohptext.Text = ''
+targetinfohptext.TextSize = 13
+targetinfohptext.Font = Enum.Font.ArialBold
+targetinfohptext.TextXAlignment = Enum.TextXAlignment.Right
+targetinfohptext.TextColor3 = Color3.fromRGB(115, 255, 110)
+targetinfohptext.TextStrokeTransparency = 0.9
+targetinfohptext.Parent = targetinfobkg
+local targetinfostats = Instance.new('TextLabel')
+targetinfostats.Size = UDim2.fromOffset(186, 14)
+targetinfostats.Position = UDim2.fromOffset(56, 64)
+targetinfostats.BackgroundTransparency = 1
+targetinfostats.Text = ''
+targetinfostats.TextSize = 11
+targetinfostats.Font = Enum.Font.Arial
+targetinfostats.TextXAlignment = Enum.TextXAlignment.Left
+targetinfostats.TextColor3 = Color3.fromRGB(160, 160, 160)
+targetinfostats.TextStrokeTransparency = 0.9
+targetinfostats.Parent = targetinfobkg
 local targetinfohealthbkg = Instance.new('Frame')
 targetinfohealthbkg.Name = 'HealthBKG'
-targetinfohealthbkg.Size = UDim2.fromOffset(200, 9)
-targetinfohealthbkg.Position = UDim2.fromOffset(20, 56)
+targetinfohealthbkg.Size = UDim2.fromOffset(150, 10)
+targetinfohealthbkg.Position = UDim2.fromOffset(56, 44)
 targetinfohealthbkg.BackgroundColor3 = uipallet.Main
 targetinfohealthbkg.BorderSizePixel = 0
 targetinfohealthbkg.Parent = targetinfobkg
@@ -7076,6 +7100,10 @@ targetinfohealth.Size = UDim2.fromScale(0.8, 1)
 targetinfohealth.Position = UDim2.new()
 targetinfohealth.BackgroundColor3 = Color3.fromHSV(1 / 2.5, 0.89, 0.75)
 targetinfohealth.Parent = targetinfohealthbkg
+local targetinfohealthgloss = Instance.new('UIGradient')
+targetinfohealthgloss.Transparency = NumberSequence.new(0.75, 1)
+targetinfohealthgloss.Rotation = 90
+targetinfohealthgloss.Parent = targetinfohealth
 targetinfohealth:GetPropertyChangedSignal('Size'):Connect(function()
 	targetinfohealth.Visible = targetinfohealth.Size.X.Scale > 0.01
 end)
@@ -7232,6 +7260,8 @@ targetinfoobj:CreateFont({
 		targetinfoname.FontFace = val
 		TargetInfoName.FontFace = val
 		TargetInfoNameShadow.FontFace = val
+		targetinfohptext.FontFace = val
+		targetinfostats.FontFace = val
 	end
 })
 local targetinfobackgroundtransparency = {
@@ -7242,12 +7272,41 @@ local targetinfodisplay = targetinfoobj:CreateToggle({
 	Name = 'Use Displayname',
 	Default = true
 })
+local targetinfoshowhp = targetinfoobj:CreateToggle({
+	Name = 'Show HP',
+	Default = true
+})
+local targetinfoshowdist = targetinfoobj:CreateToggle({
+	Name = 'Show Distance',
+	Default = true
+})
+local targetinfoshowping = targetinfoobj:CreateToggle({
+	Name = 'Show Ping',
+	Default = false
+})
+local targetinfonameshadow = targetinfoobj:CreateToggle({
+	Name = 'Name Shadow',
+	Function = function(callback)
+		targetinfoshadow.Visible = callback
+	end,
+	Default = true
+})
+local targetinfoscale = targetinfoobj:CreateSlider({
+	Name = 'Scale',
+	Min = 0.5,
+	Max = 2,
+	Default = 1,
+	Decimal = 10,
+	Function = function(val)
+		targetinfouiscale.Scale = val
+	end
+})
 targetinfoobj:CreateToggle({
 	Name = 'Render Background',
 	Function = function(callback)
 		targetinfobkg.BackgroundTransparency = callback and targetinfobackgroundtransparency.Value or 1
 		TargetInfoMainInfo.BackgroundTransparency = targetinfobkg.BackgroundTransparency
-		targetinfoshadow.Visible = not callback
+		targetinfoshadow.Visible = targetinfonameshadow.Enabled
 		targetinfoblurobj.Visible = callback
 		targetinfobackgroundtransparency.Object.Visible = callback
 	end,
@@ -7347,6 +7406,33 @@ targetinfo = {
 			TargetInfoNameShadow.Text = targetinfoname.Text
 			targetinfoshot.Image = 'rbxthumb://type=AvatarHeadShot&id='..(v.Player and v.Player.UserId or 1)..'&w=420&h=420'
 			TargetInfoImage.Image = targetinfoshot.Image
+
+			local maxhealth = v.MaxHealth or 100
+			local health = math.clamp(v.Health or 0, 0, maxhealth)
+			local percent = maxhealth > 0 and health / maxhealth or 0
+			targetinfohptext.Visible = targetinfoshowhp.Enabled
+			targetinfohptext.Text = targetinfoshowhp.Enabled and tostring(math.floor(health)) or ''
+			targetinfohptext.TextColor3 = Color3.fromHSV(math.clamp(percent / 2.5, 0, 1), 0.89, 0.75)
+
+			targetinfostats.Visible = (targetinfoshowdist.Enabled or targetinfoshowping.Enabled)
+			if targetinfoshowdist.Enabled or targetinfoshowping.Enabled then
+				local parts = {}
+				if targetinfoshowdist.Enabled and v.Head then
+					local dist = math.floor((cloneref(game:GetService('Workspace')).CurrentCamera.CFrame.Position - v.Head.Position).Magnitude + 0.5)
+					table.insert(parts, tostring(dist)..' studs')
+				end
+				if targetinfoshowping.Enabled and v.Player then
+					local ok, ping = pcall(function()
+						return v.Player:GetNetworkPing()
+					end)
+					if ok and type(ping) == 'number' and ping > 0 then
+						table.insert(parts, tostring(math.floor(ping * 1000))..' ms')
+					end
+				end
+				targetinfostats.Text = table.concat(parts, '  |  ')
+			else
+				targetinfostats.Text = ''
+			end
 
 			if not v.Character then
 				v.Health = v.Health or 0

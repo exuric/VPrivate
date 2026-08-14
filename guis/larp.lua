@@ -7834,19 +7834,20 @@ if shared.LarpPresetInstall then
 		if prompted or not clickgui.Visible then return end
 		prompted = true
 		mainapi:CreatePrompt({
-			Title = 'Preset configs',
-			Text = 'It looks like this is your first time using Larp. Would you like to download the preset configs? They come with recommended settings for each supported game.',
-			Confirm = 'Download',
+			Title = 'Discord',
+			Icon = 'notice',
+			Text = "It looks like this is your first time using Larp. Join our discord for updates.",
+			Confirm = 'Discord',
 			Cancel = 'No thanks',
 			Function = function(result)
 				local install = shared.LarpPresetInstall
 				shared.LarpPresetInstall = nil
-				if not result or not install then return end
+				if not result then return end
 				task.spawn(function()
-					if install() then
-						mainapi:CreateNotification('Larp', 'Preset configs installed, rejoin to use them.', 8)
-					else
-						mainapi:CreateNotification('Larp', 'Failed to download preset configs.', 8, 'alert')
+					pcall(setclipboard, 'https://discord.gg/MwEu9HNK84')
+					mainapi:CreateNotification('Discord', 'Discord Link Copied', 2, 'notice')
+					if install then
+						pcall(install)
 					end
 				end)
 			end

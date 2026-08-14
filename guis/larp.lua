@@ -7845,7 +7845,7 @@ if shared.LarpPresetInstall then
 				if not result then return end
 				task.spawn(function()
 					pcall(setclipboard, 'https://discord.gg/MwEu9HNK84')
-					mainapi:CreateNotification('Discord', 'Discord Link Copied', 2, 'discord')
+					mainapi:CreateNotification('Discord', 'Discord Link Copied', 2)
 					if install then
 						pcall(install)
 					end

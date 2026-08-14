@@ -5307,6 +5307,15 @@ run(function()
 	local Clamp
 	local Reference = {}
 	local bkg
+	local DotSizeVal = 4
+	local DotBorderColor = Color3.new()
+	local DotBorderTrans = 0.8
+	local BkgTrans = 0.5
+	local BorderTrans = 0.4
+	local CrossTrans = 0.5
+	local ShowBkg
+	local ShowCross
+	local radarbgblur
 	
 	local function Added(ent)
 		if not Targets.Players.Enabled and ent.Player then return end
@@ -5317,7 +5326,7 @@ run(function()
 		end
 	
 		local dot = Instance.new('Frame')
-		dot.Size = UDim2.fromOffset(4, 4)
+		dot.Size = UDim2.fromOffset(DotSizeVal, DotSizeVal)
 		dot.AnchorPoint = Vector2.new(0.5, 0.5)
 		dot.BackgroundColor3 = entitylib.getEntityColor(ent) or Color3.fromHSV(PlayerColor.Hue, PlayerColor.Sat, PlayerColor.Value)
 		dot.Parent = bkg
@@ -5325,9 +5334,9 @@ run(function()
 		corner.CornerRadius = UDim.new(DotStyle.Value == 'Circles' and 1 or 0, 0)
 		corner.Parent = dot
 		local stroke = Instance.new('UIStroke')
-		stroke.Color = Color3.new()
+		stroke.Color = DotBorderColor
 		stroke.Thickness = 1
-		stroke.Transparency = 0.8
+		stroke.Transparency = DotBorderTrans
 		stroke.Parent = dot
 		Reference[ent] = dot
 	end
@@ -5444,27 +5453,138 @@ run(function()
 	local barcorner = Instance.new('UICorner')
 	barcorner.CornerRadius = UDim.new(0, 8)
 	barcorner.Parent = bar
+	radarbgblur = addBlur(bkg)
 	Radar:CreateColorSlider({
 		Name = 'Bar Color',
 		Function = function(hue, sat, val)
 			bar.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
 		end
 	})
-	Radar:CreateToggle({
+	Radar:CreateColorSlider({
+		Name = 'Background Color',
+		Function = function(hue, sat, val)
+			bkg.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+		end,
+		Darker = true
+	})
+	ShowBkg = Radar:CreateToggle({
 		Name = 'Show Background',
 		Default = true,
 		Function = function(callback)
-			bkg.BackgroundTransparency = callback and 0.5 or 1
+			bkg.BackgroundTransparency = callback and BkgTrans or 1
 			bar.BackgroundTransparency = callback and 0 or 1
-			stroke.Transparency = callback and 0.4 or 1
+			stroke.Transparency = callback and BorderTrans or 1
+		end
+	})
+	Radar:CreateSlider({
+		Name = 'Background Transparency',
+		Min = 0,
+		Max = 1,
+		Default = 0.5,
+		Function = function(val)
+			BkgTrans = val
+			if ShowBkg.Enabled then
+				bkg.BackgroundTransparency = val
+			end
+		end
+	})
+	Radar:CreateColorSlider({
+		Name = 'Border Color',
+		Function = function(hue, sat, val)
+			stroke.Color = Color3.fromHSV(hue, sat, val)
+		end,
+		Darker = true
+	})
+	Radar:CreateSlider({
+		Name = 'Border Transparency',
+		Min = 0,
+		Max = 1,
+		Default = 0.4,
+		Function = function(val)
+			BorderTrans = val
+			if ShowBkg.Enabled then
+				stroke.Transparency = val
+			end
+		end
+	})
+	Radar:CreateSlider({
+		Name = 'Corner Radius',
+		Min = 0,
+		Max = 20,
+		Default = 8,
+		Function = function(val)
+			corner.CornerRadius = UDim.new(0, val)
 		end
 	})
 	Radar:CreateToggle({
+		Name = 'Background Blur',
+		Default = true,
+		Function = function(callback)
+			if radarbgblur then
+				radarbgblur.Visible = callback
+			end
+		end
+	})
+	ShowCross = Radar:CreateToggle({
 		Name = 'Show Cross',
 		Default = true,
 		Function = function(callback)
-			line1.BackgroundTransparency = callback and 0.5 or 1
-			line2.BackgroundTransparency = callback and 0.5 or 1
+			line1.BackgroundTransparency = callback and CrossTrans or 1
+			line2.BackgroundTransparency = callback and CrossTrans or 1
+		end
+	})
+	Radar:CreateColorSlider({
+		Name = 'Cross Color',
+		Function = function(hue, sat, val)
+			line1.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+			line2.BackgroundColor3 = line1.BackgroundColor3
+		end
+	})
+	Radar:CreateSlider({
+		Name = 'Cross Transparency',
+		Min = 0,
+		Max = 1,
+		Default = 0.5,
+		Function = function(val)
+			CrossTrans = val
+			if ShowCross.Enabled then
+				line1.BackgroundTransparency = val
+				line2.BackgroundTransparency = val
+			end
+		end
+	})
+	Radar:CreateSlider({
+		Name = 'Dot Size',
+		Min = 2,
+		Max = 12,
+		Default = 4,
+		Function = function(val)
+			DotSizeVal = val
+			for _, dot in Reference do
+				dot.Size = UDim2.fromOffset(val, val)
+			end
+		end
+	})
+	Radar:CreateColorSlider({
+		Name = 'Dot Border Color',
+		Function = function(hue, sat, val)
+			DotBorderColor = Color3.fromHSV(hue, sat, val)
+			for _, dot in Reference do
+				dot.UIStroke.Color = DotBorderColor
+			end
+		end,
+		Darker = true
+	})
+	Radar:CreateSlider({
+		Name = 'Dot Border Transparency',
+		Min = 0,
+		Max = 1,
+		Default = 0.8,
+		Function = function(val)
+			DotBorderTrans = val
+			for _, dot in Reference do
+				dot.UIStroke.Transparency = val
+			end
 		end
 	})
 	Clamp = Radar:CreateToggle({

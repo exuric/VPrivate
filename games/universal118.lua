@@ -71,7 +71,7 @@ local gameCamera = workspace.CurrentCamera or workspace:FindFirstChildWhichIsA('
 local lplr = playersService.LocalPlayer
 local assetfunction = getcustomasset
 
-local larp = shared.larp
+local larp = shared.larp or getgenv().larp or _G.larp
 local tween = larp.Libraries.tween
 local targetinfo = larp.Libraries.targetinfo
 local getfontsize = larp.Libraries.getfontsize

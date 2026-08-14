@@ -280,8 +280,12 @@ if not isfolder('LarpV4/assets/'..gui) then
 	makefolder('LarpV4/assets/'..gui)
 end
 larp = loadstring(downloadSplit('LarpV4/guis/larp118.lua'), 'gui')(license)
+if type(larp) ~= 'table' then
+	error('larp118.lua did not return a valid api table' .. (larp and ': '..tostring(larp) or ''))
+end
 shared.larp = larp
 _G.larp = larp
+getgenv().larp = larp
 getgenv().used_init = true
 
 if hookmetamethod then

@@ -7,7 +7,7 @@ local replicatedStorage = cloneref(game:GetService('ReplicatedStorage'))
 local inputService = cloneref(game:GetService('UserInputService'))
 
 local lplr = playersService.LocalPlayer
-local larp = shared.larp
+local larp = shared.larp or getgenv().larp or _G.larp
 local entitylib = larp.Libraries.entity
 local sessioninfo = larp.Libraries.sessioninfo
 local bedwars = {}

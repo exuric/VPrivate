@@ -319,7 +319,7 @@ local function downloadFile(path, func)
 	if not isfile(path) then
 		createDownloader(path)
 		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v=117', true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -1004,7 +1004,7 @@ components = {
 		title.Name = 'Title'
 		title.Size = UDim2.new(1, 0, 0, 29)
 		title.BackgroundTransparency = 1
-		title.Text = '         '..optionsettings.Name..' - '..optionapi.Value
+		title.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..optionsettings.Name..' - '..optionapi.Value
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		title.TextSize = 13
@@ -1043,7 +1043,7 @@ components = {
 		
 		function optionapi:SetValue(val, mouse)
 			self.Value = table.find(optionsettings.List, val) and val or optionsettings.List[1] or 'None'
-			title.Text = '         '..optionsettings.Name..' - '..self.Value
+			title.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..optionsettings.Name..' - '..self.Value
 			if dropdownchildren then
 				arrow.Rotation = 90
 				dropdownchildren:Destroy()
@@ -1073,7 +1073,7 @@ components = {
 					dropdownoption.BackgroundColor3 = uipallet.Main
 					dropdownoption.BorderSizePixel = 0
 					dropdownoption.AutoButtonColor = false
-					dropdownoption.Text = '         '..v
+					dropdownoption.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..v
 					dropdownoption.TextXAlignment = Enum.TextXAlignment.Left
 					dropdownoption.TextColor3 = color.Dark(uipallet.Text, 0.16)
 					dropdownoption.TextSize = 13
@@ -2117,7 +2117,7 @@ components = {
 		toggle.BorderSizePixel = 0
 		toggle.AutoButtonColor = false
 		toggle.Visible = optionsettings.Visible == nil or optionsettings.Visible
-		toggle.Text = '          '..optionsettings.Name
+		toggle.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..optionsettings.Name
 		toggle.TextXAlignment = Enum.TextXAlignment.Left
 		toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		toggle.TextSize = 14
@@ -2431,7 +2431,7 @@ components = {
 			label.Name = 'DividerLabel'
 			label.Size = UDim2.fromOffset(218, 27)
 			label.BackgroundTransparency = 1
-			label.Text = '          '..text:upper()
+			label.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..text:upper()
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.TextColor3 = color.Dark(uipallet.Text, 0.43)
 			label.TextSize = 9
@@ -2612,7 +2612,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = '          Rebind GUI'
+		button.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèRebind GUI'
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2700,7 +2700,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = (categorysettings.Icon and '                                 ' or '             ')..categorysettings.Name
+		button.Text = (categorysettings.Icon and 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè' or 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè')..categorysettings.Name
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2881,7 +2881,7 @@ function mainapi:CreateGUI()
 			toggle.Size = UDim2.new(1, 0, 0, 40)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
-			toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
+			toggle.Text = string.rep('ΓÇè', 33 * scale.Scale)..togglesettings.Name
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
 			toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			toggle.TextSize = 14
@@ -2925,7 +2925,7 @@ function mainapi:CreateGUI()
 			end
 
 			scale:GetPropertyChangedSignal('Scale'):Connect(function()
-				toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
+				toggle.Text = string.rep('ΓÇè', 33 * scale.Scale)..togglesettings.Name
 			end)
 			toggle.MouseEnter:Connect(function()
 				hovered = true
@@ -3019,7 +3019,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = '          '..categorysettings.Name
+		button.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..categorysettings.Name
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -3116,7 +3116,7 @@ function mainapi:CreateGUI()
 			window.Size = UDim2.fromOffset(220, 45 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 			for _, v in categoryapi.Buttons do
 				if v.Icon then
-					v.Object.Text = string.rep(' ', 33 * scale.Scale)..v.Name
+					v.Object.Text = string.rep('ΓÇè', 33 * scale.Scale)..v.Name
 				end
 			end
 		end)
@@ -3621,7 +3621,7 @@ function mainapi:CreateGUI()
 		window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 		for _, v in categoryapi.Buttons do
 			if v.Icon then
-				v.Object.Text = string.rep(' ', 36 * scale.Scale)..v.Name
+				v.Object.Text = string.rep('ΓÇè', 36 * scale.Scale)..v.Name
 			end
 		end
 	end)
@@ -3736,7 +3736,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = '            '..modulesettings.Name
+		modulebutton.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..modulesettings.Name
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
@@ -5477,51 +5477,25 @@ function mainapi:CreateNotification(title, text, duration, type)
 		textlabel.Parent = textshadow
 		local progress = Instance.new('Frame')
 		progress.Name = 'Progress'
-		progress.Size = UDim2.new(1, -12, 0, 3)
-		progress.Position = UDim2.new(0, 3, 1, -6)
+		progress.Size = UDim2.new(1, -13, 0, 2)
+		progress.Position = UDim2.new(0, 3, 1, -4)
 		progress.ZIndex = 5
-		progress.BackgroundColor3 = Color3.new()
-		progress.BackgroundTransparency = 0.55
-		progress.BorderSizePixel = 0
-		progress.Parent = notification
-		addCorner(progress, UDim.new(1, 0))
-		local fill = Instance.new('Frame')
-		fill.Name = 'Fill'
-		fill.Size = UDim2.new(1, 0, 1, 0)
-		fill.BackgroundColor3 =
+		progress.BackgroundColor3 =
 			type == 'alert' and Color3.fromRGB(250, 50, 56)
 			or type == 'warning' and Color3.fromRGB(236, 129, 43)
 			or Color3.fromRGB(220, 220, 220)
-		fill.BorderSizePixel = 0
-		fill.Parent = progress
-		addCorner(fill, UDim.new(1, 0))
-		local overlay = Instance.new('TextButton')
-		overlay.Name = 'Overlay'
-		overlay.Size = UDim2.new(1, 0, 1, 0)
-		overlay.ZIndex = 6
-		overlay.BackgroundTransparency = 1
-		overlay.Text = ''
-		overlay.AutoButtonColor = false
-		overlay.Parent = notification
-		local remaining = duration
-		local expiresAt = os.clock() + duration
-		local paused = false
-		local destroyed = false
-		local function dismiss()
-			if destroyed then return end
-			destroyed = true
-			mainapi.NotificationHistory = mainapi.NotificationHistory or {}
-			table.insert(mainapi.NotificationHistory, {
-				Title = removeTags(title),
-				Text = removeTags(text),
-				Time = os.date('%H:%M:%S'),
-				Type = type or 'info'
+		progress.BorderSizePixel = 0
+		progress.Parent = notification
+		if tween.Tween then
+			tween:Tween(notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
+				AnchorPoint = Vector2.new(1, 0)
+			}, tween.tweenstwo)
+			tween:Tween(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+				Size = UDim2.fromOffset(0, 2)
 			})
-			if #mainapi.NotificationHistory > 60 then
-				table.remove(mainapi.NotificationHistory, 1)
-			end
+		end
+		task.delay(duration, function()
 			if tween.Tween then
-				tween:Cancel(fill)
 				tween:Tween(notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
 					AnchorPoint = Vector2.new(0, 0)
 				}, tween.tweenstwo)
@@ -5529,39 +5503,7 @@ function mainapi:CreateNotification(title, text, duration, type)
 			task.wait(0.2)
 			notification:ClearAllChildren()
 			notification:Destroy()
-		end
-		overlay.MouseButton1Click:Connect(dismiss)
-		overlay.MouseEnter:Connect(function()
-			paused = true
-			remaining = math.max(expiresAt - os.clock(), 0)
-			if tween.Tween then
-				tween:Cancel(fill)
-			end
 		end)
-		overlay.MouseLeave:Connect(function()
-			paused = false
-			expiresAt = os.clock() + remaining
-			if tween.Tween and remaining > 0 then
-				tween:Tween(fill, TweenInfo.new(remaining, Enum.EasingStyle.Linear), {
-					Size = UDim2.new(0, 0, 1, 0)
-				})
-			end
-		end)
-		if tween.Tween then
-			tween:Tween(notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
-				AnchorPoint = Vector2.new(1, 0)
-			}, tween.tweenstwo)
-			tween:Tween(fill, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-				Size = UDim2.new(0, 0, 1, 0)
-			})
-		end
-		while not destroyed do
-			if not paused and os.clock() >= expiresAt then
-				dismiss()
-				return
-			end
-			task.wait(0.05)
-		end
 	end)
 end
 
@@ -6465,7 +6407,7 @@ Profiles:CreateButton({
 		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')(license)
 		else
-			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init118.lua?v=118', true))(license)
+			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init119.lua?v=119', true))(license)
 		end
 	end,
 	Tooltip = 'Resets the current profile back to default settings'
@@ -6515,7 +6457,7 @@ general:CreateButton({
 		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')()
 		else
-			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init118.lua?v=118', true))()
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init119.lua?v=119', true))()
 		end
 	end,
 	Tooltip = 'Reloads larp for debugging purposes'
@@ -6623,7 +6565,7 @@ guipane:CreateDropdown({
 			if shared.LarpDeveloper then
 				loadstring(readfile('LarpV4/init.lua'), 'loader')()
 			else
-				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init118.lua?v=118', true))()
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init119.lua?v=119', true))()
 			end
 		end
 	end,
@@ -6706,12 +6648,6 @@ mainapi.Notifications = notifpane:CreateToggle({
 	Function = function(enabled)
 		if mainapi.ToggleNotifications.Object then
 			mainapi.ToggleNotifications.Object.Visible = enabled
-		end
-		if historybutton then
-			historybutton.Visible = enabled
-			if not enabled then
-				historypanel.Visible = false
-			end
 		end
 	end,
 	Tooltip = 'Shows notifications',
@@ -7752,201 +7688,6 @@ mainapi:Clean(notifications.ChildRemoved:Connect(function()
 		end
 	end
 end))
-
---[[
-	Notification History
-]]
-mainapi.NotificationHistory = mainapi.NotificationHistory or {}
-local function notificationColor(t)
-	return t == 'alert' and Color3.fromRGB(250, 50, 56)
-		or t == 'warning' and Color3.fromRGB(236, 129, 43)
-		or Color3.fromRGB(220, 220, 220)
-end
-local historybutton = Instance.new('TextButton')
-historybutton.Name = 'HistoryButton'
-historybutton.Size = UDim2.fromOffset(36, 36)
-historybutton.Position = UDim2.new(1, -10, 1, -10)
-historybutton.AnchorPoint = Vector2.new(1, 1)
-historybutton.ZIndex = 7
-historybutton.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-historybutton.Text = 'LOG'
-historybutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
-historybutton.TextSize = 10
-historybutton.FontFace = uipallet.FontSemiBold
-historybutton.AutoButtonColor = false
-historybutton.Visible = mainapi.Notifications.Enabled
-historybutton.Parent = scaledgui
-addCorner(historybutton, UDim.new(1, 0))
-historybutton.MouseEnter:Connect(function()
-	if tween.Tween then
-		tween:Tween(historybutton, uipallet.Tween, {
-			BackgroundColor3 = color.Dark(uipallet.Main, 0.08)
-		})
-	end
-end)
-historybutton.MouseLeave:Connect(function()
-	if tween.Tween then
-		tween:Tween(historybutton, uipallet.Tween, {
-			BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-		})
-	end
-end)
-local historypanel = Instance.new('Frame')
-historypanel.Name = 'HistoryPanel'
-historypanel.Size = UDim2.fromOffset(360, 340)
-historypanel.Position = UDim2.new(1, -54, 1, -54)
-historypanel.AnchorPoint = Vector2.new(1, 1)
-historypanel.ZIndex = 7
-historypanel.BackgroundColor3 = uipallet.Main
-historypanel.Visible = false
-historypanel.Parent = scaledgui
-addCorner(historypanel)
-addBlur(historypanel)
-local historytitle = Instance.new('TextLabel')
-historytitle.Name = 'Title'
-historytitle.Size = UDim2.new(1, -56, 0, 20)
-historytitle.Position = UDim2.fromOffset(12, 10)
-historytitle.ZIndex = 8
-historytitle.BackgroundTransparency = 1
-historytitle.Text = 'Notification History'
-historytitle.TextColor3 = color.Dark(uipallet.Text, 0.12)
-historytitle.TextSize = 14
-historytitle.FontFace = uipallet.FontSemiBold
-historytitle.TextXAlignment = Enum.TextXAlignment.Left
-historytitle.Parent = historypanel
-local historyclose = addCloseButton(historypanel)
-historyclose.MouseButton1Click:Connect(function()
-	historypanel.Visible = false
-end)
-local historylist = Instance.new('ScrollingFrame')
-historylist.Name = 'List'
-historylist.Size = UDim2.new(1, -12, 1, -52)
-historylist.Position = UDim2.fromOffset(6, 38)
-historylist.ZIndex = 8
-historylist.BackgroundTransparency = 1
-historylist.BorderSizePixel = 0
-historylist.ScrollBarThickness = 4
-historylist.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.1)
-historylist.ScrollBarImageTransparency = 0.5
-historylist.CanvasSize = UDim2.new(0, 0, 0, 0)
-historylist.AutomaticCanvasSize = Enum.AutomaticSize.Y
-historylist.Parent = historypanel
-local historyempty = Instance.new('TextLabel')
-historyempty.Name = 'Empty'
-historyempty.Size = UDim2.new(1, -12, 1, -52)
-historyempty.Position = UDim2.fromOffset(6, 38)
-historyempty.ZIndex = 8
-historyempty.BackgroundTransparency = 1
-historyempty.Text = 'No notifications yet'
-historyempty.TextColor3 = color.Dark(uipallet.Text, 0.3)
-historyempty.TextSize = 12
-historyempty.FontFace = uipallet.Font
-historyempty.Parent = historypanel
-local historyclear = Instance.new('TextButton')
-historyclear.Name = 'Clear'
-historyclear.Size = UDim2.new(1, -24, 0, 26)
-historyclear.Position = UDim2.new(0, 12, 1, -34)
-historyclear.ZIndex = 8
-historyclear.BackgroundColor3 = color.Dark(uipallet.Main, 0.04)
-historyclear.Text = 'CLEAR'
-historyclear.TextColor3 = color.Dark(uipallet.Text, 0.16)
-historyclear.TextSize = 11
-historyclear.FontFace = uipallet.FontSemiBold
-historyclear.AutoButtonColor = false
-historyclear.Parent = historypanel
-addCorner(historyclear)
-local function updateHistory()
-	historylist:ClearAllChildren()
-	historyempty.Visible = #mainapi.NotificationHistory == 0
-	local y = 0
-	for index = #mainapi.NotificationHistory, 1, -1 do
-		local entry = mainapi.NotificationHistory[index]
-		local row = Instance.new('TextButton')
-		row.Name = 'Entry'
-		row.Size = UDim2.new(1, 0, 0, 46)
-		row.Position = UDim2.fromOffset(0, y)
-		row.ZIndex = 8
-		row.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-		row.Text = ''
-		row.AutoButtonColor = false
-		row.Parent = historylist
-		addCorner(row)
-		row.MouseEnter:Connect(function()
-			if tween.Tween then
-				tween:Tween(row, uipallet.Tween, {
-					BackgroundColor3 = color.Dark(uipallet.Main, 0.06)
-				})
-			end
-		end)
-		row.MouseLeave:Connect(function()
-			if tween.Tween then
-				tween:Tween(row, uipallet.Tween, {
-					BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-				})
-			end
-		end)
-		local dot = Instance.new('Frame')
-		dot.Name = 'Dot'
-		dot.Size = UDim2.fromOffset(6, 6)
-		dot.Position = UDim2.fromOffset(12, 20)
-		dot.ZIndex = 8
-		dot.BackgroundColor3 = notificationColor(entry.Type)
-		dot.BorderSizePixel = 0
-		dot.Parent = row
-		addCorner(dot, UDim.new(1, 0))
-		local rowtitle = Instance.new('TextLabel')
-		rowtitle.Name = 'Title'
-		rowtitle.Size = UDim2.new(1, -66, 0, 16)
-		rowtitle.Position = UDim2.fromOffset(22, 5)
-		rowtitle.ZIndex = 8
-		rowtitle.BackgroundTransparency = 1
-		rowtitle.Text = entry.Title
-		rowtitle.TextColor3 = color.Dark(uipallet.Text, 0.08)
-		rowtitle.TextSize = 13
-		rowtitle.FontFace = uipallet.FontSemiBold
-		rowtitle.TextXAlignment = Enum.TextXAlignment.Left
-		rowtitle.Parent = row
-		local rowtext = Instance.new('TextLabel')
-		rowtext.Name = 'Text'
-		rowtext.Size = UDim2.new(1, -66, 0, 14)
-		rowtext.Position = UDim2.fromOffset(22, 23)
-		rowtext.ZIndex = 8
-		rowtext.BackgroundTransparency = 1
-		rowtext.Text = entry.Text
-		rowtext.TextColor3 = color.Dark(uipallet.Text, 0.2)
-		rowtext.TextSize = 11
-		rowtext.FontFace = uipallet.Font
-		rowtext.TextXAlignment = Enum.TextXAlignment.Left
-		rowtext.TextTruncate = Enum.TextTruncate.AtEnd
-		rowtext.Parent = row
-		local rowtime = Instance.new('TextLabel')
-		rowtime.Name = 'Time'
-		rowtime.Size = UDim2.new(0, 44, 0, 12)
-		rowtime.Position = UDim2.new(1, -50, 0, 5)
-		rowtime.ZIndex = 8
-		rowtime.BackgroundTransparency = 1
-		rowtime.Text = entry.Time
-		rowtime.TextColor3 = color.Dark(uipallet.Text, 0.3)
-		rowtime.TextSize = 10
-		rowtime.FontFace = uipallet.Font
-		rowtime.Parent = row
-		row.MouseButton1Click:Connect(function()
-			historypanel.Visible = false
-			mainapi:CreateNotification(entry.Title, entry.Text, 5, entry.Type)
-		end)
-		y = y + 46
-	end
-end
-historybutton.MouseButton1Click:Connect(function()
-	historypanel.Visible = not historypanel.Visible
-	if historypanel.Visible then
-		updateHistory()
-	end
-end)
-historyclear.MouseButton1Click:Connect(function()
-	table.clear(mainapi.NotificationHistory)
-	updateHistory()
-end)
 
 mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
 	if not inputService:GetFocusedTextBox() and inputObj.KeyCode ~= Enum.KeyCode.Unknown then

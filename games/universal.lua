@@ -5691,6 +5691,7 @@ run(function()
 	SessionInfo:CreateColorSlider({
 		Name = 'Text Color',
 		Function = function(hue, sat, val)
+			if not infolabel then return end
 			infolabel.TextColor3 = Color3.fromHSV(hue, sat, val)
 			if infoshadow then
 				infoshadow.TextColor3 = Color3.fromHSV((hue + 0.5) % 1, sat, math.max(val - 0.8, 0))
@@ -5702,6 +5703,7 @@ run(function()
 		Name = 'Alignment',
 		List = {'Left', 'Center', 'Right'},
 		Function = function(val)
+			if not infolabel then return end
 			infolabel.TextXAlignment = Enum.TextXAlignment[val]
 			if infoshadow then
 				infoshadow.TextXAlignment = infolabel.TextXAlignment
@@ -5721,7 +5723,9 @@ run(function()
 	SessionInfo:CreateToggle({
 		Name = 'Text Stroke',
 		Function = function(callback)
-			infolabel.TextStrokeTransparency = callback and 0.8 or 1
+			if infolabel then
+				infolabel.TextStrokeTransparency = callback and 0.8 or 1
+			end
 		end,
 		Default = true
 	})
@@ -5731,7 +5735,9 @@ run(function()
 		Max = 20,
 		Default = 5,
 		Function = function(val)
-			sessioninfocorner.CornerRadius = UDim.new(0, val)
+			if sessioninfocorner then
+				sessioninfocorner.CornerRadius = UDim.new(0, val)
+			end
 		end
 	})
 	SessionInfo:CreateSlider({
@@ -5740,6 +5746,7 @@ run(function()
 		Max = 24,
 		Default = 8,
 		Function = function(val)
+			if not infolabel then return end
 			infolabel.Position = UDim2.fromOffset(val, val)
 			infolabel.Size = UDim2.new(1, -val * 2, 1, -val * 2)
 			if infoshadow then

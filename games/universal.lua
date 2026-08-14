@@ -8194,7 +8194,7 @@ run(function()
 	local Color
 	local keys, holder = {}
 	
-	local function createKeystroke(keybutton, pos, pos2, text)
+	local function createKeystroke(keybutton, pos, text)
 		if keys[keybutton] then
 			keys[keybutton].Key:Destroy()
 			keys[keybutton] = nil
@@ -8207,22 +8207,26 @@ run(function()
 		key.Position = pos
 		key.Name = keybutton.Name
 		key.Parent = holder
+		local keystroke = Instance.new('UIStroke')
+		keystroke.Color = Color3.new()
+		keystroke.Transparency = 0.5
+		keystroke.Thickness = 1
+		keystroke.Parent = key
 		local keytext = Instance.new('TextLabel')
 		keytext.BackgroundTransparency = 1
 		keytext.Size = UDim2.fromScale(1, 1)
 		keytext.Font = Enum.Font.Gotham
 		keytext.Text = text or keybutton.Name
-		keytext.TextXAlignment = Enum.TextXAlignment.Left
-		keytext.TextYAlignment = Enum.TextYAlignment.Top
-		keytext.Position = pos2
-		keytext.TextSize = keybutton == Enum.KeyCode.Space and 18 or 15
+		keytext.TextXAlignment = Enum.TextXAlignment.Center
+		keytext.TextYAlignment = Enum.TextYAlignment.Center
+		keytext.TextSize = keybutton == Enum.KeyCode.Space and 16 or 15
 		keytext.TextColor3 = Color3.new(1, 1, 1)
 		keytext.Parent = key
 		local corner = Instance.new('UICorner')
 		corner.CornerRadius = UDim.new(0, 4)
 		corner.Parent = key
 	
-		keys[keybutton] = {Key = key}
+		keys[keybutton] = {Key = key, Stroke = keystroke}
 	end
 	
 	local function updateKey(inputType)
@@ -8236,6 +8240,10 @@ run(function()
 				key.Tween2:Cancel()
 			end
 	
+			if key.Tween3 then
+				key.Tween3:Cancel()
+			end
+	
 			local pressed = inputType.UserInputState == Enum.UserInputState.Begin
 			key.Pressed = pressed
 			key.Tween = tweenService:Create(key.Key, TweenInfo.new(0.1), {
@@ -8245,8 +8253,12 @@ run(function()
 			key.Tween2 = tweenService:Create(key.Key.TextLabel, TweenInfo.new(0.1), {
 				TextColor3 = pressed and Color3.new() or Color3.new(1, 1, 1)
 			})
+			key.Tween3 = tweenService:Create(key.Stroke, TweenInfo.new(0.1), {
+				Transparency = pressed and 1 or 0.5
+			})
 			key.Tween:Play()
 			key.Tween2:Play()
+			key.Tween3:Play()
 		end
 	end
 	
@@ -8254,10 +8266,10 @@ run(function()
 		Name = 'Keystrokes',
 		Function = function(callback)
 			if callback then
-				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), UDim2.new(0, 6, 0, 5), Style.Value == 'Arrow' and '↑' or nil)
-				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and '↓' or nil)
-				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), UDim2.new(0, 7, 0, 5), Style.Value == 'Arrow' and '←' or nil)
-				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), UDim2.new(0, 8, 0, 5), Style.Value == 'Arrow' and '→' or nil)
+				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), Style.Value == 'Arrow' and '↑' or nil)
+				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), Style.Value == 'Arrow' and '↓' or nil)
+				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), Style.Value == 'Arrow' and '←' or nil)
+				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), Style.Value == 'Arrow' and '→' or nil)
 	
 				Keystrokes:Clean(inputService.InputBegan:Connect(updateKey))
 				Keystrokes:Clean(inputService.InputEnded:Connect(updateKey))
@@ -8299,7 +8311,7 @@ run(function()
 			Keystrokes.Children.Size = UDim2.fromOffset(110, callback and 107 or 78)
 	
 			if callback then
-				createKeystroke(Enum.KeyCode.Space, UDim2.new(0, 0, 0, 83), UDim2.new(0, 25, 0, -10), '______')
+				createKeystroke(Enum.KeyCode.Space, UDim2.new(0, 0, 0, 83), '______')
 			else
 				keys[Enum.KeyCode.Space].Key:Destroy()
 				keys[Enum.KeyCode.Space] = nil

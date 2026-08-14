@@ -15432,8 +15432,10 @@ run(function()
 		Function = function(callback)
 			if callback then
 				repeat
-					label.Text = math.floor(math.max(store.ping.incoming or 0, store.ping.total or 0) * 1000)..' ms'
-					task.wait(0.1	)
+					local ms = math.floor(math.max(store.ping.incoming or 0, store.ping.total or 0) * 1000)
+					label.Text = tostring(ms)..' ms'
+					label.TextColor3 = ms <= 60 and Color3.fromRGB(110, 255, 110) or ms <= 120 and Color3.fromRGB(255, 215, 90) or ms <= 250 and Color3.fromRGB(255, 150, 60) or Color3.fromRGB(255, 90, 90)
+					task.wait(0.1)
 				until not Ping.Enabled
 			end
 		end,
@@ -15448,7 +15450,7 @@ run(function()
 		end
 	})
 	Ping:CreateColorSlider({
-		Name = 'Color',
+		Name = 'Background Color',
 		DefaultValue = 0,
 		DefaultOpacity = 0.5,
 		Function = function(hue, sat, val, opacity)

@@ -70,7 +70,7 @@ for _, folder in {'LarpV4', 'LarpV4/games', 'LarpV4/profiles', 'LarpV4/assets', 
 end
 
 if not shared.LarpDeveloper then
-	local commit = 'main'
+	local commit = 'v117'
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	local version = isfile('LarpV4/.version') and readfile('LarpV4/.version') or ''
 	if commit ~= stored or version ~= '117' then

@@ -7069,7 +7069,7 @@ local targetinfohptext = Instance.new('TextLabel')
 targetinfohptext.Size = UDim2.fromOffset(44, 16)
 targetinfohptext.Position = UDim2.fromOffset(202, 40)
 targetinfohptext.BackgroundTransparency = 1
-targetinfohptext.Text = ''
+targetinfohptext.Text = '100'
 targetinfohptext.TextSize = 13
 targetinfohptext.Font = Enum.Font.ArialBold
 targetinfohptext.TextXAlignment = Enum.TextXAlignment.Right
@@ -7280,10 +7280,6 @@ local targetinfoshowdist = targetinfoobj:CreateToggle({
 	Name = 'Show Distance',
 	Default = true
 })
-local targetinfoshowping = targetinfoobj:CreateToggle({
-	Name = 'Show Ping',
-	Default = false
-})
 local targetinfonameshadow = targetinfoobj:CreateToggle({
 	Name = 'Name Shadow',
 	Function = function(callback)
@@ -7400,6 +7396,11 @@ targetinfo = {
 		targetinfobkg.Visible = v ~= nil or mainapi.gui.ScaledGui.ClickGui.Visible
 		TargetInfoMainInfo.Visible = targetinfobkg.Visible
 		TargetInfoFrameShadow.Visible = targetinfobkg.Visible
+		if not v then
+			targetinfohptext.Text = '100'
+			targetinfohptext.TextColor3 = Color3.fromHSV(1 / 2.5, 0.89, 0.75)
+			targetinfostats.Text = ''
+		end
 		if v then
 			targetinfoname.Text = v.Player and (targetinfodisplay.Enabled and v.Player.DisplayName or v.Player.Name) or v.Character and v.Character.Name or targetinfoname.Text
 			TargetInfoName.Text = targetinfoname.Text
@@ -7414,22 +7415,10 @@ targetinfo = {
 			targetinfohptext.Text = targetinfoshowhp.Enabled and tostring(math.floor(health)) or ''
 			targetinfohptext.TextColor3 = Color3.fromHSV(math.clamp(percent / 2.5, 0, 1), 0.89, 0.75)
 
-			targetinfostats.Visible = (targetinfoshowdist.Enabled or targetinfoshowping.Enabled)
-			if targetinfoshowdist.Enabled or targetinfoshowping.Enabled then
-				local parts = {}
-				if targetinfoshowdist.Enabled and v.Head then
-					local dist = math.floor((cloneref(game:GetService('Workspace')).CurrentCamera.CFrame.Position - v.Head.Position).Magnitude + 0.5)
-					table.insert(parts, tostring(dist)..' studs')
-				end
-				if targetinfoshowping.Enabled and v.Player then
-					local ok, ping = pcall(function()
-						return v.Player:GetNetworkPing()
-					end)
-					if ok and type(ping) == 'number' and ping > 0 then
-						table.insert(parts, tostring(math.floor(ping * 1000))..' ms')
-					end
-				end
-				targetinfostats.Text = table.concat(parts, '  |  ')
+			targetinfostats.Visible = targetinfoshowdist.Enabled
+			if targetinfoshowdist.Enabled and v.Head then
+				local dist = math.floor((cloneref(game:GetService('Workspace')).CurrentCamera.CFrame.Position - v.Head.Position).Magnitude + 0.5)
+				targetinfostats.Text = tostring(dist)..' studs'
 			else
 				targetinfostats.Text = ''
 			end

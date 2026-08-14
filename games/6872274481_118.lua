@@ -40,7 +40,7 @@ local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
 local assetfunction = getcustomasset
 
-local larp = shared.larp
+local larp = shared.larp or getgenv().larp or _G.larp
 local entitylib = larp.Libraries.entity
 local targetinfo = larp.Libraries.targetinfo
 local sessioninfo = larp.Libraries.sessioninfo

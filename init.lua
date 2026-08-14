@@ -83,7 +83,7 @@ if not shared.LarpDeveloper then
 		wipeFolder('LarpV4/guis')
 		wipeFolder('LarpV4/libraries')
 		wipeFolder('LarpV4/assets')
-		for _, file in {'LarpV4/assets/larp/Larp.png', 'LarpV4/assets/larp/Textv4.png', 'LarpV4/profiles/default6872274481.txt'} do
+		for _, file in {'LarpV4/assets/larp/Larp.png', 'LarpV4/assets/larp/Textv4.png'} do
 			if isfile(file) then
 				pcall(delfile, file)
 			end

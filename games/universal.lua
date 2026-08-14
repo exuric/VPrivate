@@ -5563,6 +5563,8 @@ run(function()
 	local infoholder
 	local infolabel
 	local infostroke
+	local infoshadow
+	local infoblur
 	
 	SessionInfo = larp:CreateOverlay({
 		Name = 'Session Info',
@@ -5686,6 +5688,75 @@ run(function()
 			BorderColor.Object.Visible = callback
 		end
 	})
+	SessionInfo:CreateColorSlider({
+		Name = 'Text Color',
+		Function = function(hue, sat, val)
+			infolabel.TextColor3 = Color3.fromHSV(hue, sat, val)
+			if infoshadow then
+				infoshadow.TextColor3 = Color3.fromHSV((hue + 0.5) % 1, sat, math.max(val - 0.8, 0))
+			end
+		end,
+		Darker = true
+	})
+	SessionInfo:CreateDropdown({
+		Name = 'Alignment',
+		List = {'Left', 'Center', 'Right'},
+		Function = function(val)
+			infolabel.TextXAlignment = Enum.TextXAlignment[val]
+			if infoshadow then
+				infoshadow.TextXAlignment = infolabel.TextXAlignment
+			end
+		end,
+		Default = 'Left'
+	})
+	local ShadowToggle
+	ShadowToggle = SessionInfo:CreateToggle({
+		Name = 'Shadow',
+		Function = function(callback)
+			if infoshadow then
+				infoshadow.Visible = callback
+			end
+		end
+	})
+	SessionInfo:CreateToggle({
+		Name = 'Text Stroke',
+		Function = function(callback)
+			infolabel.TextStrokeTransparency = callback and 0.8 or 1
+		end,
+		Default = true
+	})
+	SessionInfo:CreateSlider({
+		Name = 'Corner Radius',
+		Min = 0,
+		Max = 20,
+		Default = 5,
+		Function = function(val)
+			sessioninfocorner.CornerRadius = UDim.new(0, val)
+		end
+	})
+	SessionInfo:CreateSlider({
+		Name = 'Padding',
+		Min = 0,
+		Max = 24,
+		Default = 8,
+		Function = function(val)
+			infolabel.Position = UDim2.fromOffset(val, val)
+			infolabel.Size = UDim2.new(1, -val * 2, 1, -val * 2)
+			if infoshadow then
+				infoshadow.Position = infolabel.Position
+				infoshadow.Size = infolabel.Size
+			end
+		end
+	})
+	SessionInfo:CreateToggle({
+		Name = 'Background Blur',
+		Function = function(callback)
+			if infoblur then
+				infoblur.Visible = callback
+			end
+		end,
+		Default = true
+	})
 	Custom = SessionInfo:CreateToggle({
 		Name = 'Add custom text',
 		Function = function(enabled)
@@ -5725,11 +5796,32 @@ run(function()
 	infolabel.Font = Enum.Font.Arial
 	infolabel.RichText = true
 	infolabel.Parent = infoholder
+	infoshadow = infolabel:Clone()
+	infoshadow.Name = 'Shadow'
+	infoshadow.Position = UDim2.fromOffset(9, 9)
+	infoshadow.ZIndex = infolabel.ZIndex - 1
+	infoshadow.TextColor3 = Color3.new()
+	infoshadow.TextTransparency = 0.65
+	infoshadow.TextStrokeTransparency = 1
+	infoshadow.Visible = false
+	infoshadow.Parent = infoholder
+	infolabel:GetPropertyChangedSignal('Text'):Connect(function()
+		infoshadow.Text = infolabel.Text
+	end)
+	infolabel:GetPropertyChangedSignal('FontFace'):Connect(function()
+		infoshadow.FontFace = infolabel.FontFace
+	end)
+	infolabel:GetPropertyChangedSignal('TextSize'):Connect(function()
+		infoshadow.TextSize = infolabel.TextSize
+	end)
+	infolabel:GetPropertyChangedSignal('TextXAlignment'):Connect(function()
+		infoshadow.TextXAlignment = infolabel.TextXAlignment
+	end)
 	infostroke = Instance.new('UIStroke')
 	infostroke.Enabled = false
 	infostroke.Color = Color3.fromHSV(0.44, 1, 1)
 	infostroke.Parent = infoholder
-	addBlur(infoholder)
+	infoblur = addBlur(infoholder)
 	larp.Libraries.sessioninfo = {
 		Objects = {},
 		AddItem = function(self, name, startvalue, func, saved)

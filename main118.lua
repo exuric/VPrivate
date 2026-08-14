@@ -299,15 +299,15 @@ end
 
 if not shared.LarpIndependent then
 	loadstring(downloadFile('LarpV4/games/universal118.lua'), 'universal')(license)
-	if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
-		loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+	if isfile('LarpV4/games/'..game.PlaceId..'_118.lua') then
+		loadstring(readfile('LarpV4/games/'..game.PlaceId..'_118.lua'), tostring(game.PlaceId))(license)
 	else
 		if not shared.LarpDeveloper then
 			local suc, res = pcall(function()
-				return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua', true)
+				return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'_118.lua?v=118', true)
 			end)
 			if suc and res ~= '404: Not Found' then
-				loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+				loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'_118.lua'), tostring(game.PlaceId))(license)
 			end
 		end
 	end

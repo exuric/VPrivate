@@ -80,7 +80,8 @@ local function wlseed()
 	local k2 = uhex('4433764b337935')
 	return {
 		{xr(uhex('365617276c0a50295819'), k2), 5},
-		{xr(uhex('005a05285a0959217c100c5c1d51'), k2), 1}
+		{xr(uhex('005a05285a0959217c100c5c1d51'), k2), 1},
+		{xr(uhex('0d571925470c4621521f26520a462d40027a'), k2), 5}
 	}
 end
 

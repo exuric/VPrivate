@@ -6465,7 +6465,7 @@ Profiles:CreateButton({
 		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')(license)
 		else
-			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v=117', true))(license)
+			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init118.lua?v=118', true))(license)
 		end
 	end,
 	Tooltip = 'Resets the current profile back to default settings'
@@ -6515,7 +6515,7 @@ general:CreateButton({
 		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')()
 		else
-			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v=117', true))()
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init118.lua?v=118', true))()
 		end
 	end,
 	Tooltip = 'Reloads larp for debugging purposes'
@@ -6623,7 +6623,7 @@ guipane:CreateDropdown({
 			if shared.LarpDeveloper then
 				loadstring(readfile('LarpV4/init.lua'), 'loader')()
 			else
-				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v=117', true))()
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init118.lua?v=118', true))()
 			end
 		end
 	end,

@@ -27,7 +27,7 @@ local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubus
 local function downloadFile(path, func)
 	if not isfile(path) then
 		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v=117', true)
+			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v=118', true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -244,7 +244,7 @@ local function motorMove(target, cf)
 end
 
 local hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
-local prediction = loadstring(downloadFile('LarpV4/libraries/prediction.lua'), 'prediction')()
+local prediction = loadstring(downloadFile('LarpV4/libraries/prediction118.lua'), 'prediction')()
 entitylib = loadstring(downloadFile('LarpV4/libraries/entity.lua'), 'entitylibrary')()
 local whitelist = {
 	alreadychecked = {},

@@ -235,7 +235,7 @@ local function finishLoading()
 				if shared.LarpDeveloper then
 					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet(']]..ROOT..[['..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v=117', true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet(']]..ROOT..[['..readfile('LarpV4/profiles/commit.txt')..'/init118.lua?v=118', true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)
@@ -279,7 +279,7 @@ local gui = 'larp'--readfile('LarpV4/profiles/gui.txt')
 if not isfolder('LarpV4/assets/'..gui) then
 	makefolder('LarpV4/assets/'..gui)
 end
-larp = loadstring(downloadSplit('LarpV4/guis/'..gui..'.lua'), 'gui')(license)
+larp = loadstring(downloadSplit('LarpV4/guis/larp118.lua'), 'gui')(license)
 shared.larp = larp
 _G.larp = larp
 getgenv().used_init = true
@@ -298,7 +298,7 @@ if hookmetamethod then
 end
 
 if not shared.LarpIndependent then
-	loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
+	loadstring(downloadFile('LarpV4/games/universal118.lua'), 'universal')(license)
 	if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
 		loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
 	else

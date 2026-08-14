@@ -7397,9 +7397,11 @@ targetinfo = {
 		TargetInfoMainInfo.Visible = targetinfobkg.Visible
 		TargetInfoFrameShadow.Visible = targetinfobkg.Visible
 		if not v then
-			targetinfohptext.Text = '100'
+			targetinfohptext.Visible = targetinfoshowhp.Enabled
+			targetinfohptext.Text = targetinfoshowhp.Enabled and '100' or ''
 			targetinfohptext.TextColor3 = Color3.fromHSV(1 / 2.5, 0.89, 0.75)
-			targetinfostats.Text = ''
+			targetinfostats.Visible = targetinfoshowdist.Enabled
+			targetinfostats.Text = targetinfoshowdist.Enabled and '100 studs' or ''
 		end
 		if v then
 			targetinfoname.Text = v.Player and (targetinfodisplay.Enabled and v.Player.DisplayName or v.Player.Name) or v.Character and v.Character.Name or targetinfoname.Text

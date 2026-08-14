@@ -1,6 +1,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local license = ...
 local mainapi = {
 	Categories = {},
@@ -1004,7 +1005,7 @@ components = {
 		title.Name = 'Title'
 		title.Size = UDim2.new(1, 0, 0, 29)
 		title.BackgroundTransparency = 1
-		title.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..optionsettings.Name..' - '..optionapi.Value
+		title.Text = '         '..optionsettings.Name..' - '..optionapi.Value
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		title.TextSize = 13
@@ -1043,7 +1044,7 @@ components = {
 		
 		function optionapi:SetValue(val, mouse)
 			self.Value = table.find(optionsettings.List, val) and val or optionsettings.List[1] or 'None'
-			title.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..optionsettings.Name..' - '..self.Value
+			title.Text = '         '..optionsettings.Name..' - '..self.Value
 			if dropdownchildren then
 				arrow.Rotation = 90
 				dropdownchildren:Destroy()
@@ -1073,7 +1074,7 @@ components = {
 					dropdownoption.BackgroundColor3 = uipallet.Main
 					dropdownoption.BorderSizePixel = 0
 					dropdownoption.AutoButtonColor = false
-					dropdownoption.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..v
+					dropdownoption.Text = '         '..v
 					dropdownoption.TextXAlignment = Enum.TextXAlignment.Left
 					dropdownoption.TextColor3 = color.Dark(uipallet.Text, 0.16)
 					dropdownoption.TextSize = 13
@@ -2117,7 +2118,7 @@ components = {
 		toggle.BorderSizePixel = 0
 		toggle.AutoButtonColor = false
 		toggle.Visible = optionsettings.Visible == nil or optionsettings.Visible
-		toggle.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..optionsettings.Name
+		toggle.Text = '          '..optionsettings.Name
 		toggle.TextXAlignment = Enum.TextXAlignment.Left
 		toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		toggle.TextSize = 14
@@ -2431,7 +2432,7 @@ components = {
 			label.Name = 'DividerLabel'
 			label.Size = UDim2.fromOffset(218, 27)
 			label.BackgroundTransparency = 1
-			label.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..text:upper()
+			label.Text = '          '..text:upper()
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.TextColor3 = color.Dark(uipallet.Text, 0.43)
 			label.TextSize = 9
@@ -2612,7 +2613,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèRebind GUI'
+		button.Text = '          Rebind GUI'
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2700,7 +2701,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = (categorysettings.Icon and 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè' or 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè')..categorysettings.Name
+		button.Text = (categorysettings.Icon and '                                 ' or '             ')..categorysettings.Name
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2881,7 +2882,7 @@ function mainapi:CreateGUI()
 			toggle.Size = UDim2.new(1, 0, 0, 40)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
-			toggle.Text = string.rep('ΓÇè', 33 * scale.Scale)..togglesettings.Name
+			toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
 			toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			toggle.TextSize = 14
@@ -2925,7 +2926,7 @@ function mainapi:CreateGUI()
 			end
 
 			scale:GetPropertyChangedSignal('Scale'):Connect(function()
-				toggle.Text = string.rep('ΓÇè', 33 * scale.Scale)..togglesettings.Name
+				toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
 			end)
 			toggle.MouseEnter:Connect(function()
 				hovered = true
@@ -3019,7 +3020,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..categorysettings.Name
+		button.Text = '          '..categorysettings.Name
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -3116,7 +3117,7 @@ function mainapi:CreateGUI()
 			window.Size = UDim2.fromOffset(220, 45 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 			for _, v in categoryapi.Buttons do
 				if v.Icon then
-					v.Object.Text = string.rep('ΓÇè', 33 * scale.Scale)..v.Name
+					v.Object.Text = string.rep(' ', 33 * scale.Scale)..v.Name
 				end
 			end
 		end)
@@ -3621,7 +3622,7 @@ function mainapi:CreateGUI()
 		window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 		for _, v in categoryapi.Buttons do
 			if v.Icon then
-				v.Object.Text = string.rep('ΓÇè', 36 * scale.Scale)..v.Name
+				v.Object.Text = string.rep(' ', 36 * scale.Scale)..v.Name
 			end
 		end
 	end)
@@ -3736,7 +3737,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = 'ΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇèΓÇè'..modulesettings.Name
+		modulebutton.Text = '            '..modulesettings.Name
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
@@ -3851,8 +3852,7 @@ function mainapi:CreateCategory(categorysettings)
 		dotsbutton.BackgroundTransparency = 1
 		dotsbutton.Text = ''
 		dotsbutton.Parent = modulebutton
-		local dots = Instance.new('ImageLabel')
-		dots.Name = 'Dots'
+		local dots = Instance.new('ImageLabel')		dots.Name = 'Dots'
 		dots.Size = UDim2.fromOffset(3, 16)
 		dots.Position = UDim2.fromOffset(4, 12)
 		dots.BackgroundTransparency = 1
@@ -6407,7 +6407,7 @@ Profiles:CreateButton({
 		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')(license)
 		else
-			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init119.lua?v=119', true))(license)
+			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init120.lua?v=120', true))(license)
 		end
 	end,
 	Tooltip = 'Resets the current profile back to default settings'
@@ -6457,7 +6457,7 @@ general:CreateButton({
 		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')()
 		else
-			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init119.lua?v=119', true))()
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init120.lua?v=120', true))()
 		end
 	end,
 	Tooltip = 'Reloads larp for debugging purposes'
@@ -6565,7 +6565,7 @@ guipane:CreateDropdown({
 			if shared.LarpDeveloper then
 				loadstring(readfile('LarpV4/init.lua'), 'loader')()
 			else
-				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init119.lua?v=119', true))()
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init120.lua?v=120', true))()
 			end
 		end
 	end,

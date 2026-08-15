@@ -7966,6 +7966,7 @@ do
 		updateList()
 
 		local codefont = Font.fromEnum(Enum.Font.Code)
+		local rows = {}
 		for _, v in entries do
 			local entry = Instance.new('Frame')
 			entry.Size = UDim2.new(1, 0, 0, 30)
@@ -7981,28 +7982,27 @@ do
 			tag.TextSize = 13
 			tag.TextXAlignment = Enum.TextXAlignment.Left
 			tag.Parent = entry
+			local tagtext, tagcolor
 			if v.status == 'added' then
-				tag.Text = '[+]'
-				tag.TextColor3 = Color3.fromRGB(80, 250, 123)
+				tagtext, tagcolor = '[+]', Color3.fromRGB(80, 250, 123)
 			elseif v.status == 'removed' then
-				tag.Text = '[-]'
-				tag.TextColor3 = Color3.fromRGB(255, 85, 85)
+				tagtext, tagcolor = '[-]', Color3.fromRGB(255, 85, 85)
 			else
-				tag.Text = '[*]'
-				tag.TextColor3 = Color3.fromRGB(241, 250, 140)
+				tagtext, tagcolor = '[*]', Color3.fromRGB(241, 250, 140)
 			end
+			tag.TextColor3 = tagcolor
 			local name = Instance.new('TextLabel')
 			name.Size = UDim2.new(1, -74, 0, 30)
 			name.Position = UDim2.fromOffset(60, 0)
 			name.ZIndex = 11
 			name.BackgroundTransparency = 1
-			name.Text = v.name
 			name.TextXAlignment = Enum.TextXAlignment.Left
 			name.TextTruncate = Enum.TextTruncate.AtEnd
 			name.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			name.TextSize = 13
 			name.FontFace = codefont
 			name.Parent = entry
+			rows[#rows + 1] = {tag = tag, name = name, tagtext = tagtext, nametext = v.name}
 		end
 
 		local footer = Instance.new('Frame')
@@ -8025,6 +8025,28 @@ do
 		summary.TextSize = 12
 		summary.FontFace = Font.fromEnum(Enum.Font.Code)
 		summary.Parent = footer
+		summary.TextTransparency = 1
+		task.spawn(function()
+			for _, row in rows do
+				if not row.tag.Parent then return end
+				for i = 1, #row.tagtext do
+					row.tag.Text = row.tagtext:sub(1, i)
+					task.wait(0.02)
+				end
+				if not row.name.Parent then return end
+				for i = 1, #row.nametext do
+					row.name.Text = row.nametext:sub(1, i)
+					task.wait(0.015)
+				end
+				task.wait(0.05)
+			end
+			task.wait(0.2)
+			if summary.Parent then
+				tween:Tween(summary, uipallet.Tween, {
+					TextTransparency = 0
+				})
+			end
+		end)
 	end
 
 	local function parseChangelog(text)

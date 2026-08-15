@@ -1,3 +1,4 @@
-+Added update changelogs popup
-+Added Changelogs button in Settings - General
-~Restyled the changelogs popup to a console theme
++Added Fps Unlocker utility module
++Added new ProjectileAimbot settings
+~Improved arc aiming and adaptive prediction
+-Removed NightmareEmote from the universal script

@@ -198,32 +198,6 @@ local function addCloseButton(parent, offset)
 	return close
 end
 
-local function addStroke(gui, strokecolor, transparency)
-	local stroke = Instance.new('UIStroke')
-	stroke.Color = strokecolor or color.Dark(uipallet.Text, 0.62)
-	stroke.Transparency = transparency or 0.88
-	stroke.Thickness = 1
-	stroke.Parent = gui
-
-	return stroke
-end
-
-local function addAccent(gui)
-	local accent = {
-		Type = 'Accent',
-		Object = gui,
-		SetValue = function(self, hue)
-			if not self.Object or not self.Object.Parent then return end
-			local c = mainapi.GUIColor
-			self.Object.BackgroundColor3 = c and (c.Rainbow and (mainapi.RainbowMode and mainapi.RainbowMode.Value ~= 'Retro' or false) and Color3.fromHSV(mainapi:Color(hue)) or Color3.fromHSV(c.Hue, c.Sat, c.Value)) or Color3.fromHSV(0.59, 0.5, 1)
-		end
-	}
-	accent:SetValue(0)
-	table.insert(mainapi.RainbowTable, accent)
-
-	return accent
-end
-
 local function addMaid(object)
 	object.Connections = {}
 	function object:Clean(callback)
@@ -2450,8 +2424,7 @@ components = {
 		local divider = Instance.new('Frame')
 		divider.Name = 'Divider'
 		divider.Size = UDim2.new(1, 0, 0, 1)
-		divider.BackgroundColor3 = color.Dark(uipallet.Text, 0.55)
-		divider.BackgroundTransparency = 0.82
+		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		divider.BorderSizePixel = 0
 		divider.Parent = children
 		if text then
@@ -2596,16 +2569,6 @@ function mainapi:CreateGUI()
 	title.TextSize = 13
 	title.FontFace = uipallet.Font
 	title.Parent = settingspane
-	local titleaccent = Instance.new('Frame')
-	titleaccent.Name = 'TitleAccent'
-	titleaccent.Size = UDim2.fromOffset(24, 2)
-	titleaccent.Position = UDim2.fromOffset(36, 33)
-	titleaccent.BackgroundColor3 = Color3.fromHSV(0.59, 0.5, 1)
-	titleaccent.BackgroundTransparency = 0.3
-	titleaccent.BorderSizePixel = 0
-	titleaccent.Parent = settingspane
-	addCorner(titleaccent, UDim.new(1, 0))
-	addAccent(titleaccent)
 	local close = addCloseButton(settingspane)
 	local back = Instance.new('ImageButton')
 	back.Name = 'Back'
@@ -2632,13 +2595,6 @@ function mainapi:CreateGUI()
 	settingsversion.BorderSizePixel = 0
 	addCorner(settingsversion, UDim.new(0, 4))
 	addCorner(settingspane)
-	local settingsgradient = Instance.new('UIGradient')
-	settingsgradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, color.Light(uipallet.Main, 0.03)),
-		ColorSequenceKeypoint.new(1, color.Dark(uipallet.Main, 0.05))
-	})
-	settingsgradient.Parent = settingspane
-	addStroke(settingspane)
 	local settingschildren = Instance.new('Frame')
 	settingschildren.Name = 'Children'
 	settingschildren.Size = UDim2.new(1, 0, 1, -57)
@@ -3081,18 +3037,6 @@ function mainapi:CreateGUI()
 		arrow.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
 		arrow.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		arrow.Parent = button
-		local accentbar = Instance.new('Frame')
-		accentbar.Name = 'Accent'
-		accentbar.Size = UDim2.fromOffset(3, 16)
-		accentbar.Position = UDim2.fromOffset(5, 12)
-		accentbar.BackgroundColor3 = Color3.fromHSV(0.59, 0.5, 1)
-		accentbar.BackgroundTransparency = 1
-		accentbar.BorderSizePixel = 0
-		accentbar.Parent = button
-		addCorner(accentbar, UDim.new(1, 0))
-		addAccent(accentbar)
-		addCorner(button)
-		addStroke(button)
 		local settingspane = Instance.new('TextButton')
 		settingspane.Size = UDim2.fromScale(1, 1)
 		settingspane.BackgroundColor3 = uipallet.Main
@@ -3111,16 +3055,6 @@ function mainapi:CreateGUI()
 		title.TextSize = 13
 		title.FontFace = uipallet.Font
 		title.Parent = settingspane
-		local paneaccent = Instance.new('Frame')
-		paneaccent.Name = 'TitleAccent'
-		paneaccent.Size = UDim2.fromOffset(24, 2)
-		paneaccent.Position = UDim2.fromOffset(36, 33)
-		paneaccent.BackgroundColor3 = Color3.fromHSV(0.59, 0.5, 1)
-		paneaccent.BackgroundTransparency = 0.3
-		paneaccent.BorderSizePixel = 0
-		paneaccent.Parent = settingspane
-		addCorner(paneaccent, UDim.new(1, 0))
-		addAccent(paneaccent)
 		local close = addCloseButton(settingspane)
 		local back = Instance.new('ImageButton')
 		back.Name = 'Back'
@@ -3131,13 +3065,6 @@ function mainapi:CreateGUI()
 		back.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		back.Parent = settingspane
 		addCorner(settingspane)
-		local paneegradient = Instance.new('UIGradient')
-		paneegradient.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, color.Light(uipallet.Main, 0.03)),
-			ColorSequenceKeypoint.new(1, color.Dark(uipallet.Main, 0.05))
-		})
-		paneegradient.Parent = settingspane
-		addStroke(settingspane)
 		local settingschildren = Instance.new('Frame')
 		settingschildren.Name = 'Children'
 		settingschildren.Size = UDim2.new(1, 0, 1, -57)
@@ -3148,26 +3075,10 @@ function mainapi:CreateGUI()
 		local divider = Instance.new('Frame')
 		divider.Name = 'Divider'
 		divider.Size = UDim2.new(1, 0, 0, 1)
-		divider.BackgroundColor3 = color.Dark(uipallet.Text, 0.55)
-		divider.BackgroundTransparency = 0.82
+		divider.BackgroundColor3 = Color3.new(1, 1, 1)
+		divider.BackgroundTransparency = 0.928
 		divider.BorderSizePixel = 0
 		divider.Parent = settingschildren
-		local dividerfade = Instance.new('UIGradient')
-		dividerfade.Rotation = 90
-		dividerfade.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(0.5, 0.7),
-			NumberSequenceKeypoint.new(1, 1)
-		})
-		dividerfade.Parent = divider
-		local accentsegment = Instance.new('Frame')
-		accentsegment.Size = UDim2.new(0.5, 0, 1, 0)
-		accentsegment.Position = UDim2.new(0.25, 0, 0, 0)
-		accentsegment.BackgroundColor3 = Color3.fromHSV(0.59, 0.5, 1)
-		accentsegment.BackgroundTransparency = 0.55
-		accentsegment.BorderSizePixel = 0
-		accentsegment.Parent = divider
-		addAccent(accentsegment)
 		local settingswindowlist = Instance.new('UIListLayout')
 		settingswindowlist.SortOrder = Enum.SortOrder.LayoutOrder
 		settingswindowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -3187,52 +3098,20 @@ function mainapi:CreateGUI()
 		end)
 		back.MouseButton1Click:Connect(function()
 			settingspane.Visible = false
-			tween:Tween(arrow, uipallet.Tween, {
-				Rotation = 0
-			})
-			tween:Tween(accentbar, uipallet.Tween, {
-				BackgroundTransparency = 1
-			})
 		end)
 		button.MouseEnter:Connect(function()
 			button.TextColor3 = uipallet.Text
-			arrow.ImageColor3 = uipallet.Text
-			tween:Tween(button, uipallet.Tween, {
-				BackgroundColor3 = color.Light(uipallet.Main, 0.05)
-			})
-			tween:Tween(accentbar, uipallet.Tween, {
-				BackgroundTransparency = 0
-			})
+			button.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		end)
 		button.MouseLeave:Connect(function()
 			button.TextColor3 = color.Dark(uipallet.Text, 0.16)
-			tween:Tween(button, uipallet.Tween, {
-				BackgroundColor3 = uipallet.Main
-			})
-			if not settingspane.Visible then
-				arrow.ImageColor3 = color.Light(uipallet.Main, 0.37)
-				tween:Tween(accentbar, uipallet.Tween, {
-					BackgroundTransparency = 1
-				})
-			end
+			button.BackgroundColor3 = uipallet.Main
 		end)
 		button.MouseButton1Click:Connect(function()
 			settingspane.Visible = true
-			tween:Tween(arrow, uipallet.Tween, {
-				Rotation = 90
-			})
-			tween:Tween(accentbar, uipallet.Tween, {
-				BackgroundTransparency = 0
-			})
 		end)
 		close.MouseButton1Click:Connect(function()
 			settingspane.Visible = false
-			tween:Tween(arrow, uipallet.Tween, {
-				Rotation = 0
-			})
-			tween:Tween(accentbar, uipallet.Tween, {
-				BackgroundTransparency = 1
-			})
 		end)
 		windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 			if mainapi.ThreadFix then
@@ -7977,6 +7856,185 @@ if shared.LarpPresetInstall then
 			end
 		})
 	end))
+end
+
+do
+	local function buildChangelog(files)
+		repeat task.wait(0.1) until not clickgui:FindFirstChild('PromptShadow')
+
+		local entries = {}
+		local added, removed, modified = 0, 0, 0
+		for _, v in files do
+			local status = v.status
+			if status == 'added' then
+				added += 1
+			elseif status == 'removed' then
+				removed += 1
+			elseif status == 'renamed' then
+				modified += 1
+				entries[#entries + 1] = {status = 'renamed', name = (v.previous_filename or '')..' -> '..v.filename}
+				continue
+			else
+				modified += 1
+			end
+			entries[#entries + 1] = {status = status, name = v.filename}
+		end
+
+		local window = Instance.new('Frame')
+		window.Name = 'Changelog'
+		window.AnchorPoint = Vector2.new(0.5, 0.5)
+		window.Size = UDim2.fromOffset(340, 400)
+		window.Position = UDim2.fromScale(0.5, 0.5)
+		window.ZIndex = 9
+		window.BackgroundColor3 = uipallet.Main
+		window.BorderSizePixel = 0
+		window.Parent = scaledgui
+		addCorner(window)
+		addBlur(window)
+		makeDraggable(window)
+		local logo = Instance.new('ImageLabel')
+		logo.Size = UDim2.fromOffset(22, 22)
+		logo.Position = UDim2.fromOffset(14, 12)
+		logo.ZIndex = 10
+		logo.BackgroundTransparency = 1
+		logo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
+		logo.ImageColor3 = select(3, uipallet.Main:ToHSV()) > 0.5 and uipallet.Text or Color3.new(1, 1, 1)
+		logo.Parent = window
+		local title = Instance.new('TextLabel')
+		title.Size = UDim2.new(1, -100, 0, 20)
+		title.Position = UDim2.fromOffset(44, 10)
+		title.ZIndex = 10
+		title.BackgroundTransparency = 1
+		title.Text = 'Larp V4'
+		title.TextXAlignment = Enum.TextXAlignment.Left
+		title.TextColor3 = uipallet.Text
+		title.TextSize = 15
+		title.FontFace = uipallet.FontSemiBold
+		title.Parent = window
+		local subtitle = Instance.new('TextLabel')
+		subtitle.Size = UDim2.new(1, -100, 0, 16)
+		subtitle.Position = UDim2.fromOffset(44, 31)
+		subtitle.ZIndex = 10
+		subtitle.BackgroundTransparency = 1
+		subtitle.Text = 'Update log'
+		subtitle.TextXAlignment = Enum.TextXAlignment.Left
+		subtitle.TextColor3 = color.Dark(uipallet.Text, 0.31)
+		subtitle.TextSize = 11
+		subtitle.FontFace = uipallet.Font
+		subtitle.Parent = window
+		local close = addCloseButton(window, 11)
+		local divider = Instance.new('Frame')
+		divider.Size = UDim2.new(1, -28, 0, 1)
+		divider.Position = UDim2.fromOffset(14, 52)
+		divider.ZIndex = 10
+		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		divider.BorderSizePixel = 0
+		divider.Parent = window
+		local list = Instance.new('ScrollingFrame')
+		list.Name = 'List'
+		list.Size = UDim2.new(1, 0, 1, -104)
+		list.Position = UDim2.fromOffset(0, 53)
+		list.ZIndex = 10
+		list.BackgroundTransparency = 1
+		list.BorderSizePixel = 0
+		list.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.3)
+		list.ScrollBarThickness = 4
+		list.CanvasSize = UDim2.fromScale(1, 0)
+		list.Parent = window
+		local listlayout = Instance.new('UIListLayout')
+		listlayout.Padding = UDim.new(0, 2)
+		listlayout.SortOrder = Enum.SortOrder.LayoutOrder
+		listlayout.Parent = list
+		local function updateList()
+			list.CanvasSize = UDim2.fromOffset(0, listlayout.AbsoluteContentSize.Y)
+		end
+		listlayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(updateList)
+		updateList()
+
+		local greencolor = Color3.fromRGB(90, 255, 90)
+		local redcolor = Color3.fromRGB(255, 90, 90)
+		for _, v in entries do
+			local entry = Instance.new('Frame')
+			entry.Size = UDim2.new(1, 0, 0, 30)
+			entry.BackgroundTransparency = 1
+			entry.BorderSizePixel = 0
+			entry.Parent = list
+			local icon = Instance.new('ImageLabel')
+			icon.Size = UDim2.fromOffset(14, 14)
+			icon.Position = UDim2.fromOffset(18, 8)
+			icon.ZIndex = 11
+			icon.BackgroundTransparency = 1
+			icon.Parent = entry
+			if v.status == 'added' then
+				icon.Image = getcustomasset('LarpV4/assets/larp/add.png')
+				icon.ImageColor3 = greencolor
+			elseif v.status == 'removed' then
+				icon.Image = getcustomasset('LarpV4/assets/larp/closemini.png')
+				icon.ImageColor3 = redcolor
+			else
+				icon.Image = ''
+				icon.BackgroundColor3 = color.Dark(uipallet.Text, 0.4)
+				icon.BackgroundTransparency = 0
+				addCorner(icon, UDim.new(1, 0))
+			end
+			local name = Instance.new('TextLabel')
+			name.Size = UDim2.new(1, -48, 0, 30)
+			name.Position = UDim2.fromOffset(44, 0)
+			name.ZIndex = 11
+			name.BackgroundTransparency = 1
+			name.Text = v.name
+			name.TextXAlignment = Enum.TextXAlignment.Left
+			name.TextTruncate = Enum.TextTruncate.AtEnd
+			name.TextColor3 = uipallet.Text
+			name.TextSize = 13
+			name.FontFace = uipallet.Font
+			name.Parent = entry
+		end
+
+		local footer = Instance.new('Frame')
+		footer.Size = UDim2.new(1, 0, 0, 40)
+		footer.Position = UDim2.new(0, 0, 1, -40)
+		footer.ZIndex = 10
+		footer.BackgroundColor3 = color.Dark(uipallet.Main, 0.04)
+		footer.BorderSizePixel = 0
+		footer.Parent = window
+		addCorner(footer)
+		local summary = Instance.new('TextLabel')
+		summary.Size = UDim2.new(1, -28, 0, 20)
+		summary.Position = UDim2.fromOffset(14, 10)
+		summary.ZIndex = 11
+		summary.BackgroundTransparency = 1
+		summary.RichText = true
+		summary.Text = (added > 0 and "<font color='#5AFF5A'>+"..added.." added</font> " or '')..(removed > 0 and "<font color='#FF5A5A'>-"..removed.." removed</font> " or '')..(modified > 0 and "<font color='#8A8A8A'>~"..modified.." changed</font>" or '')
+		summary.TextXAlignment = Enum.TextXAlignment.Left
+		summary.TextColor3 = color.Dark(uipallet.Text, 0.31)
+		summary.TextSize = 12
+		summary.FontFace = uipallet.Font
+		summary.Parent = footer
+	end
+
+	local function checkChangelog()
+		local suc, req = pcall(function()
+			return game:HttpGet('https://api.github.com/repos/exuric/VPrivate/commits/main', true)
+		end)
+		if not suc or not req then return end
+		local hok, head = pcall(function()
+			return cloneref(game:GetService('HttpService')):JSONDecode(req)
+		end)
+		if not hok or not head or not head.sha then return end
+		local seen = isfile('LarpV4/seencommit.txt') and readfile('LarpV4/seencommit.txt') or nil
+		if seen and seen ~= head.sha then
+			local cok, compare = pcall(function()
+				return cloneref(game:GetService('HttpService')):JSONDecode(game:HttpGet('https://api.github.com/repos/exuric/VPrivate/compare/'..seen..'...'..head.sha, true))
+			end)
+			if cok and compare and compare.files and #compare.files > 0 then
+				buildChangelog(compare.files)
+			end
+		end
+		writefile('LarpV4/seencommit.txt', head.sha)
+	end
+
+	task.spawn(checkChangelog)
 end
 
 return mainapi

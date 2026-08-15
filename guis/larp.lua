@@ -8106,7 +8106,14 @@ do
 	end
 
 	mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
-		if not clickgui.Visible or not mainapi.PendingChangelog then return end
+		if not clickgui.Visible then
+			local existing = scaledgui:FindFirstChild('Changelog')
+			if existing then
+				existing:Destroy()
+			end
+			return
+		end
+		if not mainapi.PendingChangelog then return end
 		mainapi.PendingChangelog = false
 		mainapi.Changelog()
 	end))

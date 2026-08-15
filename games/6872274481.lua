@@ -16668,3 +16668,34 @@ run(function()
 		Tooltip = 'How fast the blur fades when the camera stops'
 	})
 end)
+
+run(function()
+	local FpsUnlocker
+	local Cap
+	local oldcap
+
+	FpsUnlocker = larp.Categories.Utility:CreateModule({
+		Name = 'Fps Unlocker',
+		Function = function(callback)
+			if not setfpscap then return end
+			if callback then
+				oldcap = getfpscap and getfpscap() or 60
+				setfpscap(Cap.Value)
+			else
+				setfpscap(oldcap)
+			end
+		end,
+		Tooltip = 'removes frame rate limit (Frames Per Second)'
+	})
+	Cap = FpsUnlocker:CreateSlider({
+		Name = 'Cap',
+		Min = 0,
+		Max = 1000,
+		Default = 1000,
+		Function = function(value)
+			if setfpscap and FpsUnlocker.Enabled then
+				setfpscap(value)
+			end
+		end
+	})
+end)

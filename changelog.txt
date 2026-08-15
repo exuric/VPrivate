@@ -3,3 +3,4 @@
 ~Improved arc aiming and adaptive prediction
 -Removed NightmareEmote from the universal script
 ~Improved the changelogs popup
+~Restyled the changelogs popup

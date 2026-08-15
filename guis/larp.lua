@@ -7887,34 +7887,34 @@ do
 
 		local window = Instance.new('Frame')
 		window.Name = 'Changelog'
-		window.Size = UDim2.fromOffset(440, 440)
-		window.Position = UDim2.new(0.5, -220, 0.5, -220)
+		window.Size = UDim2.fromOffset(700, 440)
+		window.Position = UDim2.new(0.5, -350, 0.5, -212)
 		window.ZIndex = 9
-		window.BackgroundColor3 = Color3.fromRGB(12, 13, 12)
+		window.BackgroundColor3 = Color3.fromRGB(13, 14, 13)
 		window.BorderSizePixel = 0
 		window.Parent = clickgui
-		addCorner(window)
+		addCorner(window, UDim.new(0, 12))
 		addBlur(window)
 		makeDraggable(window)
 		local windowstroke = Instance.new('UIStroke')
-		windowstroke.Color = Color3.fromRGB(58, 78, 58)
-		windowstroke.Transparency = 0.55
+		windowstroke.Color = Color3.fromRGB(80, 250, 123)
+		windowstroke.Transparency = 0.72
 		windowstroke.Thickness = 1
 		windowstroke.Parent = window
 		local title = Instance.new('TextLabel')
-		title.Size = UDim2.new(1, -100, 0, 20)
-		title.Position = UDim2.fromOffset(14, 10)
+		title.Size = UDim2.new(1, -140, 0, 24)
+		title.Position = UDim2.fromOffset(20, 13)
 		title.ZIndex = 10
 		title.BackgroundTransparency = 1
 		title.Text = 'Larp V4'
 		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.TextColor3 = uipallet.Text
-		title.TextSize = 15
+		title.TextColor3 = Color3.fromRGB(236, 238, 236)
+		title.TextSize = 18
 		title.FontFace = uipallet.FontSemiBold
 		title.Parent = window
 		local subtitle = Instance.new('TextLabel')
-		subtitle.Size = UDim2.new(1, -100, 0, 16)
-		subtitle.Position = UDim2.fromOffset(14, 31)
+		subtitle.Size = UDim2.new(1, -140, 0, 16)
+		subtitle.Position = UDim2.fromOffset(21, 37)
 		subtitle.ZIndex = 10
 		subtitle.BackgroundTransparency = 1
 		subtitle.Text = '> update log'
@@ -7923,10 +7923,21 @@ do
 		subtitle.TextSize = 11
 		subtitle.FontFace = Font.fromEnum(Enum.Font.Code)
 		subtitle.Parent = window
+		local status = Instance.new('TextLabel')
+		status.Size = UDim2.new(1, -170, 0, 16)
+		status.Position = UDim2.fromOffset(0, 21)
+		status.ZIndex = 10
+		status.BackgroundTransparency = 1
+		status.Text = ''
+		status.TextXAlignment = Enum.TextXAlignment.Right
+		status.TextColor3 = Color3.fromRGB(122, 132, 122)
+		status.TextSize = 11
+		status.FontFace = uipallet.Font
+		status.Parent = window
 		local close = Instance.new('ImageButton')
 		close.Name = 'Close'
-		close.Size = UDim2.fromOffset(24, 24)
-		close.Position = UDim2.new(1, -35, 0, 11)
+		close.Size = UDim2.fromOffset(26, 26)
+		close.Position = UDim2.new(1, -48, 0, 16)
 		close.ZIndex = 12
 		close.BackgroundTransparency = 1
 		close.AutoButtonColor = false
@@ -7943,116 +7954,156 @@ do
 			window:Destroy()
 		end)
 		local divider = Instance.new('Frame')
-		divider.Size = UDim2.new(1, -28, 0, 1)
-		divider.Position = UDim2.fromOffset(14, 52)
+		divider.Size = UDim2.new(1, -40, 0, 1)
+		divider.Position = UDim2.fromOffset(20, 58)
 		divider.ZIndex = 10
-		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		divider.BackgroundColor3 = Color3.fromRGB(58, 78, 58)
+		divider.BackgroundTransparency = 0.6
 		divider.BorderSizePixel = 0
 		divider.Parent = window
+		local card = Instance.new('Frame')
+		card.Size = UDim2.new(1, -40, 1, -124)
+		card.Position = UDim2.fromOffset(20, 70)
+		card.ZIndex = 10
+		card.BackgroundColor3 = Color3.new(1, 1, 1)
+		card.BackgroundTransparency = 0.97
+		card.BorderSizePixel = 0
+		card.Parent = window
+		addCorner(card, UDim.new(0, 10))
+		local cardstroke = Instance.new('UIStroke')
+		cardstroke.Color = Color3.fromRGB(58, 78, 58)
+		cardstroke.Transparency = 0.5
+		cardstroke.Thickness = 1
+		cardstroke.Parent = card
 		local list = Instance.new('ScrollingFrame')
-		list.Name = 'List'
-		list.Size = UDim2.new(1, 0, 1, -104)
-		list.Position = UDim2.fromOffset(0, 53)
-		list.ZIndex = 10
+		list.Size = UDim2.new(1, -16, 1, -16)
+		list.Position = UDim2.fromOffset(8, 8)
+		list.ZIndex = 11
 		list.BackgroundTransparency = 1
 		list.BorderSizePixel = 0
-		list.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.3)
-		list.ScrollBarThickness = 4
-		list.CanvasSize = UDim2.fromScale(1, 0)
-		list.Parent = window
-		local listlayout = Instance.new('UIListLayout')
-		listlayout.Padding = UDim.new(0, 2)
-		listlayout.SortOrder = Enum.SortOrder.LayoutOrder
-		listlayout.Parent = list
-		local function updateList()
-			list.CanvasSize = UDim2.fromOffset(0, listlayout.AbsoluteContentSize.Y)
-		end
-		listlayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(updateList)
-		updateList()
-
-		local codefont = Font.fromEnum(Enum.Font.Code)
-		local rows = {}
-		for _, v in entries do
-			local entry = Instance.new('Frame')
-			entry.Size = UDim2.new(1, 0, 0, 30)
-			entry.BackgroundTransparency = 1
-			entry.BorderSizePixel = 0
-			entry.Parent = list
-			local tag = Instance.new('TextLabel')
-			tag.Size = UDim2.fromOffset(44, 30)
-			tag.Position = UDim2.fromOffset(14, 0)
-			tag.ZIndex = 11
-			tag.BackgroundTransparency = 1
-			tag.FontFace = codefont
-			tag.TextSize = 13
-			tag.TextXAlignment = Enum.TextXAlignment.Left
-			tag.Parent = entry
-			local tagtext, tagcolor
-			if v.status == 'added' then
-				tagtext, tagcolor = '[+]', Color3.fromRGB(80, 250, 123)
-			elseif v.status == 'removed' then
-				tagtext, tagcolor = '[-]', Color3.fromRGB(255, 85, 85)
-			else
-				tagtext, tagcolor = '[*]', Color3.fromRGB(241, 250, 140)
-			end
-			tag.TextColor3 = tagcolor
-			tag.Text = ''
-			local name = Instance.new('TextLabel')
-			name.Size = UDim2.new(1, -74, 0, 30)
-			name.Position = UDim2.fromOffset(60, 0)
-			name.ZIndex = 11
-			name.BackgroundTransparency = 1
-			name.TextXAlignment = Enum.TextXAlignment.Left
-			name.TextTruncate = Enum.TextTruncate.AtEnd
-			name.TextColor3 = color.Dark(uipallet.Text, 0.16)
-			name.TextSize = 13
-			name.FontFace = codefont
-			name.Text = ''
-			name.Parent = entry
-			rows[#rows + 1] = {tag = tag, name = name, tagtext = tagtext, nametext = v.name}
-		end
-
+		list.ScrollBarThickness = 3
+		list.ScrollBarImageColor3 = Color3.fromRGB(80, 250, 123)
+		list.ScrollBarImageTransparency = 0.7
+		list.CanvasSize = UDim2.new()
+		list.Parent = card
+		local listpadding = Instance.new('UIPadding')
+		listpadding.PaddingLeft = UDim.new(0, 12)
+		listpadding.PaddingRight = UDim.new(0, 6)
+		listpadding.Parent = list
+		local body = Instance.new('TextLabel')
+		body.Size = UDim2.new(1, 0, 0, 0)
+		body.AutomaticSize = Enum.AutomaticSize.Y
+		body.ZIndex = 11
+		body.BackgroundTransparency = 1
+		body.RichText = true
+		body.Text = ''
+		body.TextColor3 = Color3.fromRGB(156, 159, 156)
+		body.TextSize = 13
+		body.LineHeight = 1.35
+		body.FontFace = Font.fromEnum(Enum.Font.Roboto)
+		body.TextXAlignment = Enum.TextXAlignment.Left
+		body.TextYAlignment = Enum.TextYAlignment.Top
+		body.TextWrapped = true
+		body.Parent = list
+		local empty = Instance.new('TextLabel')
+		empty.Size = UDim2.new(1, -40, 0, 20)
+		empty.Position = UDim2.new(0, 20, 0.5, -10)
+		empty.ZIndex = 11
+		empty.BackgroundTransparency = 1
+		empty.Text = 'No changelogs found'
+		empty.TextColor3 = Color3.fromRGB(122, 132, 122)
+		empty.TextSize = 12
+		empty.FontFace = uipallet.Font
+		empty.Visible = false
+		empty.Parent = card
 		local footer = Instance.new('Frame')
-		footer.Size = UDim2.new(1, 0, 0, 40)
-		footer.Position = UDim2.new(0, 0, 1, -40)
+		footer.Size = UDim2.new(1, 0, 0, 46)
+		footer.Position = UDim2.new(0, 0, 1, -46)
 		footer.ZIndex = 10
-		footer.BackgroundColor3 = color.Dark(uipallet.Main, 0.04)
+		footer.BackgroundColor3 = Color3.new(1, 1, 1)
+		footer.BackgroundTransparency = 1
 		footer.BorderSizePixel = 0
 		footer.Parent = window
-		addCorner(footer)
-		local summary = Instance.new('TextLabel')
-		summary.Size = UDim2.new(1, -28, 0, 20)
-		summary.Position = UDim2.fromOffset(14, 10)
-		summary.ZIndex = 11
-		summary.BackgroundTransparency = 1
-		summary.RichText = true
-		summary.Text = '> '..(added > 0 and "<font color='#50FA7B'>[+]</font> "..added.."  " or '')..(removed > 0 and "<font color='#FF5555'>[-]</font> "..removed.."  " or '')..(modified > 0 and "<font color='#F1FA8C'>[*]</font> "..modified or '')
-		summary.TextXAlignment = Enum.TextXAlignment.Left
-		summary.TextColor3 = color.Dark(uipallet.Text, 0.31)
-		summary.TextSize = 12
-		summary.FontFace = Font.fromEnum(Enum.Font.Code)
-		summary.Parent = footer
-		summary.TextTransparency = 1
-		task.spawn(function()
-			for _, row in rows do
-				if not row.tag.Parent then return end
-				for i = 1, #row.tagtext do
-					row.tag.Text = row.tagtext:sub(1, i)
-					task.wait(0.02)
-				end
-				if not row.name.Parent then return end
-				for i = 1, #row.nametext do
-					row.name.Text = row.nametext:sub(1, i)
-					task.wait(0.015)
-				end
-				task.wait(0.05)
-			end
-			task.wait(0.2)
-			if summary.Parent then
-				tween:Tween(summary, uipallet.Tween, {
-					TextTransparency = 0
+		local footline = Instance.new('Frame')
+		footline.Size = UDim2.new(1, -40, 0, 1)
+		footline.Position = UDim2.fromOffset(20, 0)
+		footline.ZIndex = 11
+		footline.BackgroundColor3 = Color3.fromRGB(58, 78, 58)
+		footline.BackgroundTransparency = 0.6
+		footline.BorderSizePixel = 0
+		footline.Parent = footer
+		local footleft = Instance.new('TextLabel')
+		footleft.Size = UDim2.new(1, -140, 0, 20)
+		footleft.Position = UDim2.fromOffset(20, 13)
+		footleft.ZIndex = 11
+		footleft.BackgroundTransparency = 1
+		footleft.Text = '> Larp V4'
+		footleft.TextXAlignment = Enum.TextXAlignment.Left
+		footleft.TextColor3 = Color3.fromRGB(80, 250, 123)
+		footleft.TextSize = 11
+		footleft.FontFace = Font.fromEnum(Enum.Font.Code)
+		footleft.Parent = footer
+		local footright = Instance.new('TextLabel')
+		footright.Size = UDim2.new(1, -40, 0, 20)
+		footright.Position = UDim2.fromOffset(20, 13)
+		footright.ZIndex = 11
+		footright.BackgroundTransparency = 1
+		footright.Text = 'Update Changelog'
+		footright.TextXAlignment = Enum.TextXAlignment.Right
+		footright.TextColor3 = Color3.fromRGB(122, 132, 122)
+		footright.TextSize = 11
+		footright.FontFace = uipallet.Font
+		footright.Parent = footer
+
+		local parts = {}
+		for _, v in entries do
+			local colorhex = v.status == 'added' and '#50FA7B' or v.status == 'removed' and '#FF5555' or '#F1FA8C'
+			local tag = v.status == 'added' and '[+]' or v.status == 'removed' and '[-]' or '[*]'
+			parts[#parts + 1] = "<font color='"..colorhex.."'>"..tag.."</font> <font color='#D6D9D6'>"..v.name..'</font>'
+		end
+		local text = table.concat(parts, '\n\n')
+		local graphemes = utf8.len(text) or #text
+		local statusparts = {}
+		if added > 0 then
+			statusparts[#statusparts + 1] = added..' added'
+		end
+		if removed > 0 then
+			statusparts[#statusparts + 1] = removed..' removed'
+		end
+		if modified > 0 then
+			statusparts[#statusparts + 1] = modified..' changed'
+		end
+		status.Text = table.concat(statusparts, ' · ')
+		if #entries == 0 then
+			empty.Visible = true
+		else
+			body.Text = text
+			task.spawn(function()
+				task.wait(0.15)
+				if not window.Parent then return end
+				tween:Tween(window, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Position = UDim2.new(0.5, -350, 0.5, -220)
 				})
-			end
+				task.wait(0.12)
+				if not body.Parent then return end
+				local duration = math.clamp(graphemes / 900, 0.3, 1.8)
+				body.MaxVisibleGraphemes = 0
+				tween:Tween(body, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+					MaxVisibleGraphemes = graphemes
+				})
+				task.wait(duration + 0.1)
+				if body.Parent then
+					body.MaxVisibleGraphemes = -1
+				end
+				if footer.Parent then
+					tween:Tween(footer, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+						BackgroundTransparency = 0.975
+					})
+				end
+			end)
+		end
+		body:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()
+			list.CanvasSize = UDim2.fromOffset(0, body.AbsoluteSize.Y / scale.Scale)
 		end)
 	end
 

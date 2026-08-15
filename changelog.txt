@@ -1,3 +1,3 @@
 +Added update changelogs popup
 +Added Changelogs button in Settings - General
-~Improved the changelogs popup design
+~Restyled the changelogs popup to a console theme

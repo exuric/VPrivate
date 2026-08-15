@@ -198,9 +198,9 @@ local function addCloseButton(parent, offset)
 	return close
 end
 
-local function addStroke(gui, color, transparency)
+local function addStroke(gui, strokecolor, transparency)
 	local stroke = Instance.new('UIStroke')
-	stroke.Color = color or color.Dark(uipallet.Text, 0.62)
+	stroke.Color = strokecolor or color.Dark(uipallet.Text, 0.62)
 	stroke.Transparency = transparency or 0.88
 	stroke.Thickness = 1
 	stroke.Parent = gui

@@ -2941,9 +2941,18 @@ run(function()
 
     AutoChargeProj = larp.Categories.Blatant:CreateModule({
         Name = 'Charge Percent',
-        Function = function(callback)
-            if callback then
-                old = bedwars.ProjectileController.calculateImportantLaunchValues
+	Function = function(callback)
+		if callback then
+			ProjectileAimbot:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+				if damageTable.fromEntity == lplr.Character or damageTable.fromEntity == lplr then
+					local victim = entitylib.getEntity(damageTable.entityInstance)
+					if victim and victim.RootPart then
+						prediction.reportHit(victim.RootPart)
+						prediction.markKnockback(victim.RootPart, damageTable.knockbackMultiplier)
+					end
+				end
+			end))
+			old = bedwars.ProjectileController.calculateImportantLaunchValues
                 bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
                     local args = {...}
                     local percent = Percentage.Value / 100
@@ -4031,14 +4040,16 @@ run(function()
 							end
 						end
 	
-local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeed * Prediction.Value, gravity, plr[TargetPart.Value].Position, projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-					if calc and travelTime and travelTime <= lifetime then
-						local dir = CFrame.new(newlook.Position, calc).LookVector * projSpeed
-						if prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck) then
-							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
-							return {
-								initialVelocity = dir * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
+					local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
+						local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
+						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeed * Prediction.Value * charge, gravity, plr[TargetPart.Value].Position, projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+						if calc and travelTime and travelTime <= lifetime then
+							local dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeed * charge)
+							if prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck) then
+								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
+								prediction.trackShot(plr.RootPart)
+								return {
+									initialVelocity = dir,
 									positionFrom = offsetpos,
 									deltaT = lifetime,
 									gravitationalAcceleration = gravity,

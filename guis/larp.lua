@@ -7866,36 +7866,6 @@ if shared.LarpPresetInstall then
 end
 
 do
-	local function makeSmoothDraggable(gui)
-		gui.InputBegan:Connect(function(inputObj)
-			if
-				(inputObj.UserInputType == Enum.UserInputType.MouseButton1 or inputObj.UserInputType == Enum.UserInputType.Touch)
-				and inputObj.Target and not inputObj.Target:IsA('ImageButton')
-				and inputObj.Position.Y - gui.AbsolutePosition.Y + gui.AbsoluteSize.Y * gui.AnchorPoint.Y < 44
-			then
-				local dragPosition = Vector2.new(
-					gui.AbsolutePosition.X - inputObj.Position.X,
-					gui.AbsolutePosition.Y - inputObj.Position.Y
-				) / scale.Scale
-				local mousetype = Enum.UserInputType.MouseMovement
-				local changed = inputService.InputChanged:Connect(function(input)
-					if input.UserInputType == mousetype then
-						tween:Tween(gui, TweenInfo.new(0.09, Enum.EasingStyle.Linear), {
-							Position = UDim2.fromOffset((input.Position.X / scale.Scale) + dragPosition.X, (input.Position.Y / scale.Scale) + dragPosition.Y)
-						})
-					end
-				end)
-				local ended
-				ended = inputObj.Changed:Connect(function()
-					if inputObj.UserInputState == Enum.UserInputState.End then
-						changed:Disconnect()
-						ended:Disconnect()
-					end
-				end)
-			end
-		end)
-	end
-
 	local function buildChangelog(entries)
 		repeat task.wait(0.1) until not clickgui:FindFirstChild('PromptShadow')
 
@@ -7917,16 +7887,15 @@ do
 
 		local window = Instance.new('Frame')
 		window.Name = 'Changelog'
-		window.AnchorPoint = Vector2.new(0.5, 0.5)
 		window.Size = UDim2.fromOffset(440, 440)
-		window.Position = UDim2.fromScale(0.5, 0.5)
+		window.Position = UDim2.new(0.5, -220, 0.5, -220)
 		window.ZIndex = 9
 		window.BackgroundColor3 = Color3.fromRGB(12, 13, 12)
 		window.BorderSizePixel = 0
 		window.Parent = scaledgui
 		addCorner(window)
 		addBlur(window)
-		makeSmoothDraggable(window)
+		makeDraggable(window)
 		local windowstroke = Instance.new('UIStroke')
 		windowstroke.Color = Color3.fromRGB(58, 78, 58)
 		windowstroke.Transparency = 0.55

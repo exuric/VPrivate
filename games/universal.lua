@@ -6402,12 +6402,18 @@ end)
 run(function()
 	local FpsUnlocker
 	local Cap
+	local oldcap
 
 	FpsUnlocker = larp.Categories.Utility:CreateModule({
 		Name = 'Fps Unlocker',
 		Function = function(callback)
 			if not setfpscap then return end
-			setfpscap(callback and Cap.Value or 60)
+			if callback then
+				oldcap = getfpscap and getfpscap() or 60
+				setfpscap(Cap.Value)
+			else
+				setfpscap(oldcap)
+			end
 		end,
 		Tooltip = 'removes frame rate limit (Frames Per Second)'
 	})

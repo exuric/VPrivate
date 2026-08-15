@@ -7869,7 +7869,7 @@ do
 	local function buildChangelog(entries)
 		repeat task.wait(0.1) until not clickgui:FindFirstChild('PromptShadow')
 
-		local existing = scaledgui:FindFirstChild('Changelog')
+			local existing = clickgui:FindFirstChild('Changelog')
 		if existing then
 			existing:Destroy()
 		end
@@ -7892,7 +7892,7 @@ do
 		window.ZIndex = 9
 		window.BackgroundColor3 = Color3.fromRGB(12, 13, 12)
 		window.BorderSizePixel = 0
-		window.Parent = scaledgui
+		window.Parent = clickgui
 		addCorner(window)
 		addBlur(window)
 		makeDraggable(window)
@@ -8079,7 +8079,7 @@ do
 	end
 
 	function mainapi.Changelog()
-		if scaledgui:FindFirstChild('Changelog') then return end
+		if clickgui:FindFirstChild('Changelog') then return end
 		local text = fetchChangelog()
 		if not text then
 			mainapi:CreateNotification('Changelog', 'Failed to fetch changelog', 3, 'warning')
@@ -8107,7 +8107,7 @@ do
 
 	mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
 		if not clickgui.Visible then
-			local existing = scaledgui:FindFirstChild('Changelog')
+		local existing = clickgui:FindFirstChild('Changelog')
 			if existing then
 				existing:Destroy()
 			end

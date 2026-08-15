@@ -7892,7 +7892,7 @@ do
 		window.ZIndex = 9
 		window.BackgroundColor3 = Color3.fromRGB(13, 14, 13)
 		window.BorderSizePixel = 0
-		window.GroupTransparency = 1
+		window.Position = UDim2.new(0.5, -230, 0.5, -222)
 		window.Parent = scaledgui
 		addCorner(window, UDim.new(0, 14))
 		addBlur(window)
@@ -8088,7 +8088,6 @@ do
 		footer.BackgroundColor3 = Color3.new(1, 1, 1)
 		footer.BackgroundTransparency = 0.975
 		footer.BorderSizePixel = 0
-		footer.GroupTransparency = 1
 		footer.Parent = window
 		addCorner(footer, UDim.new(0, 12))
 		local footline = Instance.new('Frame')
@@ -8137,7 +8136,9 @@ do
 		task.spawn(function()
 			task.wait(0.15)
 			if not window.Parent then return end
-			tween:Tween(window, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0})
+			tween:Tween(window, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Position = UDim2.new(0.5, -230, 0.5, -230)
+			})
 			task.wait(0.1)
 			for _, row in rows do
 				if not row.tag.Parent then return end
@@ -8154,7 +8155,9 @@ do
 			end
 			task.wait(0.2)
 			if footer.Parent then
-				tween:Tween(footer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0})
+				tween:Tween(footer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					BackgroundTransparency = 0.92
+				})
 			end
 		end)
 	end

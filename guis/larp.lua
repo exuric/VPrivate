@@ -6442,6 +6442,13 @@ mainapi.Categories.Main:CreateSettingsDivider()
 ]]
 
 local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
+general:CreateButton({
+	Name = 'Changelogs',
+	Function = function()
+		mainapi.Changelog()
+	end,
+	Tooltip = 'Shows the latest changes'
+})
 mainapi.MultiKeybind = general:CreateToggle({
 	Name = 'Enable Multi-Keybinding',
 	Tooltip = 'Allows multiple keys to be bound to a module (eg. G + H)'
@@ -8013,6 +8020,18 @@ do
 		summary.Parent = footer
 	end
 
+	local function getFiles(url)
+		local suc, req = pcall(function()
+			return game:HttpGet(url, true)
+		end)
+		if not suc or not req then return nil end
+		local ok, data = pcall(function()
+			return cloneref(game:GetService('HttpService')):JSONDecode(req)
+		end)
+		if not ok or not data or not data.files or #data.files == 0 then return nil end
+		return data.files
+	end
+
 	local function checkChangelog()
 		local suc, req = pcall(function()
 			return game:HttpGet('https://api.github.com/repos/exuric/VPrivate/commits/main', true)
@@ -8024,14 +8043,26 @@ do
 		if not hok or not head or not head.sha then return end
 		local seen = isfile('LarpV4/seencommit.txt') and readfile('LarpV4/seencommit.txt') or nil
 		if seen and seen ~= head.sha then
-			local cok, compare = pcall(function()
-				return cloneref(game:GetService('HttpService')):JSONDecode(game:HttpGet('https://api.github.com/repos/exuric/VPrivate/compare/'..seen..'...'..head.sha, true))
-			end)
-			if cok and compare and compare.files and #compare.files > 0 then
-				buildChangelog(compare.files)
+			local files = getFiles('https://api.github.com/repos/exuric/VPrivate/compare/'..seen..'...'..head.sha)
+			if files then
+				buildChangelog(files)
 			end
 		end
 		writefile('LarpV4/seencommit.txt', head.sha)
+	end
+
+	function mainapi.Changelog()
+		local suc, req = pcall(function()
+			return game:HttpGet('https://api.github.com/repos/exuric/VPrivate/commits/main', true)
+		end)
+		if not suc or not req then return end
+		local hok, head = pcall(function()
+			return cloneref(game:GetService('HttpService')):JSONDecode(req)
+		end)
+		if not hok or not head or not head.sha then return end
+		if head.files and #head.files > 0 then
+			buildChangelog(head.files)
+		end
 	end
 
 	task.spawn(checkChangelog)

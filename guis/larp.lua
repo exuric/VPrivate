@@ -7887,46 +7887,74 @@ do
 
 		local window = Instance.new('Frame')
 		window.Name = 'Changelog'
-		window.Size = UDim2.fromOffset(440, 440)
-		window.Position = UDim2.new(0.5, -220, 0.5, -220)
+		window.Size = UDim2.fromOffset(460, 460)
+		window.Position = UDim2.new(0.5, -230, 0.5, -230)
 		window.ZIndex = 9
-		window.BackgroundColor3 = Color3.fromRGB(12, 13, 12)
+		window.BackgroundColor3 = Color3.fromRGB(13, 14, 13)
 		window.BorderSizePixel = 0
+		window.GroupTransparency = 1
 		window.Parent = scaledgui
-		addCorner(window)
+		addCorner(window, UDim.new(0, 14))
 		addBlur(window)
 		makeDraggable(window)
 		local windowstroke = Instance.new('UIStroke')
-		windowstroke.Color = Color3.fromRGB(58, 78, 58)
-		windowstroke.Transparency = 0.55
+		windowstroke.Color = Color3.fromRGB(80, 250, 123)
+		windowstroke.Transparency = 0.75
 		windowstroke.Thickness = 1
 		windowstroke.Parent = window
+		local dim = Instance.new('Frame')
+		dim.Name = 'Dim'
+		dim.Size = UDim2.fromScale(1, 1)
+		dim.BackgroundColor3 = Color3.new(0, 0, 0)
+		dim.BackgroundTransparency = 0.45
+		dim.BorderSizePixel = 0
+		dim.ZIndex = 8
+		dim.Parent = scaledgui
+		dim.MouseButton1Click:Connect(function()
+			window:Destroy()
+		end)
+		window.AncestryChanged:Connect(function()
+			if not window.Parent then
+				dim:Destroy()
+			end
+		end)
+		local accent = Instance.new('Frame')
+		accent.Size = UDim2.new(1, -40, 0, 2)
+		accent.Position = UDim2.fromOffset(20, 0)
+		accent.ZIndex = 11
+		accent.BackgroundColor3 = Color3.new(1, 1, 1)
+		accent.BorderSizePixel = 0
+		local accentgrad = Instance.new('UIGradient')
+		accentgrad.Color = ColorSequence.new(Color3.fromRGB(80, 250, 123), Color3.fromRGB(80, 250, 123, 0))
+		accentgrad.Rotation = 90
+		accentgrad.Parent = accent
+		accent.Parent = window
 		local title = Instance.new('TextLabel')
-		title.Size = UDim2.new(1, -100, 0, 20)
-		title.Position = UDim2.fromOffset(14, 10)
-		title.ZIndex = 10
+		title.Size = UDim2.new(1, -110, 0, 26)
+		title.Position = UDim2.fromOffset(20, 13)
+		title.ZIndex = 11
 		title.BackgroundTransparency = 1
 		title.Text = 'Larp V4'
 		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.TextColor3 = uipallet.Text
-		title.TextSize = 15
+		title.TextColor3 = Color3.fromRGB(238, 240, 238)
+		title.TextSize = 20
 		title.FontFace = uipallet.FontSemiBold
 		title.Parent = window
 		local subtitle = Instance.new('TextLabel')
-		subtitle.Size = UDim2.new(1, -100, 0, 16)
-		subtitle.Position = UDim2.fromOffset(14, 31)
-		subtitle.ZIndex = 10
+		subtitle.Size = UDim2.new(1, -110, 0, 18)
+		subtitle.Position = UDim2.fromOffset(21, 42)
+		subtitle.ZIndex = 11
 		subtitle.BackgroundTransparency = 1
 		subtitle.Text = '> update log'
 		subtitle.TextXAlignment = Enum.TextXAlignment.Left
 		subtitle.TextColor3 = Color3.fromRGB(80, 250, 123)
-		subtitle.TextSize = 11
+		subtitle.TextSize = 12
 		subtitle.FontFace = Font.fromEnum(Enum.Font.Code)
 		subtitle.Parent = window
 		local close = Instance.new('ImageButton')
 		close.Name = 'Close'
-		close.Size = UDim2.fromOffset(24, 24)
-		close.Position = UDim2.new(1, -35, 0, 11)
+		close.Size = UDim2.fromOffset(26, 26)
+		close.Position = UDim2.new(1, -48, 0, 22)
 		close.ZIndex = 12
 		close.BackgroundTransparency = 1
 		close.AutoButtonColor = false
@@ -7943,23 +7971,35 @@ do
 			window:Destroy()
 		end)
 		local divider = Instance.new('Frame')
-		divider.Size = UDim2.new(1, -28, 0, 1)
-		divider.Position = UDim2.fromOffset(14, 52)
+		divider.Size = UDim2.new(1, -40, 0, 1)
+		divider.Position = UDim2.fromOffset(20, 74)
 		divider.ZIndex = 10
-		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		divider.BackgroundColor3 = Color3.fromRGB(58, 78, 58)
+		divider.BackgroundTransparency = 0.6
 		divider.BorderSizePixel = 0
 		divider.Parent = window
+		local panel = Instance.new('Frame')
+		panel.Name = 'Panel'
+		panel.Size = UDim2.new(1, -28, 1, -134)
+		panel.Position = UDim2.fromOffset(14, 80)
+		panel.ZIndex = 10
+		panel.BackgroundColor3 = Color3.new(1, 1, 1)
+		panel.BackgroundTransparency = 0.965
+		panel.BorderSizePixel = 0
+		panel.Parent = window
+		addCorner(panel, UDim.new(0, 10))
 		local list = Instance.new('ScrollingFrame')
 		list.Name = 'List'
-		list.Size = UDim2.new(1, 0, 1, -104)
-		list.Position = UDim2.fromOffset(0, 53)
-		list.ZIndex = 10
+		list.Size = UDim2.new(1, -14, 1, -14)
+		list.Position = UDim2.fromOffset(7, 7)
+		list.ZIndex = 11
 		list.BackgroundTransparency = 1
 		list.BorderSizePixel = 0
-		list.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.3)
-		list.ScrollBarThickness = 4
+		list.ScrollBarImageColor3 = Color3.fromRGB(80, 250, 123)
+		list.ScrollBarImageTransparency = 0.65
+		list.ScrollBarThickness = 3
 		list.CanvasSize = UDim2.fromScale(1, 0)
-		list.Parent = window
+		list.Parent = panel
 		local listlayout = Instance.new('UIListLayout')
 		listlayout.Padding = UDim.new(0, 2)
 		listlayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -7971,69 +8011,134 @@ do
 		updateList()
 
 		local codefont = Font.fromEnum(Enum.Font.Code)
+		local statuscolors = {
+			added = Color3.fromRGB(80, 250, 123),
+			removed = Color3.fromRGB(255, 85, 85),
+			modified = Color3.fromRGB(241, 250, 140)
+		}
+		local function makePill(text, color)
+			local pill = Instance.new('Frame')
+			pill.Size = UDim2.fromOffset(56, 24)
+			pill.BackgroundColor3 = color
+			pill.BackgroundTransparency = 0.88
+			pill.BorderSizePixel = 0
+			addCorner(pill, UDim.new(0, 12))
+			local pillstroke = Instance.new('UIStroke')
+			pillstroke.Color = color
+			pillstroke.Transparency = 0.5
+			pillstroke.Thickness = 1
+			pillstroke.Parent = pill
+			local pilltext = Instance.new('TextLabel')
+			pilltext.Size = UDim2.new(1, 0, 1, 0)
+			pilltext.BackgroundTransparency = 1
+			pilltext.FontFace = codefont
+			pilltext.TextSize = 12
+			pilltext.TextColor3 = color
+			pilltext.Text = text or ''
+			pilltext.Parent = pill
+			return pill, pilltext
+		end
 		local rows = {}
 		for _, v in entries do
 			local entry = Instance.new('Frame')
-			entry.Size = UDim2.new(1, 0, 0, 30)
+			entry.Size = UDim2.new(1, -12, 0, 40)
+			entry.BackgroundColor3 = Color3.new(1, 1, 1)
 			entry.BackgroundTransparency = 1
 			entry.BorderSizePixel = 0
+			entry.ZIndex = 11
 			entry.Parent = list
-			local tag = Instance.new('TextLabel')
-			tag.Size = UDim2.fromOffset(44, 30)
-			tag.Position = UDim2.fromOffset(14, 0)
-			tag.ZIndex = 11
-			tag.BackgroundTransparency = 1
-			tag.FontFace = codefont
-			tag.TextSize = 13
-			tag.TextXAlignment = Enum.TextXAlignment.Left
-			tag.Parent = entry
-			local tagtext, tagcolor
-			if v.status == 'added' then
-				tagtext, tagcolor = '[+]', Color3.fromRGB(80, 250, 123)
-			elseif v.status == 'removed' then
-				tagtext, tagcolor = '[-]', Color3.fromRGB(255, 85, 85)
-			else
-				tagtext, tagcolor = '[*]', Color3.fromRGB(241, 250, 140)
-			end
-			tag.TextColor3 = tagcolor
-			tag.Text = ''
+			entry.MouseEnter:Connect(function()
+				tween:Tween(entry, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.96})
+			end)
+			entry.MouseLeave:Connect(function()
+				tween:Tween(entry, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {BackgroundTransparency = 1})
+			end)
+			local pill, pilltext = makePill(nil, statuscolors[v.status])
+			pill.Position = UDim2.fromOffset(12, 8)
+			pill.ZIndex = 12
+			pill.Parent = entry
 			local name = Instance.new('TextLabel')
-			name.Size = UDim2.new(1, -74, 0, 30)
-			name.Position = UDim2.fromOffset(60, 0)
-			name.ZIndex = 11
+			name.Size = UDim2.new(1, -88, 0, 40)
+			name.Position = UDim2.fromOffset(76, 0)
+			name.ZIndex = 12
 			name.BackgroundTransparency = 1
 			name.TextXAlignment = Enum.TextXAlignment.Left
+			name.TextYAlignment = Enum.TextYAlignment.Center
 			name.TextTruncate = Enum.TextTruncate.AtEnd
-			name.TextColor3 = color.Dark(uipallet.Text, 0.16)
-			name.TextSize = 13
-			name.FontFace = codefont
+			name.TextColor3 = Color3.fromRGB(214, 217, 214)
+			name.TextSize = 14
+			name.FontFace = uipallet.Font
 			name.Text = ''
 			name.Parent = entry
-			rows[#rows + 1] = {tag = tag, name = name, tagtext = tagtext, nametext = v.name}
+			local tagtext
+			if v.status == 'added' then
+				tagtext = '[+]'
+			elseif v.status == 'removed' then
+				tagtext = '[-]'
+			else
+				tagtext = '[*]'
+			end
+			rows[#rows + 1] = {tag = pilltext, name = name, tagtext = tagtext, nametext = v.name}
 		end
 
 		local footer = Instance.new('Frame')
-		footer.Size = UDim2.new(1, 0, 0, 40)
-		footer.Position = UDim2.new(0, 0, 1, -40)
+		footer.Size = UDim2.new(1, 0, 0, 54)
+		footer.Position = UDim2.new(0, 0, 1, -54)
 		footer.ZIndex = 10
-		footer.BackgroundColor3 = color.Dark(uipallet.Main, 0.04)
+		footer.BackgroundColor3 = Color3.new(1, 1, 1)
+		footer.BackgroundTransparency = 0.975
 		footer.BorderSizePixel = 0
+		footer.GroupTransparency = 1
 		footer.Parent = window
-		addCorner(footer)
-		local summary = Instance.new('TextLabel')
-		summary.Size = UDim2.new(1, -28, 0, 20)
-		summary.Position = UDim2.fromOffset(14, 10)
-		summary.ZIndex = 11
-		summary.BackgroundTransparency = 1
-		summary.RichText = true
-		summary.Text = '> '..(added > 0 and "<font color='#50FA7B'>[+]</font> "..added.."  " or '')..(removed > 0 and "<font color='#FF5555'>[-]</font> "..removed.."  " or '')..(modified > 0 and "<font color='#F1FA8C'>[*]</font> "..modified or '')
-		summary.TextXAlignment = Enum.TextXAlignment.Left
-		summary.TextColor3 = color.Dark(uipallet.Text, 0.31)
-		summary.TextSize = 12
-		summary.FontFace = Font.fromEnum(Enum.Font.Code)
-		summary.Parent = footer
-		summary.TextTransparency = 1
+		addCorner(footer, UDim.new(0, 12))
+		local footline = Instance.new('Frame')
+		footline.Size = UDim2.new(1, -40, 0, 1)
+		footline.Position = UDim2.fromOffset(20, 0)
+		footline.ZIndex = 11
+		footline.BackgroundColor3 = Color3.fromRGB(58, 78, 58)
+		footline.BackgroundTransparency = 0.6
+		footline.BorderSizePixel = 0
+		footline.Parent = footer
+		local statpills = {}
+		if added > 0 then
+			local p = makePill('+'..added, statuscolors.added)
+			p.ZIndex = 11
+			p.Parent = footer
+			statpills[#statpills + 1] = p
+		end
+		if removed > 0 then
+			local p = makePill('-'..removed, statuscolors.removed)
+			p.ZIndex = 11
+			p.Parent = footer
+			statpills[#statpills + 1] = p
+		end
+		if modified > 0 then
+			local p = makePill('*'..modified, statuscolors.modified)
+			p.ZIndex = 11
+			p.Parent = footer
+			statpills[#statpills + 1] = p
+		end
+		local pillsx = 20
+		for _, p in statpills do
+			p.Position = UDim2.fromOffset(pillsx, 15)
+			pillsx += 64
+		end
+		local footerlabel = Instance.new('TextLabel')
+		footerlabel.Size = UDim2.new(1, -40, 0, 20)
+		footerlabel.Position = UDim2.fromOffset(20, 17)
+		footerlabel.ZIndex = 11
+		footerlabel.BackgroundTransparency = 1
+		footerlabel.Text = 'Larp V4'
+		footerlabel.TextXAlignment = Enum.TextXAlignment.Right
+		footerlabel.TextColor3 = Color3.fromRGB(122, 132, 122)
+		footerlabel.TextSize = 12
+		footerlabel.FontFace = uipallet.Font
+		footerlabel.Parent = footer
 		task.spawn(function()
+			task.wait(0.15)
+			if not window.Parent then return end
+			tween:Tween(window, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0})
+			task.wait(0.1)
 			for _, row in rows do
 				if not row.tag.Parent then return end
 				for i = 1, #row.tagtext do
@@ -8043,15 +8148,13 @@ do
 				if not row.name.Parent then return end
 				for i = 1, #row.nametext do
 					row.name.Text = row.nametext:sub(1, i)
-					task.wait(0.015)
+					task.wait(0.012)
 				end
-				task.wait(0.05)
+				task.wait(0.04)
 			end
 			task.wait(0.2)
-			if summary.Parent then
-				tween:Tween(summary, uipallet.Tween, {
-					TextTransparency = 0
-				})
+			if footer.Parent then
+				tween:Tween(footer, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {GroupTransparency = 0})
 			end
 		end)
 	end

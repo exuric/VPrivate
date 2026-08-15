@@ -940,7 +940,7 @@ run(function()
 		if whitelist.localprio >= 5 and not whitelist.adminnotified then
 			whitelist.adminnotified = true
 			pcall(function()
-				larp:CreateNotification('Larp', 'Whitelisted as Admin', 5, 'info')
+				larp:CreateNotification('Larp', lplr and lplr.UserId == OID and 'Whitelisted as Owner' or 'Whitelisted as Admin', 5, 'info')
 			end)
 		end
 
@@ -8303,116 +8303,6 @@ run(function()
 	local corner = Instance.new('UICorner')
 	corner.CornerRadius = UDim.new(0, 4)
 	corner.Parent = label
-end)
-
-run(function()
-	local PotatoMode
-	local References = {}
-	local potatoColor = Color3.fromRGB(163, 131, 77)
-
-	local function isCharacterPart(part)
-		local character = part:FindFirstAncestorOfClass('Model')
-		while character do
-			if character:FindFirstChildOfClass('Humanoid') and character:FindFirstChild('HumanoidRootPart') then
-				return true
-			end
-			character = character.Parent
-		end
-		return false
-	end
-
-	local function snapshot(part)
-		if not References[part] then
-			References[part] = {part.Color, part.Material}
-		end
-	end
-
-	local function apply(part)
-		if part.Color ~= potatoColor then
-			part.Color = potatoColor
-		end
-		if part.Material ~= Enum.Material.SmoothPlastic then
-			part.Material = Enum.Material.SmoothPlastic
-		end
-	end
-
-	local savedQuality, savedShadows
-
-	local function boostGraphics()
-		pcall(function()
-			local render = game:GetService('RenderSettings')
-			savedQuality = render.QualityLevel
-			render.QualityLevel = 0
-		end)
-		pcall(function()
-			local lighting = game:GetService('Lighting')
-			savedShadows = lighting.GlobalShadows
-			lighting.GlobalShadows = false
-		end)
-	end
-
-	local function restoreGraphics()
-		if savedQuality then
-			pcall(function()
-				game:GetService('RenderSettings').QualityLevel = savedQuality
-			end)
-		end
-		if savedShadows then
-			pcall(function()
-				game:GetService('Lighting').GlobalShadows = savedShadows
-			end)
-		end
-		savedQuality = nil
-		savedShadows = nil
-	end
-
-	PotatoMode = larp.Legit:CreateModule({
-		Name = 'Potato Mode',
-		Function = function(callback)
-			if callback then
-				boostGraphics()
-				local all = workspace:GetDescendants()
-				for _, part in all do
-					if part:IsA('BasePart') and not isCharacterPart(part) then
-						snapshot(part)
-						apply(part)
-					end
-				end
-				local tick = 0
-				PotatoMode:Clean(runService.Heartbeat:Connect(function()
-					tick += 1
-					if tick % 120 ~= 0 then return end
-					for part in next, References do
-						if part.Parent then
-							if part.Color ~= potatoColor or part.Material ~= Enum.Material.SmoothPlastic then
-								apply(part)
-							end
-						else
-							References[part] = nil
-						end
-					end
-				end))
-				PotatoMode:Clean(workspace.DescendantAdded:Connect(function(part)
-					if part:IsA('BasePart') and not isCharacterPart(part) then
-						snapshot(part)
-						apply(part)
-					end
-				end))
-			else
-				restoreGraphics()
-				for part, values in next, References do
-					if part.Parent then
-						pcall(function()
-							part.Color = values[1]
-							part.Material = values[2]
-						end)
-					end
-				end
-				table.clear(References)
-			end
-		end,
-		Tooltip = 'Makes the world low detail and lowers graphics settings for an FPS boost'
-	})
 end)
 
 run(function()

@@ -7870,8 +7870,8 @@ do
 		gui.InputBegan:Connect(function(inputObj)
 			if
 				(inputObj.UserInputType == Enum.UserInputType.MouseButton1 or inputObj.UserInputType == Enum.UserInputType.Touch)
-				and inputObj.Position.Y - gui.AbsolutePosition.Y < 44
-				and (not inputObj.Target or inputObj.Target == gui or inputObj.Target:IsA('TextLabel'))
+				and inputObj.Target and not inputObj.Target:IsA('ImageButton')
+				and inputObj.Position.Y - gui.AbsolutePosition.Y + gui.AbsoluteSize.Y * gui.AnchorPoint.Y < 44
 			then
 				local dragPosition = Vector2.new(
 					gui.AbsolutePosition.X - inputObj.Position.X,
@@ -8110,6 +8110,7 @@ do
 	end
 
 	function mainapi.Changelog()
+		if scaledgui:FindFirstChild('Changelog') then return end
 		local text = fetchChangelog()
 		if not text then
 			mainapi:CreateNotification('Changelog', 'Failed to fetch changelog', 3, 'warning')

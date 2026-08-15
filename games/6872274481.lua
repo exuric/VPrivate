@@ -4035,11 +4035,10 @@ local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.n
 						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeed * Prediction.Value, gravity, plr[TargetPart.Value].Position, projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 					if calc and travelTime and travelTime <= lifetime then
 						local dir = CFrame.new(newlook.Position, calc).LookVector * projSpeed
-						local vel = dir - (entitylib.isAlive and entitylib.character.RootPart and entitylib.character.RootPart.Velocity or Vector3.zero)
-						if prediction.IsTrajectoryClear(newlook.Position, vel, gravity, travelTime, rayCheck) then
+						if prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck) then
 							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 							return {
-								initialVelocity = vel * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
+								initialVelocity = dir * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
 									positionFrom = offsetpos,
 									deltaT = lifetime,
 									gravitationalAcceleration = gravity,

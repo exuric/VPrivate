@@ -7963,13 +7963,13 @@ do
 		divider.Parent = window
 		local list = Instance.new('ScrollingFrame')
 		list.Name = 'List'
-		list.Size = UDim2.new(1, 0, 1, -99)
+		list.Size = UDim2.new(1, -20, 1, -99)
 		list.Position = UDim2.fromOffset(0, 53)
 		list.ZIndex = 10
 		list.BackgroundTransparency = 1
 		list.BorderSizePixel = 0
 		list.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.3)
-		list.ScrollBarThickness = 4
+		list.ScrollBarThickness = 0
 		list.CanvasSize = UDim2.fromScale(1, 0)
 		list.Parent = window
 		local listlayout = Instance.new('UIListLayout')
@@ -8047,6 +8047,65 @@ do
 		empty.FontFace = uipallet.Font
 		empty.Visible = #entries == 0
 		empty.Parent = window
+		local slider = Instance.new('Frame')
+		slider.Name = 'Slider'
+		slider.Size = UDim2.new(0, 8, 1, -99)
+		slider.Position = UDim2.new(1, -22, 0, 53)
+		slider.ZIndex = 11
+		slider.BackgroundColor3 = Color3.new(1, 1, 1)
+		slider.BackgroundTransparency = 0.94
+		slider.BorderSizePixel = 0
+		slider.Parent = window
+		addCorner(slider, UDim.new(0, 4))
+		local thumb = Instance.new('Frame')
+		thumb.Name = 'Thumb'
+		thumb.Size = UDim2.new(1, 0, 0, 40)
+		thumb.BackgroundColor3 = Color3.fromRGB(80, 250, 123)
+		thumb.BackgroundTransparency = 0.6
+		thumb.BorderSizePixel = 0
+		thumb.Visible = false
+		thumb.Parent = slider
+		addCorner(thumb, UDim.new(0, 4))
+		local function updateSlider()
+			local canvas = list.AbsoluteCanvasSize.Y
+			local view = list.AbsoluteSize.Y
+			if canvas <= view then
+				thumb.Visible = false
+				return
+			end
+			thumb.Visible = true
+			local thumbheight = math.max(24, view * view / canvas)
+			thumb.Size = UDim2.new(1, 0, 0, thumbheight)
+			local maxpos = canvas - view
+			local frac = maxpos > 0 and list.CanvasPosition.Y / maxpos or 0
+			thumb.Position = UDim2.fromOffset(0, math.clamp(frac * (slider.AbsoluteSize.Y - thumbheight), 0, slider.AbsoluteSize.Y - thumbheight))
+		end
+		list:GetPropertyChangedSignal('CanvasPosition'):Connect(updateSlider)
+		list:GetPropertyChangedSignal('AbsoluteCanvasSize'):Connect(updateSlider)
+		task.delay(0.1, updateSlider)
+		thumb.MouseEnter:Connect(function()
+			thumb.BackgroundTransparency = 0.45
+		end)
+		thumb.MouseLeave:Connect(function()
+			thumb.BackgroundTransparency = 0.6
+		end)
+		thumb.InputBegan:Connect(function(inputObj)
+			if inputObj.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+			local changed = inputService.InputChanged:Connect(function(input)
+				if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+				local maxpos = math.max(0, list.AbsoluteCanvasSize.Y - list.AbsoluteSize.Y)
+				local trackheight = slider.AbsoluteSize.Y - thumb.AbsoluteSize.Y
+				local frac = trackheight > 0 and math.clamp((input.Position.Y - slider.AbsolutePosition.Y) / trackheight, 0, 1) or 0
+				list.CanvasPosition = Vector2.new(0, frac * maxpos)
+			end)
+			local ended
+			ended = inputObj.Changed:Connect(function()
+				if inputObj.UserInputState == Enum.UserInputState.End then
+					changed:Disconnect()
+					ended:Disconnect()
+				end
+			end)
+		end)
 
 		local footer = Instance.new('Frame')
 		footer.Size = UDim2.new(1, 0, 0, 46)

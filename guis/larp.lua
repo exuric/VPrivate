@@ -7883,15 +7883,19 @@ do
 		local window = Instance.new('Frame')
 		window.Name = 'Changelog'
 		window.AnchorPoint = Vector2.new(0.5, 0.5)
-		window.Size = UDim2.fromOffset(340, 400)
+		window.Size = UDim2.fromOffset(360, 420)
 		window.Position = UDim2.fromScale(0.5, 0.5)
 		window.ZIndex = 9
-		window.BackgroundColor3 = uipallet.Main
+		window.BackgroundColor3 = Color3.fromRGB(12, 13, 12)
 		window.BorderSizePixel = 0
 		window.Parent = scaledgui
 		addCorner(window)
 		addBlur(window)
-		makeDraggable(window)
+		local windowstroke = Instance.new('UIStroke')
+		windowstroke.Color = Color3.fromRGB(58, 78, 58)
+		windowstroke.Transparency = 0.55
+		windowstroke.Thickness = 1
+		windowstroke.Parent = window
 		local title = Instance.new('TextLabel')
 		title.Size = UDim2.new(1, -100, 0, 20)
 		title.Position = UDim2.fromOffset(14, 10)
@@ -7908,11 +7912,11 @@ do
 		subtitle.Position = UDim2.fromOffset(14, 31)
 		subtitle.ZIndex = 10
 		subtitle.BackgroundTransparency = 1
-		subtitle.Text = 'Update log'
+		subtitle.Text = '> update log'
 		subtitle.TextXAlignment = Enum.TextXAlignment.Left
-		subtitle.TextColor3 = color.Dark(uipallet.Text, 0.31)
+		subtitle.TextColor3 = Color3.fromRGB(80, 250, 123)
 		subtitle.TextSize = 11
-		subtitle.FontFace = uipallet.Font
+		subtitle.FontFace = Font.fromEnum(Enum.Font.Code)
 		subtitle.Parent = window
 		local close = Instance.new('ImageButton')
 		close.Name = 'Close'
@@ -7925,7 +7929,7 @@ do
 		close.ImageColor3 = uipallet.Text
 		close.Parent = window
 		close.MouseEnter:Connect(function()
-			close.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+			close.ImageColor3 = Color3.fromRGB(255, 85, 85)
 		end)
 		close.MouseLeave:Connect(function()
 			close.ImageColor3 = uipallet.Text
@@ -7961,43 +7965,43 @@ do
 		listlayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(updateList)
 		updateList()
 
-		local greencolor = Color3.fromRGB(90, 255, 90)
-		local redcolor = Color3.fromRGB(255, 90, 90)
+		local codefont = Font.fromEnum(Enum.Font.Code)
 		for _, v in entries do
 			local entry = Instance.new('Frame')
 			entry.Size = UDim2.new(1, 0, 0, 30)
 			entry.BackgroundTransparency = 1
 			entry.BorderSizePixel = 0
 			entry.Parent = list
-			local icon = Instance.new('ImageLabel')
-			icon.Size = UDim2.fromOffset(14, 14)
-			icon.Position = UDim2.fromOffset(18, 8)
-			icon.ZIndex = 11
-			icon.BackgroundTransparency = 1
-			icon.Parent = entry
+			local tag = Instance.new('TextLabel')
+			tag.Size = UDim2.fromOffset(44, 30)
+			tag.Position = UDim2.fromOffset(14, 0)
+			tag.ZIndex = 11
+			tag.BackgroundTransparency = 1
+			tag.FontFace = codefont
+			tag.TextSize = 13
+			tag.TextXAlignment = Enum.TextXAlignment.Left
+			tag.Parent = entry
 			if v.status == 'added' then
-				icon.Image = getcustomasset('LarpV4/assets/larp/add.png')
-				icon.ImageColor3 = greencolor
+				tag.Text = '[+]'
+				tag.TextColor3 = Color3.fromRGB(80, 250, 123)
 			elseif v.status == 'removed' then
-				icon.Image = getcustomasset('LarpV4/assets/larp/closemini.png')
-				icon.ImageColor3 = redcolor
+				tag.Text = '[-]'
+				tag.TextColor3 = Color3.fromRGB(255, 85, 85)
 			else
-				icon.Image = ''
-				icon.BackgroundColor3 = color.Dark(uipallet.Text, 0.4)
-				icon.BackgroundTransparency = 0
-				addCorner(icon, UDim.new(1, 0))
+				tag.Text = '[*]'
+				tag.TextColor3 = Color3.fromRGB(241, 250, 140)
 			end
 			local name = Instance.new('TextLabel')
-			name.Size = UDim2.new(1, -48, 0, 30)
-			name.Position = UDim2.fromOffset(44, 0)
+			name.Size = UDim2.new(1, -74, 0, 30)
+			name.Position = UDim2.fromOffset(60, 0)
 			name.ZIndex = 11
 			name.BackgroundTransparency = 1
 			name.Text = v.name
 			name.TextXAlignment = Enum.TextXAlignment.Left
 			name.TextTruncate = Enum.TextTruncate.AtEnd
-			name.TextColor3 = uipallet.Text
+			name.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			name.TextSize = 13
-			name.FontFace = uipallet.Font
+			name.FontFace = codefont
 			name.Parent = entry
 		end
 
@@ -8015,11 +8019,11 @@ do
 		summary.ZIndex = 11
 		summary.BackgroundTransparency = 1
 		summary.RichText = true
-		summary.Text = (added > 0 and "<font color='#5AFF5A'>+"..added.." added</font> " or '')..(removed > 0 and "<font color='#FF5A5A'>-"..removed.." removed</font> " or '')..(modified > 0 and "<font color='#8A8A8A'>~"..modified.." changed</font>" or '')
+		summary.Text = '> '..(added > 0 and "<font color='#50FA7B'>[+]</font> "..added.."  " or '')..(removed > 0 and "<font color='#FF5555'>[-]</font> "..removed.."  " or '')..(modified > 0 and "<font color='#F1FA8C'>[*]</font> "..modified or '')
 		summary.TextXAlignment = Enum.TextXAlignment.Left
 		summary.TextColor3 = color.Dark(uipallet.Text, 0.31)
 		summary.TextSize = 12
-		summary.FontFace = uipallet.Font
+		summary.FontFace = Font.fromEnum(Enum.Font.Code)
 		summary.Parent = footer
 	end
 

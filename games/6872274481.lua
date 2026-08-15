@@ -2944,6 +2944,9 @@ run(function()
 	Function = function(callback)
 		if callback then
 			ProjectileAimbot:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+				if Mode.Value ~= 'Adaptive' then
+					return
+				end
 				if damageTable.fromEntity == lplr.Character or damageTable.fromEntity == lplr then
 					local victim = entitylib.getEntity(damageTable.entityInstance)
 					if victim and victim.RootPart then
@@ -4047,7 +4050,9 @@ run(function()
 							local dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeed * charge)
 							if prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck) then
 								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
-								prediction.trackShot(plr.RootPart)
+								if Mode.Value == 'Adaptive' then
+									prediction.trackShot(plr.RootPart)
+								end
 								return {
 									initialVelocity = dir,
 									positionFrom = offsetpos,
@@ -4085,6 +4090,12 @@ run(function()
 	TargetPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Part',
 		List = {'RootPart', 'Head'}
+	})
+	Mode = ProjectileAimbot:CreateDropdown({
+		Name = 'Mode',
+		List = {'Adaptive', 'Simple'},
+		Default = 'Adaptive',
+		Tooltip = 'Adaptive grades each landed shot and self-corrects your latency lead and knockback over time; Simple solves the arc without any feedback.'
 	})
 	Prediction = ProjectileAimbot:CreateSlider({
 		Name = 'Prediction',

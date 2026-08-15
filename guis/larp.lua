@@ -7866,25 +7866,18 @@ if shared.LarpPresetInstall then
 end
 
 do
-	local function buildChangelog(files)
+	local function buildChangelog(entries)
 		repeat task.wait(0.1) until not clickgui:FindFirstChild('PromptShadow')
 
-		local entries = {}
 		local added, removed, modified = 0, 0, 0
-		for _, v in files do
-			local status = v.status
-			if status == 'added' then
+		for _, v in entries do
+			if v.status == 'added' then
 				added += 1
-			elseif status == 'removed' then
+			elseif v.status == 'removed' then
 				removed += 1
-			elseif status == 'renamed' then
-				modified += 1
-				entries[#entries + 1] = {status = 'renamed', name = (v.previous_filename or '')..' -> '..v.filename}
-				continue
 			else
 				modified += 1
 			end
-			entries[#entries + 1] = {status = status, name = v.filename}
 		end
 
 		local window = Instance.new('Frame')
@@ -7899,17 +7892,9 @@ do
 		addCorner(window)
 		addBlur(window)
 		makeDraggable(window)
-		local logo = Instance.new('ImageLabel')
-		logo.Size = UDim2.fromOffset(22, 22)
-		logo.Position = UDim2.fromOffset(14, 12)
-		logo.ZIndex = 10
-		logo.BackgroundTransparency = 1
-		logo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
-		logo.ImageColor3 = select(3, uipallet.Main:ToHSV()) > 0.5 and uipallet.Text or Color3.new(1, 1, 1)
-		logo.Parent = window
 		local title = Instance.new('TextLabel')
 		title.Size = UDim2.new(1, -100, 0, 20)
-		title.Position = UDim2.fromOffset(44, 10)
+		title.Position = UDim2.fromOffset(14, 10)
 		title.ZIndex = 10
 		title.BackgroundTransparency = 1
 		title.Text = 'Larp V4'
@@ -7920,7 +7905,7 @@ do
 		title.Parent = window
 		local subtitle = Instance.new('TextLabel')
 		subtitle.Size = UDim2.new(1, -100, 0, 16)
-		subtitle.Position = UDim2.fromOffset(44, 31)
+		subtitle.Position = UDim2.fromOffset(14, 31)
 		subtitle.ZIndex = 10
 		subtitle.BackgroundTransparency = 1
 		subtitle.Text = 'Update log'
@@ -7929,7 +7914,25 @@ do
 		subtitle.TextSize = 11
 		subtitle.FontFace = uipallet.Font
 		subtitle.Parent = window
-		local close = addCloseButton(window, 11)
+		local close = Instance.new('ImageButton')
+		close.Name = 'Close'
+		close.Size = UDim2.fromOffset(24, 24)
+		close.Position = UDim2.new(1, -35, 0, 11)
+		close.ZIndex = 12
+		close.BackgroundTransparency = 1
+		close.AutoButtonColor = false
+		close.Image = getcustomasset('LarpV4/assets/larp/close.png')
+		close.ImageColor3 = uipallet.Text
+		close.Parent = window
+		close.MouseEnter:Connect(function()
+			close.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+		end)
+		close.MouseLeave:Connect(function()
+			close.ImageColor3 = uipallet.Text
+		end)
+		close.MouseButton1Click:Connect(function()
+			window:Destroy()
+		end)
 		local divider = Instance.new('Frame')
 		divider.Size = UDim2.new(1, -28, 0, 1)
 		divider.Position = UDim2.fromOffset(14, 52)
@@ -8020,16 +8023,38 @@ do
 		summary.Parent = footer
 	end
 
-	local function getFiles(url)
+	local function parseChangelog(text)
+		local entries = {}
+		for _, line in text:split('\n') do
+			local status = line:sub(1, 1)
+			if status == '+' or status == '-' or status == '~' then
+				local name = line:sub(2):gsub('^%s+', ''):gsub('%s+$', '')
+				if name ~= '' then
+					entries[#entries + 1] = {status = status == '+' and 'added' or status == '-' and 'removed' or 'modified', name = name}
+				end
+			end
+		end
+		return entries
+	end
+
+	local function fetchChangelog()
 		local suc, req = pcall(function()
-			return game:HttpGet(url, true)
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/changelog.txt?v='..tick(), true)
 		end)
-		if not suc or not req then return nil end
-		local ok, data = pcall(function()
-			return cloneref(game:GetService('HttpService')):JSONDecode(req)
-		end)
-		if not ok or not data or not data.files or #data.files == 0 then return nil end
-		return data.files
+		if not suc or not req or req == '404: Not Found' then return nil end
+		return req
+	end
+
+	function mainapi.Changelog()
+		local text = fetchChangelog()
+		if not text then
+			mainapi:CreateNotification('Changelog', 'Failed to fetch changelog', 3, 'warning')
+			return
+		end
+		local entries = parseChangelog(text)
+		if #entries > 0 then
+			buildChangelog(entries)
+		end
 	end
 
 	local function checkChangelog()
@@ -8043,27 +8068,20 @@ do
 		if not hok or not head or not head.sha then return end
 		local seen = isfile('LarpV4/seencommit.txt') and readfile('LarpV4/seencommit.txt') or nil
 		if seen and seen ~= head.sha then
-			local files = getFiles('https://api.github.com/repos/exuric/VPrivate/compare/'..seen..'...'..head.sha)
-			if files then
-				buildChangelog(files)
+			mainapi.PendingChangelog = true
+			if clickgui.Visible then
+				mainapi.PendingChangelog = false
+				mainapi.Changelog()
 			end
 		end
 		writefile('LarpV4/seencommit.txt', head.sha)
 	end
 
-	function mainapi.Changelog()
-		local suc, req = pcall(function()
-			return game:HttpGet('https://api.github.com/repos/exuric/VPrivate/commits/main', true)
-		end)
-		if not suc or not req then return end
-		local hok, head = pcall(function()
-			return cloneref(game:GetService('HttpService')):JSONDecode(req)
-		end)
-		if not hok or not head or not head.sha then return end
-		if head.files and #head.files > 0 then
-			buildChangelog(head.files)
-		end
-	end
+	mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
+		if not clickgui.Visible or not mainapi.PendingChangelog then return end
+		mainapi.PendingChangelog = false
+		mainapi.Changelog()
+	end))
 
 	task.spawn(checkChangelog)
 end

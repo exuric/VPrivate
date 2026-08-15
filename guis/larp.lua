@@ -198,6 +198,32 @@ local function addCloseButton(parent, offset)
 	return close
 end
 
+local function addStroke(gui, color, transparency)
+	local stroke = Instance.new('UIStroke')
+	stroke.Color = color or color.Dark(uipallet.Text, 0.62)
+	stroke.Transparency = transparency or 0.88
+	stroke.Thickness = 1
+	stroke.Parent = gui
+
+	return stroke
+end
+
+local function addAccent(gui)
+	local accent = {
+		Type = 'Accent',
+		Object = gui,
+		SetValue = function(self, hue)
+			if not self.Object or not self.Object.Parent then return end
+			local c = mainapi.GUIColor
+			self.Object.BackgroundColor3 = c and (c.Rainbow and (mainapi.RainbowMode and mainapi.RainbowMode.Value ~= 'Retro' or false) and Color3.fromHSV(mainapi:Color(hue)) or Color3.fromHSV(c.Hue, c.Sat, c.Value)) or Color3.fromHSV(0.59, 0.5, 1)
+		end
+	}
+	accent:SetValue(0)
+	table.insert(mainapi.RainbowTable, accent)
+
+	return accent
+end
+
 local function addMaid(object)
 	object.Connections = {}
 	function object:Clean(callback)
@@ -2424,7 +2450,8 @@ components = {
 		local divider = Instance.new('Frame')
 		divider.Name = 'Divider'
 		divider.Size = UDim2.new(1, 0, 0, 1)
-		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		divider.BackgroundColor3 = color.Dark(uipallet.Text, 0.55)
+		divider.BackgroundTransparency = 0.82
 		divider.BorderSizePixel = 0
 		divider.Parent = children
 		if text then
@@ -2569,6 +2596,16 @@ function mainapi:CreateGUI()
 	title.TextSize = 13
 	title.FontFace = uipallet.Font
 	title.Parent = settingspane
+	local titleaccent = Instance.new('Frame')
+	titleaccent.Name = 'TitleAccent'
+	titleaccent.Size = UDim2.fromOffset(24, 2)
+	titleaccent.Position = UDim2.fromOffset(36, 33)
+	titleaccent.BackgroundColor3 = Color3.fromHSV(0.59, 0.5, 1)
+	titleaccent.BackgroundTransparency = 0.3
+	titleaccent.BorderSizePixel = 0
+	titleaccent.Parent = settingspane
+	addCorner(titleaccent, UDim.new(1, 0))
+	addAccent(titleaccent)
 	local close = addCloseButton(settingspane)
 	local back = Instance.new('ImageButton')
 	back.Name = 'Back'
@@ -2591,7 +2628,17 @@ function mainapi:CreateGUI()
 	settingsversion.TextSize = 10
 	settingsversion.FontFace = uipallet.Font
 	settingsversion.Parent = settingspane
+	settingsversion.BackgroundColor3 = color.Dark(uipallet.Main, 0.04)
+	settingsversion.BorderSizePixel = 0
+	addCorner(settingsversion, UDim.new(0, 4))
 	addCorner(settingspane)
+	local settingsgradient = Instance.new('UIGradient')
+	settingsgradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, color.Light(uipallet.Main, 0.03)),
+		ColorSequenceKeypoint.new(1, color.Dark(uipallet.Main, 0.05))
+	})
+	settingsgradient.Parent = settingspane
+	addStroke(settingspane)
 	local settingschildren = Instance.new('Frame')
 	settingschildren.Name = 'Children'
 	settingschildren.Size = UDim2.new(1, 0, 1, -57)
@@ -3034,6 +3081,18 @@ function mainapi:CreateGUI()
 		arrow.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
 		arrow.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		arrow.Parent = button
+		local accentbar = Instance.new('Frame')
+		accentbar.Name = 'Accent'
+		accentbar.Size = UDim2.fromOffset(3, 16)
+		accentbar.Position = UDim2.fromOffset(5, 12)
+		accentbar.BackgroundColor3 = Color3.fromHSV(0.59, 0.5, 1)
+		accentbar.BackgroundTransparency = 1
+		accentbar.BorderSizePixel = 0
+		accentbar.Parent = button
+		addCorner(accentbar, UDim.new(1, 0))
+		addAccent(accentbar)
+		addCorner(button)
+		addStroke(button)
 		local settingspane = Instance.new('TextButton')
 		settingspane.Size = UDim2.fromScale(1, 1)
 		settingspane.BackgroundColor3 = uipallet.Main
@@ -3052,6 +3111,16 @@ function mainapi:CreateGUI()
 		title.TextSize = 13
 		title.FontFace = uipallet.Font
 		title.Parent = settingspane
+		local paneaccent = Instance.new('Frame')
+		paneaccent.Name = 'TitleAccent'
+		paneaccent.Size = UDim2.fromOffset(24, 2)
+		paneaccent.Position = UDim2.fromOffset(36, 33)
+		paneaccent.BackgroundColor3 = Color3.fromHSV(0.59, 0.5, 1)
+		paneaccent.BackgroundTransparency = 0.3
+		paneaccent.BorderSizePixel = 0
+		paneaccent.Parent = settingspane
+		addCorner(paneaccent, UDim.new(1, 0))
+		addAccent(paneaccent)
 		local close = addCloseButton(settingspane)
 		local back = Instance.new('ImageButton')
 		back.Name = 'Back'
@@ -3062,6 +3131,13 @@ function mainapi:CreateGUI()
 		back.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		back.Parent = settingspane
 		addCorner(settingspane)
+		local paneegradient = Instance.new('UIGradient')
+		paneegradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, color.Light(uipallet.Main, 0.03)),
+			ColorSequenceKeypoint.new(1, color.Dark(uipallet.Main, 0.05))
+		})
+		paneegradient.Parent = settingspane
+		addStroke(settingspane)
 		local settingschildren = Instance.new('Frame')
 		settingschildren.Name = 'Children'
 		settingschildren.Size = UDim2.new(1, 0, 1, -57)
@@ -3072,10 +3148,26 @@ function mainapi:CreateGUI()
 		local divider = Instance.new('Frame')
 		divider.Name = 'Divider'
 		divider.Size = UDim2.new(1, 0, 0, 1)
-		divider.BackgroundColor3 = Color3.new(1, 1, 1)
-		divider.BackgroundTransparency = 0.928
+		divider.BackgroundColor3 = color.Dark(uipallet.Text, 0.55)
+		divider.BackgroundTransparency = 0.82
 		divider.BorderSizePixel = 0
 		divider.Parent = settingschildren
+		local dividerfade = Instance.new('UIGradient')
+		dividerfade.Rotation = 90
+		dividerfade.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.5, 0.7),
+			NumberSequenceKeypoint.new(1, 1)
+		})
+		dividerfade.Parent = divider
+		local accentsegment = Instance.new('Frame')
+		accentsegment.Size = UDim2.new(0.5, 0, 1, 0)
+		accentsegment.Position = UDim2.new(0.25, 0, 0, 0)
+		accentsegment.BackgroundColor3 = Color3.fromHSV(0.59, 0.5, 1)
+		accentsegment.BackgroundTransparency = 0.55
+		accentsegment.BorderSizePixel = 0
+		accentsegment.Parent = divider
+		addAccent(accentsegment)
 		local settingswindowlist = Instance.new('UIListLayout')
 		settingswindowlist.SortOrder = Enum.SortOrder.LayoutOrder
 		settingswindowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -3095,20 +3187,52 @@ function mainapi:CreateGUI()
 		end)
 		back.MouseButton1Click:Connect(function()
 			settingspane.Visible = false
+			tween:Tween(arrow, uipallet.Tween, {
+				Rotation = 0
+			})
+			tween:Tween(accentbar, uipallet.Tween, {
+				BackgroundTransparency = 1
+			})
 		end)
 		button.MouseEnter:Connect(function()
 			button.TextColor3 = uipallet.Text
-			button.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+			arrow.ImageColor3 = uipallet.Text
+			tween:Tween(button, uipallet.Tween, {
+				BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+			})
+			tween:Tween(accentbar, uipallet.Tween, {
+				BackgroundTransparency = 0
+			})
 		end)
 		button.MouseLeave:Connect(function()
 			button.TextColor3 = color.Dark(uipallet.Text, 0.16)
-			button.BackgroundColor3 = uipallet.Main
+			tween:Tween(button, uipallet.Tween, {
+				BackgroundColor3 = uipallet.Main
+			})
+			if not settingspane.Visible then
+				arrow.ImageColor3 = color.Light(uipallet.Main, 0.37)
+				tween:Tween(accentbar, uipallet.Tween, {
+					BackgroundTransparency = 1
+				})
+			end
 		end)
 		button.MouseButton1Click:Connect(function()
 			settingspane.Visible = true
+			tween:Tween(arrow, uipallet.Tween, {
+				Rotation = 90
+			})
+			tween:Tween(accentbar, uipallet.Tween, {
+				BackgroundTransparency = 0
+			})
 		end)
 		close.MouseButton1Click:Connect(function()
 			settingspane.Visible = false
+			tween:Tween(arrow, uipallet.Tween, {
+				Rotation = 0
+			})
+			tween:Tween(accentbar, uipallet.Tween, {
+				BackgroundTransparency = 1
+			})
 		end)
 		windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 			if mainapi.ThreadFix then

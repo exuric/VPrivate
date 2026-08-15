@@ -7866,8 +7866,43 @@ if shared.LarpPresetInstall then
 end
 
 do
+	local function makeSmoothDraggable(gui)
+		gui.InputBegan:Connect(function(inputObj)
+			if
+				(inputObj.UserInputType == Enum.UserInputType.MouseButton1 or inputObj.UserInputType == Enum.UserInputType.Touch)
+				and inputObj.Position.Y - gui.AbsolutePosition.Y < 44
+				and (not inputObj.Target or inputObj.Target == gui or inputObj.Target:IsA('TextLabel'))
+			then
+				local dragPosition = Vector2.new(
+					gui.AbsolutePosition.X - inputObj.Position.X,
+					gui.AbsolutePosition.Y - inputObj.Position.Y
+				) / scale.Scale
+				local mousetype = Enum.UserInputType.MouseMovement
+				local changed = inputService.InputChanged:Connect(function(input)
+					if input.UserInputType == mousetype then
+						tween:Tween(gui, TweenInfo.new(0.09, Enum.EasingStyle.Linear), {
+							Position = UDim2.fromOffset((input.Position.X / scale.Scale) + dragPosition.X, (input.Position.Y / scale.Scale) + dragPosition.Y)
+						})
+					end
+				end)
+				local ended
+				ended = inputObj.Changed:Connect(function()
+					if inputObj.UserInputState == Enum.UserInputState.End then
+						changed:Disconnect()
+						ended:Disconnect()
+					end
+				end)
+			end
+		end)
+	end
+
 	local function buildChangelog(entries)
 		repeat task.wait(0.1) until not clickgui:FindFirstChild('PromptShadow')
+
+		local existing = scaledgui:FindFirstChild('Changelog')
+		if existing then
+			existing:Destroy()
+		end
 
 		local added, removed, modified = 0, 0, 0
 		for _, v in entries do
@@ -7883,7 +7918,7 @@ do
 		local window = Instance.new('Frame')
 		window.Name = 'Changelog'
 		window.AnchorPoint = Vector2.new(0.5, 0.5)
-		window.Size = UDim2.fromOffset(360, 420)
+		window.Size = UDim2.fromOffset(440, 440)
 		window.Position = UDim2.fromScale(0.5, 0.5)
 		window.ZIndex = 9
 		window.BackgroundColor3 = Color3.fromRGB(12, 13, 12)
@@ -7891,6 +7926,7 @@ do
 		window.Parent = scaledgui
 		addCorner(window)
 		addBlur(window)
+		makeSmoothDraggable(window)
 		local windowstroke = Instance.new('UIStroke')
 		windowstroke.Color = Color3.fromRGB(58, 78, 58)
 		windowstroke.Transparency = 0.55
@@ -7991,6 +8027,7 @@ do
 				tagtext, tagcolor = '[*]', Color3.fromRGB(241, 250, 140)
 			end
 			tag.TextColor3 = tagcolor
+			tag.Text = ''
 			local name = Instance.new('TextLabel')
 			name.Size = UDim2.new(1, -74, 0, 30)
 			name.Position = UDim2.fromOffset(60, 0)
@@ -8001,6 +8038,7 @@ do
 			name.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			name.TextSize = 13
 			name.FontFace = codefont
+			name.Text = ''
 			name.Parent = entry
 			rows[#rows + 1] = {tag = tag, name = name, tagtext = tagtext, nametext = v.name}
 		end
@@ -8084,23 +8122,17 @@ do
 	end
 
 	local function checkChangelog()
-		local suc, req = pcall(function()
-			return game:HttpGet('https://api.github.com/repos/exuric/VPrivate/commits/main', true)
-		end)
-		if not suc or not req then return end
-		local hok, head = pcall(function()
-			return cloneref(game:GetService('HttpService')):JSONDecode(req)
-		end)
-		if not hok or not head or not head.sha then return end
-		local seen = isfile('LarpV4/seencommit.txt') and readfile('LarpV4/seencommit.txt') or nil
-		if seen and seen ~= head.sha then
+		local text = fetchChangelog()
+		if not text then return end
+		local seen = isfile('LarpV4/seenchangelog.txt') and readfile('LarpV4/seenchangelog.txt') or nil
+		if seen and seen ~= text or not seen and isfile('LarpV4/seencommit.txt') then
 			mainapi.PendingChangelog = true
 			if clickgui.Visible then
 				mainapi.PendingChangelog = false
 				mainapi.Changelog()
 			end
 		end
-		writefile('LarpV4/seencommit.txt', head.sha)
+		writefile('LarpV4/seenchangelog.txt', text)
 	end
 
 	mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()

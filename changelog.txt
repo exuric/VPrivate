@@ -1,6 +1,6 @@
 +Added Headless utility module
 +Added Blurred Textured module for BedWars
 ~Headless now works for all Larp V4 users without enabling it yourself
-~Blurred Textured keeps the texture visible and softens it instead of removing it
+~Blurred Textured now softens the texture over the block color
 ~Fps Unlocker cap can go up to 1000 again
 ~Fixed lag - the script now caches files instead of redownloading every execute

@@ -16504,18 +16504,21 @@ run(function()
 			end
 		end
 		block.Material = Enum.Material.SmoothPlastic
-		block.Color = getBlockColor(block.Name)
 		for _, child in block:GetChildren() do
-			if child:IsA('Texture') or child:IsA('Decal') then
-				child.Transparency = 0.55
-				if child:IsA('Texture') then
-					child.StudsPerTileU = math.max(child.StudsPerTileU * 8, 8)
-					child.StudsPerTileV = math.max(child.StudsPerTileV * 8, 8)
-				end
+			if child:IsA('Decal') then
+				local blurred = Instance.new('Texture')
+				blurred.Texture = child.Texture
+				blurred.Face = child.Face
+				blurred.StudsPerTileU = 8
+				blurred.StudsPerTileV = 8
+				blurred.Transparency = 0.3
+				blurred.Parent = block
+				child:Destroy()
+			elseif child:IsA('Texture') then
+				child.Transparency = 0.3
+				child.StudsPerTileU = math.max(child.StudsPerTileU * 8, 8)
+				child.StudsPerTileV = math.max(child.StudsPerTileV * 8, 8)
 			end
-		end
-		if block:IsA('MeshPart') and block.TextureID ~= '' then
-			block.TextureID = ''
 		end
 		processedBlocks[block] = true
 	end
@@ -16937,7 +16940,7 @@ run(function()
 	Cap = FpsUnlocker:CreateSlider({
 		Name = 'Cap',
 		Min = 30,
-		Max = 240,
+		Max = 1000,
 		Default = 240,
 		Function = function(value)
 			if setfpscap and FpsUnlocker.Enabled then

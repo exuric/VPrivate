@@ -26,7 +26,7 @@ downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(ga
 
 local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
-local SELFCOMMIT = '607e8f791fe7f7059d2fb3fb88e51c0f1b2ed2d1'
+local SELFCOMMIT = '305897e2e746ea56881d4156f994ebf36689d805'
 local LARPWATER = '--LARP:'..SELFCOMMIT..'\n'
 
 local function downloadFile(path, func)

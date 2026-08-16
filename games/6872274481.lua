@@ -3394,8 +3394,7 @@ run(function()
 	local MaxAngle
 	local CPS
 	local SwingTime
-	local Rotate
-	local AutoSwitch
+	local KillauraNotified
 
 	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
 	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
@@ -3437,20 +3436,16 @@ run(function()
 		end
 	end
 
-	local function ensureSword()
-		local hand = store.hand.tool
-		if not hand or not (store.hand.toolType == 'sword' and table.find(swordNames, hand.Name)) then
-			local sword = getSword()
-			if sword then
-				switchItem(sword.tool, 0)
-			end
-		end
-	end
-
 	Killaura = larp.Categories.Blatant:CreateModule({
 		Name = 'KillAura',
 		Function = function(callback)
 			if callback then
+				if not KillauraNotified then
+					KillauraNotified = true
+					task.spawn(function()
+						pcall(notif, 'KillAura', 'KillAura is bugged', 4, 'alert')
+					end)
+				end
 				SwordController = bedwars.SwordController
 				realSwingInRegion = SwordController.swingSwordInRegion
 				local ok, r = pcall(function()
@@ -3479,12 +3474,9 @@ run(function()
 				repeat
 					local target
 					if entitylib.isAlive and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-						if not LimitItems.Enabled and AutoSwitch.Enabled then
-							ensureSword()
-						end
 						if not LimitItems.Enabled or (store.hand.toolType == 'sword' and store.hand.tool and table.find(swordNames, store.hand.tool.Name)) then
 							target = getTarget()
-							if target and target.RootPart and target.RootPart.Parent then
+							if target then
 								store.KillauraTarget = target
 								if not SwingOnly.Enabled then
 									local now = tick()
@@ -3492,16 +3484,7 @@ run(function()
 										lastSwing = now
 										if swordHitRemote then
 											pcall(function()
-												local root = entitylib.character.RootPart
-												local oldcf
-												if Rotate.Enabled then
-													oldcf = root.CFrame
-													root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
-												end
-												swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = root.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
-												if oldcf then
-													root.CFrame = oldcf
-												end
+												swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = entitylib.character.RootPart.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
 											end)
 										else
 											realSwingInRegion(SwordController)
@@ -3594,16 +3577,6 @@ run(function()
 			return 'cps'
 		end,
 		Tooltip = 'Swings attempted per second.\nDefault 12 keeps 34 hits/s consistent. Raise if it dips to 33'
-	})
-	Rotate = Killaura:CreateToggle({
-		Name = 'Rotate to target',
-		Default = true,
-		Tooltip = 'Faces the target before every swing'
-	})
-	AutoSwitch = Killaura:CreateToggle({
-		Name = 'Auto switch to sword',
-		Default = true,
-		Tooltip = 'Equips the best sword when holding something else'
 	})
 end)
 

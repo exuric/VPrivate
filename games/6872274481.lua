@@ -3970,6 +3970,10 @@ run(function()
 	local Sort
 	local FOV
 	local Prediction
+	local VelocityLerp
+	local FireballSplash
+	local SplashRadius
+	local Trajectory
 	local AutoCharge
 	local lockedTarget
 	local lockedTime
@@ -3979,6 +3983,26 @@ run(function()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
+	local velHistory = {}
+	local trajLine = Drawing.new('Line')
+	trajLine.Color = Color3.fromRGB(255, 60, 60)
+	trajLine.Thickness = 2
+	trajLine.Visible = false
+
+	local function getLanding(origin, vel, gravity, maxTime)
+		local pos = origin
+		local t = 0
+		while t < maxTime do
+			local next = pos + vel * 0.05
+			local ray = workspace:Raycast(pos, next - pos, rayCheck)
+			if ray then
+				return ray.Position
+			end
+			pos, vel = next, vel - Vector3.new(0, gravity * 0.05, 0)
+			t = t + 0.05
+		end
+		return pos
+	end
 	
 	local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
@@ -4043,15 +4067,41 @@ run(function()
 							end
 						end
 	
-					local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
-						local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeed * Prediction.Value * charge, gravity, plr[TargetPart.Value].Position, projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
+						local targetPart = TargetPart.Value == 'Center' and plr.RootPart or plr[TargetPart.Value]
+						local targetPos = targetPart.Position + (TargetPart.Value == 'Center' and Vector3.new(0, 1, 0) or Vector3.zero)
+						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or targetPart.Velocity
+						if VelocityLerp.Value > 1 then
+							local prev = velHistory[plr]
+							targetVel = prev and prev:Lerp(targetVel, 1 / VelocityLerp.Value) or targetVel
+							velHistory[plr] = targetVel
+						end
+						local isFireball = projmeta.projectile == 'fireball'
+						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
+						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeed * Prediction.Value * charge, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 						if calc and travelTime and travelTime <= lifetime then
 							local dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeed * charge)
-							if prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck) then
+							local clear = prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck)
+							if not clear and isFireball and FireballSplash.Enabled and (getLanding(newlook.Position, dir, gravity, travelTime) - targetPos).Magnitude <= SplashRadius.Value then
+								clear = true
+							end
+							if clear then
 								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 								if Mode.Value == 'Adaptive' then
 									prediction.trackShot(plr.RootPart)
+								end
+								if Trajectory.Enabled then
+									local points = {newlook.Position}
+									local pos, vel = newlook.Position, dir
+									local t = 0
+									while t < travelTime do
+										pos = pos + vel * 0.05
+										vel = vel - Vector3.new(0, gravity * 0.05, 0)
+										t = t + 0.05
+										points[#points + 1] = pos
+									end
+									trajLine.Points = points
+									trajLine.Visible = true
 								end
 								return {
 									initialVelocity = dir,
@@ -4061,16 +4111,31 @@ run(function()
 									drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
 								}
 							end
+						elseif isFireball and FireballSplash.Enabled then
+							local dist = (targetPos - newlook.p).Magnitude
+							local tt = math.clamp(dist / (projSpeed * charge), 0.1, 3)
+							if tt <= lifetime + 0.5 then
+								local aimPoint = targetPos + Vector3.new(0, 0.5 * gravity * tt * tt, 0)
+								return {
+									initialVelocity = CFrame.lookAt(newlook.p, aimPoint).LookVector * (projSpeed * charge),
+									positionFrom = offsetpos,
+									deltaT = lifetime,
+									gravitationalAcceleration = gravity,
+									drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+								}
+							end
 						end
 					end
-	
+
 					return old(...)
 				end
-			else
-				bedwars.ProjectileController.calculateImportantLaunchValues = old
-			end
-		end,
-		Tooltip = 'Silently adjusts your aim towards the enemy'
+else
+			bedwars.ProjectileController.calculateImportantLaunchValues = old
+			trajLine.Visible = false
+			table.clear(velHistory)
+		end
+	end,
+	Tooltip = 'Silently adjusts your aim towards the enemy'
 	})
 	Targets = ProjectileAimbot:CreateTargets({
 		Players = true,
@@ -4089,7 +4154,8 @@ run(function()
 	})
 	TargetPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Part',
-		List = {'RootPart', 'Head'}
+		List = {'RootPart', 'Head', 'Center'},
+		Tooltip = 'Center aims at the middle of the body for reliable splash damage'
 	})
 	Mode = ProjectileAimbot:CreateDropdown({
 		Name = 'Mode',
@@ -4103,6 +4169,13 @@ run(function()
 		Max = 2,
 		Default = 1,
 		Decimal = 10
+	})
+	VelocityLerp = ProjectileAimbot:CreateSlider({
+		Name = 'Velocity Lerp',
+		Min = 1,
+		Max = 20,
+		Default = 8,
+		Tooltip = 'Smooths the target velocity over several frames to remove strafe jitter for more accurate prediction'
 	})
 	FOV = ProjectileAimbot:CreateSlider({
 		Name = 'FOV',
@@ -4129,6 +4202,22 @@ run(function()
 	OtherProjectiles = ProjectileAimbot:CreateToggle({
 		Name = 'Other Projectiles',
 		Default = true
+	})
+	FireballSplash = ProjectileAimbot:CreateToggle({
+		Name = 'Fireball Splash',
+		Default = true,
+		Tooltip = 'Aims fireballs so the explosion always lands on the enemy, even when the arc is blocked'
+	})
+	SplashRadius = ProjectileAimbot:CreateSlider({
+		Name = 'Splash Radius',
+		Min = 1,
+		Max = 10,
+		Default = 4.5,
+		Decimal = 1
+	})
+	Trajectory = ProjectileAimbot:CreateToggle({
+		Name = 'Trajectory',
+		Tooltip = 'Draws the predicted projectile arc'
 	})
 	Blacklist = ProjectileAimbot:CreateTextList({
 		Name = 'Blacklist',

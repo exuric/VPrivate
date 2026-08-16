@@ -6405,7 +6405,7 @@ run(function()
 	local Cap
 	local oldcap
 
-	FpsUnlocker = larp.Categories['FPS Boost']:CreateModule({
+	FpsUnlocker = (larp.Categories['FPS Boost'] or larp.Categories.Utility):CreateModule({
 		Name = 'Fps Unlocker',
 		Function = function(callback)
 			if not setfpscap then return end
@@ -6436,7 +6436,7 @@ run(function()
 	local ChatBubbleRemover
 	local connections = {}
 
-	ChatBubbleRemover = larp.Categories['FPS Boost']:CreateModule({
+	ChatBubbleRemover = (larp.Categories['FPS Boost'] or larp.Categories.Utility):CreateModule({
 		Name = 'Chat Bubble Remover',
 		Function = function(callback)
 			if callback then
@@ -6522,7 +6522,7 @@ run(function()
 		table.clear(savedProps)
 	end
 
-	LowQuality = larp.Categories['FPS Boost']:CreateModule({
+	LowQuality = (larp.Categories['FPS Boost'] or larp.Categories.Utility):CreateModule({
 		Name = 'Low Quality Player Models',
 		Function = function(callback)
 			active = callback
@@ -6560,7 +6560,7 @@ end)
 run(function()
 	local Optimization
 
-	Optimization = larp.Categories['FPS Boost']:CreateModule({
+	Optimization = (larp.Categories['FPS Boost'] or larp.Categories.Utility):CreateModule({
 		Name = 'Optimization',
 		Function = function(callback)
 			for _, mod in fpsBoosts do

@@ -1,5 +1,6 @@
 +Added new FPS Boost tab with Chat Bubble Remover, Low Quality Player Models and Optimization
 ~Pinned tab now shows the module with its settings under it
+~Fixed rare cases where the GUI could stay outdated
 ~Fixed update lag that could mix old and new files - downloads now use a pinned commit
 ~Potato Mode now matches every block to its color and processes smoothly for more fps
 -Removed Blurred Textured module

@@ -80,7 +80,6 @@ local getcustomasset = larp.Libraries.getcustomasset
 local TargetStrafeVector, SpiderShift, WaypointFolder
 local Spider = {Enabled = false}
 local Phase = {Enabled = false}
-local fpsBoosts = {}
 
 local function addBlur(parent)
 	local blur = Instance.new('ImageLabel')
@@ -4689,7 +4688,7 @@ run(function()
 				label.Position = UDim2.new(0.5, 6, 0.5, 30)
 				label.AnchorPoint = Vector2.new(0.5, 0)
 				label.BackgroundTransparency = 1
-				label.Text = '100 ❤️'
+				label.Text = '100 â¤ï¸'
 				label.TextSize = 18
 				label.Font = Enum.Font.Arial
 				label.Parent = larp.gui
@@ -6405,7 +6404,7 @@ run(function()
 	local Cap
 	local oldcap
 
-	FpsUnlocker = (larp.Categories['FPS Boost'] or larp.Categories.Utility):CreateModule({
+	FpsUnlocker = larp.Categories.Utility:CreateModule({
 		Name = 'Fps Unlocker',
 		Function = function(callback)
 			if not setfpscap then return end
@@ -6429,149 +6428,8 @@ run(function()
 			end
 		end
 	})
-	fpsBoosts['Fps Unlocker'] = FpsUnlocker
 end)
 
-run(function()
-	local ChatBubbleRemover
-	local connections = {}
-
-	ChatBubbleRemover = (larp.Categories['FPS Boost'] or larp.Categories.Utility):CreateModule({
-		Name = 'Chat Bubble Remover',
-		Function = function(callback)
-			if callback then
-				connections[#connections + 1] = workspace.DescendantAdded:Connect(function(descendant)
-					if descendant:IsA('BillboardGui') and descendant.Name == 'Chat' then
-						descendant:Destroy()
-					end
-				end)
-				for _, bubble in workspace:GetDescendants() do
-					if bubble:IsA('BillboardGui') and bubble.Name == 'Chat' then
-						bubble:Destroy()
-					end
-				end
-			else
-				for _, conn in connections do
-					conn:Disconnect()
-				end
-				table.clear(connections)
-			end
-		end,
-		Tooltip = 'Removes the chat bubbles above players heads for more fps'
-	})
-	fpsBoosts['Chat Bubble Remover'] = ChatBubbleRemover
-end)
-
-run(function()
-	local LowQuality
-	local connections = {}
-	local savedColors = {}
-	local savedProps = {}
-	local active = false
-
-	local function saveCleanup(part)
-		part.AncestryChanged:Connect(function()
-			savedColors[part] = nil
-			savedProps[part] = nil
-		end)
-	end
-
-	local function processCharacter(character)
-		if not character then return end
-		for _, part in character:GetDescendants() do
-			if part:IsA('BasePart') then
-				if not savedColors[part] then
-					savedColors[part] = part.Color
-					saveCleanup(part)
-				end
-				part.Color = Color3.fromRGB(130, 130, 130)
-				if part:IsA('MeshPart') and part.TextureID ~= '' then
-					if not savedProps[part] then
-						savedProps[part] = part.TextureID
-					end
-					part.TextureID = ''
-				end
-			elseif part:IsA('Shirt') or part:IsA('Pants') or part:IsA('ShirtGraphic') or part:IsA('Accessory') then
-				if not savedProps[part] then
-					savedProps[part] = part.Parent
-					saveCleanup(part)
-				end
-				if part.Parent then
-					part.Parent = nil
-				end
-			end
-		end
-	end
-
-	local function restoreAll()
-		for part, color in pairs(savedColors) do
-			if part.Parent then
-				part.Color = color
-			end
-		end
-		for part, stored in pairs(savedProps) do
-			if part:IsA('MeshPart') then
-				if part.Parent then
-					part.TextureID = stored
-				end
-			elseif typeof(stored) == 'Instance' and stored.Parent then
-				part.Parent = stored
-			end
-		end
-		table.clear(savedColors)
-		table.clear(savedProps)
-	end
-
-	LowQuality = (larp.Categories['FPS Boost'] or larp.Categories.Utility):CreateModule({
-		Name = 'Low Quality Player Models',
-		Function = function(callback)
-			active = callback
-			if callback then
-				connections[#connections + 1] = playersService.PlayerAdded:Connect(function(player)
-					player.CharacterAdded:Connect(function(character)
-						if active then
-							processCharacter(character)
-						end
-					end)
-				end)
-				for _, player in playersService:GetPlayers() do
-					if player.Character then
-						processCharacter(player.Character)
-					end
-					connections[#connections + 1] = player.CharacterAdded:Connect(function(character)
-						if active then
-							processCharacter(character)
-						end
-					end)
-				end
-			else
-				for _, conn in connections do
-					conn:Disconnect()
-				end
-				table.clear(connections)
-				restoreAll()
-			end
-		end,
-		Tooltip = 'Removes clothing and makes player models grey for more fps'
-	})
-	fpsBoosts['Low Quality Player Models'] = LowQuality
-end)
-
-run(function()
-	local Optimization
-
-	Optimization = (larp.Categories['FPS Boost'] or larp.Categories.Utility):CreateModule({
-		Name = 'Optimization',
-		Function = function(callback)
-			for _, mod in fpsBoosts do
-				if mod and mod.Enabled ~= callback then
-					mod:Toggle()
-				end
-			end
-		end,
-		Tooltip = 'Enables every FPS boost at once'
-	})
-end)
 
 run(function()
 	local Headless
@@ -8457,10 +8315,10 @@ run(function()
 		Name = 'Keystrokes',
 		Function = function(callback)
 			if callback then
-				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), Style.Value == 'Arrow' and '↑' or nil)
-				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), Style.Value == 'Arrow' and '↓' or nil)
-				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), Style.Value == 'Arrow' and '←' or nil)
-				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), Style.Value == 'Arrow' and '→' or nil)
+				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), Style.Value == 'Arrow' and 'â†‘' or nil)
+				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), Style.Value == 'Arrow' and 'â†“' or nil)
+				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), Style.Value == 'Arrow' and 'â†' or nil)
+				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), Style.Value == 'Arrow' and 'â†’' or nil)
 	
 				Keystrokes:Clean(inputService.InputBegan:Connect(updateKey))
 				Keystrokes:Clean(inputService.InputEnded:Connect(updateKey))

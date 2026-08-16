@@ -5781,7 +5781,6 @@ function mainapi:Load(skipgui, profile)
 		end)
 
 		self:UpdateTextGUI(true)
-	end
 
 	if self.Downloader then
 		self.Downloader:Destroy()

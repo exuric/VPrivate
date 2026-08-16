@@ -1,6 +1,7 @@
 +Added Shadow Culler, Quality Capper and Texture Culler to the Utility tab - aggressive fps boosters
 +Added Chat Bubble Remover and Low Quality Player Models to the Utility tab
 +Added an Optimization module that enables every performance module at once
+~Fixed a crash on some executors that stopped the script from loading
 ~Chat Bubble Remover now hides bubbles and brings them back when disabled
 ~Low Quality Player Models now reapplies after respawns
 -Removed Particle Culler and Entity Culler

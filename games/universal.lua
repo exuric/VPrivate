@@ -6596,7 +6596,7 @@ end)
 
 run(function()
 	local ShadowCuller
-	local lighting = cloneref(game:GetService('Lighting'))
+	local lighting = game:GetService('Lighting')
 	local savedEffects = {}
 	local savedShadows
 
@@ -6634,22 +6634,21 @@ end)
 
 run(function()
 	local QualityCapper
-	local renderSettings = cloneref(game:GetService('RenderSettings'))
 
 	QualityCapper = larp.Categories.Utility:CreateModule({
 		Name = 'Quality Capper',
 		Function = function(callback)
-			if callback then
-				pcall(function()
+			if not sethiddenproperty then return end
+			pcall(function()
+				local renderSettings = game:GetService('RenderSettings')
+				if callback then
 					sethiddenproperty(renderSettings, 'QualityLevel', 1)
 					sethiddenproperty(renderSettings, 'AntialiasingMode', 0)
-				end)
-			else
-				pcall(function()
+				else
 					sethiddenproperty(renderSettings, 'QualityLevel', 10)
 					sethiddenproperty(renderSettings, 'AntialiasingMode', 2)
-				end)
-			end
+				end
+			end)
 		end,
 		Tooltip = 'Locks the game to the lowest quality with no antialiasing for more fps'
 	})

@@ -3971,9 +3971,9 @@ run(function()
 	local FOV
 	local Prediction
 	local VelocityLerp
+	local Profile
 	local FireballSplash
 	local SplashRadius
-	local Trajectory
 	local AutoCharge
 	local lockedTarget
 	local lockedTime
@@ -3984,10 +3984,6 @@ run(function()
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
 	local velHistory = {}
-	local trajLine = Drawing.new('Line')
-	trajLine.Color = Color3.fromRGB(255, 60, 60)
-	trajLine.Thickness = 2
-	trajLine.Visible = false
 
 	local function getLanding(origin, vel, gravity, maxTime)
 		local pos = origin
@@ -4068,9 +4064,9 @@ run(function()
 						end
 	
 local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
-						local targetPart = TargetPart.Value == 'Center' and plr.RootPart or plr[TargetPart.Value]
-						local targetPos = targetPart.Position + (TargetPart.Value == 'Center' and Vector3.new(0, 1, 0) or Vector3.zero)
-						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or targetPart.Velocity
+						local targetPart = TargetPart.Value == 'Neck' and plr.RootPart or (plr[TargetPart.Value] or plr.RootPart)
+						local targetPos = targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
+						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.Velocity
 						if VelocityLerp.Value > 1 then
 							local prev = velHistory[plr]
 							targetVel = prev and prev:Lerp(targetVel, 1 / VelocityLerp.Value) or targetVel
@@ -4089,19 +4085,6 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 								if Mode.Value == 'Adaptive' then
 									prediction.trackShot(plr.RootPart)
-								end
-								if Trajectory.Enabled then
-									local points = {newlook.Position}
-									local pos, vel = newlook.Position, dir
-									local t = 0
-									while t < travelTime do
-										pos = pos + vel * 0.05
-										vel = vel - Vector3.new(0, gravity * 0.05, 0)
-										t = t + 0.05
-										points[#points + 1] = pos
-									end
-									trajLine.Points = points
-									trajLine.Visible = true
 								end
 								return {
 									initialVelocity = dir,
@@ -4131,7 +4114,6 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 				end
 else
 			bedwars.ProjectileController.calculateImportantLaunchValues = old
-			trajLine.Visible = false
 			table.clear(velHistory)
 		end
 	end,
@@ -4154,8 +4136,8 @@ else
 	})
 	TargetPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Part',
-		List = {'RootPart', 'Head', 'Center'},
-		Tooltip = 'Center aims at the middle of the body for reliable splash damage'
+		List = {'RootPart', 'Head', 'Neck'},
+		Tooltip = 'Neck aims at the middle of the body for reliable splash damage'
 	})
 	Mode = ProjectileAimbot:CreateDropdown({
 		Name = 'Mode',
@@ -4176,6 +4158,27 @@ else
 		Max = 20,
 		Default = 8,
 		Tooltip = 'Smooths the target velocity over several frames to remove strafe jitter for more accurate prediction'
+	})
+	Profile = ProjectileAimbot:CreateDropdown({
+		Name = 'Profile',
+		List = {'Low Ping', 'Medium Ping', 'High Ping', 'Custom'},
+		Default = 'Custom',
+		Tooltip = 'Applies the best settings for your ping, you can still change them freely after',
+		Function = function(value)
+			if value == 'Low Ping' then
+				Prediction:SetValue(1.05, nil, true)
+				VelocityLerp:SetValue(4, nil, true)
+			elseif value == 'Medium Ping' then
+				Prediction:SetValue(1.25, nil, true)
+				VelocityLerp:SetValue(8, nil, true)
+			elseif value == 'High Ping' then
+				Prediction:SetValue(1.5, nil, true)
+				VelocityLerp:SetValue(14, nil, true)
+			else
+				Prediction:SetValue(1, nil, true)
+				VelocityLerp:SetValue(8, nil, true)
+			end
+		end
 	})
 	FOV = ProjectileAimbot:CreateSlider({
 		Name = 'FOV',
@@ -4206,6 +4209,11 @@ else
 	FireballSplash = ProjectileAimbot:CreateToggle({
 		Name = 'Fireball Splash',
 		Default = true,
+		Function = function(callback)
+			if SplashRadius then
+				SplashRadius.Object.Visible = callback
+			end
+		end,
 		Tooltip = 'Aims fireballs so the explosion always lands on the enemy, even when the arc is blocked'
 	})
 	SplashRadius = ProjectileAimbot:CreateSlider({
@@ -4214,10 +4222,6 @@ else
 		Max = 10,
 		Default = 4.5,
 		Decimal = 1
-	})
-	Trajectory = ProjectileAimbot:CreateToggle({
-		Name = 'Trajectory',
-		Tooltip = 'Draws the predicted projectile arc'
 	})
 	Blacklist = ProjectileAimbot:CreateTextList({
 		Name = 'Blacklist',

@@ -5307,7 +5307,7 @@ moduleapi.Children = modulechildren
 			task.wait(0.2)
 			shadow.Visible = false
 		end)
-		dotsbutton.MouseButton1Click:Connect(function()
+		local function openSettings()
 			shadow.Visible = true
 			tween:Tween(shadow, uipallet.Tween, {
 				BackgroundTransparency = 0.5
@@ -5315,7 +5315,8 @@ moduleapi.Children = modulechildren
 			tween:Tween(settingspane, uipallet.Tween, {
 				Position = UDim2.new(1, -220, 0, 0)
 			})
-		end)
+		end
+		dotsbutton.MouseButton1Click:Connect(openSettings)
 		dotsbutton.MouseEnter:Connect(function()
 			dots.ImageColor3 = uipallet.Text
 		end)
@@ -5335,15 +5336,8 @@ moduleapi.Children = modulechildren
 		module.MouseButton1Click:Connect(function()
 			moduleapi:Toggle()
 		end)
-		module.MouseButton2Click:Connect(function()
-			shadow.Visible = true
-			tween:Tween(shadow, uipallet.Tween, {
-				BackgroundTransparency = 0.5
-			})
-			tween:Tween(settingspane, uipallet.Tween, {
-				Position = UDim2.new(1, -220, 0, 0)
-			})
-		end)
+		module.MouseButton2Click:Connect(openSettings)
+		moduleapi.OpenSettings = openSettings
 		shadow.MouseButton1Click:Connect(function()
 			tween:Tween(shadow, uipallet.Tween, {
 				BackgroundTransparency = 1
@@ -6136,8 +6130,15 @@ function mainapi:UpdatePinned()
 					local gradient = clone:FindFirstChildOfClass('UIGradient')
 					local cover = clone:FindFirstChild('Cover')
 					local hovered = false
+					local function openPinnedSettings()
+						if moduleapi.Children then
+							moduleapi.Children.Visible = not moduleapi.Children.Visible
+						elseif moduleapi.OpenSettings then
+							moduleapi.OpenSettings()
+						end
+					end
 					local function updatePinVisible()
-						local bindvisible = bind and (bind.Visible or hovered or moduleapi.Children.Visible)
+						local bindvisible = bind and (bind.Visible or hovered or (moduleapi.Children and moduleapi.Children.Visible))
 						if pinicon then
 							pinicon.Visible = enabled and not bindvisible
 						end
@@ -6145,16 +6146,10 @@ function mainapi:UpdatePinned()
 					clone.MouseButton1Click:Connect(function()
 						moduleapi:Toggle()
 					end)
-					clone.MouseButton2Click:Connect(function()
-						moduleapi.Children.Visible = not moduleapi.Children.Visible
-					end)
+					clone.MouseButton2Click:Connect(openPinnedSettings)
 					if dots then
-						dots.MouseButton1Click:Connect(function()
-							moduleapi.Children.Visible = not moduleapi.Children.Visible
-						end)
-						dots.MouseButton2Click:Connect(function()
-							moduleapi.Children.Visible = not moduleapi.Children.Visible
-						end)
+						dots.MouseButton1Click:Connect(openPinnedSettings)
+						dots.MouseButton2Click:Connect(openPinnedSettings)
 						dots.MouseEnter:Connect(function()
 							if not moduleapi.Enabled then
 								dots.Dots.ImageColor3 = uipallet.Text
@@ -6192,20 +6187,20 @@ function mainapi:UpdatePinned()
 					end
 					clone.MouseEnter:Connect(function()
 						hovered = true
-						if not moduleapi.Enabled and not moduleapi.Children.Visible then
+						if not moduleapi.Enabled and not (moduleapi.Children and moduleapi.Children.Visible) then
 							clone.TextColor3 = uipallet.Text
 							clone.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
 						end
-						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or moduleapi.Children.Visible end
+						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or (moduleapi.Children and moduleapi.Children.Visible) end
 						updatePinVisible()
 					end)
 					clone.MouseLeave:Connect(function()
 						hovered = false
-						if not moduleapi.Enabled and not moduleapi.Children.Visible then
+						if not moduleapi.Enabled and not (moduleapi.Children and moduleapi.Children.Visible) then
 							clone.TextColor3 = color.Dark(uipallet.Text, 0.16)
 							clone.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 						end
-						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or moduleapi.Children.Visible end
+						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or (moduleapi.Children and moduleapi.Children.Visible) end
 						updatePinVisible()
 					end)
 					local origsetbind = moduleapi.SetBind
@@ -6234,10 +6229,6 @@ function mainapi:UpdatePinned()
 						end
 					end
 					moduleapi.PinnedClone = clone
-				end
-				local panel = moduleapi.Children
-				if panel and panel.Parent ~= pinnedchildren then
-					panel.Parent = pinnedchildren
 				end
 			end
 			local clone = moduleapi.PinnedClone
@@ -6288,11 +6279,6 @@ function mainapi:UpdatePinned()
 		elseif moduleapi.PinnedClone then
 			moduleapi.PinnedClone:Destroy()
 			moduleapi.PinnedClone = nil
-			local panel = moduleapi.Children
-			local origin = moduleapi.ChildrenParent
-			if panel and origin and panel.Parent ~= origin then
-				panel.Parent = origin
-			end
 		end
 	end
 	if count > 0 and not pinnedcategory.Expanded then
@@ -7259,7 +7245,7 @@ local TargetInfoHealthExtraCorner = Instance.new('UICorner')
 TargetInfoHealthExtraCorner.CornerRadius = UDim.new(0, 8)
 TargetInfoHealthExtraCorner.Parent = TargetInfoImage
 
-local TargetInfoHud = isfile('LarpV4/profiles/hud.txt') and readfile('LarpV4/profiles/hud.txt') or 'new'
+local TargetInfoHud = 'new'
 targetinfoobj:CreateDropdown({
 	Name = 'Gui Mode',
 	List = {'old', 'new'},

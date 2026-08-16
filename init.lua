@@ -73,7 +73,11 @@ if not shared.LarpDeveloper then
 	local commit = 'main'
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	local version = isfile('LarpV4/.version') and readfile('LarpV4/.version') or ''
-	if true then
+	local fresh = isfile('LarpV4/.fresh') and readfile('LarpV4/.fresh') or ''
+	local suc, changelog = pcall(function()
+		return game:HttpGet(ROOT..commit..'/changelog.txt?v='..tick(), true)
+	end)
+	if suc and changelog ~= fresh then
 		if stored ~= '' and stored ~= commit then
 			shared.updated = stored
 		end
@@ -88,6 +92,7 @@ if not shared.LarpDeveloper then
 				pcall(delfile, file)
 			end
 		end
+		writefile('LarpV4/.fresh', changelog)
 	end
 	writefile('LarpV4/.version', '120')
 	writefile('LarpV4/profiles/commit.txt', commit)

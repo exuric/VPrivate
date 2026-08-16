@@ -6419,14 +6419,64 @@ run(function()
 	})
 	Cap = FpsUnlocker:CreateSlider({
 		Name = 'Cap',
-		Min = 0,
-		Max = 1000,
-		Default = 1000,
+		Min = 30,
+		Max = 240,
+		Default = 240,
 		Function = function(value)
 			if setfpscap and FpsUnlocker.Enabled then
 				setfpscap(value)
 			end
 		end
+	})
+end)
+
+run(function()
+	local Headless
+	local connections = {}
+	local hidden = {}
+
+	local function hideHead(character)
+		if not character then return end
+		local head = character:WaitForChild('Head', 10)
+		if not head or hidden[head] then return end
+		hidden[head] = head.Transparency
+		head.Transparency = 1
+		head.CanCollide = false
+		head.CanQuery = false
+		head.CanTouch = false
+	end
+
+	local function showHead(character)
+		if not character then return end
+		local head = character:FindFirstChild('Head')
+		if not head then return end
+		local transparency = hidden[head]
+		if transparency == nil then return end
+		hidden[head] = nil
+		head.Transparency = transparency
+		head.CanCollide = true
+		head.CanQuery = true
+		head.CanTouch = true
+	end
+
+	Headless = larp.Categories.Utility:CreateModule({
+		Name = 'Headless',
+		Function = function(callback)
+			if callback then
+				local player = playersService.LocalPlayer
+				connections[#connections + 1] = player.CharacterAdded:Connect(hideHead)
+				hideHead(player.Character)
+			else
+				local player = playersService.LocalPlayer
+				showHead(player.Character)
+				for _, conn in connections do
+					conn:Disconnect()
+				end
+				table.clear(connections)
+				table.clear(hidden)
+			end
+		end,
+		Tooltip = 'Removes your head on your screen'
 	})
 end)
 

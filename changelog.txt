@@ -1,5 +1,4 @@
-+Added Fps Unlocker utility module
-+Added new ProjectileAimbot settings
-~Improved arc aiming and adaptive prediction
--Removed NightmareEmote from the universal script
-~Improved the changelogs popup
++Added Headless utility module
++Added Blurred Textured module for BedWars
+~Fixed lag - Fps Unlocker cap is now capped at 240
+~Fixed lag - the script now caches files instead of redownloading every execute

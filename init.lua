@@ -4,7 +4,6 @@ local license = ... or {}
 license.Key = script_key or license.Key
 
 local cloneref = cloneref or function(ref) return ref end
-local httpService = cloneref(game:GetService('HttpService'))
 local isfile = isfile or function(file)
 	local suc, res = pcall(function()
 		return readfile(file)
@@ -70,53 +69,27 @@ for _, folder in {'LarpV4', 'LarpV4/games', 'LarpV4/profiles', 'LarpV4/assets', 
 	end
 end
 
+local SELFCOMMIT = 'e4c9252593942d6e55d884e4b7f0ce4b6272eeb5'
 if not shared.LarpDeveloper then
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
-	local version = isfile('LarpV4/.version') and readfile('LarpV4/.version') or ''
-	local fresh = isfile('LarpV4/.fresh') and readfile('LarpV4/.fresh') or ''
-	local suc, changelog = pcall(function()
-		return game:HttpGet(ROOT..'main/changelog.txt?v='..tick(), true)
-	end)
-	if suc and (changelog ~= fresh or version ~= '121' or stored == 'main') then
-		local sha
-		local suc2, res = pcall(function()
-			return game:HttpGet('https://api.github.com/repos/exuric/VPrivate/commits/main', true)
-		end)
-		if not suc2 or typeof(res) ~= 'string' or res == '404: Not Found' then
-			local suc3, res3 = pcall(function()
-				local req = request and request({Url = 'https://api.github.com/repos/exuric/VPrivate/commits/main', Method = 'GET', Headers = {['User-Agent'] = 'Mozilla/5.0'}}) or http_request and http_request({Url = 'https://api.github.com/repos/exuric/VPrivate/commits/main', Method = 'GET'})
-				return req and (req.Body or req.body)
-			end)
-			if suc3 and typeof(res3) == 'string' then
-				res = res3
-			end
+	if stored ~= SELFCOMMIT then
+		if stored ~= '' then
+			shared.updated = stored
 		end
-		pcall(function()
-			local data = httpService:JSONDecode(res)
-			if type(data) == 'table' and type(data.sha) == 'string' then
-				sha = data.sha
-			end
-		end)
-		if sha then
-			if stored ~= '' and stored ~= sha then
-				shared.updated = stored
-			end
-			writefile('LarpV4/profiles/commit.txt', sha)
-			writefile('LarpV4/.fresh', changelog)
-			pcall(delfile, 'LarpV4/main.lua')
-			pcall(delfile, 'LarpV4/guis/larp.lua')
-			wipeFolder('LarpV4/games')
-			wipeFolder('LarpV4/guis')
-			wipeFolder('LarpV4/libraries')
-			wipeFolder('LarpV4/assets')
-			for _, file in {'LarpV4/assets/larp/Larp.png', 'LarpV4/assets/larp/Textv4.png'} do
-				if isfile(file) then
-					pcall(delfile, file)
-				end
+		writefile('LarpV4/profiles/commit.txt', SELFCOMMIT)
+		pcall(delfile, 'LarpV4/main.lua')
+		pcall(delfile, 'LarpV4/guis/larp.lua')
+		wipeFolder('LarpV4/games')
+		wipeFolder('LarpV4/guis')
+		wipeFolder('LarpV4/libraries')
+		wipeFolder('LarpV4/assets')
+		for _, file in {'LarpV4/assets/larp/Larp.png', 'LarpV4/assets/larp/Textv4.png'} do
+			if isfile(file) then
+				pcall(delfile, file)
 			end
 		end
 	end
-	writefile('LarpV4/.version', '121')
+	writefile('LarpV4/.version', '122')
 	if #listfiles('LarpV4/profiles') < 4 then
 		shared.LarpPresetInstall = function()
 			local headers = {}

@@ -6124,10 +6124,6 @@ function mainapi:UpdatePinned()
 		if enabled then
 			count = count + 1
 			if not moduleapi.PinnedClone then
-				local panel = moduleapi.Children
-				if panel and panel.Parent ~= pinnedchildren then
-					panel.Parent = pinnedchildren
-				end
 				local object = moduleapi.Object
 				if object then
 					local clone = object:Clone()
@@ -6238,6 +6234,10 @@ function mainapi:UpdatePinned()
 						end
 					end
 					moduleapi.PinnedClone = clone
+				end
+				local panel = moduleapi.Children
+				if panel and panel.Parent ~= pinnedchildren then
+					panel.Parent = pinnedchildren
 				end
 			end
 			local clone = moduleapi.PinnedClone

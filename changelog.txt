@@ -1,6 +1,5 @@
 +Added AutoTNT to the Blatant tab - automatically drops TNT on the nearest enemy bed
 +Added Anti KillAura to the Blatant tab - your character becomes invisible to sword swing regions and projectiles, killauras that use them will miss you
-~KillAura improved - removed the bugged warning, added Rotate to target and Auto switch to sword, no longer swings at dead targets
 +Added Shadow Culler, Quality Capper and Texture Culler to the Utility tab - aggressive fps boosters
 +Added Chat Bubble Remover and Low Quality Player Models to the Utility tab
 +Added an Optimization module that enables every performance module at once

@@ -69,7 +69,7 @@ for _, folder in {'LarpV4', 'LarpV4/games', 'LarpV4/profiles', 'LarpV4/assets', 
 	end
 end
 
-local SELFCOMMIT = 'e4c9252593942d6e55d884e4b7f0ce4b6272eeb5'
+local SELFCOMMIT = 'de54d963c363242d02db3f44ac251b1748304fe1'
 if not shared.LarpDeveloper then
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	if stored ~= SELFCOMMIT then

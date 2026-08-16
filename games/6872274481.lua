@@ -16504,13 +16504,14 @@ run(function()
 			end
 		end
 		block.Material = Enum.Material.SmoothPlastic
+		block.Color = getBlockColor(block.Name)
 		for _, child in block:GetChildren() do
-			if child:IsA('Decal') then
-				child.Transparency = 0.2
-			elseif child:IsA('Texture') then
-				child.Transparency = 0.15
-				child.StudsPerTileU = math.max(child.StudsPerTileU * 2.5, 1)
-				child.StudsPerTileV = math.max(child.StudsPerTileV * 2.5, 1)
+			if child:IsA('Decal') or child:IsA('Texture') then
+				child.Transparency = 0.3
+			end
+			if child:IsA('Texture') then
+				child.StudsPerTileU = math.max(child.StudsPerTileU * 2, 1)
+				child.StudsPerTileV = math.max(child.StudsPerTileV * 2, 1)
 			end
 		end
 		processedBlocks[block] = true

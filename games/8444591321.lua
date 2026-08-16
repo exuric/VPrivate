@@ -13,8 +13,9 @@ local isfile = isfile or function(file)
 	end)
 	return suc and res ~= nil and res ~= ''
 end
+local LARPWATER = '--LARP:'..(pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')..'\n'
 local function downloadFile(path, func)
-	if not isfile(path) then
+	if not isfile(path) or readfile(path):sub(1, #LARPWATER) ~= LARPWATER then
 		local suc, res = pcall(function()
 			return game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v=117', true)
 		end)
@@ -22,7 +23,7 @@ local function downloadFile(path, func)
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res
+			res = LARPWATER..res
 		end
 		writefile(path, res)
 	end

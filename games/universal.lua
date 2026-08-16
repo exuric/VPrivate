@@ -6436,15 +6436,23 @@ local optimizeModules = {}
 run(function()
 	local ChatBubbleRemover
 	local connections = {}
+	local hidden = {}
 
 	local function isBubble(descendant)
 		return descendant:IsA('BillboardGui') and (descendant.Name == 'Chat' or descendant.Name == 'ChatBubble' or descendant.Name:lower():find('chat') ~= nil)
 	end
 
+	local function hideBubble(bubble)
+		if not hidden[bubble] then
+			hidden[bubble] = bubble.Enabled
+			bubble.Enabled = false
+		end
+	end
+
 	local function scan(root)
 		for _, bubble in root:GetDescendants() do
 			if isBubble(bubble) then
-				bubble:Destroy()
+				hideBubble(bubble)
 			end
 		end
 	end
@@ -6456,7 +6464,7 @@ run(function()
 				for _, root in {workspace, playersService, cloneref(game:GetService('CoreGui'))} do
 					connections[#connections + 1] = root.DescendantAdded:Connect(function(descendant)
 						if isBubble(descendant) then
-							descendant:Destroy()
+							hideBubble(descendant)
 						end
 					end)
 					scan(root)
@@ -6466,6 +6474,12 @@ run(function()
 					conn:Disconnect()
 				end
 				table.clear(connections)
+				for bubble, enabled in hidden do
+					if bubble.Parent then
+						bubble.Enabled = enabled
+					end
+				end
+				table.clear(hidden)
 			end
 		end,
 		Tooltip = 'Removes the chat bubbles above players heads for more fps'
@@ -6581,119 +6595,133 @@ run(function()
 end)
 
 run(function()
-	local ParticleCuller
-	local connections = {}
+	local ShadowCuller
+	local lighting = cloneref(game:GetService('Lighting'))
+	local savedEffects = {}
+	local savedShadows
 
-	local function cull(descendant)
-		local char = lplr.Character
-		if descendant:IsA('ParticleEmitter') or descendant:IsA('Fire') or descendant:IsA('Smoke') or descendant:IsA('Sparkles') then
-			local part = descendant.Parent
-			if part and part:IsA('BasePart') and (not char or not part:IsDescendantOf(char)) then
-				descendant:Destroy()
-			end
-			return
-		end
-		if descendant:IsA('BasePart') then
-			for _, child in descendant:GetDescendants() do
-				if (child:IsA('ParticleEmitter') or child:IsA('Fire') or child:IsA('Smoke') or child:IsA('Sparkles')) and (not char or not child:IsDescendantOf(char)) then
-					child:Destroy()
+	ShadowCuller = larp.Categories.Utility:CreateModule({
+		Name = 'Shadow Culler',
+		Function = function(callback)
+			if callback then
+				if savedShadows == nil then
+					savedShadows = lighting.GlobalShadows
 				end
+				lighting.GlobalShadows = false
+				for _, effect in lighting:GetChildren() do
+					if effect:IsA('Blur') or effect:IsA('DepthOfField') or effect:IsA('SunRays') or effect:IsA('ColorCorrection') or effect:IsA('Bloom') or effect:IsA('Vignette') or effect:IsA('Grain') then
+						if not savedEffects[effect] then
+							savedEffects[effect] = effect.Enabled
+						end
+						effect.Enabled = false
+					end
+				end
+			else
+				lighting.GlobalShadows = savedShadows
+				savedShadows = nil
+				for effect, enabled in savedEffects do
+					if effect.Parent then
+						effect.Enabled = enabled
+					end
+				end
+				table.clear(savedEffects)
 			end
+		end,
+		Tooltip = 'Turns off shadows and lighting effects for more fps'
+	})
+	optimizeModules[#optimizeModules + 1] = ShadowCuller
+end)
+
+run(function()
+	local QualityCapper
+	local renderSettings = cloneref(game:GetService('RenderSettings'))
+
+	QualityCapper = larp.Categories.Utility:CreateModule({
+		Name = 'Quality Capper',
+		Function = function(callback)
+			if callback then
+				pcall(function()
+					sethiddenproperty(renderSettings, 'QualityLevel', 1)
+					sethiddenproperty(renderSettings, 'AntialiasingMode', 0)
+				end)
+			else
+				pcall(function()
+					sethiddenproperty(renderSettings, 'QualityLevel', 10)
+					sethiddenproperty(renderSettings, 'AntialiasingMode', 2)
+				end)
+			end
+		end,
+		Tooltip = 'Locks the game to the lowest quality with no antialiasing for more fps'
+	})
+	optimizeModules[#optimizeModules + 1] = QualityCapper
+end)
+
+run(function()
+	local TextureCuller
+	local Radius
+	local connections = {}
+	local saved = {}
+
+	local function saveCleanup(part)
+		part.AncestryChanged:Connect(function()
+			saved[part] = nil
+		end)
+	end
+
+	local function processPart(part)
+		if part:IsA('MeshPart') and part.TextureID ~= '' and (not lplr.Character or (part.Position - lplr.Character:GetPivot().Position).Magnitude <= Radius.Value) then
+			if not saved[part] then
+				saved[part] = part.TextureID
+				saveCleanup(part)
+			end
+			part.TextureID = ''
 		end
 	end
 
-	ParticleCuller = larp.Categories.Utility:CreateModule({
-		Name = 'Particle Culler',
+	TextureCuller = larp.Categories.Utility:CreateModule({
+		Name = 'Texture Culler',
 		Function = function(callback)
 			if callback then
-				connections[#connections + 1] = workspace.DescendantAdded:Connect(cull)
+				connections[#connections + 1] = workspace.DescendantAdded:Connect(processPart)
 				for _, part in workspace:GetDescendants() do
-					if part:IsA('BasePart') then
-						cull(part)
-					end
+					processPart(part)
 				end
 			else
 				for _, conn in connections do
 					conn:Disconnect()
 				end
 				table.clear(connections)
-			end
-		end,
-		Tooltip = 'Removes particles, fire and smoke around you for more fps'
-	})
-	optimizeModules[#optimizeModules + 1] = ParticleCuller
-end)
-
-run(function()
-	local EntityCuller
-	local Distance
-	local saved = {}
-
-	local function process(entity)
-		if not entity or not entity.Character then return end
-		local char = entity.Character
-		if char == lplr.Character then return end
-		local part = char:FindFirstChild('HumanoidRootPart') or char:FindFirstChild('Torso') or char.PrimaryPart
-		if not part then return end
-		local localroot = lplr.Character and lplr.Character:FindFirstChild('HumanoidRootPart') or lplr.Character and lplr.Character.PrimaryPart
-		local hide = localroot and (part.Position - localroot.Position).Magnitude > Distance.Value
-		if hide then
-			for _, child in char:GetDescendants() do
-				if child:IsA('BasePart') then
-					if not saved[child] then
-						saved[child] = child.Transparency
-					end
-					child.Transparency = 1
-				end
-			end
-		else
-			for child, transparency in pairs(saved) do
-				if child.Parent and child:IsDescendantOf(char) then
-					child.Transparency = transparency
-					saved[child] = nil
-				end
-			end
-		end
-	end
-
-	EntityCuller = larp.Categories.Utility:CreateModule({
-		Name = 'Entity Culler',
-		Function = function(callback)
-			if callback then
-				task.spawn(function()
-					while EntityCuller.Enabled do
-						for _, entity in entitylib.List do
-							process(entity)
-						end
-						task.wait(0.5)
-					end
-				end)
-			else
-				for child, transparency in pairs(saved) do
-					if child.Parent then
-						child.Transparency = transparency
+				for part, id in saved do
+					if part.Parent then
+						part.TextureID = id
 					end
 				end
 				table.clear(saved)
 			end
 		end,
-		Tooltip = 'Hides entities further than the distance for more fps'
+		Tooltip = 'Removes textures from parts around you for more fps'
 	})
-	Distance = EntityCuller:CreateSlider({
-		Name = 'Distance',
-		Min = 20,
+	Radius = TextureCuller:CreateSlider({
+		Name = 'Radius',
+		Min = 30,
 		Max = 500,
 		Default = 150,
 		Integer = true,
 		Function = function()
-			if EntityCuller.Enabled then
-				for _, entity in entitylib.List do
-					process(entity)
+			if TextureCuller.Enabled then
+				for part, id in saved do
+					if part.Parent and (not lplr.Character or (part.Position - lplr.Character:GetPivot().Position).Magnitude > Radius.Value) then
+						part.TextureID = id
+						saved[part] = nil
+					end
+				end
+				for _, part in workspace:GetDescendants() do
+					processPart(part)
 				end
 			end
 		end
 	})
-	optimizeModules[#optimizeModules + 1] = EntityCuller
+	optimizeModules[#optimizeModules + 1] = TextureCuller
 end)
 
 run(function()

@@ -6321,11 +6321,6 @@ mainapi:CreateCategory({
 	Size = UDim2.fromOffset(15, 14)
 })
 mainapi:CreateCategory({
-	Name = 'FPS Boost',
-	Icon = getcustomasset('LarpV4/assets/larp/legit.png'),
-	Size = UDim2.fromOffset(16, 14)
-})
-mainapi:CreateCategory({
 	Name = 'World',
 	Icon = getcustomasset('LarpV4/assets/larp/worldicon.png'),
 	Size = UDim2.fromOffset(14, 14)

@@ -16813,7 +16813,7 @@ run(function()
 	local Cap
 	local oldcap
 
-	FpsUnlocker = (larp.Categories['FPS Boost'] or larp.Categories.Utility):CreateModule({
+	FpsUnlocker = larp.Categories.Utility:CreateModule({
 		Name = 'Fps Unlocker',
 		Function = function(callback)
 			if not setfpscap then return end

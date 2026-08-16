@@ -1,7 +1,8 @@
 +Added Headless utility module
++Added new FPS Boost tab with Chat Bubble Remover, Low Quality Player Models and Optimization
+~Pinned modules now open their settings inside the Pinned tab
+~Potato Mode now matches every block to its color and processes smoothly for more fps
 -Removed Blurred Textured module
 ~Headless now works for all Larp V4 users without enabling it yourself
-~Potato Mode now removes grass block textures too
-~Potato Mode now matches every block to its color and processes smoothly for more fps
-~Fps Unlocker cap can go up to 1000 again
+~Fps Unlocker moved to the FPS Boost tab and can go up to 1000
 ~Fixed lag - the script now caches files instead of redownloading every execute

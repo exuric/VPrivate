@@ -5262,7 +5262,8 @@ function mainapi:CreateLegit()
 			objectstroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 			objectstroke.Thickness = 0
 			objectstroke.Parent = modulechildren
-			moduleapi.Children = modulechildren
+moduleapi.Children = modulechildren
+		moduleapi.ChildrenParent = children
 		end
 		modulesettings.Function = modulesettings.Function or function() end
 		addMaid(moduleapi)
@@ -6123,6 +6124,10 @@ function mainapi:UpdatePinned()
 		if enabled then
 			count = count + 1
 			if not moduleapi.PinnedClone then
+				local panel = moduleapi.Children
+				if panel and panel.Parent ~= pinnedchildren then
+					panel.Parent = pinnedchildren
+				end
 				local object = moduleapi.Object
 				if object then
 					local clone = object:Clone()
@@ -6283,6 +6288,11 @@ function mainapi:UpdatePinned()
 		elseif moduleapi.PinnedClone then
 			moduleapi.PinnedClone:Destroy()
 			moduleapi.PinnedClone = nil
+			local panel = moduleapi.Children
+			local origin = moduleapi.ChildrenParent
+			if panel and origin and panel.Parent ~= origin then
+				panel.Parent = origin
+			end
 		end
 	end
 	if count > 0 and not pinnedcategory.Expanded then
@@ -6309,6 +6319,11 @@ mainapi:CreateCategory({
 	Name = 'Utility',
 	Icon = getcustomasset('LarpV4/assets/larp/utilityicon.png'),
 	Size = UDim2.fromOffset(15, 14)
+})
+mainapi:CreateCategory({
+	Name = 'FPS Boost',
+	Icon = getcustomasset('LarpV4/assets/larp/legit.png'),
+	Size = UDim2.fromOffset(16, 14)
 })
 mainapi:CreateCategory({
 	Name = 'World',

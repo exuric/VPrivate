@@ -280,7 +280,7 @@ local gui = 'larp'--readfile('LarpV4/profiles/gui.txt')
 if not isfolder('LarpV4/assets/'..gui) then
 	makefolder('LarpV4/assets/'..gui)
 end
-larp = loadstring(downloadFile('LarpV4/guis/larp.lua'), 'gui')(license)
+larp = loadstring(downloadFile('LarpV4/guis/larp2.lua'), 'gui')(license)
 if type(larp) ~= 'table' then
 	error('larp.lua did not return a valid api table' .. (larp and ': '..tostring(larp) or ''))
 end

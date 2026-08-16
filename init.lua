@@ -79,6 +79,7 @@ if not shared.LarpDeveloper then
 		writefile('LarpV4/profiles/commit.txt', SELFCOMMIT)
 		pcall(delfile, 'LarpV4/main.lua')
 		pcall(delfile, 'LarpV4/guis/larp.lua')
+		pcall(delfile, 'LarpV4/guis/larp2.lua')
 		wipeFolder('LarpV4/games')
 		wipeFolder('LarpV4/guis')
 		wipeFolder('LarpV4/libraries')

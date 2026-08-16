@@ -6437,19 +6437,29 @@ run(function()
 	local ChatBubbleRemover
 	local connections = {}
 
+	local function isBubble(descendant)
+		return descendant:IsA('BillboardGui') and (descendant.Name == 'Chat' or descendant.Name == 'ChatBubble' or descendant.Name:lower():find('chat') ~= nil)
+	end
+
+	local function scan(root)
+		for _, bubble in root:GetDescendants() do
+			if isBubble(bubble) then
+				bubble:Destroy()
+			end
+		end
+	end
+
 	ChatBubbleRemover = larp.Categories.Utility:CreateModule({
 		Name = 'Chat Bubble Remover',
 		Function = function(callback)
 			if callback then
-				connections[#connections + 1] = workspace.DescendantAdded:Connect(function(descendant)
-					if descendant:IsA('BillboardGui') and descendant.Name == 'Chat' then
-						descendant:Destroy()
-					end
-				end)
-				for _, bubble in workspace:GetDescendants() do
-					if bubble:IsA('BillboardGui') and bubble.Name == 'Chat' then
-						bubble:Destroy()
-					end
+				for _, root in {workspace, playersService, cloneref(game:GetService('CoreGui'))} do
+					connections[#connections + 1] = root.DescendantAdded:Connect(function(descendant)
+						if isBubble(descendant) then
+							descendant:Destroy()
+						end
+					end)
+					scan(root)
 				end
 			else
 				for _, conn in connections do
@@ -6522,9 +6532,12 @@ run(function()
 		table.clear(savedProps)
 	end
 
+	local processed = {}
+
 	local function connectCharacter(player)
 		connections[#connections + 1] = player.CharacterAdded:Connect(function(character)
 			if LowQuality.Enabled then
+				processed[player] = character
 				processCharacter(character)
 			end
 		end)
@@ -6538,14 +6551,27 @@ run(function()
 				for _, player in playersService:GetPlayers() do
 					connectCharacter(player)
 					if player.Character then
+						processed[player] = player.Character
 						processCharacter(player.Character)
 					end
 				end
+				task.spawn(function()
+					while LowQuality.Enabled do
+						for _, player in playersService:GetPlayers() do
+							if player.Character and processed[player] ~= player.Character then
+								processed[player] = player.Character
+								processCharacter(player.Character)
+							end
+						end
+						task.wait(0.75)
+					end
+				end)
 			else
 				for _, conn in connections do
 					conn:Disconnect()
 				end
 				table.clear(connections)
+				table.clear(processed)
 				restoreAll()
 			end
 		end,

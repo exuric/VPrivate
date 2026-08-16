@@ -1,5 +1,7 @@
 +Added performance modules to the Utility tab - Chat Bubble Remover, Low Quality Player Models, Particle Culler and Entity Culler
 +Added an Optimization module that enables every performance module at once
+~Low Quality Player Models now reapplies after respawns
+~Chat Bubble Remover now catches every bubble type
 +Added ping profiles to ProjectileAimbot - Low, Medium and High apply the best settings automatically, Custom keeps the defaults
 +Added Fireball Splash with a splash radius to ProjectileAimbot - fireballs now always land on the enemy
 +Added Velocity Lerp to ProjectileAimbot and a Neck aim part

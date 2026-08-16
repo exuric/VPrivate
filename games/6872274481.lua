@@ -16506,18 +16506,11 @@ run(function()
 		block.Material = Enum.Material.SmoothPlastic
 		for _, child in block:GetChildren() do
 			if child:IsA('Decal') then
-				local blurred = Instance.new('Texture')
-				blurred.Texture = child.Texture
-				blurred.Face = child.Face
-				blurred.StudsPerTileU = 8
-				blurred.StudsPerTileV = 8
-				blurred.Transparency = 0.3
-				blurred.Parent = block
-				child:Destroy()
+				child.Transparency = 0.2
 			elseif child:IsA('Texture') then
-				child.Transparency = 0.3
-				child.StudsPerTileU = math.max(child.StudsPerTileU * 8, 8)
-				child.StudsPerTileV = math.max(child.StudsPerTileV * 8, 8)
+				child.Transparency = 0.15
+				child.StudsPerTileU = math.max(child.StudsPerTileU * 2.5, 1)
+				child.StudsPerTileV = math.max(child.StudsPerTileV * 2.5, 1)
 			end
 		end
 		processedBlocks[block] = true

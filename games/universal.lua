@@ -6433,26 +6433,26 @@ end)
 run(function()
 	local Headless
 	local connections = {}
-	local characterConns = {}
 	local hidden = {}
+	local hiddenOthers = {}
 
-	local function hideHead(head)
-		if not head or hidden[head] then return end
-		hidden[head] = head.Transparency
+	local function hideHead(head, dict)
+		if not head or dict[head] then return end
+		dict[head] = head.Transparency
 		head.Transparency = 1
 		head.CanCollide = false
 		head.CanQuery = false
 		head.CanTouch = false
 		head.AncestryChanged:Connect(function()
-			hidden[head] = nil
+			dict[head] = nil
 		end)
 	end
 
-	local function showHead(head)
+	local function showHead(head, dict)
 		if not head then return end
-		local transparency = hidden[head]
+		local transparency = dict[head]
 		if transparency == nil then return end
-		hidden[head] = nil
+		dict[head] = nil
 		head.Transparency = transparency
 		head.CanCollide = true
 		head.CanQuery = true
@@ -6464,26 +6464,31 @@ run(function()
 		local head = character:FindFirstChild('Head')
 		if not head then return end
 		if character:GetAttribute('LarpHeadless') then
-			hideHead(head)
+			hideHead(head, hiddenOthers)
 		else
-			showHead(head)
+			showHead(head, hiddenOthers)
 		end
 	end
 
 	local function watchOther(player)
 		if player == playersService.LocalPlayer then return end
 		if player.Character then
-			characterConns[#characterConns + 1] = player.Character:GetAttributeChangedSignal('LarpHeadless'):Connect(function()
+			player.Character:GetAttributeChangedSignal('LarpHeadless'):Connect(function()
 				applyOther(player.Character)
 			end)
 			applyOther(player.Character)
 		end
-		characterConns[#characterConns + 1] = player.CharacterAdded:Connect(function(character)
-			characterConns[#characterConns + 1] = character:GetAttributeChangedSignal('LarpHeadless'):Connect(function()
+		player.CharacterAdded:Connect(function(character)
+			character:GetAttributeChangedSignal('LarpHeadless'):Connect(function()
 				applyOther(character)
 			end)
 			applyOther(character)
 		end)
+	end
+
+	playersService.PlayerAdded:Connect(watchOther)
+	for _, other in playersService:GetPlayers() do
+		watchOther(other)
 	end
 
 	Headless = larp.Categories.Utility:CreateModule({
@@ -6493,32 +6498,24 @@ run(function()
 				local player = playersService.LocalPlayer
 				connections[#connections + 1] = player.CharacterAdded:Connect(function(character)
 					character:SetAttribute('LarpHeadless', true)
-					hideHead(character:WaitForChild('Head', 10))
+					hideHead(character:WaitForChild('Head', 10), hidden)
 				end)
-				connections[#connections + 1] = playersService.PlayerAdded:Connect(watchOther)
-				for _, other in playersService:GetPlayers() do
-					watchOther(other)
-				end
 				if player.Character then
 					player.Character:SetAttribute('LarpHeadless', true)
-					hideHead(player.Character:WaitForChild('Head', 10))
+					hideHead(player.Character:WaitForChild('Head', 10), hidden)
 				end
 			else
 				local player = playersService.LocalPlayer
 				if player.Character then
 					player.Character:SetAttribute('LarpHeadless', nil)
-					showHead(player.Character:FindFirstChild('Head'))
+					showHead(player.Character:FindFirstChild('Head'), hidden)
 				end
 				for _, conn in connections do
 					conn:Disconnect()
 				end
 				table.clear(connections)
-				for _, conn in characterConns do
-					conn:Disconnect()
-				end
-				table.clear(characterConns)
 				for head, _ in pairs(hidden) do
-					showHead(head)
+					showHead(head, hidden)
 				end
 			end
 		end,

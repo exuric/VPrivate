@@ -1,4 +1,6 @@
 +Added Headless utility module
 +Added Blurred Textured module for BedWars
-~Fixed lag - Fps Unlocker cap is now capped at 240
++Headless now hides heads from other Larp V4 users too
+~Blurred Textured now blurs textures instead of removing them
+~Fps Unlocker cap can go up to 1000 again
 ~Fixed lag - the script now caches files instead of redownloading every execute

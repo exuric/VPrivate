@@ -16197,7 +16197,8 @@ run(function()
 				Material = block.Material,
 				Color = block.Color,
 				TextureID = block:IsA("MeshPart") and block.TextureID or nil,
-				Textures = {}
+				Textures = {},
+				Appearances = {}
 			}
 
 			for _, child in block:GetChildren() do
@@ -16211,6 +16212,18 @@ run(function()
 						Transparency = child.Transparency,
 						Color3 = child:IsA("Decal") and child.Color3 or nil
 					})
+				elseif child:IsA("SurfaceAppearance") then
+					table.insert(originalProperties[block].Appearances, {
+						Face = child.Face,
+						Color = child.Color,
+						Texture = child.Texture,
+						ColorMap = child.ColorMap,
+						RoughnessMap = child.RoughnessMap,
+						MetalnessMap = child.MetalnessMap,
+						NormalMap = child.NormalMap,
+						StudsPerTileU = child.StudsPerTileU,
+						StudsPerTileV = child.StudsPerTileV
+					})
 				end
 			end
 		end
@@ -16219,7 +16232,7 @@ run(function()
 		block.Color = getBlockColor(block.Name)
 
 		for _, child in block:GetChildren() do
-			if child:IsA("Texture") or child:IsA("Decal") then
+			if child:IsA("Texture") or child:IsA("Decal") or child:IsA("SurfaceAppearance") then
 				child:Destroy()
 			end
 		end
@@ -16263,6 +16276,20 @@ run(function()
 			newTexture.Face = textureProps.Face or Enum.NormalId.Front
 			newTexture.Transparency = textureProps.Transparency or 0
 			newTexture.Parent = block
+		end
+
+		for _, appearanceProps in props.Appearances do
+			local newAppearance = Instance.new("SurfaceAppearance")
+			newAppearance.Face = appearanceProps.Face or Enum.NormalId.Front
+			newAppearance.Color = appearanceProps.Color or Color3.fromRGB(255, 255, 255)
+			newAppearance.Texture = appearanceProps.Texture or ""
+			newAppearance.ColorMap = appearanceProps.ColorMap or ""
+			newAppearance.RoughnessMap = appearanceProps.RoughnessMap or ""
+			newAppearance.MetalnessMap = appearanceProps.MetalnessMap or ""
+			newAppearance.NormalMap = appearanceProps.NormalMap or ""
+			newAppearance.StudsPerTileU = appearanceProps.StudsPerTileU or 1
+			newAppearance.StudsPerTileV = appearanceProps.StudsPerTileV or 1
+			newAppearance.Parent = block
 		end
 
 		originalProperties[block] = nil

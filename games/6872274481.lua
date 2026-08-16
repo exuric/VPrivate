@@ -3394,7 +3394,8 @@ run(function()
 	local MaxAngle
 	local CPS
 	local SwingTime
-	local KillauraNotified
+	local Rotate
+	local AutoSwitch
 
 	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
 	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
@@ -3436,16 +3437,20 @@ run(function()
 		end
 	end
 
+	local function ensureSword()
+		local hand = store.hand.tool
+		if not hand or not (store.hand.toolType == 'sword' and table.find(swordNames, hand.Name)) then
+			local sword = getSword()
+			if sword then
+				switchItem(sword.tool, 0)
+			end
+		end
+	end
+
 	Killaura = larp.Categories.Blatant:CreateModule({
 		Name = 'KillAura',
 		Function = function(callback)
 			if callback then
-				if not KillauraNotified then
-					KillauraNotified = true
-					task.spawn(function()
-						pcall(notif, 'KillAura', 'KillAura is bugged', 4, 'alert')
-					end)
-				end
 				SwordController = bedwars.SwordController
 				realSwingInRegion = SwordController.swingSwordInRegion
 				local ok, r = pcall(function()
@@ -3474,9 +3479,12 @@ run(function()
 				repeat
 					local target
 					if entitylib.isAlive and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
+						if not LimitItems.Enabled and AutoSwitch.Enabled then
+							ensureSword()
+						end
 						if not LimitItems.Enabled or (store.hand.toolType == 'sword' and store.hand.tool and table.find(swordNames, store.hand.tool.Name)) then
 							target = getTarget()
-							if target then
+							if target and target.RootPart and target.RootPart.Parent then
 								store.KillauraTarget = target
 								if not SwingOnly.Enabled then
 									local now = tick()
@@ -3484,7 +3492,16 @@ run(function()
 										lastSwing = now
 										if swordHitRemote then
 											pcall(function()
-												swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = entitylib.character.RootPart.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
+												local root = entitylib.character.RootPart
+												local oldcf
+												if Rotate.Enabled then
+													oldcf = root.CFrame
+													root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
+												end
+												swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = root.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
+												if oldcf then
+													root.CFrame = oldcf
+												end
 											end)
 										else
 											realSwingInRegion(SwordController)
@@ -3577,6 +3594,143 @@ run(function()
 			return 'cps'
 		end,
 		Tooltip = 'Swings attempted per second.\nDefault 12 keeps 34 hits/s consistent. Raise if it dips to 33'
+	})
+	Rotate = Killaura:CreateToggle({
+		Name = 'Rotate to target',
+		Default = true,
+		Tooltip = 'Faces the target before every swing'
+	})
+	AutoSwitch = Killaura:CreateToggle({
+		Name = 'Auto switch to sword',
+		Default = true,
+		Tooltip = 'Equips the best sword when holding something else'
+	})
+end)
+
+run(function()
+	local AutoTNT
+	local Range
+	local Delay
+	local AutoSwitch
+
+	local function getEnemyBedNear(pos)
+		local bed, lastmag = nil, math.huge
+		local localPosition = pos or Vector3.zero
+		local team = lplr:GetAttribute('Team') or -1
+		for _, v in collectionService:GetTagged('bed') do
+			if not v:GetAttribute('Team' .. team .. 'NoBreak') then
+				local mag = (localPosition - v.Position).Magnitude
+				if mag < lastmag then
+					bed = v
+					lastmag = mag
+				end
+			end
+		end
+		return bed, lastmag
+	end
+
+	AutoTNT = larp.Categories.Blatant:CreateModule({
+		Name = 'AutoTNT',
+		Function = function(callback)
+			if callback then
+				local lastThrow = 0
+				repeat
+					if entitylib.isAlive and tick() - lastThrow >= Delay.Value then
+						local item = getItem('tnt')
+						if item then
+							local bed, mag = getEnemyBedNear(entitylib.character.RootPart.Position)
+							if bed and mag <= Range.Value then
+								if AutoSwitch.Enabled then
+									switchItem(item.tool, 0)
+								end
+								lastThrow = tick()
+								task.spawn(function()
+									local dir = bed.Position - entitylib.character.RootPart.Position
+									dir = Vector3.new(dir.X, 0, dir.Z)
+									if dir.Magnitude > 0.01 then
+										dir = dir.Unit
+									end
+									local rounded = roundPos(bed.Position)
+									bedwars.placeBlock(rounded, item.itemType, false)
+									task.wait(0.1)
+									if not getPlacedBlock(rounded) then
+										bedwars.placeBlock(roundPos(bed.Position - dir * 3), item.itemType, false)
+									end
+								end)
+							end
+						end
+					end
+					task.wait(0.1)
+				until not AutoTNT.Enabled
+			end
+		end,
+		Tooltip = 'Automatically drops TNT on the nearest enemy bed'
+	})
+	Range = AutoTNT:CreateSlider({
+		Name = 'Range',
+		Min = 1,
+		Max = 80,
+		Default = 40,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Max distance to the enemy bed'
+	})
+	Delay = AutoTNT:CreateSlider({
+		Name = 'Throw delay',
+		Min = 0.5,
+		Max = 5,
+		Default = 1.5,
+		Decimal = 10,
+		Suffix = 's',
+		Tooltip = 'Delay between TNT throws'
+	})
+	AutoSwitch = AutoTNT:CreateToggle({
+		Name = 'Auto switch',
+		Default = true,
+		Tooltip = 'Switches to TNT before throwing'
+	})
+end)
+
+run(function()
+	local AntiKillAura
+	local touched = {}
+
+	local function apply(state)
+		local character = entitylib.character
+		if not character then
+			return
+		end
+		for _, part in character:GetDescendants() do
+			if part:IsA('BasePart') then
+				if not state and touched[part] == nil then
+					touched[part] = part.CanQuery
+				end
+				part.CanQuery = state
+			end
+		end
+	end
+
+	AntiKillAura = larp.Categories.Blatant:CreateModule({
+		Name = 'Anti KillAura',
+		Function = function(callback)
+			if callback then
+				apply(false)
+				repeat
+					task.wait(1)
+					apply(false)
+				until not AntiKillAura.Enabled
+			else
+				apply(true)
+				for part, state in touched do
+					if part.Parent then
+						part.CanQuery = state
+					end
+				end
+				table.clear(touched)
+			end
+		end,
+		Tooltip = 'Makes your character invisible to sword swing regions and\nprojectiles - killauras that use them will miss you.\nDirect-fire killauras can still land hits (server-side)'
 	})
 end)
 

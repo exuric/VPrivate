@@ -5629,7 +5629,6 @@ function mainapi:Load(skipgui, profile)
 		self.GUIColor:SetValue(nil, nil, nil, 4)
 	end
 	local guidata = {}
-	local savecheck = true
 	local savenew
 
 	if isfile('LarpV4/profiles/'..game.GameId..'.gui.txt') then
@@ -5637,7 +5636,6 @@ function mainapi:Load(skipgui, profile)
 		if not guidata then
 			guidata = {Categories = {}}
 			self:CreateNotification('Larp', 'Failed to load GUI settings.', 10, 'alert')
-			savecheck = false
 		end
 
 		if not skipgui then
@@ -5679,13 +5677,25 @@ function mainapi:Load(skipgui, profile)
 		self.ProfileLabel.Size = UDim2.fromOffset(getfontsize(self.ProfileLabel.Text, self.ProfileLabel.TextSize, self.ProfileLabel.Font).X + 16, 24)
 	end
 
-	if isfile('LarpV4/profiles/'..self.Profile..self.Place..'.txt') then
-		local savedata = loadJson('LarpV4/profiles/'..self.Profile..self.Place..'.txt')
-		if not savedata then
-			savedata = {Categories = {}, Modules = {}, Legit = {}}
-			self:CreateNotification('Larp', 'Failed to load '..self.Profile..' profile.', 10, 'alert')
-			savecheck = false
+	local savepath = 'LarpV4/profiles/'..self.Profile..self.Place..'.txt'
+	local savedata = isfile(savepath) and loadJson(savepath)
+	if not savedata then
+		local fallback = isfile('LarpV4/profiles/'..self.Profile..'.last.txt') and loadJson('LarpV4/profiles/'..self.Profile..'.last.txt')
+		if fallback then
+			savedata = {
+				Categories = {},
+				Modules = fallback.Modules or {},
+				Legit = fallback.Legit or {}
+			}
+			if isfile(savepath) then
+				self:CreateNotification('Larp', 'Failed to load '..self.Profile..' profile, restored from last server.', 10, 'alert')
+			end
 		end
+	end
+	if not savedata then
+		savedata = {Categories = {}, Modules = {}, Legit = {}}
+		savenew = true
+	end
 
 		for i, v in savedata.Categories do
 			local object = self.Categories[i]
@@ -5710,58 +5720,74 @@ function mainapi:Load(skipgui, profile)
 			object.Object.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
 		end
 
-		local modulelookup, legitlookup = {}, {}
-		for i, v in self.Modules do
-			modulelookup[i:gsub(' ', '')] = v
-		end
-		for i, v in self.Legit.Modules do
-			legitlookup[i:gsub(' ', '')] = v
-		end
-
-		for i, v in savedata.Modules do
-			i = i:gsub(' ', '')
-			local object = modulelookup[i]
-			if not object then continue end
-			if object.Options and v.Options then
-				self:LoadOptions(object, v.Options)
+		local restore
+		restore = function()
+			local modulelookup, legitlookup = {}, {}
+			for i, v in self.Modules do
+				modulelookup[i:gsub(' ', '')] = v
 			end
-			if v.Enabled ~= object.Enabled then
-				if skipgui then
-					if self.ToggleNotifications.Enabled then 
-						mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75)
-					end
+			for i, v in self.Legit.Modules do
+				legitlookup[i:gsub(' ', '')] = v
+			end
+
+			for i, v in savedata.Modules do
+				i = i:gsub(' ', '')
+				local object = modulelookup[i]
+				if not object then continue end
+				if object.Options and v.Options then
+					self:LoadOptions(object, v.Options)
 				end
-				object:Toggle(true)
+				if v.Enabled ~= object.Enabled then
+					if skipgui then
+						if self.ToggleNotifications.Enabled then
+							mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75)
+						end
+					end
+					object:Toggle(true)
+				end
+				object:SetBind(v.Bind)
+				object.Object.Bind.Visible = #v.Bind > 0
 			end
-			object:SetBind(v.Bind)
-			object.Object.Bind.Visible = #v.Bind > 0
-		end
 
-		for i, v in savedata.Legit do
-			i = i:gsub(' ', '')
-			local object = legitlookup[i]
-			if not object then continue end
-			if object.Options and v.Options then
-				self:LoadOptions(object, v.Options)
-			end
-			if object.Enabled ~= v.Enabled then
-				object:Toggle()
-			end
-			if v.Position and object.Children then
-				object.Children.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
+			for i, v in savedata.Legit do
+				i = i:gsub(' ', '')
+				local object = legitlookup[i]
+				if not object then continue end
+				if object.Options and v.Options then
+					self:LoadOptions(object, v.Options)
+				end
+				if object.Enabled ~= v.Enabled then
+					object:Toggle()
+				end
+				if v.Position and object.Children then
+					object.Children.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
+				end
 			end
 		end
+		restore()
+		task.delay(4, function()
+			if not self.Loaded then return end
+			local modulelookup = {}
+			for i, v in self.Modules do
+				modulelookup[i:gsub(' ', '')] = v
+			end
+			for i, v in savedata.Modules do
+				local object = modulelookup[i:gsub(' ', '')]
+				if not object then continue end
+				if v.Enabled and not object.Enabled then
+					object:Toggle(true)
+				end
+			end
+		end)
 
 		self:UpdateTextGUI(true)
-	else
-		savenew = true
 	end
 
 	if self.Downloader then
 		self.Downloader:Destroy()
 		self.Downloader = nil
 	end
-	self.Loaded = savecheck
+	self.Loaded = true
 	self.Categories.Main.Options.Bind:SetBind(self.Keybind)
 
 	if savenew then
@@ -5908,6 +5934,7 @@ function mainapi:Save(newprofile)
 
 	writeSave('LarpV4/profiles/'..game.GameId..'.gui.txt', httpService:JSONEncode(guidata))
 	writeSave('LarpV4/profiles/'..self.Profile..self.Place..'.txt', httpService:JSONEncode(savedata))
+	writeSave('LarpV4/profiles/'..self.Profile..'.last.txt', httpService:JSONEncode(savedata))
 end
 
 function mainapi:QueueSave()

@@ -16101,6 +16101,9 @@ run(function()
 	local blockMonitorConnections = {}
 	local processedBlocks = {}
 	local cachedColors = {}
+	local pendingBlocks = {}
+	local queueIndex = 1
+	local workerActive = false
 
 	local blockColors = {
 		["clay_white"] = Color3.fromRGB(255, 255, 255),
@@ -16138,9 +16141,78 @@ run(function()
 		["wool"] = Color3.fromRGB(200, 200, 200),
 		["bed"] = Color3.fromRGB(200, 50, 50),
 		["concrete"] = Color3.fromRGB(180, 180, 180),
+		["glass"] = Color3.fromRGB(200, 225, 235),
+		["ice"] = Color3.fromRGB(150, 210, 255),
+		["blue_ice"] = Color3.fromRGB(120, 180, 255),
+		["packed_ice"] = Color3.fromRGB(160, 200, 255),
+		["dirt"] = Color3.fromRGB(140, 100, 70),
+		["gravel"] = Color3.fromRGB(130, 125, 120),
+		["terracotta"] = Color3.fromRGB(180, 110, 80),
+		["smooth_stone"] = Color3.fromRGB(200, 200, 200),
+		["stone_bricks"] = Color3.fromRGB(140, 140, 140),
+		["deepslate"] = Color3.fromRGB(110, 110, 115),
+		["cobbled_deepslate"] = Color3.fromRGB(100, 100, 105),
+		["blackstone"] = Color3.fromRGB(60, 55, 60),
+		["basalt"] = Color3.fromRGB(100, 100, 105),
+		["tuff"] = Color3.fromRGB(120, 120, 110),
+		["calcite"] = Color3.fromRGB(230, 230, 230),
+		["diorite"] = Color3.fromRGB(210, 210, 210),
+		["granite"] = Color3.fromRGB(170, 120, 100),
+		["oak_log"] = Color3.fromRGB(130, 100, 70),
+		["dark_oak_log"] = Color3.fromRGB(80, 50, 25),
+		["birch_log"] = Color3.fromRGB(230, 220, 200),
+		["jungle_log"] = Color3.fromRGB(160, 130, 80),
+		["acacia_log"] = Color3.fromRGB(150, 90, 60),
+		["crimson_planks"] = Color3.fromRGB(150, 60, 80),
+		["warped_planks"] = Color3.fromRGB(60, 150, 130),
+		["netherrack"] = Color3.fromRGB(100, 50, 50),
+		["end_stone"] = Color3.fromRGB(225, 225, 200),
+		["purpur"] = Color3.fromRGB(170, 120, 170),
+		["prismarine"] = Color3.fromRGB(100, 170, 160),
+		["dark_prismarine"] = Color3.fromRGB(60, 110, 100),
+		["sea_lantern"] = Color3.fromRGB(200, 220, 200),
+		["bricks"] = Color3.fromRGB(160, 90, 70),
+		["quartz"] = Color3.fromRGB(230, 225, 220),
+		["amethyst"] = Color3.fromRGB(170, 110, 200),
+		["snow_block"] = Color3.fromRGB(235, 240, 245),
+		["sponge"] = Color3.fromRGB(220, 200, 90),
+		["hay_block"] = Color3.fromRGB(220, 180, 90),
+		["melon"] = Color3.fromRGB(120, 160, 80),
+		["pumpkin"] = Color3.fromRGB(230, 150, 60),
+		["cactus"] = Color3.fromRGB(100, 160, 70),
+		["copper_block"] = Color3.fromRGB(190, 110, 90),
+		["iron_block"] = Color3.fromRGB(220, 220, 220),
+		["gold_block"] = Color3.fromRGB(250, 210, 60),
+		["diamond_block"] = Color3.fromRGB(110, 230, 220),
+		["emerald_block"] = Color3.fromRGB(80, 210, 100),
+		["lapis_block"] = Color3.fromRGB(40, 80, 200),
+		["redstone_block"] = Color3.fromRGB(200, 40, 30),
+		["coal_block"] = Color3.fromRGB(60, 60, 60),
+		["netherite_block"] = Color3.fromRGB(70, 60, 60),
 	}
 
-	local function getBlockColor(blockName)
+	local colorWords = {
+		{ "light_gray", Color3.fromRGB(180, 180, 180) },
+		{ "light_blue", Color3.fromRGB(100, 200, 255) },
+		{ "light_brown", Color3.fromRGB(200, 170, 120) },
+		{ "white", Color3.fromRGB(255, 255, 255) },
+		{ "black", Color3.fromRGB(50, 50, 50) },
+		{ "red", Color3.fromRGB(255, 50, 50) },
+		{ "orange", Color3.fromRGB(255, 150, 50) },
+		{ "yellow", Color3.fromRGB(255, 255, 50) },
+		{ "lime", Color3.fromRGB(150, 255, 50) },
+		{ "green", Color3.fromRGB(50, 255, 50) },
+		{ "cyan", Color3.fromRGB(50, 255, 255) },
+		{ "blue", Color3.fromRGB(50, 100, 255) },
+		{ "purple", Color3.fromRGB(180, 50, 255) },
+		{ "magenta", Color3.fromRGB(255, 50, 150) },
+		{ "pink", Color3.fromRGB(255, 100, 200) },
+		{ "brown", Color3.fromRGB(150, 75, 0) },
+		{ "gray", Color3.fromRGB(150, 150, 150) },
+	}
+
+	local function getBlockColor(block)
+		local blockName = block.Name
 		if cachedColors[blockName] then
 			return cachedColors[blockName]
 		end
@@ -16175,9 +16247,26 @@ run(function()
 			end
 		end
 
-		local defaultColor = Color3.fromRGB(150, 150, 150)
-		cachedColors[blockName] = defaultColor
-		return defaultColor
+		if lowerName:find("_", 1, true) then
+			for _, pair in colorWords do
+				if lowerName:find(pair[1], 1, true) then
+					cachedColors[blockName] = pair[2]
+					return pair[2]
+				end
+			end
+		end
+
+		local color = block.Color
+		if color.R > 0.9 and color.G > 0.9 and color.B > 0.9 then
+			for _, child in block:GetChildren() do
+				if child:IsA("Decal") then
+					color = child.Color3
+					break
+				end
+			end
+		end
+		cachedColors[blockName] = color
+		return color
 	end
 
 	local function cleanupDeadReferences()
@@ -16229,7 +16318,7 @@ run(function()
 		end
 
 		block.Material = Enum.Material.SmoothPlastic
-		block.Color = getBlockColor(block.Name)
+		block.Color = getBlockColor(block)
 
 		for _, child in block:GetChildren() do
 			if child:IsA("Texture") or child:IsA("Decal") or child:IsA("SurfaceAppearance") then
@@ -16323,24 +16412,51 @@ run(function()
 		       obj:IsA("Seat")
 	end
 
+	local function drainQueue()
+		workerActive = true
+		task.spawn(function()
+			local processed = 0
+			while queueIndex <= #pendingBlocks do
+				local job = pendingBlocks[queueIndex]
+				queueIndex += 1
+				local fn, obj = job[1], job[2]
+				if obj and obj.Parent then
+					fn(obj)
+				end
+				processed += 1
+				if processed % 50 == 0 then
+					task.wait()
+				end
+			end
+			table.clear(pendingBlocks)
+			queueIndex = 1
+			workerActive = false
+		end)
+	end
+
+	local function enqueueBlock(fn, obj)
+		pendingBlocks[#pendingBlocks + 1] = {fn, obj}
+		if not workerActive then
+			drainQueue()
+		end
+	end
+
 	local function processExistingBlocks(simplify)
 		local descendants = workspace:GetDescendants()
 
-		task.spawn(function()
-			for i, obj in descendants do
-				if isTargetBlock(obj) then
-					if simplify then
-						simplifyBlock(obj)
-					else
-						restoreBlock(obj)
-					end
+		for _, obj in descendants do
+			if isTargetBlock(obj) then
+				if simplify then
+					enqueueBlock(simplifyBlock, obj)
+				else
+					enqueueBlock(restoreBlock, obj)
 				end
 			end
+		end
 
-			if not simplify then
-				cleanupDeadReferences()
-			end
-		end)
+		if not simplify then
+			cleanupDeadReferences()
+		end
 	end
 
 	local function setupBlockMonitor(simplify)
@@ -16353,11 +16469,7 @@ run(function()
 
 		local mainConn = workspace.DescendantAdded:Connect(function(descendant)
 			if isTargetBlock(descendant) then
-				task.defer(function()
-					if descendant and descendant.Parent then
-						simplifyBlock(descendant)
-					end
-				end)
+				enqueueBlock(simplifyBlock, descendant)
 			end
 		end)
 

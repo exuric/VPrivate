@@ -4074,12 +4074,24 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 						end
 						local isFireball = projmeta.projectile == 'fireball'
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeed * Prediction.Value * charge, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+						local projSpeedTotal = projSpeed * Prediction.Value * charge
+						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+						local dir
 						if calc and travelTime and travelTime <= lifetime then
-							local dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeed * charge)
+							dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeed * charge)
 							local clear = prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck)
-							if not clear and isFireball and FireballSplash.Enabled and (getLanding(newlook.Position, dir, gravity, travelTime) - targetPos).Magnitude <= SplashRadius.Value then
-								clear = true
+							if not clear and isFireball and FireballSplash.Enabled then
+								local feetCalc, _, feetTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos - Vector3.new(0, 2.8, 0), targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								if feetCalc and feetTime and feetTime <= lifetime then
+									local feetDir = CFrame.new(newlook.Position, feetCalc).LookVector * (projSpeed * charge)
+									if prediction.IsTrajectoryClear(newlook.Position, feetDir, gravity, feetTime, rayCheck) then
+										dir = feetDir
+										clear = true
+									end
+								end
+								if not clear and (getLanding(newlook.Position, dir, gravity, travelTime) - (targetPos + targetVel * travelTime)).Magnitude <= SplashRadius.Value then
+									clear = true
+								end
 							end
 							if clear then
 								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
@@ -4098,7 +4110,7 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 							local dist = (targetPos - newlook.p).Magnitude
 							local tt = math.clamp(dist / (projSpeed * charge), 0.1, 3)
 							if tt <= lifetime + 0.5 then
-								local aimPoint = targetPos + Vector3.new(0, 0.5 * gravity * tt * tt, 0)
+								local aimPoint = targetPos + targetVel * tt + Vector3.new(0, 0.5 * gravity * tt * tt, 0)
 								return {
 									initialVelocity = CFrame.lookAt(newlook.p, aimPoint).LookVector * (projSpeed * charge),
 									positionFrom = offsetpos,

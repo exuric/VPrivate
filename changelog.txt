@@ -1,6 +1,7 @@
 +Added ping profiles to ProjectileAimbot - Low, Medium and High apply the best settings automatically, Custom keeps the defaults
 +Added Fireball Splash with a splash radius to ProjectileAimbot - fireballs now always land on the enemy
 +Added Velocity Lerp to ProjectileAimbot and a Neck aim part
+~Fireball aimbot leads running targets, aims at their feet and uses the explosion splash to guarantee hits
 ~Fireball Splash hides its radius bar until you enable it
 ~Head aim now locks onto the head with a stable velocity reference
 ~Pinned modules can open their settings from the pinned bar and the module tab

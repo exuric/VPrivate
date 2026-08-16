@@ -1,3 +1,5 @@
++Added Velocity Lerp, Fireball Splash, Splash Radius and Trajectory settings to ProjectileAimbot
+~ProjectileAimbot Center part aims at the body for reliable splash damage
 -Removed the FPS Boost tab and its modules
 ~Fps Unlocker moved back to the Utility tab
 ~Pinned tab now shows the module with its settings under it

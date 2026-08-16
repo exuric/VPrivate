@@ -58,8 +58,9 @@ local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
 getgenv().LarpReadRoot = ROOT
 
+local LARPWATER = '--LARP:'..(pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')..'\n'
 local function downloadFile(path, func)
-	if not isfile(path) then
+	if not isfile(path) or (not shared.LarpDeveloper and readfile(path):sub(1, #LARPWATER) ~= LARPWATER) then
 		local suc, res = pcall(function()
 			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
 		end)
@@ -67,7 +68,7 @@ local function downloadFile(path, func)
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res
+			res = LARPWATER..res
 		end
 		writefile(path, res)
 	end

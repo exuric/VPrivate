@@ -26,9 +26,11 @@ downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(ga
 
 local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
+local SELFCOMMIT = '987ca82152b44130619a944b0c5218b2f97f39f3'
+local LARPWATER = '--LARP:'..SELFCOMMIT..'\n'
 
 local function downloadFile(path, func)
-	if not isfile(path) then
+	if not isfile(path) or readfile(path):sub(1, #LARPWATER) ~= LARPWATER then
 		if not license.Closet then
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end
@@ -39,7 +41,7 @@ local function downloadFile(path, func)
 			error(res)
 		end
 		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res
+			res = LARPWATER..res
 		end
 		writefile(path, res)
 		downloader.Text = ''
@@ -69,7 +71,6 @@ for _, folder in {'LarpV4', 'LarpV4/games', 'LarpV4/profiles', 'LarpV4/assets', 
 	end
 end
 
-local SELFCOMMIT = '987ca82152b44130619a944b0c5218b2f97f39f3'
 if not shared.LarpDeveloper then
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	if stored ~= SELFCOMMIT then

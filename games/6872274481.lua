@@ -3286,7 +3286,7 @@ run(function()
 	local objects, set = {}
 	
 	local function createHitbox(ent)
-		if ent.Targetable and ent.Player then
+		if ent.Targetable and ent.Player and not objects[ent] then
 			local hitbox = Instance.new('Part')
 			hitbox.Size = Vector3.new(3, 6, 3) + Vector3.one * (Expand.Value / 5)
 			hitbox.Position = ent.RootPart.Position
@@ -3311,6 +3311,11 @@ run(function()
 					set = true
 				else
 					HitBoxes:Clean(entitylib.Events.EntityAdded:Connect(createHitbox))
+					HitBoxes:Clean(entitylib.Events.LocalAdded:Connect(function()
+						for _, ent in entitylib.List do
+							createHitbox(ent)
+						end
+					end))
 					HitBoxes:Clean(entitylib.Events.EntityRemoving:Connect(function(ent)
 						if objects[ent] then
 							objects[ent]:Destroy()

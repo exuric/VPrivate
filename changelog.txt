@@ -6,6 +6,8 @@
 ~Head aim now locks onto the head with a stable velocity reference
 ~Pinned modules can open their settings from the pinned bar and the module tab
 ~Target info overlay now opens with the new GUI
+~Modules now carry over to new games and get restored right after joining - no more resets
+~Hitboxes now appear reliably every game, even when joining mid-match
 -Removed the FPS Boost tab and its modules
 ~Fixed files staying outdated by verifying every file version on load
 ~Fixed update lag that could mix old and new files - downloads now use a pinned commit

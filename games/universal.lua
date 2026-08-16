@@ -6633,29 +6633,6 @@ run(function()
 end)
 
 run(function()
-	local QualityCapper
-
-	QualityCapper = larp.Categories.Utility:CreateModule({
-		Name = 'Quality Capper',
-		Function = function(callback)
-			if not sethiddenproperty then return end
-			pcall(function()
-				local renderSettings = game:GetService('RenderSettings')
-				if callback then
-					sethiddenproperty(renderSettings, 'QualityLevel', 1)
-					sethiddenproperty(renderSettings, 'AntialiasingMode', 0)
-				else
-					sethiddenproperty(renderSettings, 'QualityLevel', 10)
-					sethiddenproperty(renderSettings, 'AntialiasingMode', 2)
-				end
-			end)
-		end,
-		Tooltip = 'Locks the game to the lowest quality with no antialiasing for more fps'
-	})
-	optimizeModules[#optimizeModules + 1] = QualityCapper
-end)
-
-run(function()
 	local TextureCuller
 	local Radius
 	local connections = {}

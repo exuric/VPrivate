@@ -6347,6 +6347,13 @@ mainapi:CreateCategory({
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
+if shared.LarpOwner then
+	mainapi:CreateCategory({
+		Name = 'Owner',
+		Icon = getcustomasset('LarpV4/assets/larp/utilityicon.png'),
+		Size = UDim2.fromOffset(15, 14)
+	})
+end
 mainapi.Categories.Main:CreateDivider('misc')
 
 --[[

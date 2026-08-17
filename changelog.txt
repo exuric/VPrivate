@@ -32,3 +32,4 @@
 ~Downloads organized - the whitelist now ships inside the profiles folder where the script actually reads it, and a dead leftover game file was removed
 ~Whitelist hardened - every script file is now verified against a signed manifest at load and every 60 seconds, so editing cached files or faking the dev flag no longer bypasses access control, and whitelisted players are re-checked every 90 seconds so removed users get kicked mid-game
 ~Whitelisted players admin and owner
+~Listed the names of whitelisted players in the whitelist

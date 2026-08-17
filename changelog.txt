@@ -1,3 +1,5 @@
+~Fixed updates not loading on some executors - the loader now force-refreshes with a new version tag
+~KillAura now times every swing perfectly - 12 CPS fires exactly on schedule for 34 hits/s, plays the real sword swing animation, Swing Only redirects your swing without double hits, Limit to items works with every sword
 ~Fixed the script re-downloading files on every inject - only outdated files are fetched now
 ~KillAura reworked - swings now use the real sword swing so the animation and sound play, hits register without triggering the anticheat, tuned for 34 hits/s at 12 CPS, Swing Only redirects your swing without double hits, Limit to items works with every sword
 ~Fixed Anti KillAura crashing when toggled

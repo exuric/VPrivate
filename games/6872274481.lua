@@ -3394,7 +3394,6 @@ run(function()
 	local MaxAngle
 	local CPS
 	local SwingTime
-	local KillauraNotified
 
 	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
 	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
@@ -3436,16 +3435,38 @@ run(function()
 		end
 	end
 
+	local swingAnimId
+
+	local function playSwing()
+		if swingAnimId == nil then
+			swingAnimId = false
+			pcall(function()
+				local at = bedwars.AnimationType
+				local id
+				if at.SWORD_SWING then
+					id = at.SWORD_SWING
+				else
+					for name, v in at do
+						if type(name) == 'string' and (name:find('SWORD') or name:find('SWING')) then
+							id = v
+							break
+						end
+					end
+				end
+				if id then
+					swingAnimId = bedwars.GameAnimationUtil:getAssetId(id)
+				end
+			end)
+		end
+		if swingAnimId then
+			pcall(bedwars.GameAnimationUtil.playAnimation, bedwars.GameAnimationUtil, lplr, swingAnimId, {fadeInTime = 0.01})
+		end
+	end
+
 	Killaura = larp.Categories.Blatant:CreateModule({
 		Name = 'KillAura',
 		Function = function(callback)
 			if callback then
-				if not KillauraNotified then
-					KillauraNotified = true
-					task.spawn(function()
-						pcall(notif, 'KillAura', 'KillAura is bugged', 4, 'alert')
-					end)
-				end
 				SwordController = bedwars.SwordController
 				realSwingInRegion = SwordController.swingSwordInRegion
 				local ok, r = pcall(function()
@@ -3479,19 +3500,13 @@ SwordController.swingSwordInRegion = function(self, ...)
 							if target and target.RootPart and target.RootPart.Parent then
 								store.KillauraTarget = target
 								if not SwingOnly.Enabled then
-									local now = tick()
-									if now - lastSwing >= math.max(0.05, math.min(1 / CPS.Value, SwingTime.Value)) then
-										lastSwing = now
-										local root = entitylib.character.RootPart
-										local oldcf = root.CFrame
-										root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
-										local ok = pcall(realSwingInRegion, SwordController)
-										root.CFrame = oldcf
-										if not ok and swordHitRemote then
-											pcall(function()
-												swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = root.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
-											end)
-										end
+									playSwing()
+									if swordHitRemote then
+										pcall(function()
+											swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = entitylib.character.RootPart.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
+										end)
+									else
+										realSwingInRegion(SwordController)
 									end
 								end
 							end
@@ -3501,7 +3516,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 						store.KillauraTarget = nil
 					end
 
-					task.wait()
+					task.wait(math.max(0.05, math.min(1 / CPS.Value, SwingTime.Value)))
 				until not Killaura.Enabled
 			else
 				store.KillauraTarget = nil

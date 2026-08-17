@@ -3435,32 +3435,9 @@ run(function()
 		end
 	end
 
-	local swingAnimId
-
 	local function playSwing()
-		if swingAnimId == nil then
-			swingAnimId = false
-			pcall(function()
-				local at = bedwars.AnimationType
-				local id
-				if at.SWORD_SWING then
-					id = at.SWORD_SWING
-				else
-					for name, v in at do
-						if type(name) == 'string' and (name:find('SWORD') or name:find('SWING')) then
-							id = v
-							break
-						end
-					end
-				end
-				if id then
-					swingAnimId = bedwars.GameAnimationUtil:getAssetId(id)
-				end
-			end)
-		end
-		if swingAnimId then
-			pcall(bedwars.GameAnimationUtil.playAnimation, bedwars.GameAnimationUtil, lplr, swingAnimId, {fadeInTime = 0.01})
-		end
+		pcall(bedwars.GameAnimationUtil.playAnimation, bedwars.GameAnimationUtil, lplr.Character, bedwars.AnimationType.SWORD_SWING)
+		pcall(bedwars.ViewmodelController.playAnimation, bedwars.ViewmodelController, bedwars.AnimationType.FP_SWING_SWORD)
 	end
 
 	Killaura = larp.Categories.Blatant:CreateModule({
@@ -3491,6 +3468,9 @@ SwordController.swingSwordInRegion = function(self, ...)
 			end
 				swingRadius = AttackRange.Value / 3
 				setSwingRadius()
+				if CPS.Value == 12 and SwingTime.Value == 0.11 then
+					pcall(CPS.SetValue, CPS, 13.6)
+				end
 
 				repeat
 					local target
@@ -3592,12 +3572,12 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Name = 'Attacks per second (CPS)',
 		Min = 1,
 		Max = 20,
-		Default = 12,
+		Default = 13.6,
 		Decimal = 10,
 		Suffix = function(val)
 			return 'cps'
 		end,
-		Tooltip = 'Swings attempted per second.\nDefault 12 keeps 34 hits/s consistent. Raise if it dips to 33'
+		Tooltip = 'Swings attempted per second.\nDefault 13.6 saturates the 34 hits/s cap.\nGoing higher just wastes swings'
 	})
 end)
 

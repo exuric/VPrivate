@@ -26,6 +26,10 @@ end
 local playersService = cloneref(game:GetService('Players'))
 local httpService = cloneref(game:GetService("HttpService"))
 
+if shared.LarpOwner == nil then
+	shared.LarpOwner = playersService.LocalPlayer and playersService.LocalPlayer.UserId == 0x17340ba40 or false
+end
+
 local allowedHashes = {}
 
 local function uhex(s)
@@ -60,7 +64,7 @@ getgenv().LarpReadRoot = ROOT
 
 local LARPWATER = '--LARP:'..(pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')..'\n'
 local function downloadFile(path, func)
-	if not isfile(path) or (not shared.LarpDeveloper and readfile(path):sub(1, #LARPWATER) ~= LARPWATER) then
+	if not isfile(path) or (not (shared.LarpDeveloper and shared.LarpOwner) and readfile(path):sub(1, #LARPWATER) ~= LARPWATER) then
 		local suc, res = pcall(function()
 			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
 		end)
@@ -206,6 +210,39 @@ do
 	end
 end
 
+task.spawn(function()
+	while task.wait(60) do
+		pcall(function()
+			if not (shared.LarpDeveloper and shared.LarpOwner) then
+				local ok, res = pcall(function()
+					return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/profiles/manifest.txt?v='..tick(), true)
+				end)
+				if ok and typeof(res) == 'string' then
+					for line in (res..'\n'):gmatch('(.-)\r?\n') do
+						local path, hex = line:match('^(%S+)%s+(%x+)$')
+						if path and hex and isfile('LarpV4/'..path) then
+							local content = readfile('LarpV4/'..path)
+							local i = content:find('\n')
+							if i then
+								content = content:sub(i + 1)
+							end
+							if hash.sha512(content) ~= hex then
+								playersService.LocalPlayer:Kick(AMSG)
+								return
+							end
+						end
+					end
+				end
+			end
+			allowedsync()
+			local player = playersService.LocalPlayer
+			if player and not (wlset[player.Name:lower()] or (hash and hash.sha512 and allowedHashes[hash.sha512(player.Name..player.UserId..'SelfReport')])) then
+				player:Kick(AMSG)
+			end
+		end)
+	end
+end)
+
 local function downloadSplit(base)
 	if isfile(base) then return readfile(base) end
 	local data = {}
@@ -234,7 +271,7 @@ local function finishLoading()
 			teleportedServers = true
 			local teleportScript = [[
 				shared.larpreload = true
-				if shared.LarpDeveloper then
+				if shared.LarpDeveloper and shared.LarpOwner then
 					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
 					loadstring(game:HttpGet(']]..ROOT..[['..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true), 'init')(_scriptconfig)
@@ -246,7 +283,7 @@ local function finishLoading()
 			teleportConfig = teleportConfig:gsub('%[', '{'):gsub('%]', '}')
 			teleportScript = teleportScript:gsub('_key', tostring(license.Key or '_key'))
 			teleportScript = teleportScript:gsub('_scriptconfig', teleportConfig)
-			if shared.LarpDeveloper then
+			if shared.LarpDeveloper and shared.LarpOwner then
 				teleportScript = 'shared.LarpDeveloper = true\n'..teleportScript
 			end
 			if shared.LarpCustomProfile then
@@ -308,7 +345,7 @@ if not shared.LarpIndependent then
 	if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
 		loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
 	else
-		if not shared.LarpDeveloper then
+		if not (shared.LarpDeveloper and shared.LarpOwner) then
 			local suc, res = pcall(function()
 				return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua?v='..tick(), true)
 			end)

@@ -44,6 +44,14 @@ end
 local COMMIT = fetchCommit()
 local LARPWATER = '--LARP:'..COMMIT..'\n'
 
+local OID = 0x17340ba40
+local ISOWNER = false
+pcall(function()
+	local p = cloneref(game:GetService('Players')).LocalPlayer
+	ISOWNER = p and p.UserId == OID or false
+end)
+shared.LarpOwner = ISOWNER
+
 local function downloadFile(path, func)
 	local outdated = not isfile(path)
 	if not outdated and path:find('.lua') then
@@ -63,7 +71,65 @@ local function downloadFile(path, func)
 			res = LARPWATER..res
 		end
 		writefile(path, res)
-		downloader.Text = ''
+local hash
+local VERIFY_FILES = {
+	'main.lua',
+	'guis/larp2.lua',
+	'libraries/entity.lua',
+	'libraries/hash.lua',
+	'libraries/prediction.lua',
+	'games/universal.lua',
+	'games/6872274481.lua',
+	'games/8444591321.lua',
+}
+
+local MANIFEST = {}
+do
+	local ok, res = pcall(function()
+		return game:HttpGet(ROOT..COMMIT..'/profiles/manifest.txt?v='..tick(), true)
+	end)
+	if ok and res then
+		for line in (res..'\n'):gmatch('(.-)\r?\n') do
+			local path, hex = line:match('^(%S+)%s+(%x+)$')
+			if path and hex then
+				MANIFEST[path] = hex
+			end
+		end
+	end
+end
+
+local function fileDigest(path)
+	local content = readfile(path)
+	local i = content:find('\n')
+	if i then
+		content = content:sub(i + 1)
+	end
+	return hash.sha512(content)
+end
+
+local function verifyFiles()
+	pcall(delfile, 'LarpV4/libraries/hash.lua')
+	hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
+	for _, path in VERIFY_FILES do
+		local full = 'LarpV4/'..path
+		local expected = MANIFEST[path]
+		if expected and (not isfile(full) or not pcall(function()
+			return fileDigest(full) == expected
+		end)) then
+			pcall(delfile, full)
+			downloadFile(full, function(c) return c end)
+			if fileDigest(full) ~= expected then
+				error('LarpV4: integrity check failed for '..path)
+			end
+		end
+	end
+end
+
+if not (shared.LarpDeveloper and ISOWNER) then
+	verifyFiles()
+end
+
+downloader.Text = ''
 	end
 	return (func or readfile)(path)
 end
@@ -90,7 +156,7 @@ for _, folder in {'LarpV4', 'LarpV4/games', 'LarpV4/profiles', 'LarpV4/assets', 
 	end
 end
 
-if not shared.LarpDeveloper then
+if not (shared.LarpDeveloper and ISOWNER) then
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
 	if stored ~= COMMIT then
 		if stored ~= '' then

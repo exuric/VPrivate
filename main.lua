@@ -26,9 +26,7 @@ end
 local playersService = cloneref(game:GetService('Players'))
 local httpService = cloneref(game:GetService("HttpService"))
 
-if shared.LarpOwner == nil then
-	shared.LarpOwner = playersService.LocalPlayer and playersService.LocalPlayer.UserId == 0x17340ba40 or false
-end
+shared.LarpOwner = playersService.LocalPlayer and playersService.LocalPlayer.UserId == 0x17340ba40 or false
 
 local allowedHashes = {}
 
@@ -81,6 +79,7 @@ end
 
 local hash
 local wlset = {}
+local blackset = {}
 local function wlseed()
 	local k2 = uhex('4433764b337935')
 	return {
@@ -131,6 +130,18 @@ local function wlfetch()
 end
 
 local function wlsync()
+	pcall(function()
+		if isfile('LarpV4/profiles/blacklist.json') then
+			local d = httpService:JSONDecode(readfile('LarpV4/profiles/blacklist.json'))
+			if type(d) == 'table' then
+				for _, name in d do
+					if type(name) == 'string' then
+						blackset[name:lower()] = true
+					end
+				end
+			end
+		end
+	end)
 	local msgs = wlfetch()
 	if not msgs then
 		local list = {}
@@ -166,9 +177,13 @@ local function wlsync()
 						adds[a1:lower()] = {name = a1, level = lvl}
 					elseif c:lower() == dec('275508') and a1 then
 						if adds[a1:lower()] then adds[a1:lower()] = nil end
-					elseif c:lower() == dec('3155175637') then
-						table.clear(adds)
-					end
+elseif c:lower() == dec('3155175637') then
+					table.clear(adds)
+				elseif c:lower() == '+'..dec('215c055028') and a1 then
+					blackset[a1:lower()] = true
+				elseif c:lower() == '-'..dec('215c055028') and a1 then
+					blackset[a1:lower()] = nil
+				end
 				end
 			end
 		end
@@ -188,6 +203,14 @@ local function wlsync()
 			local sig = hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = list}))
 			writefile('LarpV4/profiles/whitelist.json', httpService:JSONEncode({users = list, sig = sig}))
 		end
+	end)
+	pcall(function()
+		local names = {}
+		for name in blackset do
+			table.insert(names, name)
+		end
+		table.sort(names)
+		writefile('LarpV4/profiles/blacklist.json', httpService:JSONEncode(names))
 	end)
 end
 
@@ -241,6 +264,11 @@ end
 
 do
 	local player = playersService.LocalPlayer
+	if player and blackset[player.Name:lower()] then
+		crashClient()
+		player:Kick(AMSG)
+		return
+	end
 	local own = player and wlset[player.Name:lower()] or nil
 	local h = player and hash and hash.sha512(player.Name..player.UserId..'SelfReport') or nil
 	if player and not (own or (h and allowedHashes[h])) then
@@ -259,23 +287,58 @@ local function ownerPost(content)
 		httpService:PostAsync(whurl(), httpService:JSONEncode({content = content}), Enum.HttpContentType.ApplicationJson)
 	end)
 end
+local function showNotify(text)
+	task.spawn(function()
+		local gui = Instance.new('ScreenGui')
+		gui.Name = 'LarpNotify'
+		gui.ResetOnSpawn = false
+		gui.IgnoreGuiInset = true
+		gui.Parent = playersService.LocalPlayer and playersService.LocalPlayer.PlayerGui or cloneref(game:GetService('CoreGui'))
+		local label = Instance.new('TextLabel')
+		label.Size = UDim2.new(1, 0, 0, 30)
+		label.Position = UDim2.new(0, 0, 1, -40)
+		label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		label.BackgroundTransparency = 0.4
+		label.BorderSizePixel = 0
+		label.Text = text
+		label.TextColor3 = Color3.new(1, 1, 1)
+		label.TextSize = 16
+		label.Font = Enum.Font.Gotham
+		label.Parent = gui
+		task.wait(5)
+		gui:Destroy()
+	end)
+end
 local player = playersService.LocalPlayer
 task.spawn(function()
 	local sent = false
-	while player do
+	while player and not shared.larpreloading do
 		task.wait(sent and 45 or 5)
 		sent = true
 		ownerPost(dec('225c0d4526')..' '..player.Name..'|'..player.UserId..'|'..player.DisplayName)
 	end
 end)
 task.spawn(function()
-	while player do
+	while player and not shared.larpreloading do
 		task.wait(30)
 		local msgs = wlfetch()
 		if msgs then
 			for _, m in msgs do
 				if type(m) == 'table' and type(m.content) == 'string' then
 					for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
+						local word = line:match('^%s*(%S+)')
+						if word == dec('3155085c2254') then
+							shared.larpreloading = true
+							pcall(function()
+								loadstring(game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true), 'init')(license)
+							end)
+							return
+						elseif word == dec('2d5f105a2549') then
+							local text = line:match('^%s*%S+%s+(.+)$')
+							if text then
+								showNotify(text)
+							end
+						end
 						local name, uid = line:match('^%s*'..dec('28590758')..'%s+(%S+)%s+(%d+)')
 						if name and uid and name:lower() == player.Name:lower() and uid == tostring(player.UserId) then
 							crashClient()
@@ -316,6 +379,11 @@ task.spawn(function()
 			end
 			allowedsync()
 			local player = playersService.LocalPlayer
+			if player and blackset[player.Name:lower()] then
+				crashClient()
+				player:Kick(AMSG)
+				return
+			end
 			if player and not (wlset[player.Name:lower()] or (hash and hash.sha512 and allowedHashes[hash.sha512(player.Name..player.UserId..'SelfReport')])) then
 				crashClient()
 				player:Kick(AMSG)

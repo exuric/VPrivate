@@ -1,3 +1,4 @@
+~KillAura now plays the real sword swing animation and swing sound on every swing - swings fire at exactly 15 CPS (the precise scheduler step) to always hit 34 hits/s, and the CPS and Swing time settings auto-tune on enable
 ~KillAura now fires at 13.6 CPS to hit the 34 hits/s cap exactly - the real sword swing animation and first-person viewmodel swing play on every hit, and old settings auto-upgrade to the 34 config
 ~Fixed updates not loading on some executors - the loader now force-refreshes with a new version tag
 ~KillAura now times every swing perfectly - 12 CPS fires exactly on schedule for 34 hits/s, plays the real sword swing animation, Swing Only redirects your swing without double hits, Limit to items works with every sword

@@ -298,6 +298,17 @@ local function getSword()
 end
 getgenv().getSword = getSword
 
+local function getSwordTool()
+	local backpack = lplr.Backpack
+	if backpack then
+		for _, t in backpack:GetChildren() do
+			if t:IsA('Tool') and bedwars.ItemMeta[t.Name] and bedwars.ItemMeta[t.Name].sword then
+				return t
+			end
+		end
+	end
+end
+
 local function getTool(breakType)
 	local bestTool, bestToolSlot, bestToolDamage = nil, nil, 0
 	for slot, item in store.inventory.inventory.items do
@@ -3435,15 +3446,56 @@ run(function()
 		end
 	end
 
-	local lastVisualSwing = 0
+	local swingSoundId = ''
 
-	local function swingVisual()
-		if tick() - lastVisualSwing >= 0.3 then
-			lastVisualSwing = tick()
-			if SwordController then
-				pcall(SwordController.swingSwordInRegion, SwordController)
+	local function playSwingSound()
+		local id = swingSoundId
+		if id == '' and bedwars.SoundList then
+			for k, v in pairs(bedwars.SoundList) do
+				local ks = tostring(k):upper()
+				if ks:find('SWORD') and ks:find('SWING') then
+					id = typeof(v) == 'string' and v or tostring(v)
+					break
+				end
+			end
+			if id == '' then
+				for k, v in pairs(bedwars.SoundList) do
+					local ks = tostring(k):upper()
+					if ks:find('SWING') or ks:find('WHOOSH') then
+						id = typeof(v) == 'string' and v or tostring(v)
+						break
+					end
+				end
 			end
 		end
+		if id == '' and bedwars.SwordController and bedwars.SwordController.playSwordEffect then
+			local found = {}
+			local i = 1
+			while true do
+				local ok, c = pcall(debug.getconstant, bedwars.SwordController.playSwordEffect, i)
+				if not ok or c == nil then break end
+				if type(c) == 'string' and c:match('^rbxassetid://%d+$') then
+					found[#found + 1] = c
+				end
+				i = i + 1
+			end
+			if #found == 1 then id = found[1] end
+		end
+		if id == '' then return end
+		pcall(function()
+			local root = lplr.Character and lplr.Character:FindFirstChild('HumanoidRootPart')
+			if root then
+				bedwars.SoundManager:playSound(id, root.Position)
+			else
+				bedwars.SoundManager:playSound(id)
+			end
+		end)
+	end
+
+	local function swingVisual()
+		pcall(bedwars.GameAnimationUtil.playAnimation, bedwars.GameAnimationUtil, lplr.Character, bedwars.AnimationType.SWORD_SWING)
+		pcall(bedwars.ViewmodelController.playAnimation, bedwars.ViewmodelController, bedwars.AnimationType.FP_SWING_SWORD)
+		playSwingSound()
 	end
 
 	Killaura = larp.Categories.Blatant:CreateModule({
@@ -3491,8 +3543,12 @@ SwordController.swingSwordInRegion = function(self, ...)
 								if not SwingOnly.Enabled then
 									swingVisual()
 									if swordHitRemote then
+										local weapon = store.hand.tool
+										if weapon and store.hand.toolType ~= 'sword' then
+											weapon = getSwordTool() or weapon
+										end
 										pcall(function()
-											swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = entitylib.character.RootPart.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
+											swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = entitylib.character.RootPart.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = weapon})
 										end)
 									else
 										realSwingInRegion(SwordController)
@@ -3517,7 +3573,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 				SwordController = nil
 			end
 		end,
-		Tooltip = 'Attack players around you\nwithout aiming at them.'
+		Tooltip = 'Attack players around you without aiming'
 	})
 	Targets = Killaura:CreateTargets({
 		Players = true,
@@ -3525,14 +3581,14 @@ SwordController.swingSwordInRegion = function(self, ...)
 	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
-		Tooltip = 'Only attacks when a sword is held.\nOff: attacks with anything held (or nothing)'
+		Tooltip = 'Only attacks when sword is held'
 	})
 	SwingOnly = Killaura:CreateToggle({
 		Name = 'Swing only',
 		Function = function()
 			setSwingRadius()
 		end,
-		Tooltip = 'Only attacks when you are swinging.\nYour swing gets redirected to the target'
+		Tooltip = 'Only attacks when you swing'
 	})
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
@@ -3542,7 +3598,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
-		Tooltip = 'Range at which the killaura starts swinging\n(Not when you start attacking)'
+		Tooltip = 'Range where killaura swings'
 	})
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
@@ -3557,14 +3613,14 @@ SwordController.swingSwordInRegion = function(self, ...)
 			swingRadius = val / 3
 			setSwingRadius()
 		end,
-		Tooltip = 'Range at which attacks land'
+		Tooltip = 'Range where attacks land'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',
 		Min = 1,
 		Max = 360,
 		Default = 360,
-		Tooltip = 'Maximum angle between your view and the target.\n360 hits targets behind you'
+		Tooltip = 'Maximum angle between your view and the target'
 	})
 	SwingTime = Killaura:CreateSlider({
 		Name = 'Swing time',
@@ -3575,7 +3631,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Suffix = function(val)
 			return 's'
 		end,
-		Tooltip = 'Cap on the delay between swings'
+		Tooltip = 'Delay between swings'
 	})
 	CPS = Killaura:CreateSlider({
 		Name = 'Attacks per second (CPS)',
@@ -3586,7 +3642,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Suffix = function(val)
 			return 'cps'
 		end,
-		Tooltip = 'Swings attempted per second.\nDefault 15 saturates the 34 hits/s cap.\nThe real swing animation and sound play on every swing'
+		Tooltip = 'Swings attempted per second'
 	})
 end)
 
@@ -3713,7 +3769,7 @@ run(function()
 				table.clear(touched)
 			end
 		end,
-		Tooltip = 'Makes your character invisible to sword swing regions and\nprojectiles - killauras that use them will miss you.\nDirect-fire killauras can still land hits (server-side)'
+		Tooltip = 'Stops swing and projectile killauras\nfrom hitting you. Direct-fire killauras\ncan still hit (server side)'
 	})
 end)
 

@@ -27,4 +27,4 @@
 ~Hitboxes now appear reliably every game, even when joining mid-match
 -Removed the FPS Boost tab and its modules
 ~Fixed files staying outdated by verifying every file version on load
-~Fixed update lag that could mix old and new files - downloads now use a pinned commit
+~Fixed update lag that could mix old and new files - downloads now use a pinned commit~KillAura now plays the real sword swing whoosh on every hit at 15 CPS - the swing animation and sound run 1:1 with hits, the swing sound comes straight from the game's own sound system, and if a non-sword is in hand it swaps to the best backpack sword automatically

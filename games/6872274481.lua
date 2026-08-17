@@ -3435,9 +3435,15 @@ run(function()
 		end
 	end
 
-	local function playSwing()
-		pcall(bedwars.GameAnimationUtil.playAnimation, bedwars.GameAnimationUtil, lplr.Character, bedwars.AnimationType.SWORD_SWING)
-		pcall(bedwars.ViewmodelController.playAnimation, bedwars.ViewmodelController, bedwars.AnimationType.FP_SWING_SWORD)
+	local lastVisualSwing = 0
+
+	local function swingVisual()
+		if tick() - lastVisualSwing >= 0.3 then
+			lastVisualSwing = tick()
+			if SwordController then
+				pcall(SwordController.swingSwordInRegion, SwordController)
+			end
+		end
 	end
 
 	Killaura = larp.Categories.Blatant:CreateModule({
@@ -3468,8 +3474,11 @@ SwordController.swingSwordInRegion = function(self, ...)
 			end
 				swingRadius = AttackRange.Value / 3
 				setSwingRadius()
-				if CPS.Value == 12 and SwingTime.Value == 0.11 then
-					pcall(CPS.SetValue, CPS, 13.6)
+				if CPS.Value < 15 then
+					pcall(CPS.SetValue, CPS, 15)
+				end
+				if SwingTime.Value < 0.11 then
+					pcall(SwingTime.SetValue, SwingTime, 0.11)
 				end
 
 				repeat
@@ -3480,7 +3489,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 							if target and target.RootPart and target.RootPart.Parent then
 								store.KillauraTarget = target
 								if not SwingOnly.Enabled then
-									playSwing()
+									swingVisual()
 									if swordHitRemote then
 										pcall(function()
 											swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = entitylib.character.RootPart.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
@@ -3572,12 +3581,12 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Name = 'Attacks per second (CPS)',
 		Min = 1,
 		Max = 20,
-		Default = 13.6,
+		Default = 15,
 		Decimal = 10,
 		Suffix = function(val)
 			return 'cps'
 		end,
-		Tooltip = 'Swings attempted per second.\nDefault 13.6 saturates the 34 hits/s cap.\nGoing higher just wastes swings'
+		Tooltip = 'Swings attempted per second.\nDefault 15 saturates the 34 hits/s cap.\nThe real swing animation and sound play on every swing'
 	})
 end)
 

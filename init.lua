@@ -30,7 +30,11 @@ local SELFCOMMIT = '15d6f08619c5b6db6bc3f858306bd3d9f8c277f7'
 local LARPWATER = '--LARP:'..SELFCOMMIT..'\n'
 
 local function downloadFile(path, func)
-	if not isfile(path) or readfile(path):sub(1, #LARPWATER) ~= LARPWATER then
+	local outdated = not isfile(path)
+	if not outdated and path:find('.lua') then
+		outdated = readfile(path):sub(1, #LARPWATER) ~= LARPWATER
+	end
+	if outdated then
 		if not license.Closet then
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end

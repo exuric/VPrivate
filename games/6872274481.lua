@@ -3432,7 +3432,7 @@ run(function()
 
 	local function setSwingRadius()
 		if realSwingInRegion then
-			debug.setconstant(realSwingInRegion, 6, swingRadius)
+			debug.setconstant(realSwingInRegion, 6, (SwingOnly.Enabled and 3.8 or swingRadius))
 		end
 	end
 
@@ -3452,42 +3452,45 @@ run(function()
 					return bedwars.Handler:Get('SwordHit').Remote.instance
 				end)
 				swordHitRemote = ok and r or nil
-				SwordController.swingSwordInRegion = function(self, ...)
-					lastManualSwing = tick()
-					if SwingOnly.Enabled then
-						local target = getTarget()
-						if target then
-							store.KillauraTarget = target
-							local root = entitylib.character.RootPart
-							local oldcf = root.CFrame
-							root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
-							local result = realSwingInRegion(self, ...)
-							root.CFrame = oldcf
-							return result
-						end
+SwordController.swingSwordInRegion = function(self, ...)
+				lastManualSwing = tick()
+				if SwingOnly.Enabled then
+					local target = getTarget()
+					if target and target.RootPart and target.RootPart.Parent then
+						store.KillauraTarget = target
+						local root = entitylib.character.RootPart
+						local oldcf = root.CFrame
+						root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
+						local result = realSwingInRegion(self, ...)
+						root.CFrame = oldcf
+						return result
 					end
-					return realSwingInRegion(self, ...)
 				end
+				return realSwingInRegion(self, ...)
+			end
 				swingRadius = AttackRange.Value / 3
 				setSwingRadius()
 
 				repeat
 					local target
 					if entitylib.isAlive and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-						if not LimitItems.Enabled or (store.hand.toolType == 'sword' and store.hand.tool and table.find(swordNames, store.hand.tool.Name)) then
+						if not LimitItems.Enabled or (store.hand.tool and store.hand.toolType == 'sword') then
 							target = getTarget()
-							if target then
+							if target and target.RootPart and target.RootPart.Parent then
 								store.KillauraTarget = target
 								if not SwingOnly.Enabled then
 									local now = tick()
 									if now - lastSwing >= math.max(0.05, math.min(1 / CPS.Value, SwingTime.Value)) then
 										lastSwing = now
-										if swordHitRemote then
+										local root = entitylib.character.RootPart
+										local oldcf = root.CFrame
+										root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
+										local ok = pcall(realSwingInRegion, SwordController)
+										root.CFrame = oldcf
+										if not ok and swordHitRemote then
 											pcall(function()
-												swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = entitylib.character.RootPart.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
+												swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = root.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = store.hand.tool})
 											end)
-										else
-											realSwingInRegion(SwordController)
 										end
 									end
 								end
@@ -3522,6 +3525,9 @@ run(function()
 	})
 	SwingOnly = Killaura:CreateToggle({
 		Name = 'Swing only',
+		Function = function()
+			setSwingRadius()
+		end,
 		Tooltip = 'Only attacks when you are swinging.\nYour swing gets redirected to the target'
 	})
 	SwingRange = Killaura:CreateSlider({
@@ -3670,7 +3676,7 @@ run(function()
 	local touched = {}
 
 	local function apply(state)
-		local character = entitylib.character
+		local character = lplr.Character
 		if not character then
 			return
 		end

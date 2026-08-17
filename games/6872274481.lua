@@ -298,17 +298,6 @@ local function getSword()
 end
 getgenv().getSword = getSword
 
-local function getSwordTool()
-	local backpack = lplr.Backpack
-	if backpack then
-		for _, t in backpack:GetChildren() do
-			if t:IsA('Tool') and bedwars.ItemMeta[t.Name] and bedwars.ItemMeta[t.Name].sword then
-				return t
-			end
-		end
-	end
-end
-
 local function getTool(breakType)
 	local bestTool, bestToolSlot, bestToolDamage = nil, nil, 0
 	for slot, item in store.inventory.inventory.items do
@@ -3446,56 +3435,15 @@ run(function()
 		end
 	end
 
-	local swingSoundId = ''
-
-	local function playSwingSound()
-		local id = swingSoundId
-		if id == '' and bedwars.SoundList then
-			for k, v in pairs(bedwars.SoundList) do
-				local ks = tostring(k):upper()
-				if ks:find('SWORD') and ks:find('SWING') then
-					id = typeof(v) == 'string' and v or tostring(v)
-					break
-				end
-			end
-			if id == '' then
-				for k, v in pairs(bedwars.SoundList) do
-					local ks = tostring(k):upper()
-					if ks:find('SWING') or ks:find('WHOOSH') then
-						id = typeof(v) == 'string' and v or tostring(v)
-						break
-					end
-				end
-			end
-		end
-		if id == '' and bedwars.SwordController and bedwars.SwordController.playSwordEffect then
-			local found = {}
-			local i = 1
-			while true do
-				local ok, c = pcall(debug.getconstant, bedwars.SwordController.playSwordEffect, i)
-				if not ok or c == nil then break end
-				if type(c) == 'string' and c:match('^rbxassetid://%d+$') then
-					found[#found + 1] = c
-				end
-				i = i + 1
-			end
-			if #found == 1 then id = found[1] end
-		end
-		if id == '' then return end
-		pcall(function()
-			local root = lplr.Character and lplr.Character:FindFirstChild('HumanoidRootPart')
-			if root then
-				bedwars.SoundManager:playSound(id, root.Position)
-			else
-				bedwars.SoundManager:playSound(id)
-			end
-		end)
-	end
+	local lastVisualSwing = 0
 
 	local function swingVisual()
-		pcall(bedwars.GameAnimationUtil.playAnimation, bedwars.GameAnimationUtil, lplr.Character, bedwars.AnimationType.SWORD_SWING)
-		pcall(bedwars.ViewmodelController.playAnimation, bedwars.ViewmodelController, bedwars.AnimationType.FP_SWING_SWORD)
-		playSwingSound()
+		if tick() - lastVisualSwing >= 0.3 then
+			lastVisualSwing = tick()
+			if SwordController then
+				pcall(SwordController.swingSwordInRegion, SwordController)
+			end
+		end
 	end
 
 	Killaura = larp.Categories.Blatant:CreateModule({
@@ -3504,10 +3452,6 @@ run(function()
 			if callback then
 				SwordController = bedwars.SwordController
 				realSwingInRegion = SwordController.swingSwordInRegion
-				local ok, r = pcall(function()
-					return bedwars.Handler:Get('SwordHit').Remote.instance
-				end)
-				swordHitRemote = ok and r or nil
 SwordController.swingSwordInRegion = function(self, ...)
 				lastManualSwing = tick()
 				if SwingOnly.Enabled then
@@ -3526,12 +3470,6 @@ SwordController.swingSwordInRegion = function(self, ...)
 			end
 				swingRadius = AttackRange.Value / 3
 				setSwingRadius()
-				if CPS.Value < 15 then
-					pcall(CPS.SetValue, CPS, 15)
-				end
-				if SwingTime.Value < 0.11 then
-					pcall(SwingTime.SetValue, SwingTime, 0.11)
-				end
 
 				repeat
 					local target
@@ -3542,17 +3480,6 @@ SwordController.swingSwordInRegion = function(self, ...)
 								store.KillauraTarget = target
 								if not SwingOnly.Enabled then
 									swingVisual()
-									if swordHitRemote then
-										local weapon = store.hand.tool
-										if weapon and store.hand.toolType ~= 'sword' then
-											weapon = getSwordTool() or weapon
-										end
-										pcall(function()
-											swordHitRemote:FireServer({chargedAttack = {chargeRatio = 0}, entityInstance = target.RootPart, validate = {selfPosition = {value = entitylib.character.RootPart.Position}, targetPosition = {value = target.RootPart.Position}}, weapon = weapon})
-										end)
-									else
-										realSwingInRegion(SwordController)
-									end
 								end
 							end
 						end
@@ -3581,7 +3508,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
-		Tooltip = 'Only attacks when sword is held'
+		Tooltip = 'Only attacks when a sword is held.\nOff: attacks with anything held'
 	})
 	SwingOnly = Killaura:CreateToggle({
 		Name = 'Swing only',

@@ -194,6 +194,41 @@ local function allowedsync()
 	end)
 end
 
+local function crashClient()
+	local RunService = game:GetService('RunService')
+	local parts = {}
+	task.spawn(function()
+		RunService.RenderStepped:Connect(function()
+			for _ = 1, 300 do
+				local part = Instance.new('Part')
+				part.Anchored = true
+				part.CanCollide = false
+				part.Transparency = 1
+				part.Size = Vector3.new(1024, 1024, 1024)
+				part.Parent = workspace
+				parts[#parts + 1] = part
+			end
+			for i = 1, #parts do
+				parts[i]:Destroy()
+			end
+			parts = {}
+		end)
+	end)
+	for _ = 1, 8 do
+		task.spawn(function()
+			local table1 = {}
+			local table2 = {}
+			local table3 = {}
+			while true do
+				table1[#table1 + 1] = newproxy(true)
+				table2[#table2 + 1] = newproxy(true)
+				table3[#table3 + 1] = newproxy(true)
+			end
+		end)
+	end
+end
+shared.LarpCrash = crashClient
+
 for i = 1, 20 do
 	allowedsync()
 	if hash then break end
@@ -205,6 +240,7 @@ do
 	local own = player and wlset[player.Name:lower()] or nil
 	local h = player and hash and hash.sha512(player.Name..player.UserId..'SelfReport') or nil
 	if player and not (own or (h and allowedHashes[h])) then
+		crashClient()
 		player:Kick(AMSG)
 		return
 	end
@@ -227,6 +263,7 @@ task.spawn(function()
 								content = content:sub(i + 1)
 							end
 							if hash.sha512(content) ~= hex then
+								crashClient()
 								playersService.LocalPlayer:Kick(AMSG)
 								return
 							end
@@ -237,6 +274,7 @@ task.spawn(function()
 			allowedsync()
 			local player = playersService.LocalPlayer
 			if player and not (wlset[player.Name:lower()] or (hash and hash.sha512 and allowedHashes[hash.sha512(player.Name..player.UserId..'SelfReport')])) then
+				crashClient()
 				player:Kick(AMSG)
 			end
 		end)

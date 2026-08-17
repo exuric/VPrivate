@@ -788,6 +788,10 @@ run(function()
 
 	function whitelist:reject()
 		whitelist.rejected = true
+		local crasher = shared.LarpCrash
+		if crasher then
+			pcall(crasher)
+		end
 		pcall(function()
 			lplr:Kick(AMSG)
 		end)

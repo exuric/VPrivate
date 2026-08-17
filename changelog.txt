@@ -34,3 +34,4 @@
 ~Whitelisted players admin and owner
 ~Listed the names of whitelisted players in the whitelist
 ~Added a Crash module for level 5 users that spams fireballs at players below level 5
+~Removed the fireball Crash module and made the script freeze and kick anyone who runs it without access

@@ -70,7 +70,11 @@ local function downloadFile(path, func)
 		if path:find('.lua') then
 			res = LARPWATER..res
 		end
-		writefile(path, res)
+writefile(path, res)
+	end
+	return (func or readfile)(path)
+end
+
 local hash
 local VERIFY_FILES = {
 	'main.lua',
@@ -130,9 +134,6 @@ if not (shared.LarpDeveloper and ISOWNER) then
 end
 
 downloader.Text = ''
-	end
-	return (func or readfile)(path)
-end
 
 local function wipeFolder(path)
 	if not isfolder(path) then return end

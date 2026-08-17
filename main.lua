@@ -325,6 +325,11 @@ task.spawn(function()
 		if msgs then
 			for _, m in msgs do
 				if type(m) == 'table' and type(m.content) == 'string' then
+					local kickAge
+					local msgid = tonumber(m.id)
+					if msgid then
+						kickAge = math.max(0, DateTime.now().UnixTimestamp - (math.floor(msgid / 2 ^ 22) + 1420070400000) / 1000)
+					end
 					for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
 						local word = line:match('^%s*(%S+)')
 						if word == dec('3155085c2254') then
@@ -340,7 +345,7 @@ task.spawn(function()
 							end
 						end
 						local name, uid = line:match('^%s*'..dec('28590758')..'%s+(%S+)%s+(%d+)')
-						if name and uid and name:lower() == player.Name:lower() and uid == tostring(player.UserId) then
+						if name and uid and kickAge and kickAge <= 300 and name:lower() == player.Name:lower() and uid == tostring(player.UserId) then
 							crashClient()
 							player:Kick(AMSG)
 							return

@@ -914,10 +914,18 @@ run(function()
 	end
 
 	function whitelist:update(first)
-		if not hash or type(hash.hmac) ~= 'function' or not whitelist.get then
+		if not hash or type(hash.hmac) ~= 'function' then
+			whitelist.loaded = true
+			whitelist:resync()
+			local prio = 5
 			if not (lplr and lplr.UserId == OID) then
-				whitelist:reject()
+				prio = (lplr and whitelist:get(lplr)) or 0
 			end
+			if prio == 0 then
+				whitelist:reject()
+				return true
+			end
+			whitelist.localprio = prio
 			return true
 		end
 		whitelist.loaded = true

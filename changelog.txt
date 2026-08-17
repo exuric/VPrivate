@@ -1,3 +1,6 @@
+~Fixed the script re-downloading files on every inject - only outdated files are fetched now
+~KillAura reworked - swings now use the real sword swing so the animation and sound play, hits register without triggering the anticheat, tuned for 34 hits/s at 12 CPS, Swing Only redirects your swing without double hits, Limit to items works with every sword
+~Fixed Anti KillAura crashing when toggled
 +Added AutoTNT to the Blatant tab - automatically drops TNT on the nearest enemy bed
 +Added Anti KillAura to the Blatant tab - your character becomes invisible to sword swing regions and projectiles, killauras that use them will miss you
 +Added Shadow Culler, Quality Capper and Texture Culler to the Utility tab - aggressive fps boosters

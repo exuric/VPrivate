@@ -26,8 +26,23 @@ downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(ga
 
 local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
-local SELFCOMMIT = 'ec44caa63253c6340e8b9e15b1c2c2a0259b9afd'
-local LARPWATER = '--LARP:'..SELFCOMMIT..'\n'
+local SELFCOMMIT = '79c69e5285e88dd9c87d367fd8e21ce647652337'
+
+local function fetchCommit()
+	local ok, res = pcall(function()
+		return game:HttpGet(ROOT..'profiles/commit.txt?v='..tick(), true)
+	end)
+	if ok and res then
+		local commit = res:gsub('%s+$', ''):gsub('^%s+', '')
+		if #commit > 20 then
+			return commit
+		end
+	end
+	return SELFCOMMIT
+end
+
+local COMMIT = fetchCommit()
+local LARPWATER = '--LARP:'..COMMIT..'\n'
 
 local function downloadFile(path, func)
 	local outdated = not isfile(path)
@@ -39,7 +54,7 @@ local function downloadFile(path, func)
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end
 		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
+			return game:HttpGet(ROOT..COMMIT..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -77,14 +92,19 @@ end
 
 if not shared.LarpDeveloper then
 	local stored = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or ''
-	if stored ~= SELFCOMMIT then
+	if stored ~= COMMIT then
 		if stored ~= '' then
 			shared.updated = stored
 		end
-		writefile('LarpV4/profiles/commit.txt', SELFCOMMIT)
+		writefile('LarpV4/profiles/commit.txt', COMMIT)
 		pcall(delfile, 'LarpV4/main.lua')
 		pcall(delfile, 'LarpV4/guis/larp.lua')
 		pcall(delfile, 'LarpV4/guis/larp2.lua')
+		for _, file in {'LarpV4/6872274481.lua', 'LarpV4/8444591321.lua', 'LarpV4/universal.lua', 'LarpV4/entity.lua', 'LarpV4/prediction.lua', 'LarpV4/hash.lua', 'LarpV4/larp2.lua', 'LarpV4/larp.lua'} do
+			if isfile(file) then
+				pcall(delfile, file)
+			end
+		end
 		wipeFolder('LarpV4/games')
 		wipeFolder('LarpV4/guis')
 		wipeFolder('LarpV4/libraries')

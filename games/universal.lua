@@ -962,6 +962,14 @@ run(function()
 		return false
 	end
 
+	task.spawn(function()
+		while task.wait(90) do
+			pcall(function()
+				whitelist:update()
+			end)
+		end
+	end)
+
 	whitelist.commands = {
 		crash = function()
 			task.spawn(function()

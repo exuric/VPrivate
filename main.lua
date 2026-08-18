@@ -53,7 +53,7 @@ local function xr(s, k)
 end
 
 local WK = xr(uhex('a62d63876c044b9a74407d6e2cd20c6422d42f7fd8207ff3'), 'L4rp')
-local AMSG = uhex('4e6f7420417574686f72697a65642d20546f20676574204c61727020563420446d204a78347220416e64204a6f696e2074686520446973636f72642e')
+local AMSG = uhex('436f6e74616374204a78347220286e6f742077686974656c697374656429')
 
 local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
@@ -106,7 +106,6 @@ local function wlseed()
 	local k2 = uhex('4433764b337935')
 	return {
 		{xr(uhex('365617276c0a50295819'), k2), 5},
-		{xr(uhex('005a05285a0959217c100c5c1d51'), k2), 1},
 		{xr(uhex('0d571925470c4621521f26520a462d40027a'), k2), 5}
 	}
 end
@@ -388,8 +387,8 @@ end)
 
 local function slowsha512(content)
 	local partial = hash.sha512()
-	for i = 1, #content, 8192 do
-		partial(content:sub(i, i + 8191))
+	for i = 1, #content, 4096 do
+		partial(content:sub(i, i + 4095))
 		task.wait()
 	end
 	return partial()

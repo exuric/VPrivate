@@ -48,3 +48,7 @@
 +Added a search-based whitelist manager to the owner panel - type a username to see their avatar and name, use the + button to whitelist them and the X button to remove them, both with notifications
 ~The changelog window now matches the Larp V4 grey theme instead of the black background
 -Removed the old Kick, Stats, Logs, Blacklist and Commands owner modules - the owner panel is now just Whitelist and Settings
+~Files are no longer re-downloaded on every inject - the hash library is kept like every other verified file
+~Fixed the one-time load stutter - verification hashes in smaller chunks with more pauses
+-Removed the owner tab and all owner panel modules - the whitelist is now fixed to REDACTED and REDACTED only
+~Non-whitelisted players are now kicked with a "Contact Jx4r (not whitelisted)" message

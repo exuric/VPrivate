@@ -87,7 +87,7 @@ local function downloadFile(path, func)
 	end
 	if not content or (not (shared.LarpDeveloper and shared.LarpOwner) and content:sub(1, #LARPWATER) ~= LARPWATER) then
 		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
+			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -234,98 +234,12 @@ local function showNotify(text)
 		gui:Destroy()
 	end)
 end
-local function slowsha512(content)
-	local partial = hash.sha512()
-	for i = 1, #content, 32768 do
-		partial(content:sub(i, i + 32767))
-		task.wait()
-	end
-	return partial()
-end
-
-task.spawn(function()
-	local tickCount = 0
-	local sizes = {}
-	local mhex = {}
-	local fileOrder = {}
-	local sweepIndex = 1
-	while not shared.larpreloading and task.wait(60) do
-		tickCount = tickCount + 1
-		pcall(function()
-			settings = readSettings()
-			if not (shared.LarpDeveloper and shared.LarpOwner) and settings.autoUpdate ~= false and hash and hash.sha512 then
-				if tickCount % 10 == 1 then
-					local ok, res = pcall(function()
-						return game:HttpGet(ROOT..LARPCOMMIT..'/profiles/manifest.txt?v='..tick(), true)
-					end)
-					if ok and typeof(res) == 'string' then
-						fileOrder = {}
-						for line in (res..'\n'):gmatch('(.-)\r?\n') do
-							local path, hex = line:match('^(%S+)%s+(%x+)$')
-							if path and hex then
-								mhex[path] = hex
-								fileOrder[#fileOrder + 1] = path
-							end
-						end
-					end
-				else
-					local changed = {}
-					for _ = 1, 2 do
-						if #fileOrder == 0 then break end
-						local path = fileOrder[sweepIndex]
-						sweepIndex = sweepIndex % #fileOrder + 1
-						local full = 'LarpV4/'..path
-						if isfile(full) then
-							local len = readfile(full):len()
-							if len ~= (sizes[path] or -1) then
-								if sizes[path] then
-									changed[#changed + 1] = path
-								end
-								sizes[path] = len
-							end
-						end
-					end
-					for _, path in changed do
-						local full = 'LarpV4/'..path
-						if isfile(full) and mhex[path] then
-							local content = readfile(full)
-							local i = content:find('\n')
-							if i then
-								content = content:sub(i + 1)
-							end
-							task.wait()
-							if slowsha512(content) ~= mhex[path] then
-								crashClient()
-								playersService.LocalPlayer:Kick(AMSG)
-								return
-							end
-						end
-					end
-				end
-			end
-			if tickCount % 2 == 1 then
-				allowedsync()
-			end
-			local player = playersService.LocalPlayer
-			if player and blackset[player.Name:lower()] then
-				if settings.crashBlacklist ~= false then crashClient() end
-				player:Kick(AMSG)
-				return
-			end
-			if player and not (wlset[player.Name:lower()] or (hash and hash.sha512 and allowedHashes[hash.sha512(player.Name..player.UserId..'SelfReport')])) then
-				crashClient()
-				player:Kick(AMSG)
-			end
-		end)
-	end
-end)
-
 	local function downloadSplit(base)
 	if isfile(base) then return readfile(base) end
 	local data = {}
 	for i = 0, 1 do
 		local ok, res = pcall(function()
-			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i..'?v='..tick(), true)
+			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
 		end)
 		if not ok or typeof(res) ~= 'string' or res == '404: Not Found' then
 			error('Failed to download '..base..'.'..i..(ok and '' or ': '..tostring(res)))
@@ -351,7 +265,7 @@ local function finishLoading()
 				if shared.LarpDeveloper and shared.LarpOwner then
 					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet(']]..ROOT..LARPCOMMIT..[['/init.lua?v='..tick(), true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet(']]..ROOT..LARPCOMMIT..[['/init.lua', true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)
@@ -428,7 +342,7 @@ task.spawn(function()
 			else
 				if not (shared.LarpDeveloper and shared.LarpOwner) then
 					local suc, res = pcall(function()
-						return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua?v='..tick(), true)
+						return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua', true)
 					end)
 					if suc and res ~= '404: Not Found' then
 						loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)

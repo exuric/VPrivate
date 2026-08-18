@@ -43,3 +43,4 @@
 ~Reverted the loader to single-file downloads with corrected served files and manifest hashes
 ~Fixed the loader UI covering the script - the Downloading main.lua label now hides when the script finishes loading, and the loader no longer re-reads the commit file on every request
 ~Added a Settings tab to the owner panel - toggles for crashing blacklisted users, owner command failure notifications, and the 1-minute file re-verify, saved per client
+~Removed the every-minute lag stutter - files are now only fully re-hashed every 5 minutes (spread out so the game never freezes), every minute only checks file sizes, and the whitelist webhook is fetched half as often

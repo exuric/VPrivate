@@ -108,11 +108,15 @@ local function fileDigest(path)
 	if i then
 		content = content:sub(i + 1)
 	end
-	return hash.sha512(content)
+	local partial = hash.sha512()
+	for j = 1, #content, 4096 do
+		partial(content:sub(j, j + 4095))
+		task.wait()
+	end
+	return partial()
 end
 
 local function verifyFiles()
-	pcall(delfile, 'LarpV4/libraries/hash.lua')
 	hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
 	for _, path in VERIFY_FILES do
 		local full = 'LarpV4/'..path

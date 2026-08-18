@@ -30,7 +30,7 @@ local SELFCOMMIT = 'c27a2e119d1f92b412fc576772a9acba1bf88de2'
 
 local function fetchCommit()
 	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..'profiles/commit.txt?v='..tick(), true)
+		return game:HttpGet(ROOT..'profiles/commit.txt', true)
 	end)
 	if ok and res then
 		local commit = res:gsub('%s+$', ''):gsub('^%s+', '')
@@ -62,7 +62,7 @@ local function downloadFile(path, func)
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end
 		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..COMMIT..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
+			return game:HttpGet(ROOT..COMMIT..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -90,7 +90,7 @@ local VERIFY_FILES = {
 local MANIFEST = {}
 do
 	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..COMMIT..'/profiles/manifest.txt?v='..tick(), true)
+		return game:HttpGet(ROOT..COMMIT..'/profiles/manifest.txt', true)
 	end)
 	if ok and res then
 		for line in (res..'\n'):gmatch('(.-)\r?\n') do
@@ -246,6 +246,31 @@ local function verifyFiles()
 	hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
 	if getgenv().LarpVerifiedCommit == COMMIT then
 		return
+	end
+	local todo = {}
+	for _, path in VERIFY_FILES do
+		local full = 'LarpV4/'..path
+		if isfile(full) then
+			local content = readfile(full)
+			if content:sub(1, #LARPWATER) ~= LARPWATER then
+				todo[#todo + 1] = path
+			end
+		else
+			todo[#todo + 1] = path
+		end
+	end
+	if #todo > 0 then
+		downloader.Text = 'Downloading '..#todo..' files...'
+		local remaining = #todo
+		for _, path in todo do
+			task.spawn(function()
+				pcall(downloadFile, 'LarpV4/'..path)
+				remaining = remaining - 1
+			end)
+		end
+		while remaining > 0 do
+			task.wait()
+		end
 	end
 	for _, path in VERIFY_FILES do
 		local full = 'LarpV4/'..path

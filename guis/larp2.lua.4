@@ -1,0 +1,748 @@
+haracter and v.Character.Name or targetinfoname.Text
+			TargetInfoName.Text = targetinfoname.Text
+			TargetInfoNameShadow.Text = targetinfoname.Text
+			targetinfoshot.Image = 'rbxthumb://type=AvatarHeadShot&id='..(v.Player and v.Player.UserId or 1)..'&w=420&h=420'
+			TargetInfoImage.Image = targetinfoshot.Image
+
+			local maxhealth = v.MaxHealth or 100
+			local health = math.clamp(v.Health or 0, 0, maxhealth)
+			local percent = maxhealth > 0 and health / maxhealth or 0
+			targetinfohptext.Visible = targetinfoshowhp.Enabled
+			targetinfohptext.Text = targetinfoshowhp.Enabled and tostring(math.floor(health)) or ''
+			targetinfohptext.TextColor3 = Color3.fromHSV(math.clamp(percent / 2.5, 0, 1), 0.89, 0.75)
+
+			targetinfostats.Visible = targetinfoshowdist.Enabled
+			if targetinfoshowdist.Enabled and v.Head then
+				local dist = math.floor((cloneref(game:GetService('Workspace')).CurrentCamera.CFrame.Position - v.Head.Position).Magnitude + 0.5)
+				targetinfostats.Text = tostring(dist)..' studs'
+			else
+				targetinfostats.Text = ''
+			end
+
+			if not v.Character then
+				v.Health = v.Health or 0
+				v.MaxHealth = v.MaxHealth or 100
+			end
+
+			if v.Health ~= lasthealth or v.MaxHealth ~= lastmaxhealth then
+				task.spawn(function()
+					local percent = math.max(v.Health / v.MaxHealth, 0)
+					tween:Tween(targetinfohealth, TweenInfo.new(0.3), {
+						Size = UDim2.fromScale(math.min(percent, 1), 1), BackgroundColor3 = Color3.fromHSV(math.clamp(percent / 2.5, 0, 1), 0.89, 0.75)
+					})
+					tween:Tween(targetinfohealthextra, TweenInfo.new(0.3), {
+						Size = UDim2.fromScale(math.clamp(percent - 1, 0, 0.8), 1)
+					})
+					tween:Tween(TargetInfoHealth, TweenInfo.new(0.3), {
+						Size = UDim2.fromScale(math.min(percent, 1), 1), BackgroundColor3 = Color3.fromHSV(math.clamp(percent / 2.5, 0, 1), 0.89, 0.75)
+					})
+					tween:Tween(TargetInfoHealthExtra, TweenInfo.new(0.3), {
+						Size = UDim2.fromScale(math.clamp(percent - 1, 0, 0.8), 1)
+					})
+					if lasthealth > v.Health and self.LastTarget == v then
+						tween:Cancel(targetinfoshotflash)
+						tween:Cancel(targetinfoshotflashold)
+						targetinfoshotflash.BackgroundTransparency = 0.3
+						targetinfoshotflashold.BackgroundTransparency = 0.3
+						tween:Tween(targetinfoshotflash, TweenInfo.new(0.5), {
+							BackgroundTransparency = 1
+						})
+						tween:Tween(targetinfoshotflashold, TweenInfo.new(0.5), {
+							BackgroundTransparency = 1
+						})
+					end
+					lasthealth = v.Health
+					lastmaxhealth = v.MaxHealth
+				end)
+			end
+
+			if not v.Character then table.clear(v) end
+			self.LastTarget = v
+		end
+		return v and v.Head
+	end
+}
+mainapi.Libraries.targetinfo = targetinfo
+
+function mainapi:UpdateTextGUI(afterload)
+	if not afterload and not mainapi.Loaded then return end
+	if textgui.Button.Enabled then
+		local right = textgui.Children.AbsolutePosition.X > (gui.AbsoluteSize.X / 2)
+		LarpLogo.Visible = textguiwatermark.Enabled
+		LarpLogo.Position = right and UDim2.new(1 / LarpTextScale.Scale, -113, 0, 6) or UDim2.fromOffset(0, 6)
+		LarpLogoShadow.Visible = textguishadow.Enabled
+		LarpLabelCustom.Text = textguibox.Value
+		LarpLabelCustom.FontFace = textguifontcustom.Value
+		LarpLabelCustom.Visible = LarpLabelCustom.Text ~= '' and textguitext.Enabled
+		LarpLabelCustomShadow.Visible = LarpLabelCustom.Visible and textguishadow.Enabled
+		LarpLabelSorter.HorizontalAlignment = right and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
+		LarpLabelHolder.Size = UDim2.fromScale(1 / LarpTextScale.Scale, 1)
+		LarpLabelHolder.Position = UDim2.fromOffset(right and 3 or 0, 11 + (LarpLogo.Visible and LarpLogo.Size.Y.Offset or 0) + (LarpLabelCustom.Visible and 28 or 0) + (textguibackground.Enabled and 3 or 0))
+		if LarpLabelCustom.Visible then
+			local size = getfontsize(removeTags(LarpLabelCustom.Text), LarpLabelCustom.TextSize, LarpLabelCustom.FontFace)
+			LarpLabelCustom.Size = UDim2.fromOffset(size.X, size.Y)
+			LarpLabelCustom.Position = UDim2.new(right and 1 / LarpTextScale.Scale or 0, right and -size.X or 0, 0, (LarpLogo.Visible and 32 or 8))
+		end
+
+		local found = {}
+		for _, v in LarpLabels do
+			if v.Enabled then
+				table.insert(found, v.Object.Name)
+			end
+			v.Object:Destroy()
+		end
+		table.clear(LarpLabels)
+
+		local info = TweenInfo.new(0.3, Enum.EasingStyle.Exponential)
+		for i, v in mainapi.Modules do
+			if textguimodules.Enabled and table.find(textguimoduleslist.ListEnabled, i) then continue end
+			if textguirender.Enabled and v.Category == 'Render' then continue end
+			if v.Enabled or table.find(found, i) then
+				local holder = Instance.new('Frame')
+				holder.Name = i
+				holder.Size = UDim2.fromOffset()
+				holder.BackgroundTransparency = 1
+				holder.ClipsDescendants = true
+				holder.Parent = LarpLabelHolder
+				local holderbackground
+				local holdercolorline
+				if textguibackground.Enabled then
+					holderbackground = Instance.new('Frame')
+					holderbackground.Size = UDim2.new(1, 3, 1, 0)
+					holderbackground.BackgroundColor3 = color.Dark(uipallet.Main, 0.15)
+					holderbackground.BackgroundTransparency = textguibackgroundtransparency.Value
+					holderbackground.BorderSizePixel = 0
+					holderbackground.Parent = holder
+					local holderline = Instance.new('Frame')
+					holderline.Size = UDim2.new(1, 0, 0, 1)
+					holderline.Position = UDim2.new(0, 0, 1, -1)
+					holderline.BackgroundColor3 = Color3.new()
+					holderline.BackgroundTransparency = 0.928 + (0.072 * math.clamp((textguibackgroundtransparency.Value - 0.5) / 0.5, 0, 1))
+					holderline.BorderSizePixel = 0
+					holderline.Parent = holderbackground
+					local holderline2 = holderline:Clone()
+					holderline2.Name = 'Line'
+					holderline2.Position = UDim2.new()
+					holderline2.Parent = holderbackground
+					holdercolorline = Instance.new('Frame')
+					holdercolorline.Size = UDim2.new(0, 2, 1, 0)
+					holdercolorline.Position = right and UDim2.new(1, -5, 0, 0) or UDim2.new()
+					holdercolorline.BorderSizePixel = 0
+					holdercolorline.Parent = holderbackground
+				end
+				local holdertext = Instance.new('TextLabel')
+				holdertext.Position = UDim2.fromOffset(right and 3 or 6, 2)
+				holdertext.BackgroundTransparency = 1
+				holdertext.BorderSizePixel = 0
+				holdertext.Text = i..(v.ExtraText and " <font color='#A8A8A8'>"..v.ExtraText()..'</font>' or '')
+				holdertext.TextSize = 15
+				holdertext.FontFace = textguifont.Value
+				holdertext.RichText = true
+				local size = getfontsize(removeTags(holdertext.Text), holdertext.TextSize, holdertext.FontFace)
+				holdertext.Size = UDim2.fromOffset(size.X, size.Y)
+				if textguishadow.Enabled then
+					local holderdrop = holdertext:Clone()
+					holderdrop.Position = UDim2.fromOffset(holdertext.Position.X.Offset + 1, holdertext.Position.Y.Offset + 1)
+					holderdrop.Text = removeTags(holdertext.Text)
+					holderdrop.TextColor3 = Color3.new()
+					holderdrop.Parent = holder
+				end
+				holdertext.Parent = holder
+				local holdersize = UDim2.fromOffset(size.X + 10, size.Y + (textguibackground.Enabled and 5 or 3))
+				if textguianimations.Enabled then
+					if not table.find(found, i) then
+						tween:Tween(holder, info, {
+							Size = holdersize
+						})
+					else
+						holder.Size = holdersize
+						if not v.Enabled then
+							tween:Tween(holder, info, {
+								Size = UDim2.fromOffset()
+							})
+						end
+					end
+				else
+					holder.Size = v.Enabled and holdersize or UDim2.fromOffset()
+				end
+				table.insert(LarpLabels, {
+					Object = holder,
+					Text = holdertext,
+					Background = holderbackground,
+					Color = holdercolorline,
+					Enabled = v.Enabled
+				})
+			end
+		end
+
+		if textguisort.Value == 'Alphabetical' then
+			table.sort(LarpLabels, function(a, b)
+				return a.Text.Text < b.Text.Text
+			end)
+		else
+			table.sort(LarpLabels, function(a, b)
+				return a.Text.Size.X.Offset > b.Text.Size.X.Offset
+			end)
+		end
+
+		for i, v in LarpLabels do
+			if v.Color then
+				v.Color.Parent.Line.Visible = i ~= 1
+			end
+			v.Object.LayoutOrder = i
+		end
+	end
+
+	mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
+end
+
+function mainapi:UpdateGUI(hue, sat, val, default)
+	if mainapi.Loaded == nil then return end
+	if not default and mainapi.GUIColor.Rainbow then return end
+	if textgui.Button.Enabled then
+		LarpLogoGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromHSV(hue, sat, val)),
+			ColorSequenceKeypoint.new(1, textguigradient.Enabled and Color3.fromHSV(mainapi:Color((hue - 0.075) % 1)) or Color3.fromHSV(hue, sat, val))
+		})
+		LarpLogoGradient2.Color = textguigradient.Enabled and textguigradientv4.Enabled and LarpLogoGradient.Color or ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1))
+		})
+		LarpLabelCustom.TextColor3 = textguicolorcustomtoggle.Enabled and Color3.fromHSV(textguicolorcustom.Hue, textguicolorcustom.Sat, textguicolorcustom.Value) or LarpLogoGradient.Color.Keypoints[2].Value
+
+		local customcolor = textguicolordrop.Value == 'Custom color' and Color3.fromHSV(textguicolor.Hue, textguicolor.Sat, textguicolor.Value) or nil
+		for i, v in LarpLabels do
+			v.Text.TextColor3 = customcolor or (mainapi.GUIColor.Rainbow and Color3.fromHSV(mainapi:Color((hue - ((textguigradient and i + 2 or i) * 0.025)) % 1)) or LarpLogoGradient.Color.Keypoints[2].Value)
+			if v.Color then
+				v.Color.BackgroundColor3 = v.Text.TextColor3
+			end
+			if textguibackgroundtint.Enabled and v.Background then
+				v.Background.BackgroundColor3 = color.Dark(v.Text.TextColor3, 0.75)
+			end
+		end
+	end
+
+	if not clickgui.Visible and not mainapi.Legit.Window.Visible then return end
+	local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
+
+	for i, v in mainapi.Categories do
+		if i == 'Main' then
+			v.Object.LarpLogo.V4Logo.ImageColor3 = Color3.fromHSV(hue, sat, val)
+			for _, button in v.Buttons do
+				if button.Enabled then
+					button.Object.TextColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+					local active = button.Object:FindFirstChild('Active')
+					if active then
+						active.BackgroundColor3 = button.Object.TextColor3
+					end
+					if button.Icon then
+						button.Icon.ImageColor3 = button.Object.TextColor3
+					end
+				end
+			end
+		end
+
+		if v.Options then
+			for _, option in v.Options do
+				if option.Color then
+					option:Color(hue, sat, val, rainbow)
+				end
+			end
+		end
+
+		if v.Type == 'CategoryList' then
+			v.Object.Children.Add.AddButton.ImageColor3 = rainbow and Color3.fromHSV(mainapi:Color(hue % 1)) or Color3.fromHSV(hue, sat, val)
+			if v.Selected then
+				v.Selected.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color(hue % 1)) or Color3.fromHSV(hue, sat, val)
+				v.Selected.Title.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+				v.Selected.Dots.Dots.ImageColor3 = v.Selected.Title.TextColor3
+				v.Selected.Bind.Icon.ImageColor3 = v.Selected.Title.TextColor3
+				v.Selected.Bind.TextLabel.TextColor3 = v.Selected.Title.TextColor3
+			end
+		end
+	end
+
+	for _, button in mainapi.Modules do
+		if button.Enabled then
+			button.Object.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+			button.Object.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+			button.Object.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
+			if button.Object.UIGradient.Enabled then
+				button.Object.BackgroundColor3 = Color3.new(1, 1, 1)
+				button.Object.UIGradient.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))),
+					ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((button.Index + 1) * 0.025)) % 1)))
+				})
+			end
+			button.Object.Bind.Icon.ImageColor3 = button.Object.TextColor3
+			button.Object.Bind.TextLabel.TextColor3 = button.Object.TextColor3
+			button.Object.Dots.Dots.ImageColor3 = button.Object.TextColor3
+			if button.Object.Pin then
+				button.Object.Pin.ImageColor3 = button.Object.TextColor3
+			end
+		end
+
+		for _, option in button.Options do
+			if option.Color then
+				option:Color(hue, sat, val, rainbow)
+			end
+		end
+
+		for _, v in button.Tags do
+			v.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or button.Enabled and Color3.new(1, 1, 1) or Color3.fromHSV(hue, sat, val)
+			v.BackgroundTransparency = (rainbow or not button.Enabled) and 0 or 0.85
+			v:FindFirstChild('Text').TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+		end
+
+		if button.PinnedClone and button.Enabled then
+			local pinned = button.PinnedClone
+			pinned.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+			pinned.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+			local pgradient = pinned:FindFirstChildOfClass('UIGradient')
+			if pgradient then
+				pgradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
+				if pgradient.Enabled then
+					pinned.BackgroundColor3 = Color3.new(1, 1, 1)
+					pgradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))),
+						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((button.Index + 1) * 0.025)) % 1)))
+					})
+				end
+			end
+			local pbind = pinned:FindFirstChild('Bind')
+			if pbind then
+				local pbindicon = pbind:FindFirstChild('Icon')
+				if pbindicon then pbindicon.ImageColor3 = pinned.TextColor3 end
+				local pbindtext = pbind:FindFirstChild('TextLabel')
+				if pbindtext then pbindtext.TextColor3 = pinned.TextColor3 end
+			end
+			local pdots = pinned:FindFirstChild('Dots')
+			if pdots then pdots.Dots.ImageColor3 = pinned.TextColor3 end
+			local ppin = pinned:FindFirstChild('Pin')
+			if ppin then ppin.ImageColor3 = pinned.TextColor3 end
+		end
+	end
+
+	for i, v in mainapi.Overlays.Toggles do
+		if v.Enabled then
+			tween:Cancel(v.Object.Knob)
+			v.Object.Knob.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (i * 0.075)) % 1)) or Color3.fromHSV(hue, sat, val)
+		end
+	end
+
+	if mainapi.Legit.Icon then
+		mainapi.Legit.Icon.ImageColor3 = Color3.fromHSV(hue, sat, val)
+	end
+
+	if mainapi.Legit.Window.Visible then
+		for _, v in mainapi.Legit.Modules do
+			if v.Enabled then
+				tween:Cancel(v.Object.Knob)
+				v.Object.Knob.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+			end
+
+			for _, option in v.Options do
+				if option.Color then
+					option:Color(hue, sat, val, rainbow)
+				end
+			end
+		end
+	end
+end
+
+mainapi:Clean(notifications.ChildRemoved:Connect(function()
+	for i, v in notifications:GetChildren() do
+		if tween.Tween then
+			tween:Tween(v, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
+				Position = UDim2.new(1, 0, 1, -(29 + (78 * i)))
+			})
+		end
+	end
+end))
+
+mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
+	if not inputService:GetFocusedTextBox() and inputObj.KeyCode ~= Enum.KeyCode.Unknown then
+		table.insert(mainapi.HeldKeybinds, inputObj.KeyCode.Name)
+		if mainapi.Binding then return end
+
+		if checkKeybinds(mainapi.HeldKeybinds, mainapi.Keybind, inputObj.KeyCode.Name) then
+			if mainapi.ThreadFix then
+				setthreadidentity(8)
+			end
+			for _, v in mainapi.Windows do
+				v.Visible = false
+			end
+			clickgui.Visible = not clickgui.Visible
+			tooltip.Visible = false
+			mainapi:BlurCheck()
+		end
+
+		local toggled = false
+		for i, v in mainapi.Modules do
+			if checkKeybinds(mainapi.HeldKeybinds, v.Bind, inputObj.KeyCode.Name) then
+				toggled = true
+				if mainapi.ToggleNotifications.Enabled then
+					mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75)
+				end
+				v:Toggle(true)
+			end
+		end
+		if toggled then
+			mainapi:UpdateTextGUI()
+		end
+
+		for _, v in mainapi.Profiles do
+			if checkKeybinds(mainapi.HeldKeybinds, v.Bind, inputObj.KeyCode.Name) and v.Name ~= mainapi.Profile then
+				mainapi:Save(v.Name)
+				mainapi:Load(true)
+				break
+			end
+		end
+	end
+end))
+
+mainapi:Clean(inputService.InputEnded:Connect(function(inputObj)
+	if not inputService:GetFocusedTextBox() and inputObj.KeyCode ~= Enum.KeyCode.Unknown then
+		if mainapi.Binding then
+			if not mainapi.MultiKeybind.Enabled then
+				mainapi.HeldKeybinds = {inputObj.KeyCode.Name}
+			end
+			mainapi.Binding:SetBind(checkKeybinds(mainapi.HeldKeybinds, mainapi.Binding.Bind, inputObj.KeyCode.Name) and {} or mainapi.HeldKeybinds, true)
+			mainapi.Binding = nil
+		end
+	end
+
+	local ind = table.find(mainapi.HeldKeybinds, inputObj.KeyCode.Name)
+	if ind then
+		table.remove(mainapi.HeldKeybinds, ind)
+	end
+
+	if clickgui.Visible then
+		mainapi:QueueSave()
+	end
+end))
+
+if shared.LarpPresetInstall then
+	local prompted = false
+	mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
+		if prompted or not clickgui.Visible then return end
+		prompted = true
+		mainapi:CreatePrompt({
+			Title = 'Discord',
+			Icon = 'notice',
+			Text = "It looks like this is your first time using Larp. Join our discord for updates.",
+			Confirm = 'Discord',
+			Cancel = 'No thanks',
+			Function = function(result)
+				local install = shared.LarpPresetInstall
+				shared.LarpPresetInstall = nil
+				if not result then return end
+				task.spawn(function()
+					pcall(setclipboard, 'https://discord.gg/MwEu9HNK84')
+					mainapi:CreateNotification('Discord', 'Discord Link Copied', 2)
+					if install then
+						pcall(install)
+					end
+				end)
+			end
+		})
+	end))
+end
+
+do
+	local function buildChangelog(entries, isnew)
+		repeat task.wait(0.1) until not clickgui:FindFirstChild('PromptShadow')
+
+		local existing = clickgui:FindFirstChild('Changelog')
+		if existing then
+			existing:Destroy()
+		end
+
+		local added, removed, modified = 0, 0, 0
+		for _, v in entries do
+			if v.status == 'added' then
+				added += 1
+			elseif v.status == 'removed' then
+				removed += 1
+			else
+				modified += 1
+			end
+		end
+
+		local window = Instance.new('Frame')
+		window.Name = 'Changelog'
+		window.Size = UDim2.fromOffset(700, 440)
+		window.Position = UDim2.new(0.5, -350, 0.5, -220)
+		window.ZIndex = 9
+		window.BackgroundColor3 = Color3.fromRGB(12, 13, 12)
+		window.BorderSizePixel = 0
+		window.Parent = clickgui
+		addCorner(window, UDim.new(0, 12))
+		addBlur(window)
+		makeDraggable(window)
+		local windowstroke = Instance.new('UIStroke')
+		windowstroke.Color = Color3.fromRGB(42, 41, 42)
+		windowstroke.Transparency = 0.6
+		windowstroke.Thickness = 1
+		windowstroke.Parent = window
+		local title = Instance.new('TextLabel')
+		title.Size = UDim2.new(1, -100, 0, 20)
+		title.Position = UDim2.fromOffset(14, 10)
+		title.ZIndex = 10
+		title.BackgroundTransparency = 1
+		title.Text = 'Larp V4'
+		title.TextXAlignment = Enum.TextXAlignment.Left
+		title.TextColor3 = uipallet.Text
+		title.TextSize = 15
+		title.FontFace = uipallet.FontSemiBold
+		title.Parent = window
+		local subtitle = Instance.new('TextLabel')
+		subtitle.Size = UDim2.new(1, -100, 0, 16)
+		subtitle.Position = UDim2.fromOffset(14, 31)
+		subtitle.ZIndex = 10
+		subtitle.BackgroundTransparency = 1
+		subtitle.Text = '> update log'
+		subtitle.TextXAlignment = Enum.TextXAlignment.Left
+		subtitle.TextColor3 = Color3.fromRGB(80, 250, 123)
+		subtitle.TextSize = 11
+		subtitle.FontFace = Font.fromEnum(Enum.Font.Code)
+		subtitle.Parent = window
+		local status = Instance.new('TextLabel')
+		status.Name = 'Status'
+		status.Size = UDim2.new(1, -170, 0, 16)
+		status.Position = UDim2.fromOffset(0, 14)
+		status.ZIndex = 10
+		status.BackgroundTransparency = 1
+		status.Text = ''
+		status.TextXAlignment = Enum.TextXAlignment.Right
+		status.TextColor3 = Color3.fromRGB(122, 132, 122)
+		status.TextSize = 11
+		status.FontFace = uipallet.Font
+		status.Parent = window
+		local close = Instance.new('ImageButton')
+		close.Name = 'Close'
+		close.Size = UDim2.fromOffset(24, 24)
+		close.Position = UDim2.new(1, -35, 0, 11)
+		close.ZIndex = 12
+		close.BackgroundTransparency = 1
+		close.AutoButtonColor = false
+		close.Image = getcustomasset('LarpV4/assets/larp/close.png')
+		close.ImageColor3 = uipallet.Text
+		close.Parent = window
+		close.MouseEnter:Connect(function()
+			close.ImageColor3 = Color3.fromRGB(255, 85, 85)
+		end)
+		close.MouseLeave:Connect(function()
+			close.ImageColor3 = uipallet.Text
+		end)
+		close.MouseButton1Click:Connect(function()
+			window:Destroy()
+		end)
+		local divider = Instance.new('Frame')
+		divider.Size = UDim2.new(1, -28, 0, 1)
+		divider.Position = UDim2.fromOffset(14, 52)
+		divider.ZIndex = 10
+		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		divider.BorderSizePixel = 0
+		divider.Parent = window
+		local list = Instance.new('ScrollingFrame')
+		list.Name = 'List'
+		list.Size = UDim2.new(1, 0, 1, -99)
+		list.Position = UDim2.fromOffset(0, 53)
+		list.ZIndex = 10
+		list.BackgroundTransparency = 1
+		list.BorderSizePixel = 0
+		list.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.3)
+		list.ScrollBarThickness = 4
+		list.CanvasSize = UDim2.fromScale(1, 0)
+		list.Parent = window
+		local listlayout = Instance.new('UIListLayout')
+		listlayout.Padding = UDim.new(0, 2)
+		listlayout.SortOrder = Enum.SortOrder.LayoutOrder
+		listlayout.Parent = list
+		local function updateList()
+			list.CanvasSize = UDim2.fromOffset(0, listlayout.AbsoluteContentSize.Y)
+		end
+		listlayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(updateList)
+		updateList()
+
+		local codefont = Font.fromEnum(Enum.Font.Code)
+		local rows = {}
+		for _, v in entries do
+			local entry = Instance.new('Frame')
+			entry.Size = UDim2.new(1, 0, 0, 30)
+			entry.BackgroundTransparency = 1
+			entry.BorderSizePixel = 0
+			entry.Parent = list
+			local tag = Instance.new('TextLabel')
+			tag.Size = UDim2.fromOffset(44, 30)
+			tag.Position = UDim2.fromOffset(14, 0)
+			tag.ZIndex = 11
+			tag.BackgroundTransparency = 1
+			tag.FontFace = codefont
+			tag.TextSize = 13
+			tag.TextXAlignment = Enum.TextXAlignment.Left
+			tag.Parent = entry
+			local tagtext, tagcolor
+			if v.status == 'added' then
+				tagtext, tagcolor = '[+]', Color3.fromRGB(80, 250, 123)
+			elseif v.status == 'removed' then
+				tagtext, tagcolor = '[-]', Color3.fromRGB(255, 85, 85)
+			else
+				tagtext, tagcolor = '[*]', Color3.fromRGB(241, 250, 140)
+			end
+			tag.TextColor3 = tagcolor
+			tag.Text = ''
+			local name = Instance.new('TextLabel')
+			name.Size = UDim2.new(1, -74, 0, 30)
+			name.Position = UDim2.fromOffset(60, 0)
+			name.ZIndex = 11
+			name.BackgroundTransparency = 1
+			name.TextXAlignment = Enum.TextXAlignment.Left
+			name.TextTruncate = Enum.TextTruncate.AtEnd
+			name.TextColor3 = color.Dark(uipallet.Text, 0.16)
+			name.TextSize = 13
+			name.FontFace = codefont
+			name.Text = ''
+			name.Parent = entry
+			rows[#rows + 1] = {tag = tag, name = name, tagtext = tagtext, nametext = v.name}
+		end
+
+		local statusparts = {}
+		if added > 0 then
+			statusparts[#statusparts + 1] = added..' added'
+		end
+		if removed > 0 then
+			statusparts[#statusparts + 1] = removed..' removed'
+		end
+		if modified > 0 then
+			statusparts[#statusparts + 1] = modified..' changed'
+		end
+		status.Text = isnew and #entries > 0 and table.concat(statusparts, ' · ') or 'Old changelogs'
+		local empty = Instance.new('TextLabel')
+		empty.Name = 'Empty'
+		empty.Size = UDim2.new(1, -28, 0, 20)
+		empty.Position = UDim2.new(0, 14, 0.5, 10)
+		empty.ZIndex = 11
+		empty.BackgroundTransparency = 1
+		empty.Text = 'No changelogs found'
+		empty.TextColor3 = Color3.fromRGB(122, 132, 122)
+		empty.TextSize = 12
+		empty.FontFace = uipallet.Font
+		empty.Visible = #entries == 0
+		empty.Parent = window
+
+		local footer = Instance.new('Frame')
+		footer.Size = UDim2.new(1, 0, 0, 46)
+		footer.Position = UDim2.new(0, 0, 1, -46)
+		footer.ZIndex = 10
+		footer.BackgroundColor3 = Color3.new(1, 1, 1)
+		footer.BackgroundTransparency = 1
+		footer.BorderSizePixel = 0
+		footer.Parent = window
+		local footline = Instance.new('Frame')
+		footline.Size = UDim2.new(1, -28, 0, 1)
+		footline.Position = UDim2.fromOffset(14, 0)
+		footline.ZIndex = 11
+		footline.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		footline.BorderSizePixel = 0
+		footline.Parent = footer
+		local footleft = Instance.new('TextLabel')
+		footleft.Size = UDim2.new(1, -28, 0, 20)
+		footleft.Position = UDim2.fromOffset(14, 12)
+		footleft.ZIndex = 11
+		footleft.BackgroundTransparency = 1
+		footleft.Text = '> Larp V4'
+		footleft.TextXAlignment = Enum.TextXAlignment.Left
+		footleft.TextColor3 = Color3.fromRGB(80, 250, 123)
+		footleft.TextSize = 12
+		footleft.FontFace = Font.fromEnum(Enum.Font.Code)
+		footleft.Parent = footer
+		task.spawn(function()
+			for _, row in rows do
+				if not row.tag.Parent then return end
+				for i = 1, #row.tagtext do
+					row.tag.Text = row.tagtext:sub(1, i)
+					task.wait(0.02)
+				end
+				if not row.name.Parent then return end
+				for i = 1, #row.nametext do
+					row.name.Text = row.nametext:sub(1, i)
+					task.wait(0.015)
+				end
+				task.wait(0.05)
+			end
+			task.wait(0.2)
+			if footer.Parent then
+				tween:Tween(footer, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+					BackgroundTransparency = 0.98
+				})
+			end
+		end)
+	end
+
+	local function parseChangelog(text)
+		local entries = {}
+		for _, line in text:split('\n') do
+			local status = line:sub(1, 1)
+			if status == '+' or status == '-' or status == '~' then
+				local name = line:sub(2):gsub('^%s+', ''):gsub('%s+$', '')
+				if name ~= '' then
+					entries[#entries + 1] = {status = status == '+' and 'added' or status == '-' and 'removed' or 'modified', name = name}
+				end
+			end
+		end
+		return entries
+	end
+
+	local function fetchChangelog()
+		local suc, req = pcall(function()
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/changelog.txt?v='..tick(), true)
+		end)
+		if not suc or not req or req == '404: Not Found' then return nil end
+		return req
+	end
+
+	function mainapi.Changelog()
+		if clickgui:FindFirstChild('Changelog') then return end
+		local text = fetchChangelog()
+		if not text then
+			mainapi:CreateNotification('Changelog', 'Failed to fetch changelog', 3, 'warning')
+			return
+		end
+		local seen = isfile('LarpV4/seenchangelog.txt') and readfile('LarpV4/seenchangelog.txt') or nil
+		local entries = parseChangelog(text)
+		buildChangelog(entries, seen ~= nil and text ~= seen)
+		writefile('LarpV4/seenchangelog.txt', text)
+	end
+
+	local function checkChangelog()
+		local text = fetchChangelog()
+		if not text then return end
+		local seen = isfile('LarpV4/seenchangelog.txt') and readfile('LarpV4/seenchangelog.txt') or nil
+		if seen ~= text or not seen and isfile('LarpV4/seencommit.txt') then
+			mainapi.PendingChangelog = true
+			if clickgui.Visible then
+				mainapi.PendingChangelog = false
+				mainapi.Changelog()
+			end
+		end
+	end
+
+	mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
+		if not clickgui.Visible then
+			local existing = clickgui:FindFirstChild('Changelog')
+			if existing then
+				existing:Destroy()
+			end
+			return
+		end
+		if not mainapi.PendingChangelog then return end
+		mainapi.PendingChangelog = false
+		mainapi.Changelog()
+	end))
+
+	task.spawn(checkChangelog)
+end
+
+return mainapi

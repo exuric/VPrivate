@@ -1,10 +1,4 @@
 $ErrorActionPreference = 'Stop'
-$tmp = Join-Path $env:TEMP 'larp_manifest'
-if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
-New-Item -ItemType Directory -Path $tmp | Out-Null
-$tree = git write-tree
-git archive -o (Join-Path $tmp 'repo.tar') $tree
-tar -xf (Join-Path $tmp 'repo.tar') -C $tmp
 $files = @(
 	'main.lua',
 	'guis/larp2.lua',
@@ -15,9 +9,36 @@ $files = @(
 	'games/6872274481.lua',
 	'games/8444591321.lua'
 )
+$partSize = 65536
+$parts = @()
+foreach ($f in $files) {
+	$full = Join-Path (Get-Location) ($f -replace '/', '\')
+	$bytes = [System.IO.File]::ReadAllBytes($full)
+	if ($bytes.Length -gt $partSize) {
+		$count = [math]::Ceiling($bytes.Length / $partSize)
+		for ($i = 0; $i -lt $count; $i++) {
+			$len = [math]::Min($partSize, $bytes.Length - $i * $partSize)
+			$chunk = New-Object byte[] $len
+			[Array]::Copy($bytes, $i * $partSize, $chunk, 0, $len)
+			[System.IO.File]::WriteAllBytes("$full.$i", $chunk)
+			$parts += "$f.$i"
+		}
+	}
+}
+$tmp = Join-Path $env:TEMP 'larp_manifest'
+if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
+New-Item -ItemType Directory -Path $tmp | Out-Null
 $lines = foreach ($f in $files) {
-	$h = (Get-FileHash -Algorithm SHA512 -LiteralPath (Join-Path $tmp $f)).Hash.ToLower()
+	$out = Join-Path $tmp ($f -replace '/', '_')
+	cmd /c "git cat-file blob `":$f`" > `"$out`""
+	$h = (Get-FileHash -Algorithm SHA512 -LiteralPath $out).Hash.ToLower()
 	"$f $h"
+}
+foreach ($p in $parts) {
+	$out = Join-Path $tmp ($p -replace '/', '_')
+	cmd /c "git cat-file blob `":$p`" > `"$out`""
+	$h = (Get-FileHash -Algorithm SHA512 -LiteralPath $out).Hash.ToLower()
+	"$p $h"
 }
 Set-Content -Path 'profiles\manifest.txt' -Value ($lines -join "`n") -Encoding ASCII -NoNewline
 Remove-Item -Recurse -Force $tmp

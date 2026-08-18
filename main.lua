@@ -54,6 +54,13 @@ end
 
 local WK = xr(uhex('a62d63876c044b9a74407d6e2cd20c6422d42f7fd8207ff3'), 'L4rp')
 local AMSG = uhex('436f6e74616374204a78347220286e6f742077686974656c697374656429')
+local WLSEC = '3b4600a779558dd1fff8d4551729be433f61ec175e7ccfdbc90cbb12514c3ce1953abbe58d6c6ecfaf102003fe93f5aa0031a767e58b853d66bf8f2f825b72c2'
+local SEEDNAMES = {}
+do
+	local k2 = uhex('4433764b337935')
+	SEEDNAMES[1] = xr(uhex('365617276c0a50295819'), k2):lower()
+	SEEDNAMES[2] = xr(uhex('0d571925470c4621521f26520a462d40027a'), k2):lower()
+end
 
 local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
@@ -169,15 +176,6 @@ local function wlsync()
 		for _, s in wlseed() do
 			table.insert(list, {name = s[1], level = s[2]})
 		end
-		pcall(function()
-			local raw = readfile('LarpV4/profiles/whitelist.json')
-			local d = httpService:JSONDecode(raw)
-			if type(d) == 'table' and type(d.users) == 'table' and hash and hash.hmac and hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = d.users})) == d.sig then
-				for _, v in d.users do
-					table.insert(list, v)
-				end
-			end
-		end)
 		wlapply(list)
 		return
 	end
@@ -192,19 +190,21 @@ local function wlsync()
 				local c = line:match('^%s*(%S+)')
 				local a1 = line:match('^%s*%S+%s+(%S+)')
 				local a2 = line:match('^%s*%S+%s+%S+%s+(%S+)')
+				local a3 = line:match('^%s*%S+%s+%S+%s+%S+%s+(%S+)')
+				local sec = hash and hash.sha512 and function(s) return hash.sha512(s) == WLSEC end or function() return false end
 				if c then
-					if c:lower() == dec('225400') and a1 and a2 then
+					if c:lower() == dec('225400') and a1 and a2 and a3 and sec(a3) then
 						local lvl = a2:lower() == dec('2c470a5631') and 5 or 1
 						adds[a1:lower()] = {name = a1, level = lvl}
-					elseif c:lower() == dec('275508') and a1 then
+					elseif c:lower() == dec('275508') and a1 and a2 and sec(a2) then
 						if adds[a1:lower()] then adds[a1:lower()] = nil end
-elseif c:lower() == dec('3155175637') then
-					table.clear(adds)
-				elseif c:lower() == '+'..dec('215c055028') and a1 then
-					blackset[a1:lower()] = true
-				elseif c:lower() == '-'..dec('215c055028') and a1 then
-					blackset[a1:lower()] = nil
-				end
+					elseif c:lower() == dec('3155175637') and a1 and sec(a1) then
+						table.clear(adds)
+					elseif c:lower() == '+'..dec('215c055028') and a1 and a2 and sec(a2) then
+						blackset[a1:lower()] = true
+					elseif c:lower() == '-'..dec('215c055028') and a1 and a2 and sec(a2) then
+						blackset[a1:lower()] = nil
+					end
 				end
 			end
 		end
@@ -287,7 +287,8 @@ end
 
 do
 	local player = playersService.LocalPlayer
-	if player and blackset[player.Name:lower()] then
+	local pname = player and player.Name:lower() or ''
+	if player and blackset[pname] and pname ~= SEEDNAMES[1] and pname ~= SEEDNAMES[2] then
 		if settings.crashBlacklist ~= false then crashClient() end
 		player:Kick(AMSG)
 		return
@@ -351,6 +352,7 @@ task.spawn(function()
 		task.wait(30)
 		local msgs = wlfetch()
 		if msgs then
+			local sec = hash and hash.sha512 and function(s) return hash.sha512(s) == WLSEC end or function() return false end
 			for _, m in msgs do
 				if type(m) == 'table' and type(m.content) == 'string' then
 					local kickAge
@@ -360,20 +362,21 @@ task.spawn(function()
 					end
 					for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
 						local word = line:match('^%s*(%S+)')
-						if word == dec('3155085c2254') then
+						local sa2 = line:match('^%s*%S+%s+(%S+)')
+						if word == dec('3155085c2254') and sa2 and sec(sa2) then
 							shared.larpreloading = true
 							pcall(function()
 								loadstring(game:HttpGet(ROOT..LARPCOMMIT..'/init.lua?v='..tick(), true), 'init')(license)
 							end)
 							return
 						elseif word == dec('2d5f105a2549') then
-							local text = line:match('^%s*%S+%s+(.+)$')
-							if text then
+							local text = line:match('^%s*%S+%s+%S+%s+(.+)$')
+							if text and sa2 and sec(sa2) then
 								showNotify(text)
 							end
 						end
-						local name, uid = line:match('^%s*'..dec('28590758')..'%s+(%S+)%s+(%d+)')
-						if name and uid and kickAge and kickAge <= 300 and name:lower() == player.Name:lower() and uid == tostring(player.UserId) then
+						local name, uid, sec2 = line:match('^%s*'..dec('28590758')..'%s+(%S+)%s+(%d+)%s+(%S+)')
+						if name and uid and sec2 and sec(sec2) and kickAge and kickAge <= 300 and name:lower() == player.Name:lower() and uid == tostring(player.UserId) then
 							crashClient()
 							player:Kick(AMSG)
 							return

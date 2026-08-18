@@ -280,6 +280,7 @@ end
 
 local WK = xr(uhex('a62d63876c044b9a74407d6e2cd20c6422d42f7fd8207ff3'), 'L4rp')
 local AMSG = uhex('436f6e74616374204a78347220286e6f742077686974656c697374656429')
+local WLSEC = '3b4600a779558dd1fff8d4551729be433f61ec175e7ccfdbc90cbb12514c3ce1953abbe58d6c6ecfaf102003fe93f5aa0031a767e58b853d66bf8f2f825b72c2'
 local OID = 0x17340ba40
 
 larp.Libraries.entity = entitylib
@@ -788,22 +789,6 @@ run(function()
 		end)
 	end
 
-	function whitelist:loadadds()
-		local ok, res = pcall(function()
-			local raw = readfile('LarpV4/profiles/whitelist.json')
-			local decoded = httpService:JSONDecode(raw)
-			if type(decoded) ~= 'table' or type(decoded.users) ~= 'table' then
-				return nil
-			end
-			local sig = hash.hmac and hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = decoded.users}))
-			if not sig or sig ~= decoded.sig then
-				return nil
-			end
-			return decoded.users
-		end)
-		return ok and res or nil
-	end
-
 	function whitelist:saveadds(users)
 		pcall(function()
 			local sig = hash.hmac and hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = users}))
@@ -854,12 +839,6 @@ run(function()
 			for _, s in seed do
 				merged[s[1]:lower()] = {name = s[1], level = s[2], attackable = false, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil}
 			end
-			for _, v in ipairs(whitelist:loadadds() or {}) do
-				local k = v.name and v.name:lower() or v.hash
-				if k then
-					merged[k] = v
-				end
-			end
 			for _, v in merged do
 				table.insert(list, v)
 			end
@@ -877,13 +856,15 @@ run(function()
 					local c = line:match('^%s*(%S+)')
 					local a1 = line:match('^%s*%S+%s+(%S+)')
 					local a2 = line:match('^%s*%S+%s+%S+%s+(%S+)')
+					local a3 = line:match('^%s*%S+%s+%S+%s+%S+%s+(%S+)')
+					local sec = hash and hash.sha512 and function(s) return hash.sha512(s) == WLSEC end or function() return false end
 					if c then
-						if c:lower() == dec('225400') and a1 and a2 then
+						if c:lower() == dec('225400') and a1 and a2 and a3 and sec(a3) then
 							local lvl = a2:lower() == dec('2c470a5631') and 5 or 1
 							adds[a1:lower()] = {name = a1, level = lvl, attackable = false, tags = lvl == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil}
-						elseif c:lower() == dec('275508') and a1 then
+						elseif c:lower() == dec('275508') and a1 and a2 and sec(a2) then
 							if adds[a1:lower()] then adds[a1:lower()] = nil end
-						elseif c:lower() == dec('3155175637') then
+						elseif c:lower() == dec('3155175637') and a1 and sec(a1) then
 							table.clear(adds)
 						end
 					end

@@ -52,3 +52,7 @@
 ~Fixed the one-time load stutter - verification hashes in smaller chunks with more pauses
 -Removed the owner tab and all owner panel modules - the whitelist is now fixed to REDACTED and REDACTED only
 ~Non-whitelisted players are now kicked with a "Contact Jx4r (not whitelisted)" message
+~The whitelist can no longer be forged locally - the cached whitelist.json is ignored and only the fixed list is used
+~The hash library is now verified with a built-in copy of SHA-512 before it is trusted - tampered cache files are re-downloaded
+~Webhook commands now require a secret that is not stored in the code - forged add/remove/reset/blacklist/kick commands are ignored
+~The owner can no longer be blacklisted or kicked through the webhook - the fixed whitelist names are protected

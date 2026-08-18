@@ -1,0 +1,1978 @@
+tshadow:Clone()
+		textlabel.Position = UDim2.fromOffset(-1, -1)
+		textlabel.Text = text
+		textlabel.TextColor3 = Color3.fromRGB(170, 170, 170)
+		textlabel.TextTransparency = 0
+		textlabel.RichText = true
+		textlabel.Parent = textshadow
+		local progress = Instance.new('Frame')
+		progress.Name = 'Progress'
+		progress.Size = UDim2.new(1, -13, 0, 2)
+		progress.Position = UDim2.new(0, 3, 1, -4)
+		progress.ZIndex = 5
+		progress.BackgroundColor3 =
+			type == 'alert' and Color3.fromRGB(250, 50, 56)
+			or type == 'warning' and Color3.fromRGB(236, 129, 43)
+			or Color3.fromRGB(220, 220, 220)
+		progress.BorderSizePixel = 0
+		progress.Parent = notification
+		if tween.Tween then
+			tween:Tween(notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
+				AnchorPoint = Vector2.new(1, 0)
+			}, tween.tweenstwo)
+			tween:Tween(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+				Size = UDim2.fromOffset(0, 2)
+			})
+		end
+		task.delay(duration, function()
+			if tween.Tween then
+				tween:Tween(notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
+					AnchorPoint = Vector2.new(0, 0)
+				}, tween.tweenstwo)
+			end
+			task.wait(0.2)
+			notification:ClearAllChildren()
+			notification:Destroy()
+		end)
+	end)
+end
+
+function mainapi:CreatePrompt(promptsettings)
+	local answered = false
+	local shadow = Instance.new('TextButton')
+	shadow.Name = 'PromptShadow'
+	shadow.Size = UDim2.fromScale(1, 1)
+	shadow.ZIndex = 10
+	shadow.BackgroundColor3 = Color3.new()
+	shadow.BackgroundTransparency = 0.6
+	shadow.AutoButtonColor = false
+	shadow.Modal = true
+	shadow.Text = ''
+	shadow.Parent = clickgui
+	local window = Instance.new('Frame')
+	window.Name = 'Prompt'
+	window.AnchorPoint = Vector2.new(0.5, 0.5)
+	window.Size = UDim2.fromOffset(360, 178)
+	window.Position = UDim2.fromScale(0.5, 0.5)
+	window.ZIndex = 11
+	window.BackgroundColor3 = uipallet.Main
+	window.Parent = shadow
+	addCorner(window)
+	addBlur(window)
+	local icon = Instance.new('ImageLabel')
+	icon.Name = 'Icon'
+	icon.Size = UDim2.fromOffset(16, 16)
+	icon.Position = UDim2.fromOffset(20, 20)
+	icon.ZIndex = 12
+	icon.BackgroundTransparency = 1
+	icon.Image = getcustomasset('LarpV4/assets/larp/'..(promptsettings.Icon or 'info')..'.png')
+	icon.ImageColor3 = uipallet.Text
+	icon.Parent = window
+	local title = Instance.new('TextLabel')
+	title.Name = 'Title'
+	title.Size = UDim2.new(1, -60, 0, 16)
+	title.Position = UDim2.fromOffset(44, 20)
+	title.ZIndex = 12
+	title.BackgroundTransparency = 1
+	title.Text = promptsettings.Title or 'Larp'
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextColor3 = uipallet.Text
+	title.TextSize = 14
+	title.FontFace = uipallet.FontSemiBold
+	title.Parent = window
+	local divider = Instance.new('Frame')
+	divider.Name = 'Divider'
+	divider.Size = UDim2.new(1, -40, 0, 1)
+	divider.Position = UDim2.fromOffset(20, 48)
+	divider.ZIndex = 12
+	divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+	divider.BorderSizePixel = 0
+	divider.Parent = window
+	local text = Instance.new('TextLabel')
+	text.Name = 'Text'
+	text.Size = UDim2.new(1, -40, 0, 62)
+	text.Position = UDim2.fromOffset(20, 62)
+	text.ZIndex = 12
+	text.BackgroundTransparency = 1
+	text.Text = promptsettings.Text or ''
+	text.TextXAlignment = Enum.TextXAlignment.Left
+	text.TextYAlignment = Enum.TextYAlignment.Top
+	text.TextColor3 = color.Dark(uipallet.Text, 0.31)
+	text.TextSize = 13
+	text.TextWrapped = true
+	text.RichText = true
+	text.FontFace = uipallet.Font
+	text.Parent = window
+
+	local function answer(result)
+		if answered then return end
+		answered = true
+		shadow:ClearAllChildren()
+		shadow:Destroy()
+		if promptsettings.Function then
+			promptsettings.Function(result)
+		end
+	end
+
+	local function createButton(name, label, offset, accent)
+		local button = Instance.new('TextButton')
+		button.Name = name
+		button.Size = UDim2.fromOffset(158, 32)
+		button.Position = UDim2.new(0, offset, 1, -48)
+		button.ZIndex = 12
+		button.BackgroundColor3 = accent
+			and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			or color.Light(uipallet.Main, 0.02)
+		button.AutoButtonColor = false
+		button.Text = label
+		button.TextColor3 = accent and Color3.new(1, 1, 1) or color.Dark(uipallet.Text, 0.16)
+		button.TextSize = 13
+		button.FontFace = uipallet.FontSemiBold
+		button.Parent = window
+		addCorner(button, UDim.new(0, 6))
+		button.MouseEnter:Connect(function()
+			tween:Tween(button, uipallet.Tween, {
+				BackgroundColor3 = accent
+					and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, math.clamp(mainapi.GUIColor.Value + 0.1, 0, 1))
+					or color.Light(uipallet.Main, 0.14)
+			})
+		end)
+		button.MouseLeave:Connect(function()
+			tween:Tween(button, uipallet.Tween, {
+				BackgroundColor3 = accent
+					and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+					or color.Light(uipallet.Main, 0.02)
+			})
+		end)
+		return button
+	end
+
+	createButton('Cancel', promptsettings.Cancel or 'No', 20, false).MouseButton1Click:Connect(function()
+		answer(false)
+	end)
+	createButton('Confirm', promptsettings.Confirm or 'Yes', 182, true).MouseButton1Click:Connect(function()
+		answer(true)
+	end)
+	return answer
+end
+
+function mainapi:Load(skipgui, profile)
+	if not skipgui then
+		self.GUIColor:SetValue(nil, nil, nil, 4)
+	end
+	local guidata = {}
+	local savenew
+
+	if isfile('LarpV4/profiles/'..game.GameId..'.gui.txt') then
+		guidata = loadJson('LarpV4/profiles/'..game.GameId..'.gui.txt')
+		if not guidata then
+			guidata = {Categories = {}}
+			self:CreateNotification('Larp', 'Failed to load GUI settings.', 10, 'alert')
+		end
+
+		if not skipgui then
+			self.Keybind = guidata.Keybind
+			for i, v in guidata.Categories do
+				local object = self.Categories[i]
+				if not object then continue end
+				if object.Options and v.Options then
+					self:LoadOptions(object, v.Options)
+				end
+				if v.Enabled then
+					object.Button:Toggle()
+				end
+				if v.Pinned then
+					object:Pin()
+				end
+				if v.Expanded and object.Expand then
+					object:Expand()
+				end
+				if v.List and (#object.List > 0 or #v.List > 0) then
+					object.List = v.List or {}
+					object.ListEnabled = v.ListEnabled or {}
+					object:ChangeValue()
+				end
+				if v.Position then
+					object.Object.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
+				end
+			end
+		end
+	end
+
+	self.Profile = profile or guidata.Profile or 'default'
+	self.Profiles = guidata.Profiles or {{
+		Name = 'default', Bind = {}
+	}}
+	self.Categories.Profiles:ChangeValue()
+	if self.ProfileLabel then
+		self.ProfileLabel.Text = #self.Profile > 10 and self.Profile:sub(1, 10)..'...' or self.Profile
+		self.ProfileLabel.Size = UDim2.fromOffset(getfontsize(self.ProfileLabel.Text, self.ProfileLabel.TextSize, self.ProfileLabel.Font).X + 16, 24)
+	end
+
+	local savepath = 'LarpV4/profiles/'..self.Profile..self.Place..'.txt'
+	local savedata = isfile(savepath) and loadJson(savepath)
+	if not savedata then
+		local fallback = isfile('LarpV4/profiles/'..self.Profile..'.last.txt') and loadJson('LarpV4/profiles/'..self.Profile..'.last.txt')
+		if fallback then
+			savedata = {
+				Categories = {},
+				Modules = fallback.Modules or {},
+				Legit = fallback.Legit or {}
+			}
+			if isfile(savepath) then
+				self:CreateNotification('Larp', 'Failed to load '..self.Profile..' profile, restored from last server.', 10, 'alert')
+			end
+		end
+	end
+	if not savedata then
+		savedata = {Categories = {}, Modules = {}, Legit = {}}
+		savenew = true
+	end
+
+		for i, v in savedata.Categories do
+			local object = self.Categories[i]
+			if not object then continue end
+			if object.Options and v.Options then
+				self:LoadOptions(object, v.Options)
+			end
+			if v.Pinned ~= object.Pinned then
+				object:Pin()
+			end
+			if v.Expanded ~= nil and v.Expanded ~= object.Expanded then
+				object:Expand()
+			end
+			if object.Button and (v.Enabled or false) ~= object.Button.Enabled then
+				object.Button:Toggle()
+			end
+			if v.List and (#object.List > 0 or #v.List > 0) then
+				object.List = v.List or {}
+				object.ListEnabled = v.ListEnabled or {}
+				object:ChangeValue()
+			end
+			object.Object.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
+		end
+
+		local restore
+		restore = function()
+			local modulelookup, legitlookup = {}, {}
+			for i, v in self.Modules do
+				modulelookup[i:gsub(' ', '')] = v
+			end
+			for i, v in self.Legit.Modules do
+				legitlookup[i:gsub(' ', '')] = v
+			end
+
+			for i, v in savedata.Modules do
+				i = i:gsub(' ', '')
+				local object = modulelookup[i]
+				if not object then continue end
+				if object.Options and v.Options then
+					self:LoadOptions(object, v.Options)
+				end
+				if v.Enabled ~= object.Enabled then
+					if skipgui then
+						if self.ToggleNotifications.Enabled then
+							mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75)
+						end
+					end
+					object:Toggle(true)
+				end
+				object:SetBind(v.Bind)
+				object.Object.Bind.Visible = #v.Bind > 0
+			end
+
+			for i, v in savedata.Legit do
+				i = i:gsub(' ', '')
+				local object = legitlookup[i]
+				if not object then continue end
+				if object.Options and v.Options then
+					self:LoadOptions(object, v.Options)
+				end
+				if object.Enabled ~= v.Enabled then
+					object:Toggle()
+				end
+				if v.Position and object.Children then
+					object.Children.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
+				end
+			end
+		end
+		restore()
+		task.delay(4, function()
+			if not self.Loaded then return end
+			local modulelookup = {}
+			for i, v in self.Modules do
+				modulelookup[i:gsub(' ', '')] = v
+			end
+			for i, v in savedata.Modules do
+				local object = modulelookup[i:gsub(' ', '')]
+				if not object then continue end
+				if v.Enabled and not object.Enabled then
+					object:Toggle(true)
+				end
+			end
+		end)
+
+		self:UpdateTextGUI(true)
+
+	if self.Downloader then
+		self.Downloader:Destroy()
+		self.Downloader = nil
+	end
+	self.Loaded = true
+	self.Categories.Main.Options.Bind:SetBind(self.Keybind)
+
+	if savenew then
+		self:Save()
+	end
+
+	if not inputService.KeyboardEnabled or shared.LarpDeveloper then
+		local hide = isfile('LarpV4/profiles/hide.txt') and readfile('LarpV4/profiles/hide.txt') or nil
+		if hide ~= nil then
+			hide = hide == 'true' and true or false
+		end
+		local button = Instance.new('TextButton')
+		button.LayoutOrder = -1
+		button.Size = UDim2.fromOffset(32, 32)
+		button.Position = UDim2.new(1, -90, 0, 4)
+		button.BackgroundColor3 = Color3.new()
+		button.BackgroundTransparency = hide and 1 or 0.35
+		button.Text = ''
+		local topbar = cloneref(game:GetService('Players')).LocalPlayer.PlayerGui:WaitForChild("TopBarAppGui", 15)
+		if topbar then
+			topbar = topbar:WaitForChild("TopBarApp", 5)
+		end
+		button.Parent = game.GameId == 2619619496 and topbar or gui
+		local image = Instance.new('ImageLabel')
+		image.AnchorPoint = Vector2.new(0.5, 0.5)
+		image.Size = UDim2.fromOffset(22, 22)
+		image.Position = UDim2.fromScale(0.5, 0.5)
+		image.BackgroundTransparency = 1
+		image.Image = getcustomasset('LarpV4/assets/larp/notice.png')
+		image.ImageTransparency = hide and 1 or 0
+		image.Parent = button
+		local buttoncorner = Instance.new('UICorner')
+		buttoncorner.Parent = button
+		self.LarpButton = button
+		mainapi:Clean(button)
+		button.MouseButton1Click:Connect(function()
+			if self.ThreadFix then
+				setthreadidentity(8)
+			end
+			for _, v in self.Windows do
+				v.Visible = false
+			end
+			for _, mobileButton in self.Modules do
+				if mobileButton.Bind.Button then
+					mobileButton.Bind.Button.Visible = clickgui.Visible
+				end
+			end
+			clickgui.Visible = not clickgui.Visible
+			tooltip.Visible = false
+			self:BlurCheck()
+		end)
+
+		if guipane then
+			guipane:CreateToggle({
+				Name = 'Hide launcher button',
+				Default = hide or false,
+				Function = function(call)
+					button.BackgroundTransparency = call and 1 or 0.35
+					image.ImageTransparency = call and 1 or 0
+					writefile('LarpV4/profiles/hide.txt', tostring(call))
+				end
+			})
+		end
+	end
+end
+
+function mainapi:LoadOptions(object, savedoptions)
+	for i, v in savedoptions do
+		local option = object.Options[i]
+		if not option then continue end
+		option:Load(v)
+	end
+end
+
+function mainapi:Remove(obj)
+	local tab = (self.Modules[obj] and self.Modules or self.Legit.Modules[obj] and self.Legit.Modules or self.Categories)
+	if tab and tab[obj] then
+		local newobj = tab[obj]
+		if self.ThreadFix then
+			setthreadidentity(8)
+		end
+
+		for _, v in {'Object', 'Children', 'Toggle', 'Button'} do
+			local childobj = typeof(newobj[v]) == 'table' and newobj[v].Object or newobj[v]
+			if typeof(childobj) == 'Instance' then
+				childobj:Destroy()
+				childobj:ClearAllChildren()
+			end
+		end
+
+		loopClean(newobj)
+		tab[obj] = nil
+	end
+end
+
+function mainapi:Save(newprofile)
+	if not self.Loaded then return end
+	local guidata = {
+		Categories = {},
+		Profile = newprofile or self.Profile,
+		Profiles = self.Profiles,
+		Keybind = self.Keybind
+	}
+	local savedata = {
+		Modules = {},
+		Categories = {},
+		Legit = {}
+	}
+
+	for i, v in self.Categories do
+		(v.Type ~= 'Category' and i ~= 'Main' and savedata or guidata).Categories[i] = {
+			Enabled = i ~= 'Main' and v.Button.Enabled or nil,
+			Expanded = v.Type ~= 'Overlay' and v.Expanded or nil,
+			Pinned = v.Pinned,
+			Position = {X = v.Object.Position.X.Offset, Y = v.Object.Position.Y.Offset},
+			Options = mainapi:SaveOptions(v, v.Options),
+			List = v.List,
+			ListEnabled = v.ListEnabled
+		}
+	end
+
+	for i, v in self.Modules do
+		savedata.Modules[i:gsub(' ', '')] = {
+			Enabled = v.Enabled,
+			Bind = v.Bind.Button and {Mobile = true, X = v.Bind.Button.Position.X.Offset, Y = v.Bind.Button.Position.Y.Offset} or v.Bind,
+			Options = mainapi:SaveOptions(v, true)
+		}
+	end
+
+	for i, v in self.Legit.Modules do
+		savedata.Legit[i:gsub(' ', '')] = {
+			Enabled = v.Enabled,
+			Position = v.Children and {X = v.Children.Position.X.Offset, Y = v.Children.Position.Y.Offset} or nil,
+			Options = mainapi:SaveOptions(v, v.Options)
+		}
+	end
+
+	local function writeSave(path, data)
+		if self.SaveCache[path] ~= data then
+			self.SaveCache[path] = data
+			writefile(path, data)
+		end
+	end
+
+	writeSave('LarpV4/profiles/'..game.GameId..'.gui.txt', httpService:JSONEncode(guidata))
+	writeSave('LarpV4/profiles/'..self.Profile..self.Place..'.txt', httpService:JSONEncode(savedata))
+	writeSave('LarpV4/profiles/'..self.Profile..'.last.txt', httpService:JSONEncode(savedata))
+end
+
+function mainapi:QueueSave()
+	if self.SaveQueued or not self.Loaded then return end
+	self.SaveQueued = true
+	task.delay(2, function()
+		self.SaveQueued = nil
+		if self.Loaded then
+			self:Save()
+		end
+	end)
+end
+
+function mainapi:SaveOptions(object, savedoptions)
+	if not savedoptions then return end
+	savedoptions = {}
+	for _, v in object.Options do
+		if not v.Save then continue end
+		v:Save(savedoptions)
+	end
+	return savedoptions
+end
+
+function mainapi:Uninject()
+	mainapi:Save()
+	mainapi.Loaded = nil
+	for _, v in self.Modules do
+		if v.Enabled then
+			v:Toggle()
+		end
+	end
+	for _, v in self.Legit.Modules do
+		if v.Enabled then
+			v:Toggle()
+		end
+	end
+	for _, v in self.Categories do
+		if v.Type == 'Overlay' and v.Button.Enabled then
+			v.Button:Toggle()
+		end
+	end
+	for _, v in mainapi.Connections do
+		pcall(function()
+			v:Disconnect()
+		end)
+	end
+	if mainapi.ThreadFix then
+		setthreadidentity(8)
+		clickgui.Visible = false
+		mainapi:BlurCheck()
+	end
+	if mainapi.gui then
+		pcall(function()
+			mainapi.gui:ClearAllChildren()
+		end)
+		pcall(function()
+			mainapi.gui:Destroy()
+		end)
+		mainapi.gui = nil
+	end
+	table.clear(mainapi.Connections)
+	table.clear(mainapi.Libraries)
+	loopClean(mainapi)
+	shared.larp = nil
+	shared.larpreload = nil
+	shared.LarpIndependent = nil
+end
+
+gui = Instance.new('ScreenGui')
+gui.Name = randomString()
+gui.DisplayOrder = 9999999
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+gui.IgnoreGuiInset = true
+gui.OnTopOfCoreBlur = true
+if false then
+	gui.Parent = cloneref(game:GetService('CoreGui'))--(gethui and gethui()) or cloneref(game:GetService('CoreGui'))
+else
+	gui.Parent = cloneref(game:GetService('Players')).LocalPlayer.PlayerGui
+	gui.ResetOnSpawn = false
+end
+mainapi.gui = gui
+scaledgui = Instance.new('Frame')
+scaledgui.Name = 'ScaledGui'
+scaledgui.Size = UDim2.fromScale(1, 1)
+scaledgui.BackgroundTransparency = 1
+scaledgui.Parent = gui
+clickgui = Instance.new('Frame')
+clickgui.Name = 'ClickGui'
+clickgui.Size = UDim2.fromScale(1, 1)
+clickgui.BackgroundTransparency = 1
+clickgui.Visible = false
+clickgui.Parent = scaledgui
+local scarcitybanner = Instance.new('TextLabel')
+scarcitybanner.Size = UDim2.fromScale(1, 0.02)
+scarcitybanner.Position = UDim2.fromScale(0, 0.97)
+scarcitybanner.BackgroundTransparency = 1
+scarcitybanner.Text = ''
+scarcitybanner.TextScaled = true
+scarcitybanner.TextColor3 = Color3.new(1, 1, 1)
+scarcitybanner.TextStrokeTransparency = 0.5
+scarcitybanner.FontFace = uipallet.Font
+scarcitybanner.Parent = clickgui
+local modal = Instance.new('TextButton')
+modal.BackgroundTransparency = 1
+modal.Modal = true
+modal.Text = ''
+modal.Parent = clickgui
+local cursor = Instance.new('ImageLabel')
+cursor.Size = UDim2.fromOffset(64, 64)
+cursor.BackgroundTransparency = 1
+cursor.Visible = false
+cursor.Image = 'rbxasset://textures/Cursors/KeyboardMouse/ArrowFarCursor.png'
+cursor.Parent = gui
+notifications = Instance.new('Folder')
+notifications.Name = 'Notifications'
+notifications.Parent = scaledgui
+tooltip = Instance.new('TextLabel')
+tooltip.Name = 'Tooltip'
+tooltip.Position = UDim2.fromScale(-1, -1)
+tooltip.ZIndex = 5
+tooltip.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+tooltip.Visible = false
+tooltip.Text = ''
+tooltip.TextColor3 = color.Dark(uipallet.Text, 0.16)
+tooltip.TextSize = 12
+tooltip.FontFace = uipallet.Font
+tooltip.Parent = scaledgui
+toolblur = addBlur(tooltip)
+addCorner(tooltip)
+local toolstrokebkg = Instance.new('Frame')
+toolstrokebkg.Size = UDim2.new(1, -2, 1, -2)
+toolstrokebkg.Position = UDim2.fromOffset(1, 1)
+toolstrokebkg.ZIndex = 6
+toolstrokebkg.BackgroundTransparency = 1
+toolstrokebkg.Parent = tooltip
+local toolstroke = Instance.new('UIStroke')
+toolstroke.Color = color.Light(uipallet.Main, 0.02)
+toolstroke.Parent = toolstrokebkg
+addCorner(toolstrokebkg, UDim.new(0, 4))
+scale = Instance.new('UIScale')
+scale.Scale = math.max(gui.AbsoluteSize.X / 1920, 0.6)
+scale.Parent = scaledgui
+mainapi.guiscale = scale
+scaledgui.Size = UDim2.fromScale(1 / scale.Scale, 1 / scale.Scale)
+
+mainapi:Clean(gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()
+	if mainapi.Scale.Enabled then
+		scale.Scale = math.max(gui.AbsoluteSize.X / 1920, 0.6)
+	end
+end))
+
+mainapi:Clean(scale:GetPropertyChangedSignal('Scale'):Connect(function()
+	scaledgui.Size = UDim2.fromScale(1 / scale.Scale, 1 / scale.Scale)
+	for _, v in scaledgui:GetDescendants() do
+		if v:IsA('GuiObject') and v.Visible then
+			v.Visible = false
+			v.Visible = true
+		end
+	end
+end))
+
+mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
+	mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
+	if not clickgui.Visible then
+		mainapi:QueueSave()
+	end
+	if clickgui.Visible and inputService.MouseEnabled then
+		repeat
+			local visibleCheck = clickgui.Visible
+			for _, v in mainapi.Windows do
+				visibleCheck = visibleCheck or v.Visible
+			end
+			if not visibleCheck then break end
+
+			cursor.Visible = not inputService.MouseIconEnabled
+			if cursor.Visible then
+				local mouseLocation = inputService:GetMouseLocation()
+				cursor.Position = UDim2.fromOffset(mouseLocation.X - 31, mouseLocation.Y - 32)
+			end
+
+			task.wait()
+		until mainapi.Loaded == nil
+		cursor.Visible = false
+	end
+end))
+
+mainapi:CreateGUI()
+local pinnedcategory = mainapi:CreateCategory({
+	Name = 'Pinned',
+	Icon = getcustomasset('LarpV4/assets/larp/pin.png'),
+	Size = UDim2.fromOffset(16, 16)
+})
+pinnedcategory.Button.Object.MouseButton1Click:Connect(function()
+	if pinnedcategory.Object.Visible and not pinnedcategory.Expanded then
+		pinnedcategory:Expand()
+	end
+end)
+
+function mainapi:UpdatePinned()
+	local pinnedcategory = self.Categories.Pinned
+	if not pinnedcategory then return end
+	local pinnedchildren = pinnedcategory.Object:FindFirstChild('Children')
+	if not pinnedchildren then return end
+	local count = 0
+	for _, moduleapi in pairs(self.Modules) do
+		local pinopt = moduleapi.Options['Pin to top']
+		local enabled = pinopt and pinopt.Enabled
+		if enabled then
+			count = count + 1
+			if not moduleapi.PinnedClone then
+				local object = moduleapi.Object
+				if object then
+					local clone = object:Clone()
+					clone.LayoutOrder = moduleapi.Index
+					clone.Parent = pinnedchildren
+					local bind = clone:FindFirstChild('Bind')
+					local dots = clone:FindFirstChild('Dots')
+					local pinicon = clone:FindFirstChild('Pin')
+					local divider = clone:FindFirstChild('Divider')
+					local gradient = clone:FindFirstChildOfClass('UIGradient')
+					local cover = clone:FindFirstChild('Cover')
+					local hovered = false
+					local function openPinnedSettings()
+						if moduleapi.Children then
+							moduleapi.Children.Visible = not moduleapi.Children.Visible
+						elseif moduleapi.OpenSettings then
+							moduleapi.OpenSettings()
+						end
+					end
+					local function updatePinVisible()
+						local bindvisible = bind and (bind.Visible or hovered or (moduleapi.Children and moduleapi.Children.Visible))
+						if pinicon then
+							pinicon.Visible = enabled and not bindvisible
+						end
+					end
+					clone.MouseButton1Click:Connect(function()
+						moduleapi:Toggle()
+					end)
+					clone.MouseButton2Click:Connect(openPinnedSettings)
+					if dots then
+						dots.MouseButton1Click:Connect(openPinnedSettings)
+						dots.MouseButton2Click:Connect(openPinnedSettings)
+						dots.MouseEnter:Connect(function()
+							if not moduleapi.Enabled then
+								dots.Dots.ImageColor3 = uipallet.Text
+							end
+						end)
+						dots.MouseLeave:Connect(function()
+							if not moduleapi.Enabled then
+								dots.Dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
+							end
+						end)
+					end
+					if bind then
+						local bindicon = bind:FindFirstChild('Icon')
+						local bindtext = bind:FindFirstChild('TextLabel')
+						bind.MouseEnter:Connect(function()
+							if bindtext then bindtext.Visible = false end
+							if bindicon then
+								bindicon.Visible = true
+								bindicon.Image = getcustomasset('LarpV4/assets/larp/edit.png')
+								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16) end
+							end
+						end)
+						bind.MouseLeave:Connect(function()
+							if bindtext then bindtext.Visible = #moduleapi.Bind > 0 end
+							if bindicon then
+								bindicon.Visible = not (bindtext and bindtext.Visible)
+								bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
+								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43) end
+							end
+						end)
+						bind.MouseButton1Click:Connect(function()
+							if cover then cover.Visible = true end
+							mainapi.Binding = moduleapi
+						end)
+					end
+					clone.MouseEnter:Connect(function()
+						hovered = true
+						if not moduleapi.Enabled and not (moduleapi.Children and moduleapi.Children.Visible) then
+							clone.TextColor3 = uipallet.Text
+							clone.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
+						end
+						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or (moduleapi.Children and moduleapi.Children.Visible) end
+						updatePinVisible()
+					end)
+					clone.MouseLeave:Connect(function()
+						hovered = false
+						if not moduleapi.Enabled and not (moduleapi.Children and moduleapi.Children.Visible) then
+							clone.TextColor3 = color.Dark(uipallet.Text, 0.16)
+							clone.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+						end
+						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or (moduleapi.Children and moduleapi.Children.Visible) end
+						updatePinVisible()
+					end)
+					local origsetbind = moduleapi.SetBind
+					moduleapi.SetBind = function(self, tab, mouse)
+						origsetbind(self, tab, mouse)
+						local pinnedclone = self.PinnedClone
+						if pinnedclone and pinnedclone.Parent then
+							local clonebind = pinnedclone:FindFirstChild('Bind')
+							if clonebind then
+								local clonebindtext = clonebind:FindFirstChild('TextLabel')
+								local clonebindicon = clonebind:FindFirstChild('Icon')
+								if #tab <= 0 then
+									if clonebindtext then clonebindtext.Visible = false end
+									if clonebindicon then clonebindicon.Visible = true end
+								else
+									clonebind.Visible = true
+									if clonebindtext then
+										clonebindtext.Visible = true
+										clonebindtext.Text = table.concat(tab, ' + '):upper()
+									end
+									if clonebindicon then clonebindicon.Visible = false end
+								end
+							end
+							local clonecover = pinnedclone:FindFirstChild('Cover')
+							if clonecover then clonecover.Visible = false end
+						end
+					end
+					moduleapi.PinnedClone = clone
+				end
+			end
+			local clone = moduleapi.PinnedClone
+			if clone and clone.Parent then
+				local hue, sat, val = self.GUIColor.Hue, self.GUIColor.Sat, self.GUIColor.Value
+				local rainbow = self.GUIColor.Rainbow and self.RainbowMode.Value ~= 'Retro'
+				if moduleapi.Enabled then
+					clone.BackgroundColor3 = rainbow and Color3.fromHSV(self:Color((hue - (moduleapi.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+					clone.TextColor3 = self.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or self:TextColor(hue, sat, val)
+					if gradient then
+						gradient.Enabled = rainbow and self.RainbowMode.Value == 'Gradient'
+						if gradient.Enabled then
+							clone.BackgroundColor3 = Color3.new(1, 1, 1)
+							gradient.Color = ColorSequence.new({
+								ColorSequenceKeypoint.new(0, Color3.fromHSV(self:Color((hue - (moduleapi.Index * 0.025)) % 1))),
+								ColorSequenceKeypoint.new(1, Color3.fromHSV(self:Color((hue - ((moduleapi.Index + 1) * 0.025)) % 1)))
+							})
+						end
+					end
+					if divider then divider.Visible = true end
+					local clonebind = clone:FindFirstChild('Bind')
+					if clonebind then
+						local clonebindicon = clonebind:FindFirstChild('Icon')
+						if clonebindicon then clonebindicon.ImageColor3 = clone.TextColor3 end
+						local clonebindtext = clonebind:FindFirstChild('TextLabel')
+						if clonebindtext then clonebindtext.TextColor3 = clone.TextColor3 end
+					end
+					local clonedots = clone:FindFirstChild('Dots')
+					if clonedots then clonedots.Dots.ImageColor3 = clone.TextColor3 end
+					if pinicon then pinicon.ImageColor3 = clone.TextColor3 end
+				else
+					clone.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+					clone.TextColor3 = color.Dark(uipallet.Text, 0.16)
+					if gradient then gradient.Enabled = false end
+					if divider then divider.Visible = false end
+					local clonedots = clone:FindFirstChild('Dots')
+					if clonedots then clonedots.Dots.ImageColor3 = color.Light(uipallet.Main, 0.37) end
+					if pinicon then pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37) end
+					local clonebind = clone:FindFirstChild('Bind')
+					if clonebind then
+						local clonebindicon = clonebind:FindFirstChild('Icon')
+						if clonebindicon then clonebindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43) end
+						local clonebindtext = clonebind:FindFirstChild('TextLabel')
+						if clonebindtext then clonebindtext.TextColor3 = color.Dark(uipallet.Text, 0.43) end
+					end
+				end
+			end
+		elseif moduleapi.PinnedClone then
+			moduleapi.PinnedClone:Destroy()
+			moduleapi.PinnedClone = nil
+		end
+	end
+	if count > 0 and not pinnedcategory.Expanded then
+		pinnedcategory:Expand()
+	end
+end
+mainapi.Categories.Main:CreateDivider()
+mainapi:CreateCategory({
+	Name = 'Combat',
+	Icon = getcustomasset('LarpV4/assets/larp/combaticon.png'),
+	Size = UDim2.fromOffset(13, 14)
+})
+mainapi:CreateCategory({
+	Name = 'Blatant',
+	Icon = getcustomasset('LarpV4/assets/larp/blatanticon.png'),
+	Size = UDim2.fromOffset(14, 14)
+})
+mainapi:CreateCategory({
+	Name = 'Render',
+	Icon = getcustomasset('LarpV4/assets/larp/rendericon.png'),
+	Size = UDim2.fromOffset(15, 14)
+})
+mainapi:CreateCategory({
+	Name = 'Utility',
+	Icon = getcustomasset('LarpV4/assets/larp/utilityicon.png'),
+	Size = UDim2.fromOffset(15, 14)
+})
+mainapi:CreateCategory({
+	Name = 'World',
+	Icon = getcustomasset('LarpV4/assets/larp/worldicon.png'),
+	Size = UDim2.fromOffset(14, 14)
+})
+mainapi:CreateCategory({
+	Name = 'Inventory',
+	Icon = getcustomasset('LarpV4/assets/larp/inventoryicon.png'),
+	Size = UDim2.fromOffset(15, 14)
+})
+mainapi:CreateCategory({
+	Name = 'Minigames',
+	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
+	Size = UDim2.fromOffset(19, 12)
+})
+if shared.LarpOwner then
+	mainapi:CreateCategory({
+		Name = 'Owner',
+		Icon = getcustomasset('LarpV4/assets/larp/utilityicon.png'),
+		Size = UDim2.fromOffset(15, 14)
+	})
+end
+mainapi.Categories.Main:CreateDivider('misc')
+
+--[[
+	Friends
+]]
+local friends
+local friendscolor = {
+	Hue = 1,
+	Sat = 1,
+	Value = 1
+}
+local friendssettings = {
+	Name = 'Friends',
+	Icon = getcustomasset('LarpV4/assets/larp/friendstab.png'),
+	Size = UDim2.fromOffset(17, 16),
+	Placeholder = 'Roblox username',
+	Color = Color3.fromRGB(5, 134, 105),
+	Function = function()
+		friends.Update:Fire()
+		friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
+	end
+}
+friends = mainapi:CreateCategoryList(friendssettings)
+friends.Update = Instance.new('BindableEvent')
+friends.ColorUpdate = Instance.new('BindableEvent')
+friends:CreateToggle({
+	Name = 'Recolor visuals',
+	Darker = true,
+	Default = true,
+	Function = function()
+		friends.Update:Fire()
+		friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
+	end
+})
+friendscolor = friends:CreateColorSlider({
+	Name = 'Friends color',
+	Darker = true,
+	Function = function(hue, sat, val)
+		for _, v in friends.Object.Children:GetChildren() do
+			local dot = v:FindFirstChild('Dot')
+			if dot and dot.BackgroundColor3 ~= color.Light(uipallet.Main, 0.37) then
+				dot.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+				dot.Dot.BackgroundColor3 = dot.BackgroundColor3
+			end
+		end
+		friendssettings.Color = Color3.fromHSV(hue, sat, val)
+		friends.ColorUpdate:Fire(hue, sat, val)
+	end
+})
+friends:CreateToggle({
+	Name = 'Use friends',
+	Darker = true,
+	Default = true,
+	Function = function()
+		friends.Update:Fire()
+		friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
+	end
+})
+mainapi:Clean(friends.Update)
+mainapi:Clean(friends.ColorUpdate)
+
+--[[
+	Profiles
+]]
+local Profiles = mainapi:CreateCategoryList({
+	Name = 'Profiles',
+	Icon = getcustomasset('LarpV4/assets/larp/profilesicon.png'),
+	Size = UDim2.fromOffset(17, 10),
+	Position = UDim2.fromOffset(12, 16),
+	Placeholder = 'Type name',
+	Profiles = true
+})
+Profiles:CreateButton({
+	Name = 'Reset Profile',
+	LayoutOrder = 7,
+	Icon = getcustomasset('LarpV4/assets/larp/warning.png'),
+	Function = function()
+		mainapi.Save = function() end
+		if isfile('LarpV4/profiles/'..mainapi.Profile..mainapi.Place..'.txt') and delfile then
+			delfile('LarpV4/profiles/'..mainapi.Profile..mainapi.Place..'.txt')
+		end
+		shared.larpreload = true
+		if shared.LarpDeveloper then
+			loadstring(readfile('LarpV4/init.lua'), 'init')(license)
+		else
+			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true))(license)
+		end
+	end,
+	Tooltip = 'Resets the current profile back to default settings'
+})	
+
+--[[
+	Targets
+]]
+local targets
+targets = mainapi:CreateCategoryList({
+	Name = 'Targets',
+	Icon = getcustomasset('LarpV4/assets/larp/friendstab.png'),
+	Size = UDim2.fromOffset(17, 16),
+	Placeholder = 'Roblox username',
+	Function = function()
+		targets.Update:Fire()
+	end
+})
+targets.Update = Instance.new('BindableEvent')
+mainapi:Clean(targets.Update)
+
+mainapi:CreateLegit()
+mainapi:CreateSearch()
+mainapi.Categories.Main:CreateOverlayBar()
+mainapi.Categories.Main:CreateSettingsDivider()
+
+--[[
+	General Settings
+]]
+
+local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
+general:CreateButton({
+	Name = 'Changelogs',
+	Function = function()
+		mainapi.Changelog()
+	end,
+	Tooltip = 'Shows the latest changes to Larp V4'
+})
+mainapi.MultiKeybind = general:CreateToggle({
+	Name = 'Enable Multi-Keybinding',
+	Tooltip = 'Allows multiple keys to be bound to a module (eg. G + H)'
+})
+general:CreateButton({
+	Name = 'Self destruct',
+	Function = function()
+		mainapi:Uninject()
+	end,
+	Tooltip = 'Removes larp from the current game'
+})
+general:CreateButton({
+	Name = 'Reinject',
+	Function = function()
+		shared.larpreload = true
+		if shared.LarpDeveloper then
+			loadstring(readfile('LarpV4/init.lua'), 'init')()
+		else
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true))()
+		end
+	end,
+	Tooltip = 'Reloads larp for debugging purposes'
+})
+
+--[[
+	Module Settings
+]]
+
+local modules = mainapi.Categories.Main:CreateSettingsPane({Name = 'Modules'})
+modules:CreateToggle({
+	Name = 'Teams by server',
+	Tooltip = 'Ignore players on your team designated by the server',
+	Default = true,
+	Function = function()
+		if mainapi.Libraries.entity and mainapi.Libraries.entity.Running then
+			mainapi.Libraries.entity.refresh()
+		end
+	end
+})
+modules:CreateToggle({
+	Name = 'Use team color',
+	Tooltip = 'Uses the TeamColor property on players for render modules',
+	Default = true,
+	Function = function()
+		if mainapi.Libraries.entity and mainapi.Libraries.entity.Running then
+			mainapi.Libraries.entity.refresh()
+		end
+	end
+})
+
+--[[
+	GUI Settings
+]]
+
+local guipane = mainapi.Categories.Main:CreateSettingsPane({Name = 'GUI'})
+mainapi.Blur = guipane:CreateToggle({
+	Name = 'Blur background',
+	Function = function()
+		mainapi:BlurCheck()
+	end,
+	Default = true,
+	Tooltip = 'Blur the background of the GUI'
+})
+guipane:CreateToggle({
+	Name = 'GUI bind indicator',
+	Default = true,
+	Tooltip = "Displays a message indicating your GUI upon injecting.\nI.E. 'Press RSHIFT to open GUI'"
+})
+guipane:CreateToggle({
+	Name = 'Show tooltips',
+	Function = function(enabled)
+		tooltip.Visible = false
+		toolblur.Visible = enabled
+	end,
+	Default = true,
+	Tooltip = 'Toggles visibility of these'
+})
+guipane:CreateToggle({
+	Name = 'Show legit mode',
+	Function = function(enabled)
+		clickgui.Search.Legit.Visible = enabled
+		clickgui.Search.LegitDivider.Visible = enabled
+		clickgui.Search.TextBox.Size = UDim2.new(1, enabled and -50 or -10, 0, 37)
+		clickgui.Search.TextBox.Position = UDim2.fromOffset(enabled and 50 or 10, 0)
+	end,
+	Default = true,
+	Tooltip = 'Shows the button to change to Legit Mode'
+})
+local scaleslider = {Object = {}, Value = 1}
+mainapi.Scale = guipane:CreateToggle({
+	Name = 'Auto rescale',
+	Default = true,
+	Function = function(callback)
+		scaleslider.Object.Visible = not callback
+		if callback then
+			scale.Scale = math.max(gui.AbsoluteSize.X / 1920, 0.45)
+		else
+			scale.Scale = scaleslider.Value
+		end
+	end,
+	Tooltip = 'Automatically rescales the gui using the screens resolution'
+})
+scaleslider = guipane:CreateSlider({
+	Name = 'Scale',
+	Min = 0.1,
+	Max = 2,
+	Decimal = 10,
+	Function = function(val, final)
+		if final and not mainapi.Scale.Enabled then
+			scale.Scale = val
+		end
+	end,
+	Default = 1,
+	Darker = true,
+	Visible = false
+})
+guipane:CreateDropdown({
+	Name = 'GUI Theme',
+	List = inputService.TouchEnabled and {'new', 'old'} or {'new', 'old', 'rise'},
+	Function = function(val, mouse)
+		if mouse then
+			writefile('LarpV4/profiles/gui.txt', val)
+			shared.larpreload = true
+			if shared.LarpDeveloper then
+				loadstring(readfile('LarpV4/init.lua'), 'loader')()
+			else
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true))()
+			end
+		end
+	end,
+	Tooltip = 'new - The newest larp theme to since v4.05\nold - The larp theme pre v4.05\nrise - Rise 6.0'
+})
+mainapi.RainbowMode = guipane:CreateDropdown({
+	Name = 'Rainbow Mode',
+	List = {'Normal', 'Gradient', 'Retro'},
+	Tooltip = 'Normal - Smooth color fade\nGradient - Gradient color fade\nRetro - Static color'
+})
+mainapi.RainbowSpeed = guipane:CreateSlider({
+	Name = 'Rainbow speed',
+	Min = 0.1,
+	Max = 10,
+	Decimal = 10,
+	Default = 1,
+	Tooltip = 'Adjusts the speed of rainbow values'
+})
+mainapi.RainbowUpdateSpeed = guipane:CreateSlider({
+	Name = 'Rainbow update rate',
+	Min = 1,
+	Max = 144,
+	Default = 60,
+	Tooltip = 'Adjusts the update rate of rainbow values',
+	Suffix = 'hz'
+})
+guipane:CreateButton({
+	Name = 'Reset GUI positions',
+	Function = function()
+		for _, v in mainapi.Categories do
+			v.Object.Position = UDim2.fromOffset(6, 42)
+		end
+	end,
+	Tooltip = 'This will reset your GUI back to default'
+})
+guipane:CreateButton({
+	Name = 'Sort GUI',
+	Function = function()
+		local priority = {
+			PinnedCategory = 0,
+			GUICategory = 1,
+			CombatCategory = 2,
+			BlatantCategory = 3,
+			RenderCategory = 4,
+			UtilityCategory = 5,
+			WorldCategory = 6,
+			InventoryCategory = 7,
+			MinigamesCategory = 8,
+			FriendsCategory = 9,
+			ProfilesCategory = 10
+		}
+		local categories = {}
+		for _, v in mainapi.Categories do
+			if v.Type ~= 'Overlay' then
+				table.insert(categories, v)
+			end
+		end
+		table.sort(categories, function(a, b)
+			return (priority[a.Object.Name] or 99) < (priority[b.Object.Name] or 99)
+		end)
+
+		local ind = 0
+		for _, v in categories do
+			if v.Object.Visible then
+				v.Object.Position = UDim2.fromOffset(6 + (ind % 8 * 230), 60 + (ind > 7 and 360 or 0))
+				ind += 1
+			end
+		end
+	end,
+	Tooltip = 'Sorts GUI'
+})
+
+--[[
+	Notification Settings
+]]
+
+local notifpane = mainapi.Categories.Main:CreateSettingsPane({Name = 'Notifications'})
+mainapi.Notifications = notifpane:CreateToggle({
+	Name = 'Notifications',
+	Function = function(enabled)
+		if mainapi.ToggleNotifications.Object then
+			mainapi.ToggleNotifications.Object.Visible = enabled
+		end
+	end,
+	Tooltip = 'Shows notifications',
+	Default = true
+})
+mainapi.ToggleNotifications = notifpane:CreateToggle({
+	Name = 'Toggle alert',
+	Tooltip = 'Notifies you if a module is enabled/disabled.',
+	Default = true,
+	Darker = true
+})
+
+mainapi.GUIColor = mainapi.Categories.Main:CreateGUISlider({
+	Name = 'GUI Theme',
+	Function = function(h, s, v)
+		mainapi:UpdateGUI(h, s, v, true)
+	end
+})
+mainapi.Categories.Main:CreateBind()
+
+--[[
+	Text GUI
+]]
+
+local textgui = mainapi:CreateOverlay({
+	Name = 'Text GUI',
+	Icon = getcustomasset('LarpV4/assets/larp/textguiicon.png'),
+	Size = UDim2.fromOffset(16, 12),
+	Position = UDim2.fromOffset(12, 14),
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end
+})
+local textguisort = textgui:CreateDropdown({
+	Name = 'Sort',
+	List = {'Alphabetical', 'Length'},
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end
+})
+local textguifont = textgui:CreateFont({
+	Name = 'Font',
+	Blacklist = 'Arial',
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end
+})
+local textguicolor
+local textguicolordrop = textgui:CreateDropdown({
+	Name = 'Color Mode',
+	List = {'Match GUI color', 'Custom color'},
+	Function = function(val)
+		textguicolor.Object.Visible = val == 'Custom color'
+		mainapi:UpdateTextGUI()
+	end
+})
+textguicolor = textgui:CreateColorSlider({
+	Name = 'Text GUI color',
+	Function = function()
+		mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	end,
+	Darker = true,
+	Visible = false
+})
+local LarpTextScale = Instance.new('UIScale')
+LarpTextScale.Parent = textgui.Children
+local textguiscale = textgui:CreateSlider({
+	Name = 'Scale',
+	Min = 0,
+	Max = 2,
+	Decimal = 10,
+	Default = 1,
+	Function = function(val)
+		LarpTextScale.Scale = val
+		mainapi:UpdateTextGUI()
+	end
+})
+local textguishadow = textgui:CreateToggle({
+	Name = 'Shadow',
+	Tooltip = 'Renders shadowed text.',
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end
+})
+local textguigradientv4
+local textguigradient = textgui:CreateToggle({
+	Name = 'Gradient',
+	Tooltip = 'Renders a gradient',
+	Function = function(callback)
+		textguigradientv4.Object.Visible = callback
+		mainapi:UpdateTextGUI()
+	end
+})
+textguigradientv4 = textgui:CreateToggle({
+	Name = 'V4 Gradient',
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end,
+	Darker = true,
+	Visible = false
+})
+local textguianimations = textgui:CreateToggle({
+	Name = 'Animations',
+	Tooltip = 'Use animations on text gui',
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end
+})
+local textguiwatermark = textgui:CreateToggle({
+	Name = 'Watermark',
+	Tooltip = 'Renders a larp watermark',
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end
+})
+local textguibackgroundtransparency = {
+	Value = 0.5,
+	Object = {Visible = {}}
+}
+local textguibackgroundtint = {Enabled = false}
+local textguibackground = textgui:CreateToggle({
+	Name = 'Render background',
+	Function = function(callback)
+		textguibackgroundtransparency.Object.Visible = callback
+		textguibackgroundtint.Object.Visible = callback
+		mainapi:UpdateTextGUI()
+	end
+})
+textguibackgroundtransparency = textgui:CreateSlider({
+	Name = 'Transparency',
+	Min = 0,
+	Max = 1,
+	Default = 0.5,
+	Decimal = 10,
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end,
+	Darker = true,
+	Visible = false
+})
+textguibackgroundtint = textgui:CreateToggle({
+	Name = 'Tint',
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end,
+	Darker = true,
+	Visible = false
+})
+local textguimoduleslist
+local textguimodules = textgui:CreateToggle({
+	Name = 'Hide modules',
+	Tooltip = 'Allows you to blacklist certain modules from being shown.',
+	Function = function(enabled)
+		textguimoduleslist.Object.Visible = enabled
+		mainapi:UpdateTextGUI()
+	end
+})
+textguimoduleslist = textgui:CreateTextList({
+	Name = 'Blacklist',
+	Tooltip = 'Name of module to hide.',
+	Icon = getcustomasset('LarpV4/assets/larp/blockedicon.png'),
+	Tab = getcustomasset('LarpV4/assets/larp/blockedtab.png'),
+	TabSize = UDim2.fromOffset(21, 16),
+	Color = Color3.fromRGB(250, 50, 56),
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end,
+	Visible = false,
+	Darker = true
+})
+local textguirender = textgui:CreateToggle({
+	Name = 'Hide render',
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end
+})
+local textguibox
+local textguifontcustom
+local textguicolorcustomtoggle
+local textguicolorcustom
+local textguitext = textgui:CreateToggle({
+	Name = 'Add custom text',
+	Function = function(enabled)
+		textguibox.Object.Visible = enabled
+		textguifontcustom.Object.Visible = enabled
+		textguicolorcustomtoggle.Object.Visible = enabled
+		textguicolorcustom.Object.Visible = textguicolorcustomtoggle.Enabled and enabled
+		mainapi:UpdateTextGUI()
+	end
+})
+textguibox = textgui:CreateTextBox({
+	Name = 'Custom text',
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end,
+	Darker = true,
+	Visible = false
+})
+textguifontcustom = textgui:CreateFont({
+	Name = 'Custom Font',
+	Blacklist = 'Arial',
+	Function = function()
+		mainapi:UpdateTextGUI()
+	end,
+	Darker = true,
+	Visible = false
+})
+textguicolorcustomtoggle = textgui:CreateToggle({
+	Name = 'Set custom text color',
+	Function = function(enabled)
+		textguicolorcustom.Object.Visible = enabled
+		mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	end,
+	Darker = true,
+	Visible = false
+})
+textguicolorcustom = textgui:CreateColorSlider({
+	Name = 'Color of custom text',
+	Function = function()
+		mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	end,
+	Darker = true,
+	Visible = false
+})
+
+--[[
+	Text GUI Objects
+]]
+
+local LarpLabels = {}
+local LarpLogo = Instance.new('ImageLabel')
+LarpLogo.Name = 'Logo'
+LarpLogo.Size = UDim2.fromOffset(80, 21)
+LarpLogo.Position = UDim2.new(1, -142, 0, 3)
+LarpLogo.BackgroundTransparency = 1
+LarpLogo.BorderSizePixel = 0
+LarpLogo.Visible = false
+LarpLogo.BackgroundColor3 = Color3.new()
+LarpLogo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
+LarpLogo.Parent = textgui.Children
+
+local lastside = textgui.Children.AbsolutePosition.X > (gui.AbsoluteSize.X / 2)
+mainapi:Clean(textgui.Children:GetPropertyChangedSignal('AbsolutePosition'):Connect(function()
+	if mainapi.ThreadFix then
+		setthreadidentity(8)
+	end
+	local newside = textgui.Children.AbsolutePosition.X > (gui.AbsoluteSize.X / 2)
+	if lastside ~= newside then
+		lastside = newside
+		mainapi:UpdateTextGUI()
+	end
+end))
+
+local LarpLogoV4 = Instance.new('ImageLabel')
+LarpLogoV4.Name = 'Logo2'
+LarpLogoV4.Size = UDim2.fromOffset(33, 18)
+LarpLogoV4.Position = UDim2.new(1, 1, 0, 1)
+LarpLogoV4.BackgroundColor3 = Color3.new()
+LarpLogoV4.BackgroundTransparency = 1
+LarpLogoV4.BorderSizePixel = 0
+LarpLogoV4.Image = getcustomasset('LarpV4/assets/larp/Textv4.png')
+LarpLogoV4.Parent = LarpLogo
+local LarpLogoShadow = LarpLogo:Clone()
+LarpLogoShadow.Position = UDim2.fromOffset(1, 1)
+LarpLogoShadow.ZIndex = 0
+LarpLogoShadow.Visible = true
+LarpLogoShadow.ImageColor3 = Color3.new()
+LarpLogoShadow.ImageTransparency = 0.65
+LarpLogoShadow.Parent = LarpLogo
+LarpLogoShadow.Logo2.ZIndex = 0
+LarpLogoShadow.Logo2.ImageColor3 = Color3.new()
+LarpLogoShadow.Logo2.ImageTransparency = 0.65
+local LarpLogoGradient = Instance.new('UIGradient')
+LarpLogoGradient.Rotation = 90
+LarpLogoGradient.Parent = LarpLogo
+local LarpLogoGradient2 = Instance.new('UIGradient')
+LarpLogoGradient2.Rotation = 90
+LarpLogoGradient2.Parent = LarpLogoV4
+local LarpLabelCustom = Instance.new('TextLabel')
+LarpLabelCustom.Position = UDim2.fromOffset(5, 2)
+LarpLabelCustom.BackgroundTransparency = 1
+LarpLabelCustom.BorderSizePixel = 0
+LarpLabelCustom.Visible = false
+LarpLabelCustom.Text = ''
+LarpLabelCustom.TextSize = 25
+LarpLabelCustom.FontFace = textguifontcustom.Value
+LarpLabelCustom.RichText = true
+local LarpLabelCustomShadow = LarpLabelCustom:Clone()
+LarpLabelCustom:GetPropertyChangedSignal('Position'):Connect(function()
+	LarpLabelCustomShadow.Position = UDim2.new(
+		LarpLabelCustom.Position.X.Scale,
+		LarpLabelCustom.Position.X.Offset + 1,
+		0,
+		LarpLabelCustom.Position.Y.Offset + 1
+	)
+end)
+LarpLabelCustom:GetPropertyChangedSignal('FontFace'):Connect(function()
+	LarpLabelCustomShadow.FontFace = LarpLabelCustom.FontFace
+end)
+LarpLabelCustom:GetPropertyChangedSignal('Text'):Connect(function()
+	LarpLabelCustomShadow.Text = removeTags(LarpLabelCustom.Text)
+end)
+LarpLabelCustom:GetPropertyChangedSignal('Size'):Connect(function()
+	LarpLabelCustomShadow.Size = LarpLabelCustom.Size
+end)
+LarpLabelCustomShadow.TextColor3 = Color3.new()
+LarpLabelCustomShadow.TextTransparency = 0.65
+LarpLabelCustomShadow.Parent = textgui.Children
+LarpLabelCustom.Parent = textgui.Children
+local LarpLabelHolder = Instance.new('Frame')
+LarpLabelHolder.Name = 'Holder'
+LarpLabelHolder.Size = UDim2.fromScale(1, 1)
+LarpLabelHolder.Position = UDim2.fromOffset(5, 37)
+LarpLabelHolder.BackgroundTransparency = 1
+LarpLabelHolder.Parent = textgui.Children
+local LarpLabelSorter = Instance.new('UIListLayout')
+LarpLabelSorter.HorizontalAlignment = Enum.HorizontalAlignment.Right
+LarpLabelSorter.VerticalAlignment = Enum.VerticalAlignment.Top
+LarpLabelSorter.SortOrder = Enum.SortOrder.LayoutOrder
+LarpLabelSorter.Parent = LarpLabelHolder
+
+--[[
+	Target Info
+]]
+
+local targetinfo
+local targetinfoobj
+local targetinfobcolor
+local targetinfobkg
+local targetinfofollow
+targetinfoobj = mainapi:CreateOverlay({
+	Name = 'Target Info',
+	Icon = getcustomasset('LarpV4/assets/larp/targetinfoicon.png'),
+	Size = UDim2.fromOffset(14, 14),
+	Position = UDim2.fromOffset(12, 14),
+	CategorySize = 240,
+	Function = function(callback)
+		if callback then
+			task.spawn(function()
+				repeat
+					local target = targetinfo:UpdateInfo()
+					if targetinfofollow and targetinfofollow.Enabled and target then
+						local vec, screen = workspace.CurrentCamera:WorldToViewportPoint(target.Position)
+						if screen then
+							targetinfobkg.Parent.Parent.Parent.Position = UDim2.fromOffset(vec.X, vec.Y)
+						end
+					end
+					task.wait(0)
+				until not targetinfoobj.Button or not targetinfoobj.Button.Enabled
+			end)
+		end
+	end
+})
+
+--[[
+	New
+]]
+
+local handler = Instance.new('Frame')
+handler.Size = UDim2.fromOffset(250, 90)
+handler.BackgroundColor3 = color.Dark(uipallet.Main, 0.1)
+handler.BackgroundTransparency = 1
+handler.Parent = targetinfoobj.Children
+
+targetinfobkg = Instance.new('Frame')
+targetinfobkg.Size = UDim2.fromOffset(250, 90)
+targetinfobkg.BackgroundColor3 = color.Dark(uipallet.Main, 0.1)
+targetinfobkg.BackgroundTransparency = 0.5
+targetinfobkg.Parent = handler
+local targetinfouiscale = Instance.new('UIScale')
+targetinfouiscale.Parent = targetinfobkg
+
+local targetinfoblurobj = addBlur(targetinfobkg)
+targetinfoblurobj.Visible = true
+addCorner(targetinfobkg)
+local targetinfoshot = Instance.new('ImageLabel')
+targetinfoshot.Size = UDim2.fromOffset(34, 34)
+targetinfoshot.Position = UDim2.fromOffset(12, 15)
+targetinfoshot.BackgroundColor3 = uipallet.Main
+targetinfoshot.Image = 'rbxthumb://type=AvatarHeadShot&id=1&w=420&h=420'
+targetinfoshot.Parent = targetinfobkg
+local targetinfoshotflash = Instance.new('Frame')
+targetinfoshotflash.Size = UDim2.fromScale(1, 1)
+targetinfoshotflash.BackgroundTransparency = 1
+targetinfoshotflash.BackgroundColor3 = Color3.new(1, 0, 0)
+targetinfoshotflash.Parent = targetinfoshot
+addCorner(targetinfoshotflash)
+local targetinfoshotblur = addBlur(targetinfoshot)
+targetinfoshotblur.Visible = true
+addCorner(targetinfoshot)
+local targetinfoname = Instance.new('TextLabel')
+targetinfoname.Size = UDim2.fromOffset(150, 22)
+targetinfoname.Position = UDim2.fromOffset(56, 12)
+targetinfoname.BackgroundTransparency = 1
+targetinfoname.Text = 'Target name'
+targetinfoname.TextXAlignment = Enum.TextXAlignment.Left
+targetinfoname.TextYAlignment = Enum.TextYAlignment.Top
+targetinfoname.TextScaled = true
+targetinfoname.TextColor3 = color.Light(uipallet.Text, 0.4)
+targetinfoname.TextStrokeTransparency = 1
+targetinfoname.FontFace = uipallet.Font
+local targetinfoshadow = targetinfoname:Clone()
+targetinfoshadow.Position = UDim2.fromOffset(57, 13)
+targetinfoshadow.TextColor3 = Color3.new()
+targetinfoshadow.TextTransparency = 0.65
+targetinfoshadow.Visible = false
+targetinfoshadow.Parent = targetinfobkg
+targetinfoname:GetPropertyChangedSignal('Size'):Connect(function()
+	targetinfoshadow.Size = targetinfoname.Size
+end)
+targetinfoname:GetPropertyChangedSignal('Text'):Connect(function()
+	targetinfoshadow.Text = targetinfoname.Text
+end)
+targetinfoname:GetPropertyChangedSignal('FontFace'):Connect(function()
+	targetinfoshadow.FontFace = targetinfoname.FontFace
+end)
+targetinfoname.Parent = targetinfobkg
+local targetinfohptext = Instance.new('TextLabel')
+targetinfohptext.Size = UDim2.fromOffset(44, 16)
+targetinfohptext.Position = UDim2.fromOffset(202, 40)
+targetinfohptext.BackgroundTransparency = 1
+targetinfohptext.Text = '100'
+targetinfohptext.TextSize = 13
+targetinfohptext.Font = Enum.Font.ArialBold
+targetinfohptext.TextXAlignment = Enum.TextXAlignment.Right
+targetinfohptext.TextColor3 = Color3.fromRGB(115, 255, 110)
+targetinfohptext.TextStrokeTransparency = 0.9
+targetinfohptext.Parent = targetinfobkg
+local targetinfostats = Instance.new('TextLabel')
+targetinfostats.Size = UDim2.fromOffset(186, 14)
+targetinfostats.Position = UDim2.fromOffset(56, 64)
+targetinfostats.BackgroundTransparency = 1
+targetinfostats.Text = ''
+targetinfostats.TextSize = 11
+targetinfostats.Font = Enum.Font.Arial
+targetinfostats.TextXAlignment = Enum.TextXAlignment.Left
+targetinfostats.TextColor3 = Color3.fromRGB(160, 160, 160)
+targetinfostats.TextStrokeTransparency = 0.9
+targetinfostats.Parent = targetinfobkg
+local targetinfohealthbkg = Instance.new('Frame')
+targetinfohealthbkg.Name = 'HealthBKG'
+targetinfohealthbkg.Size = UDim2.fromOffset(150, 10)
+targetinfohealthbkg.Position = UDim2.fromOffset(56, 44)
+targetinfohealthbkg.BackgroundColor3 = uipallet.Main
+targetinfohealthbkg.BorderSizePixel = 0
+targetinfohealthbkg.Parent = targetinfobkg
+addCorner(targetinfohealthbkg, UDim.new(1, 0))
+local targetinfohealth = targetinfohealthbkg:Clone()
+targetinfohealth.Size = UDim2.fromScale(0.8, 1)
+targetinfohealth.Position = UDim2.new()
+targetinfohealth.BackgroundColor3 = Color3.fromHSV(1 / 2.5, 0.89, 0.75)
+targetinfohealth.Parent = targetinfohealthbkg
+local targetinfohealthgloss = Instance.new('UIGradient')
+targetinfohealthgloss.Transparency = NumberSequence.new(0.75, 1)
+targetinfohealthgloss.Rotation = 90
+targetinfohealthgloss.Parent = targetinfohealth
+targetinfohealth:GetPropertyChangedSignal('Size'):Connect(function()
+	targetinfohealth.Visible = targetinfohealth.Size.X.Scale > 0.01
+end)
+local targetinfohealthextra = targetinfohealth:Clone()
+targetinfohealthextra.Size = UDim2.new()
+targetinfohealthextra.Position = UDim2.fromScale(1, 0)
+targetinfohealthextra.AnchorPoint = Vector2.new(1, 0)
+targetinfohealthextra.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
+targetinfohealthextra.Visible = false
+targetinfohealthextra.Parent = targetinfohealthbkg
+targetinfohealthextra:GetPropertyChangedSignal('Size'):Connect(function()
+	targetinfohealthextra.Visible = targetinfohealthextra.Size.X.Scale > 0.01
+end)
+local targetinfohealthblur = addBlur(targetinfohealthbkg)
+targetinfohealthblur.SliceCenter = Rect.new(52, 31, 261, 510)
+targetinfohealthblur.ImageColor3 = Color3.new()
+targetinfohealthblur.Visible = true
+local targetinfob = Instance.new('UIStroke')
+targetinfob.Enabled = false
+targetinfob.Color = Color3.fromHSV(0.44, 1, 1)
+targetinfob.Parent = targetinfobkg
+
+--[[
+	Old
+]]
+
+local TargetInfoMainFrame = Instance.new('Frame')
+TargetInfoMainFrame.BackgroundColor3 = Color3.fromRGB(26, 25, 26)
+TargetInfoMainFrame.BorderSizePixel = 0
+TargetInfoMainFrame.BackgroundTransparency = 1
+TargetInfoMainFrame.Size = UDim2.new(0, 220, 0, 72)
+TargetInfoMainFrame.Position = UDim2.new(0, 0, 0, 5)
+TargetInfoMainFrame.Parent = targetinfoobj.Children
+TargetInfoMainFrame.Visible = false
+
+local TargetInfoFrameShadow = Instance.new('ImageLabel')
+TargetInfoFrameShadow.BackgroundTransparency = 1
+TargetInfoFrameShadow.Position = UDim2.fromScale(-0.041, -0.125)
+TargetInfoFrameShadow.Size = UDim2.fromOffset(237, 97)
+TargetInfoFrameShadow.ZIndex = -1
+TargetInfoFrameShadow.Image = 'rbxassetid://123343128195297'
+TargetInfoFrameShadow.Parent = TargetInfoMainFrame
+
+local TargetInfoMainInfo = Instance.new('Frame')
+TargetInfoMainInfo.BackgroundColor3 = Color3.fromRGB(31, 30, 31)
+TargetInfoMainInfo.Size = UDim2.new(0, 220, 0, 80)
+TargetInfoMainInfo.BackgroundTransparency = 0.5
+TargetInfoMainInfo.Position = UDim2.new(0, 0, 0, 0)
+TargetInfoMainInfo.Name = 'MainInfo'
+TargetInfoMainInfo.Parent = TargetInfoMainFrame
+local TargetInfoName = Instance.new('TextLabel')
+TargetInfoName.Font = Enum.Font.Arial
+TargetInfoName.TextColor3 = Color3.fromRGB(182, 182, 182)
+TargetInfoName.Position = UDim2.new(0, 70, 0, 13)
+TargetInfoName.TextStrokeTransparency = 1
+TargetInfoName.BackgroundTransparency = 1
+TargetInfoName.TextSize = 14
+TargetInfoName.Size = UDim2.new(0, 80, 0, 20)
+TargetInfoName.Text = 'None'
+TargetInfoName.ZIndex = 2
+TargetInfoName.TextXAlignment = Enum.TextXAlignment.Left
+TargetInfoName.TextYAlignment = Enum.TextYAlignment.Top
+TargetInfoName.Parent = TargetInfoMainInfo
+local TargetInfoNameShadow = TargetInfoName:Clone()
+TargetInfoNameShadow.Size = UDim2.new(1, 0, 1, 0)
+TargetInfoNameShadow.TextTransparency = 0.5
+TargetInfoNameShadow.TextColor3 = Color3.new()
+TargetInfoNameShadow.ZIndex = 1
+TargetInfoNameShadow.Position = UDim2.new(0, 1, 0, 1)
+TargetInfoName:GetPropertyChangedSignal('Text'):Connect(function()
+	TargetInfoNameShadow.Text = TargetInfoName.Text
+end)
+TargetInfoNameShadow.Parent = TargetInfoName
+local TargetInfoHealthBackground = Instance.new('Frame')
+TargetInfoHealthBackground.BackgroundColor3 = Color3.fromRGB(26, 25, 26)
+TargetInfoHealthBackground.Size = UDim2.new(0, 140, 0, 4)
+TargetInfoHealthBackground.Position = UDim2.new(0, 71, 0, 35)
+TargetInfoHealthBackground.Parent = TargetInfoMainInfo
+local TargetInfoHealthBackgroundShadow = Instance.new('ImageLabel')
+TargetInfoHealthBackgroundShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+TargetInfoHealthBackgroundShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+TargetInfoHealthBackgroundShadow.Image = 'rbxassetid://13350795660'
+TargetInfoHealthBackgroundShadow.BackgroundTransparency = 1
+TargetInfoHealthBackgroundShadow.ImageTransparency = 0.6
+TargetInfoHealthBackgroundShadow.ZIndex = -1
+TargetInfoHealthBackgroundShadow.Size = UDim2.new(1, 6, 1, 6)
+TargetInfoHealthBackgroundShadow.ImageColor3 = Color3.new()
+TargetInfoHealthBackgroundShadow.ScaleType = Enum.ScaleType.Slice
+TargetInfoHealthBackgroundShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+TargetInfoHealthBackgroundShadow.Parent = TargetInfoHealthBackground
+local TargetInfoHealth = Instance.new('Frame')
+TargetInfoHealth.BackgroundColor3 = Color3.fromRGB(115, 255, 110)
+TargetInfoHealth.Size = UDim2.new(1, 0, 1, 0)
+TargetInfoHealth.ZIndex = 3
+TargetInfoHealth.BorderSizePixel = 0
+TargetInfoHealth.Parent = TargetInfoHealthBackground
+local TargetInfoHealthExtra = Instance.new('Frame')
+TargetInfoHealthExtra.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
+TargetInfoHealthExtra.Size = UDim2.new(0, 0, 1, 0)
+TargetInfoHealthExtra.ZIndex = 4
+TargetInfoHealthExtra.BorderSizePixel = 0
+TargetInfoHealthExtra.AnchorPoint = Vector2.new(1, 0)
+TargetInfoHealthExtra.Position = UDim2.new(1, 0, 0, 0)
+TargetInfoHealthExtra.Parent = TargetInfoHealth
+local TargetInfoImage = Instance.new('ImageLabel')
+TargetInfoImage.Size = UDim2.new(0, 50, 0, 50)
+TargetInfoImage.BackgroundTransparency = 0
+TargetInfoImage.BackgroundColor3 = Color3.fromRGB(26, 25, 26)
+TargetInfoImage.Image = 'rbxthumb://type=AvatarHeadShot&id=1&w=420&h=420'
+TargetInfoImage.Position = UDim2.new(0, 10, 0, 16)
+
+local targetinfoshotflashold = Instance.new('Frame')
+targetinfoshotflashold.Size = UDim2.fromScale(1, 1)
+targetinfoshotflashold.BackgroundTransparency = 1
+targetinfoshotflashold.BackgroundColor3 = Color3.new(1, 0, 0)
+targetinfoshotflashold.Parent = TargetInfoImage
+addCorner(targetinfoshotflashold)
+
+TargetInfoImage.Parent = TargetInfoMainInfo
+local TargetInfoMainInfoCorner = Instance.new('UICorner')
+TargetInfoMainInfoCorner.CornerRadius = UDim.new(0, 6)
+TargetInfoMainInfoCorner.Parent = TargetInfoMainInfo
+local TargetInfoHealthBackgroundCorner = Instance.new('UICorner')
+TargetInfoHealthBackgroundCorner.CornerRadius = UDim.new(0, 2048)
+TargetInfoHealthBackgroundCorner.Parent = TargetInfoHealthBackground
+local TargetInfoHealthCorner = Instance.new('UICorner')
+TargetInfoHealthCorner.CornerRadius = UDim.new(0, 2048)
+TargetInfoHealthCorner.Parent = TargetInfoHealth
+local TargetInfoHealthCorner2 = Instance.new('UICorner')
+TargetInfoHealthCorner2.CornerRadius = UDim.new(0, 2048)
+TargetInfoHealthCorner2.Parent = TargetInfoHealthExtra
+local TargetInfoHealthExtraCorner = Instance.new('UICorner')
+TargetInfoHealthExtraCorner.CornerRadius = UDim.new(0, 8)
+TargetInfoHealthExtraCorner.Parent = TargetInfoImage
+
+local TargetInfoHud = 'new'
+targetinfoobj:CreateDropdown({
+	Name = 'Gui Mode',
+	List = {'old', 'new'},
+	Default = 'new',
+	Function = function(val)
+		TargetInfoHud = val
+		writefile('LarpV4/profiles/hud.txt', val)
+		TargetInfoMainFrame.Visible = val == 'old'
+		handler.Visible = val == 'new'
+	end
+})
+TargetInfoMainFrame.Visible = TargetInfoHud == 'old'
+handler.Visible = TargetInfoHud == 'new'
+targetinfoobj:CreateFont({
+	Name = 'Font',
+	Blacklist = 'Arial',
+	Function = function(val)
+		targetinfoname.FontFace = val
+		TargetInfoName.FontFace = val
+		TargetInfoNameShadow.FontFace = val
+		targetinfohptext.FontFace = val
+		targetinfostats.FontFace = val
+	end
+})
+local targetinfobackgroundtransparency = {
+	Value = 0.5,
+	Object = {Visible = {}}
+}
+local targetinfodisplay = targetinfoobj:CreateToggle({
+	Name = 'Use Displayname',
+	Default = true
+})
+local targetinfoshowhp = targetinfoobj:CreateToggle({
+	Name = 'Show HP',
+	Default = true
+})
+local targetinfoshowdist = targetinfoobj:CreateToggle({
+	Name = 'Show Distance',
+	Default = true
+})
+local targetinfonameshadow = targetinfoobj:CreateToggle({
+	Name = 'Name Shadow',
+	Function = function(callback)
+		targetinfoshadow.Visible = callback
+	end,
+	Default = true
+})
+local targetinfoscale = targetinfoobj:CreateSlider({
+	Name = 'Scale',
+	Min = 0.5,
+	Max = 2,
+	Default = 1,
+	Decimal = 10,
+	Function = function(val)
+		targetinfouiscale.Scale = val
+	end
+})
+targetinfoobj:CreateToggle({
+	Name = 'Render Background',
+	Function = function(callback)
+		targetinfobkg.BackgroundTransparency = callback and targetinfobackgroundtransparency.Value or 1
+		TargetInfoMainInfo.BackgroundTransparency = targetinfobkg.BackgroundTransparency
+		targetinfoshadow.Visible = targetinfonameshadow.Enabled
+		targetinfoblurobj.Visible = callback
+		targetinfobackgroundtransparency.Object.Visible = callback
+	end,
+	Default = true
+})
+targetinfofollow = targetinfoobj:CreateToggle({
+	Name = 'Follow Player',
+	Function = function(callback) end,
+	Default = true
+})
+targetinfobackgroundtransparency = targetinfoobj:CreateSlider({
+	Name = 'Transparency',
+	Min = 0,
+	Max = 1,
+	Default = 0.5,
+	Decimal = 10,
+	Function = function(val)
+		targetinfobkg.BackgroundTransparency = val
+	end,
+	Darker = true
+})
+local targetinfocolor
+local targetinfocolortoggle = targetinfoobj:CreateToggle({
+	Name = 'Custom Color',
+	Function = function(callback)
+		targetinfocolor.Object.Visible = callback
+		if callback then
+			targetinfobkg.BackgroundColor3 = Color3.fromHSV(targetinfocolor.Hue, targetinfocolor.Sat, targetinfocolor.Value)
+			targetinfoshot.BackgroundColor3 = Color3.fromHSV(targetinfocolor.Hue, targetinfocolor.Sat, math.max(targetinfocolor.Value - 0.1, 0.075))
+			targetinfohealthbkg.BackgroundColor3 = targetinfoshot.BackgroundColor3
+		else
+			targetinfobkg.BackgroundColor3 = color.Dark(uipallet.Main, 0.1)
+			targetinfoshot.BackgroundColor3 = uipallet.Main
+			targetinfohealthbkg.BackgroundColor3 = uipallet.Main
+		end
+	end
+})
+targetinfocolor = targetinfoobj:CreateColorSlider({
+	Name = 'Color',
+	Function = function(hue, sat, val)
+		if targetinfocolortoggle.Enabled then
+			targetinfobkg.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+			targetinfoshot.BackgroundColor3 = Color3.fromHSV(hue, sat, math.max(val - 0.1, 0))
+			targetinfohealthbkg.BackgroundColor3 = targetinfoshot.BackgroundColor3
+		end
+	end,
+	Darker = true,
+	Visible = false
+})
+targetinfoobj:CreateToggle({
+	Name = 'Border',
+	Function = function(callback)
+		targetinfob.Enabled = callback
+		targetinfobcolor.Object.Visible = callback
+	end
+})
+targetinfobcolor = targetinfoobj:CreateColorSlider({
+	Name = 'Border Color',
+	Function = function(hue, sat, val, opacity)
+		targetinfob.Color = Color3.fromHSV(hue, sat, val)
+		targetinfob.Transparency = 1 - opacity
+	end,
+	Darker = true,
+	Visible = false
+})
+
+local lasthealth = 0
+local lastmaxhealth = 0
+targetinfo = {
+	Targets = {},
+	Object = targetinfobkg,
+	oldparent = TargetInfoMainFrame,
+	UpdateInfo = function(self)
+		local entitylib = mainapi.Libraries
+		if not entitylib then return end
+
+		for i, v in self.Targets do
+			if v < tick() then
+				self.Targets[i] = nil
+			end
+		end
+
+		local v, highest = nil, tick()
+		for i, check in self.Targets do
+			if check > highest then
+				v = i
+				highest = check
+			end
+		end
+
+		targetinfobkg.Visible = v ~= nil or mainapi.gui.ScaledGui.ClickGui.Visible
+		TargetInfoMainInfo.Visible = targetinfobkg.Visible
+		TargetInfoFrameShadow.Visible = targetinfobkg.Visible
+		if not v then
+			targetinfohptext.Visible = targetinfoshowhp.Enabled
+			targetinfohptext.Text = targetinfoshowhp.Enabled and '100' or ''
+			targetinfohptext.TextColor3 = Color3.fromHSV(1 / 2.5, 0.89, 0.75)
+			targetinfostats.Visible = targetinfoshowdist.Enabled
+			targetinfostats.Text = targetinfoshowdist.Enabled and '100 studs' or ''
+		end
+		if v then
+			targetinfoname.Text = v.Player and (targetinfodisplay.Enabled and v.Player.DisplayName or v.Player.Name) or v.C

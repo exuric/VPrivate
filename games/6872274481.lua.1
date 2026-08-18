@@ -1,0 +1,2079 @@
+hird person',
+		List = {'First person', 'Third person', 'Dynamic'},
+		Default = 'First person'
+	})
+	Mode = AimAssist:CreateDropdown({
+		Name = 'Mode',
+		List = modes,
+		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior',
+		Default = modes[1],
+	})
+	Targets = AimAssist:CreateTargets({
+		Players = true,
+		Walls = true,
+	})
+	local methods = {'Damage', 'Distance'}
+	for i in sortmethods do
+		if not table.find(methods, i) then
+			table.insert(methods, i)
+		end
+	end
+	ClickAim = AimAssist:CreateToggle({
+		Name = 'Click aim',
+		Default = true,
+	})
+	Mouse = AimAssist:CreateToggle({Name = 'Require mouse down'})
+	StrafeIncrease = AimAssist:CreateToggle({Name = 'Strafe increase'})
+	BlockBreak = AimAssist:CreateToggle({Name = 'Check block break'})
+	KillauraTarget = AimAssist:CreateToggle({Name = 'Use killaura target'})
+	AimSpeed = AimAssist:CreateSlider({
+		Name = 'Aim speed',
+		Min = 1,
+		Max = 20,
+		Default = 6,
+	})
+	Distance = AimAssist:CreateSlider({
+		Name = 'Distance',
+		Min = 1,
+		Max = 30,
+		Default = 30,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+	})
+	Shake = AimAssist:CreateSlider({
+		Name = 'Shake',
+		Min = 0,
+		Max = 100,
+		Default = 0,
+		Tooltip = 'Adds random jitter to simulate human aim',
+	})
+	Smoothness = AimAssist:CreateSlider({
+		Name = 'Smoothness',
+		Min = 1,
+		Max = 100,
+		Default = 100,
+		Tooltip = 'How gradually the crosshair eases into the target. Lower values decelerate more near the target, feeling more human',
+	})
+	Overshoot = AimAssist:CreateSlider({
+		Name = 'Overshoot',
+		Min = 0,
+		Max = 100,
+		Default = 50,
+		Tooltip = 'Flicks slightly past the target and settles back, like a human flick. 0 = off',
+	})
+	Reaction = AimAssist:CreateSlider({
+		Name = 'Reaction delay',
+		Min = 0,
+		Max = 400,
+		Default = 150,
+		Suffix = function()
+			return 'ms'
+		end,
+		Tooltip = 'Randomized delay before starting to aim on a new target, in ms. 0 = off',
+	})
+	MaxTurn = AimAssist:CreateSlider({
+		Name = 'Max turn speed',
+		Min = 0,
+		Max = 360,
+		Default = 0,
+		Suffix = function()
+			return 'deg/s'
+		end,
+		Tooltip = 'Hard cap on how fast the crosshair can rotate, in degrees per second. 0 = unlimited',
+	})
+	VerticalAim = AimAssist:CreateToggle({
+		Name = 'Vertical aim',
+		Default = true,
+		Tooltip = 'When disabled, aims on the horizontal plane only (pitch is left untouched)',
+	})
+	AngleSlider = AimAssist:CreateSlider({
+		Name = 'Max angle',
+		Min = 1,
+		Max = 360,
+		Default = 70,
+	})
+	Limit = AimAssist:CreateToggle({
+		Name = 'Limit to items',
+		Tooltip = 'Only attacks when sword is held',
+	})
+	Sort = AimAssist:CreateDropdown({
+		Name = 'Target mode',
+		List = methods,
+		Default = 'Angle',
+	})
+	AimPart = AimAssist:CreateDropdown({
+		Name = 'Target area',
+		List = {'Center', 'Closest'},
+		Default = 'Center',
+	})
+end)
+
+run(function()
+	local AutoClicker
+	local CPS
+	local Wool
+	local BlockCPS = {}
+	local Thread
+	
+	local function AutoClick()
+		if Thread then
+			task.cancel(Thread)
+		end
+	
+		Thread = task.delay(1 / (store.hand.toolType == 'block' and BlockCPS or CPS).GetRandomValue(), function()
+			repeat
+				if not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
+					local blockPlacer = bedwars.BlockPlacementController.blockPlacer
+					if store.hand.toolType == 'block' and (Wool.Enabled and store.hand.tool.Name:find('wool_') or not Wool.Enabled) and blockPlacer then
+						if inputService.TouchEnabled then
+							task.spawn(blockPlacer.autoBridge, blockPlacer, workspace:GetServerTimeNow() - bedwars.KnockbackController:getLastKnockbackTime() >= 0.2)
+						else
+							if (workspace:GetServerTimeNow() - bedwars.BlockCpsController.lastPlaceTimestamp) >= ((1 / 12) * 0.5) then
+								local mouseinfo = blockPlacer.clientManager:getBlockSelector():getMouseInfo(0)
+								if mouseinfo and mouseinfo.placementPosition == mouseinfo.placementPosition then
+									task.spawn(blockPlacer.placeBlock, blockPlacer, mouseinfo.placementPosition)
+								end
+							end
+						end
+					elseif store.hand.toolType == 'sword' then
+						bedwars.SwordController:swingSwordAtMouse(0.39)
+					end
+				end
+	
+				task.wait(1 / (store.hand.toolType == 'block' and BlockCPS or CPS).GetRandomValue())
+			until not AutoClicker.Enabled
+		end)
+	end
+	
+	AutoClicker = larp.Categories.Combat:CreateModule({
+		Name = 'AutoClicker',
+		Function = function(callback)
+			if callback then
+				AutoClicker:Clean(inputService.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						AutoClick()
+					end
+				end))
+	
+				AutoClicker:Clean(inputService.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 and Thread then
+						task.cancel(Thread)
+						Thread = nil
+					end
+				end))
+	
+				if inputService.TouchEnabled then
+					local hooked = {}
+					local function hookButton(button)
+						if hooked[button] or not button:IsA('GuiButton') or not tonumber(button.Name) then return end
+						hooked[button] = true
+						AutoClicker:Clean(button.MouseButton1Down:Connect(AutoClick))
+						AutoClicker:Clean(button.MouseButton1Up:Connect(function()
+							if Thread then
+								task.cancel(Thread)
+								Thread = nil
+							end
+						end))
+					end
+	
+					task.spawn(function()
+						local mobileUI = lplr.PlayerGui:WaitForChild('MobileUI', 20)
+						if not mobileUI or not AutoClicker.Enabled then return end
+	
+						for _, v in mobileUI:GetChildren() do
+							hookButton(v)
+						end
+						AutoClicker:Clean(mobileUI.ChildAdded:Connect(hookButton))
+					end)
+				end
+			else
+				if Thread then
+					task.cancel(Thread)
+					Thread = nil
+				end
+			end
+		end,
+		Tooltip = 'Hold attack button to automatically click'
+	})
+	CPS = AutoClicker:CreateTwoSlider({
+		Name = 'CPS',
+		Min = 1,
+		Max = 9,
+		DefaultMin = 7,
+		DefaultMax = 7
+	})
+	AutoClicker:CreateToggle({
+		Name = 'Place Blocks',
+		Default = true,
+		Function = function(callback)
+			if BlockCPS.Object then
+				BlockCPS.Object.Visible = callback
+			end
+	
+			if Wool and Wool.Object then
+				Wool.Object.Visible = callback
+			end
+		end
+	})
+	Wool = AutoClicker:CreateToggle({Name = 'Wool only', Tooltip = 'Only clicks when you are holding wool.', Darker = true})
+	BlockCPS = AutoClicker:CreateTwoSlider({
+		Name = 'Block CPS',
+		Min = 1,
+		Max = 12,
+		DefaultMin = 12,
+		DefaultMax = 12,
+		Darker = true
+	})
+end)
+
+run(function()
+	local BlockReach
+	local BlockRange
+	local BreakReach
+	local BreakRange
+	local SwordReach
+	local SwordRange
+	local Randomize
+	local Chance
+	
+	local old, oldswing
+	local rng = Random.new()
+
+	local function useBoosted()
+		if not Randomize.Enabled then return true end
+		return rng:NextNumber(0, 100) <= Chance.Value
+	end
+
+	Reach = larp.Categories.Combat:CreateModule({
+		Name = 'Reach',
+		Tooltip = 'Allows you to place, attack, and break further',
+		Function = function(callback)
+			bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = callback and SwordReach.Enabled and SwordRange.Value + 2 or 14.4
+			if callback then
+				old = bedwars.BlockSelector.getMouseInfo
+				bedwars.BlockSelector.getMouseInfo = function(...)
+					local Self, Select, Args = ...
+					if not Args then
+						Args = {}
+					end
+					if Select == 0 then
+						Args.range = useBoosted() and (BlockReach.Enabled and BlockRange.Value or 24) or 24
+					elseif Select == 1 then
+						Args.range = useBoosted() and (BreakReach.Enabled and BreakRange.Value or 18) or 18
+					end
+					return old(Self, Select, Args)
+				end
+				oldswing = bedwars.SwordController.swingSwordAtMouse
+				bedwars.SwordController.swingSwordAtMouse = function(...)
+					if useBoosted() then
+						bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = SwordReach.Enabled and SwordRange.Value + 2 or 14.4
+					else
+						bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = 14.4
+					end
+					return oldswing(...)
+				end
+			else
+				bedwars.BlockSelector.getMouseInfo = old
+				old = nil
+				bedwars.SwordController.swingSwordAtMouse = oldswing
+				oldswing = nil
+			end
+		end,
+	})
+	SwordReach = Reach:CreateToggle({
+		Name = 'Sword Reach',
+		Function = function(callback)
+			bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Reach.Enabled and callback and SwordRange.Value + 2 or 14.4
+			pcall(function()
+				SwordRange.Object.Visible = callback
+			end)
+		end,
+		Default = true
+	})
+	SwordRange = Reach:CreateSlider({
+		Name = 'Sword Range',
+		Min = 1,
+		Max = 18,
+		Default = 18,
+		Decimal = 5,
+		Darker = true,
+		Suffix = function(val)
+			return val <= 1 and 'stud' or 'studs'
+		end,
+		Function = function(val)
+			bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE = Reach.Enabled and SwordReach.Enabled and val or 14.4
+		end
+	})
+	BlockReach = Reach:CreateToggle({
+		Name = 'Placement Reach',
+		Function = function(callback)
+			BlockRange.Object.Visible = callback
+		end
+	})
+	BlockRange = Reach:CreateSlider({
+		Name = 'Placement Range',
+		Min = 1,
+		Max = 60,
+		Default = 18,
+		Darker = true,
+		Suffix = function(val)
+			return val <= 1 and 'stud' or 'studs'
+		end,
+		Visible = false
+	})
+	BreakReach = Reach:CreateToggle({
+		Name = 'Break Reach',
+		Function = function(callback)
+			BreakRange.Object.Visible = callback
+		end
+	})
+	BreakRange = Reach:CreateSlider({
+		Name = 'Break Range',
+		Min = 1,
+		Max = 30,
+		Default = 30,
+		Decimal = 5,
+		Darker = true,
+		Suffix = function(val)
+			return val <= 1 and 'stud' or 'studs'
+		end,
+		Visible = false
+	})
+	Randomize = Reach:CreateToggle({
+		Name = 'Randomize reach',
+		Default = false,
+		Tooltip = 'Randomizes reach per swing/click. The boosted range only applies when the chance roll succeeds, otherwise reach stops at vanilla values',
+		Function = function(callback)
+			pcall(function()
+				Chance.Object.Visible = callback
+			end)
+		end
+	})
+	Chance = Reach:CreateSlider({
+		Name = 'Chance',
+		Min = 10,
+		Max = 100,
+		Default = 60,
+		Suffix = function()
+			return '%'
+		end,
+		Darker = true,
+		Tooltip = 'Chance to get the boosted reach on each swing/click'
+	})
+	Reach:CreateButton({
+		Name = 'Reset to default reach',
+		Tooltip = 'Resets every range back to default',
+		Function = function()
+			BreakRange:SetValue(18)
+			BlockRange:SetValue(24)
+			SwordRange:SetValue(12.4)
+		end
+	})
+end)
+
+run(function()
+	local SilentAim
+	local Targets
+	local TargetPart
+	local Sort
+	local Prediction
+	local FOV
+	local OtherProjectiles
+	local Blacklist
+	
+	local lockedTarget
+	local lockedTime
+	
+	local rayCheck = RaycastParams.new()
+	rayCheck.FilterType = Enum.RaycastFilterType.Include
+	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
+	
+	local hooked = false
+	local removeNamecall
+	local fireRemote
+	local hookVersion = 0
+	
+	local function getMousePosition()
+		if inputService.TouchEnabled then
+			return gameCamera.ViewportSize / 2
+		end
+		return inputService.GetMouseLocation(inputService)
+	end
+	
+	local function getPosition(ent)
+		if TargetPart.Value == 'Closest' then
+			local localPosition, magnitude, part = getMousePosition(), 9e9, nil
+			for _, v in ent:GetChildren() do
+				if v:IsA('BasePart') then
+					local position, vis = gameCamera.WorldToViewportPoint(gameCamera, v.Position)
+					if vis then
+						local mag = (localPosition - Vector2.new(position.x, position.y)).Magnitude
+						if mag < magnitude then
+							magnitude = mag
+							part = v
+						end
+					end
+				end
+			end
+			return part and part.Position or ent.PrimaryPart and ent.PrimaryPart.Position
+		elseif TargetPart.Value == 'Dynamic' then
+			local tool = store.hand.tool
+			if tool and tool.Name:find('headhunter') and ent:FindFirstChild('Head') then
+				return ent.Head.Position
+			end
+			return ent.PrimaryPart and ent.PrimaryPart.Position
+		end
+		return
+	end
+	
+	local function solveSilent(args)
+		local origin, velocity, projType = args[4], args[6], args[3]
+		if typeof(origin) ~= 'Vector3' or typeof(velocity) ~= 'Vector3' or type(projType) ~= 'string' then
+			return
+		end
+	
+		if (not OtherProjectiles.Enabled) and not projType:find('arrow') then
+			return
+		end
+	
+		if table.find(Blacklist.ListEnabled or {}, ((projType == 'glue_trap' or projType == 'glue_projectile') and 'gloop' or projType)) then
+			return
+		end
+	
+		local meta = bedwars.ProjectileMeta[projType]
+		if not meta then return end
+	
+		local speed = velocity.Magnitude
+		if speed <= 0 then return end
+		local gravity = meta.gravitationalAcceleration or 196.2
+	
+		local plr = entitylib.EntityMouse({
+			Part = 'RootPart',
+			Range = FOV.Value,
+			Players = Targets.Players.Enabled,
+			NPCs = Targets.NPCs.Enabled,
+			Wallcheck = Targets.Walls.Enabled,
+			Sort = sortmethods[Sort.Value or 'Distance'],
+			Origin = origin,
+		})
+		if not plr then
+			if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.35 then
+				plr = lockedTarget
+			else
+				lockedTarget = nil
+				lockedTime = nil
+				return
+			end
+		end
+		lockedTarget, lockedTime = plr, tick()
+		if not plr then return end
+	
+		local targetpart = plr[TargetPart.Value]
+		local targetpos = getPosition(plr.Character) or targetpart and targetpart.Position
+		if not targetpos then return end
+		local playerGravity = workspace.Gravity
+		local balloons = plr.Character:GetAttribute('InflatedBalloons')
+		if balloons and balloons > 0 then
+			playerGravity = workspace.Gravity * (1 - (balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))
+		end
+	
+		local pearl = projType == 'telepearl'
+		local targetVelocity = pearl and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
+		local targetAirborne = not pearl and plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(targetVelocity.Y) > 0.01
+local calc, _, travelTime = prediction.SolveTrajectory(origin, speed * Prediction.Value, gravity, targetpos, targetVelocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, targetAirborne, plr.RootPart.Position, plr.RootPart, nil, true)
+		if not calc or not travelTime or travelTime > (meta.lifetimeSec or 3) then return end
+		local aimDir = CFrame.lookAt(origin, calc).LookVector * speed
+		if not prediction.IsTrajectoryClear(origin, aimDir, gravity, travelTime, rayCheck) then return end
+
+		targetinfo.Targets[plr] = tick() + 1
+		return aimDir
+	end
+	
+	SilentAim = larp.Categories.Combat:CreateModule({
+		Name = 'SilentAim',
+		Function = function(callback)
+			hookVersion += 1
+			if callback and not namecall then
+				namecall = hookmetamethod(game, '__namecall', newcclosure(function(...)
+					if SilentAim.Enabled and not checkcaller() and getnamecallmethod() == 'InvokeServer' and tostring(...) == 'ProjectileFire' then
+						local self = ...
+						local args = {select(2, ...)}
+						local newVelocity = solveSilent(args)
+						if newVelocity then
+							args[6] = newVelocity
+						end
+						return namecall(self, self.InvokeServer(self, unpack(args)))
+					end
+					return namecall(...)
+				end))
+			end
+		end,
+		Tooltip = 'Redirects only the projectile values sent to the server, so enemies get hit while your shot flies exactly where you aimed on your own screen'
+	})
+	Targets = SilentAim:CreateTargets({
+		Players = true,
+		Walls = true,
+	})
+	TargetPart = SilentAim:CreateDropdown({
+		Name = 'Part',
+		List = {'RootPart', 'Head', 'Dynamic', 'Closest'},
+	})
+	local methods = {'Damage', 'Distance'}
+	for i in sortmethods do
+		if not table.find(methods, i) then
+			table.insert(methods, i)
+		end
+	end
+	Sort = SilentAim:CreateDropdown({
+		Name = 'Target Mode',
+		List = methods,
+		Default = 'Distance'
+	})
+	Prediction = SilentAim:CreateSlider({
+		Name = 'Prediction',
+		Min = 0.1,
+		Max = 2,
+		Default = 1,
+		Decimal = 10
+	})
+	FOV = SilentAim:CreateSlider({
+		Name = 'FOV',
+		Min = 1,
+		Max = 1000,
+		Default = 1000
+	})
+	OtherProjectiles = SilentAim:CreateToggle({
+		Name = 'Other Projectiles',
+		Function = function(call)
+			if Blacklist and Blacklist.Object then
+				Blacklist.Object.Visible = call
+			end
+		end,
+	    Default = true
+	})
+	Blacklist = SilentAim:CreateTextList({
+		Name = 'Blacklist',
+		Default = {'gloop', 'telepearl'},
+		Darker = true,
+		Placeholder = 'projectile'
+	})
+end)
+
+run(function()
+	local Sprint
+	local old
+	
+	Sprint = larp.Categories.Combat:CreateModule({
+		Name = 'Sprint',
+		Function = function(callback)
+			if callback then
+				old = bedwars.SprintController.stopSprinting
+				bedwars.SprintController.stopSprinting = function(...)
+					local call = old(...)
+					bedwars.SprintController:startSprinting()
+					return call
+				end
+				Sprint:Clean(entitylib.Events.LocalAdded:Connect(function() 
+					task.delay(0.1, function() 
+						bedwars.SprintController:stopSprinting() 
+					end) 
+				end))
+				bedwars.SprintController:stopSprinting()
+			else
+				bedwars.SprintController.stopSprinting = old
+				bedwars.SprintController:stopSprinting()
+			end
+		end,
+		Tooltip = 'Sets your sprinting to true.'
+	})
+end)
+
+run(function()
+	local TriggerBot
+	local CPS
+	local rayParams = RaycastParams.new()
+	
+	TriggerBot = larp.Categories.Combat:CreateModule({
+		Name = 'TriggerBot',
+		Function = function(callback)
+			if callback then
+				repeat
+					local doAttack
+					if not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
+						if entitylib.isAlive and store.hand.toolType == 'sword' and bedwars.DaoController.chargingMaid == nil then
+							local attackRange = bedwars.ItemMeta[store.hand.tool.Name].sword.attackRange
+							rayParams.FilterDescendantsInstances = {lplr.Character}
+	
+							local unit = lplr:GetMouse().UnitRay
+							local localPos = entitylib.character.RootPart.Position
+							local rayRange = (attackRange or 14.4)
+							local ray = bedwars.QueryUtil:raycast(unit.Origin, unit.Direction * 200, rayParams)
+							if ray and (localPos - ray.Instance.Position).Magnitude <= rayRange then
+								local limit = (attackRange)
+								for _, ent in entitylib.List do
+									doAttack = ent.Targetable and ray.Instance:IsDescendantOf(ent.Character) and (localPos - ent.RootPart.Position).Magnitude <= rayRange
+									if doAttack then
+										break
+									end
+								end
+							end
+	
+							doAttack = doAttack or bedwars.SwordController:getTargetInRegion(attackRange or 3.8 * 3, 0)
+							if doAttack then
+								bedwars.SwordController:swingSwordAtMouse()
+							end
+						end
+					end
+	
+					task.wait(doAttack and 1 / CPS.GetRandomValue() or 0.016)
+				until not TriggerBot.Enabled
+			end
+		end,
+		Tooltip = 'Automatically swings when hovering over a entity'
+	})
+	CPS = TriggerBot:CreateTwoSlider({
+		Name = 'CPS',
+		Min = 1,
+		Max = 9,
+		DefaultMin = 7,
+		DefaultMax = 7
+	})
+end)
+
+run(function()
+	local Velocity
+	local Horizontal
+	local Vertical
+	local Chance
+	local TargetCheck
+	local rand, old = Random.new()
+	
+	Velocity = larp.Categories.Combat:CreateModule({
+		Name = 'Velocity',
+		Function = function(callback)
+			if callback then
+				old = bedwars.KnockbackUtil.applyKnockback
+				bedwars.KnockbackUtil.applyKnockback = function(root, mass, dir, knockback, ...)
+					if rand:NextNumber(0, 100) > Chance.Value then return end
+					local check = (not TargetCheck.Enabled) or entitylib.EntityPosition({
+						Range = 50,
+						Part = 'RootPart',
+						Players = true
+					})
+	
+					if check then
+						knockback = knockback or {}
+						if Horizontal.Value == 0 and Vertical.Value == 0 then return end
+						knockback.horizontal = (knockback.horizontal or 1) * (Horizontal.Value / 100)
+						knockback.vertical = (knockback.vertical or 1) * (Vertical.Value / 100)
+					end
+					
+					return old(root, mass, dir, knockback, ...)
+				end
+			else
+				bedwars.KnockbackUtil.applyKnockback = old
+			end
+		end,
+		Tooltip = 'Reduces knockback taken'
+	})
+	Horizontal = Velocity:CreateSlider({
+		Name = 'Horizontal',
+		Min = 0,
+		Max = 100,
+		Default = 0,
+		Suffix = '%'
+	})
+	Vertical = Velocity:CreateSlider({
+		Name = 'Vertical',
+		Min = 0,
+		Max = 100,
+		Default = 0,
+		Suffix = '%'
+	})
+	Chance = Velocity:CreateSlider({
+		Name = 'Chance',
+		Min = 0,
+		Max = 100,
+		Default = 100,
+		Suffix = '%'
+	})
+	TargetCheck = Velocity:CreateToggle({Name = 'Only when targeting'})
+end)
+
+run(function()
+	local AntiDeath
+	local StopThreshold
+	local Threshold
+	local Notify
+	local Delay
+	local Mode
+	
+	local oldroot, clone, hip = nil, nil, 2.7
+	
+	local function createClone()
+	    if store.rootpart then return false end
+	    if entitylib.isAlive and entitylib.character.Humanoid.Health > 0 and (not oldroot or not oldroot.Parent) then
+	        hip = entitylib.character.Humanoid.HipHeight
+	        oldroot = entitylib.character.HumanoidRootPart
+	        if not lplr.Character.Parent then return false end
+	        lplr.Character.Parent = replicatedStorage
+	        clone = oldroot:Clone()
+	        clone.Parent = lplr.Character
+	        oldroot.Transparency = 1
+	        oldroot.Parent = workspace
+	        store.rootpart = oldroot
+	        lplr.Character.PrimaryPart = clone
+	        lplr.Character.Parent = workspace
+	        bedwars.QueryUtil:setQueryIgnored(clone, true)
+	        bedwars.QueryUtil:setQueryIgnored(oldroot, true)
+	        return true
+	    end
+	    return false
+	end
+	
+	local function destroyClone()
+	    local char = lplr.Character
+	    if oldroot and oldroot.Parent and char then 
+	        char.Parent = replicatedStorage
+	        oldroot.Parent = char
+	        if clone then
+	            clone:Destroy()
+	            clone = nil
+	        end
+	        char.PrimaryPart = oldroot
+	        char.Parent = workspace
+	        oldroot.CanCollide = true
+	        local humanoid = char:FindFirstChildOfClass('Humanoid')
+	        if humanoid then
+	            humanoid.HipHeight = hip or 2.6
+	        end
+	        oldroot.Transparency = 1
+	        oldroot = nil
+	        store.rootpart = nil
+	        return true
+	    end
+	    if clone then
+	        clone:Destroy()
+	        clone = nil
+	    end
+	    oldroot = nil
+	    store.rootpart = nil
+	    return false
+	end
+	
+	local Paused, Activated = 0, 0
+	
+	AntiDeath = larp.Categories.Blatant:CreateModule({
+	    Name = 'AntiDeath',
+	    Function = function(call)
+	        if call then
+	            local FloatTime = tick();
+	
+	            AntiDeath:Clean(runService.PreSimulation:Connect(function()
+	                if oldroot and oldroot.Parent then
+	                    if (tick() - entitylib.character.AirTime) > 1.7 then
+	                        FloatTime = tick() + 0.2
+	                    end
+	                    oldroot.Velocity = Vector3.new(0, 1, 0)
+	                    oldroot.CFrame = clone.CFrame - (tick() > FloatTime and Vector3.new(0, 200, 0) or Vector3.zero)
+	                end
+	            end))
+	
+	            repeat
+	                if tick() > Paused and entitylib.isAlive and (entitylib.character.Humanoid.Health <= Threshold.Value) then
+	                    if (tick() - Activated) >= Delay.Value then
+	                        Activated = tick()
+	
+	                        if Notify.Enabled then
+	                            notif('AntiDeath', `Health below {Threshold.Value}%`, 12, 'warning')
+	                        end
+	
+	                        if Mode.Value == 'Teleport' then
+	                            lplr.Character.PrimaryPart.CFrame += Vector3.new(0, 100, 0)
+	                            Paused = tick() + 5
+	                        elseif Mode.Value == 'Invincibility' then
+	                            if createClone() then
+	                                Paused = tick() + 5
+	                                task.delay(0, function()
+	                                    repeat task.wait() until not AntiDeath.Enabled or not entitylib.isAlive or (entitylib.character.Humanoid.Health >= StopThreshold.Value)
+	                                    local old = clone and clone.CFrame or nil
+	                                    if destroyClone() and old then
+	                                        entitylib.character.RootPart.CFrame = old
+	                                    end
+	                                    Paused = tick() + 5
+	
+	                                    if AntiDeath.Enabled and Notify.Enabled then
+	                                        notif('AntiDeath', 'You are visible again', 12, 'info')
+	                                    end
+	                                end)
+	                            end
+	                        end
+	                    end
+	                end
+	                task.wait()
+	            until not AntiDeath.Enabled
+	        else
+	            destroyClone()
+	        end
+	    end,
+	    Tooltip = 'Uses selected mode when on a threshold'
+	})
+	
+	Mode = AntiDeath:CreateDropdown({
+	    Name = 'Mode',
+	    List = {'Teleport', 'Invincibility'},
+	    Default = 'Invincibility',
+	    Tooltip = 'Teleport - Teleports you high up\nInvincibility - Makes you unhittable'
+	})
+	StopThreshold = AntiDeath:CreateSlider({
+	    Name = 'Stop Threshold',
+	    Min = 1,
+	    Max = 100,
+	    Default = 30,
+	    Suffix = function()
+	        return '%'
+	    end,
+	    Tooltip = 'Health percentage to untrigger at'
+	})
+	Threshold = AntiDeath:CreateSlider({
+	    Name = 'Threshold',
+	    Min = 1,
+	    Max = 100,
+	    Default = 30,
+	    Suffix = function()
+	        return '%'
+	    end,
+	    Tooltip = 'Health percentage to trigger at'
+	})
+	Delay = AntiDeath:CreateSlider({
+	    Name = 'Delay',
+	    Min = 1,
+	    Max = 20,
+	    Default = 5,
+	    Suffix = function(val)
+	        return val <= 1 and 'sec' or 'secs'
+	    end,
+	    Tooltip = 'Delay between triggers'
+	})
+	Notify = AntiDeath:CreateToggle({
+	    Name = 'Notify on trigger',
+	    Default = true
+	})
+	
+end)
+
+local AntiFallDirection
+run(function()
+	local AntiFall
+	local Mode
+	local Material
+	local Color
+	local rayCheck = RaycastParams.new()
+	rayCheck.RespectCanCollide = true
+
+	local function getLowGround()
+		local mag = math.huge
+		for _, pos in bedwars.BlockController:getStore():getAllBlockPositions() do
+			pos = pos * 3
+			if pos.Y < mag and not getPlacedBlock(pos + Vector3.new(0, 3, 0)) then
+				mag = pos.Y
+			end
+		end
+		return mag
+	end
+
+	AntiFall = larp.Categories.Blatant:CreateModule({
+		Name = 'AntiFall',
+		Function = function(callback)
+			if callback then
+				repeat task.wait() until store.matchState ~= 0 or (not AntiFall.Enabled)
+				if not AntiFall.Enabled then return end
+
+				local pos, debounce = getLowGround(), tick()
+				if pos ~= math.huge then
+					AntiFallPart = Instance.new('Part')
+					AntiFallPart.Size = Vector3.new(10000, 1, 10000)
+					AntiFallPart.Transparency = 1 - Color.Opacity
+					AntiFallPart.Material = Enum.Material[Material.Value]
+					AntiFallPart.Color = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+					AntiFallPart.Position = Vector3.new(0, pos - 2, 0)
+					AntiFallPart.CanCollide = Mode.Value == 'Collide'
+					AntiFallPart.Anchored = true
+					AntiFallPart.CanQuery = false
+					AntiFallPart.Parent = workspace
+					AntiFall:Clean(AntiFallPart)
+					AntiFall:Clean(AntiFallPart.Touched:Connect(function(touched)
+						if touched.Parent == lplr.Character and entitylib.isAlive and debounce < tick() then
+							debounce = tick() + 0.1
+							if Mode.Value == 'Normal' then
+								local top = getNearGround()
+								if top then
+									local lastTeleport = lplr:GetAttribute('LastTeleported')
+									local connection
+									connection = runService.PreSimulation:Connect(function()
+										if larp.Modules.Fly.Enabled or larp.Modules.LongJump.Enabled then
+											connection:Disconnect() -- i fixed, inffly doesnt exist
+											AntiFallDirection = nil
+											return
+										end
+
+										if entitylib.isAlive and lplr:GetAttribute('LastTeleported') == lastTeleport then
+											local delta = ((top - entitylib.character.RootPart.Position) * Vector3.new(1, 0, 1))
+											local root = entitylib.character.RootPart
+											AntiFallDirection = delta.Unit == delta.Unit and delta.Unit or Vector3.zero
+											root.Velocity *= Vector3.new(1, 0, 1)
+											rayCheck.FilterDescendantsInstances = {gameCamera, lplr.Character}
+											rayCheck.CollisionGroup = root.CollisionGroup
+
+											local ray = workspace:Raycast(root.Position, AntiFallDirection, rayCheck)
+											if ray then
+												for _ = 1, 10 do
+													local dpos = roundPos(ray.Position + ray.Normal * 1.5) + Vector3.new(0, 3, 0)
+													if not getPlacedBlock(dpos) then
+														top = Vector3.new(top.X, pos.Y, top.Z)
+														break
+													end
+												end
+											end
+
+											root.CFrame += Vector3.new(0, top.Y - root.Position.Y, 0)
+											if not frictionTable.Speed then
+												root.AssemblyLinearVelocity = (AntiFallDirection * getSpeed()) + Vector3.new(0, root.AssemblyLinearVelocity.Y, 0)
+											end
+
+											if delta.Magnitude < 1 then
+												connection:Disconnect()
+												AntiFallDirection = nil
+											end
+										else
+											connection:Disconnect()
+											AntiFallDirection = nil
+										end
+									end)
+									AntiFall:Clean(connection)
+								end
+							elseif Mode.Value == 'Velocity' then
+								entitylib.character.RootPart.Velocity = Vector3.new(entitylib.character.RootPart.Velocity.X, 100, entitylib.character.RootPart.Velocity.Z)
+							end
+						end
+					end))
+				end
+			else
+				AntiFallDirection = nil
+			end
+		end,
+		Tooltip = 'Help\'s you with your Parkinson\'s\nPrevents you from falling into the void.'
+	})
+	Mode = AntiFall:CreateDropdown({
+		Name = 'Move Mode',
+		List = {'Normal', 'Collide', 'Velocity'},
+		Function = function(val)
+			if AntiFallPart then
+				AntiFallPart.CanCollide = val == 'Collide'
+			end
+		end,
+	Tooltip = 'Normal - Smoothly moves you towards the nearest safe point\nVelocity - Launches you upward after touching\nCollide - Allows you to walk on the part'
+	})
+	local materials = {'ForceField'}
+	for _, v in Enum.Material:GetEnumItems() do
+		if v.Name ~= 'ForceField' then
+			table.insert(materials, v.Name)
+		end
+	end
+	Material = AntiFall:CreateDropdown({
+		Name = 'Material',
+		List = materials,
+		Function = function(val)
+			if AntiFallPart then
+				AntiFallPart.Material = Enum.Material[val]
+			end
+		end
+	})
+	Color = AntiFall:CreateColorSlider({
+		Name = 'Color',
+		DefaultOpacity = 0.5,
+		Function = function(h, s, v, o)
+			if AntiFallPart then
+				AntiFallPart.Color = Color3.fromHSV(h, s, v)
+				AntiFallPart.Transparency = 1 - o
+			end
+		end
+	})
+end)
+
+run(function()
+    local AutoChargeProj
+    local Percentage
+
+    local old
+
+    AutoChargeProj = larp.Categories.Blatant:CreateModule({
+        Name = 'Charge Percent',
+	Function = function(callback)
+		if callback then
+			ProjectileAimbot:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+				if Mode.Value ~= 'Adaptive' then
+					return
+				end
+				if damageTable.fromEntity == lplr.Character or damageTable.fromEntity == lplr then
+					local victim = entitylib.getEntity(damageTable.entityInstance)
+					if victim and victim.RootPart then
+						prediction.reportHit(victim.RootPart)
+						prediction.markKnockback(victim.RootPart, damageTable.knockbackMultiplier)
+					end
+				end
+			end))
+			old = bedwars.ProjectileController.calculateImportantLaunchValues
+                bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
+                    local args = {...}
+                    local percent = Percentage.Value / 100
+                    local meta = bedwars.ProjectileMeta[args[2].projectile] or {}
+                    args[2].drawDurationSeconds = math.max(args[2].drawDurationSeconds, (meta.predictionLifetimeSec or 0) * percent)
+                    args[2].velocityMultiplier = math.max(args[2].velocityMultiplier, percent)
+                    return old(unpack(args))
+                end
+            elseif old then
+                bedwars.ProjectileController.calculateImportantLaunchValues = old
+                old = nil
+            end
+        end,
+        Tooltip = 'Charges your projectile with a certain percentage.'
+    })
+
+    Percentage = AutoChargeProj:CreateSlider({
+        Name = 'Percentage',
+        Min = 0,
+        Max = 100,
+        Default = 50,
+        Suffix = '%'
+    })
+end)
+
+run(function()
+	local CannonSpeed
+	local Value
+	
+	CannonSpeed = larp.Categories.Blatant:CreateModule({
+	    Name = 'CannonSpeed',
+	    Function = function(callback)
+	        debug.setconstant(bedwars.CannonHandController.launchSelf, 15, callback and Value.Value or 200)
+	    end,
+	    Tooltip = 'Makes you go faster with cannon.'
+	})
+	
+	Value = CannonSpeed:CreateSlider({
+	    Name = 'Speed',
+	    Min = 1,
+	    Max = 400,
+	    Default = 200,
+	    Function = function(val)
+	        if CannonSpeed.Enabled then
+	            debug.setconstant(bedwars.CannonHandController.launchSelf, 15, val)
+	        end
+	    end,
+	    Suffix = function(val)
+	        return val <= 1 and 'stud' or 'studs'
+	    end
+	})
+	CannonSpeed:CreateButton({
+	    Name = 'Sync to legit speed',
+	    Function = function()
+	        Value:SetValue(200)
+	    end
+	})
+end)
+
+run(function()
+	local DamageBoost
+	local stack
+	
+	DamageBoost = larp.Categories.Blatant:CreateModule({
+		Name = 'DamageBoost',
+		Function = function(callback)
+			if callback then
+				DamageBoost:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+					if entitylib.isAlive and tick() > (stack or 0) and damageTable.entityInstance == lplr.Character and not larp.Modules.LongJump.Enabled then
+						local horizontal = (damageTable.knockbackMultiplier and damageTable.knockbackMultiplier.horizontal or 0)
+						knockbackSpeed = bedwars.KnockbackUtil.calculateKnockbackVelocity(Vector3.one, 1, {
+							vertical = 0,
+							horizontal = horizontal,
+						}).Magnitude * (0.9 + store.ping.total)
+	                    stack = tick() + (knockbackSpeed / 45)
+	                    knockbackBoost = tick() + (horizontal / 3.5)
+					end
+				end))
+			end
+		end,
+	    Tooltip = 'Makes you go slightly faster when damaged'
+	})
+end)
+
+run(function()
+	local FastBreak
+	local BedCheck
+	local Blacklist
+	local Blacklisted
+	local Time
+	
+	local newlist, old = {}, nil
+	local function find(tab, ind)
+		for i, v in tab do
+			if v == ind or v:find(ind) then
+				return i
+			end
+		end
+		return nil
+	end
+	
+	FastBreak = larp.Categories.Blatant:CreateModule({
+		Name = 'FastBreak',
+		Function = function(callback)
+			if callback then
+				old = bedwars.BlockBreaker.hitBlock
+				bedwars.BlockBreaker.hitBlock = function(self, ...)
+					local _, params = unpack({...})
+					pcall(function()
+						local block, info = nil, self.clientManager:getBlockSelector():getMouseInfo(1, {ray = params})
+						block = info and info.target and info.target.blockInstance or nil
+						if block and (not Blacklist.Enabled or not find(newlist, block.Name)) and (not BedCheck.Enabled or block.Name ~= 'bed') then
+							bedwars.BlockBreakController.blockBreaker:setCooldown(Time.Value)
+						end
+					end)
+	
+					return old(self, ...)
+				end
+	
+				repeat
+					if (tick() - store.lastHit) > 0.3 then
+						bedwars.BlockBreakController.blockBreaker:setCooldown(0.3)
+					end
+					task.wait(0.1)
+				until not FastBreak.Enabled
+			elseif old then
+				bedwars.BlockBreaker.hitBlock = old
+				bedwars.BlockBreakController.blockBreaker:setCooldown(0.3)
+			end
+		end,
+		Tooltip = 'Decreases block hit cooldown'
+	})
+	Time = FastBreak:CreateSlider({
+		Name = 'Break speed',
+		Min = 0,
+		Max = 0.3,
+		Default = 0.25,
+		Decimal = 100,
+		Suffix = 'seconds'
+	})
+	FastBreak:CreateButton({
+		Name = 'Sync to legit speed',
+		Function = function()
+			Time:SetValue(0.3)
+		end
+	})
+	BedCheck = FastBreak:CreateToggle({
+		Name = 'Bed Check',
+		Tooltip = 'Doesn\'t increase speed if ur breaking a bed'
+	})
+	Blacklist = FastBreak:CreateToggle({
+		Name = 'Use blacklist',
+		Function = function(callback)
+			if Blacklisted and Blacklisted.Object then
+				Blacklisted.Object.Visible = callback
+			end
+		end
+	})
+	Blacklisted = FastBreak:CreateTextList({
+		Name = 'Blocks',
+		Function = function(list)
+			newlist = {}
+			for _, v in list do
+				if v:find('iron') then
+					table.insert(newlist, 'iron_ore_mesh_block')
+				else
+					table.insert(newlist, v)
+				end
+			end
+		end,
+		Darker = true,
+		Visible = false
+	})
+end)
+
+local Fly
+local LongJump
+run(function()
+	local Value
+	local VerticalValue
+	local WallCheck
+	local PopBalloons
+	local TP
+	local rayCheck = RaycastParams.new()
+	rayCheck.RespectCanCollide = true
+	local up, down, old = 0, 0
+
+	Fly = larp.Categories.Blatant:CreateModule({
+		Name = 'Fly',
+		Function = function(callback)
+			frictionTable.Fly = callback or nil
+			updateVelocity()
+			if callback then
+				up, down, old = 0, 0, bedwars.BalloonController.deflateBalloon
+				bedwars.BalloonController.deflateBalloon = function() end
+				local tpTick, tpToggle, oldy = tick(), true
+
+				if lplr.Character and (lplr.Character:GetAttribute('InflatedBalloons') or 0) == 0 and getItem('balloon') then
+					bedwars.BalloonController:inflateBalloon()
+				end
+				Fly:Clean(larpEvents.AttributeChanged.Event:Connect(function(changed)
+					if changed == 'InflatedBalloons' and (lplr.Character:GetAttribute('InflatedBalloons') or 0) == 0 and getItem('balloon') then
+						bedwars.BalloonController:inflateBalloon()
+					end
+				end))
+				Fly:Clean(runService.PreSimulation:Connect(function(dt)
+					if entitylib.isAlive and not InfiniteFly.Enabled and isnetworkowner(entitylib.character.RootPart) then
+						local flyAllowed = (lplr.Character:GetAttribute('InflatedBalloons') and lplr.Character:GetAttribute('InflatedBalloons') > 0) or store.matchState == 2
+						local mass = (-0.02 + (flyAllowed and 6 or 0) * (tick() % 0.4 < 0.2 and -1 or 1)) + ((up + down) * VerticalValue.Value)
+						local root, moveDirection = entitylib.character.RootPart, entitylib.character.Humanoid.MoveDirection
+						local velo = getSpeed()
+						local destination = (moveDirection * math.max(Value.Value - velo, 0) * dt)
+						rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera, AntiFallPart}
+						rayCheck.CollisionGroup = root.CollisionGroup
+
+						if WallCheck.Enabled then
+							local ray = workspace:Raycast(root.Position, destination, rayCheck)
+							if ray then
+								destination = ((ray.Position + ray.Normal) - root.Position)
+							end
+						end
+
+						if not flyAllowed then
+							if tpToggle then
+								local airleft = (tick() - entitylib.character.AirTime)
+								if airleft > 2 then
+									if not oldy then
+										local ray = workspace:Raycast(root.Position, Vector3.new(0, -1000, 0), rayCheck)
+										if ray and TP.Enabled then
+											tpToggle = false
+											oldy = root.Position.Y
+											tpTick = tick() + 0.11
+											root.CFrame = CFrame.lookAlong(Vector3.new(root.Position.X, ray.Position.Y + entitylib.character.HipHeight, root.Position.Z), root.CFrame.LookVector)
+										end
+									end
+								end
+							else
+								if oldy then
+									if tpTick < tick() then
+										local newpos = Vector3.new(root.Position.X, oldy, root.Position.Z)
+										root.CFrame = CFrame.lookAlong(newpos, root.CFrame.LookVector)
+										tpToggle = true
+										oldy = nil
+									else
+										mass = 0
+									end
+								end
+							end
+						end
+
+						root.CFrame += destination
+						root.AssemblyLinearVelocity = (moveDirection * velo) + Vector3.new(0, mass, 0)
+					end
+				end))
+				Fly:Clean(inputService.InputBegan:Connect(function(input)
+					if not inputService:GetFocusedTextBox() then
+						if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.ButtonA then
+							up = 1
+						elseif input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.ButtonL2 then
+							down = -1
+						end
+					end
+				end))
+				Fly:Clean(inputService.InputEnded:Connect(function(input)
+					if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.ButtonA then
+						up = 0
+					elseif input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.ButtonL2 then
+						down = 0
+					end
+				end))
+				if inputService.TouchEnabled then
+					pcall(function()
+						local jumpButton = lplr.PlayerGui.TouchGui.TouchControlFrame.JumpButton
+						Fly:Clean(jumpButton:GetPropertyChangedSignal('ImageRectOffset'):Connect(function()
+							up = jumpButton.ImageRectOffset.X == 146 and 1 or 0
+						end))
+					end)
+				end
+			else
+				bedwars.BalloonController.deflateBalloon = old
+				if PopBalloons.Enabled and entitylib.isAlive and (lplr.Character:GetAttribute('InflatedBalloons') or 0) > 0 then
+					for _ = 1, 3 do
+						bedwars.BalloonController:deflateBalloon()
+					end
+				end
+			end
+		end,
+		ExtraText = function()
+			return 'Heatseeker'
+		end,
+		Tooltip = 'Makes you go zoom.'
+	})
+	Value = Fly:CreateSlider({
+		Name = 'Speed',
+		Min = 1,
+		Max = 23,
+		Default = 23,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+	VerticalValue = Fly:CreateSlider({
+		Name = 'Vertical Speed',
+		Min = 1,
+		Max = 150,
+		Default = 50,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+	WallCheck = Fly:CreateToggle({
+		Name = 'Wall Check',
+		Default = true
+	})
+	PopBalloons = Fly:CreateToggle({
+		Name = 'Pop Balloons',
+		Default = true
+	})
+	TP = Fly:CreateToggle({
+		Name = 'TP Down',
+		Default = true
+	})
+end)
+
+run(function()
+	local Mode
+	local Expand
+	local objects, set = {}
+	
+	local function createHitbox(ent)
+		if ent.Targetable and ent.Player and not objects[ent] then
+			local hitbox = Instance.new('Part')
+			hitbox.Size = Vector3.new(3, 6, 3) + Vector3.one * (Expand.Value / 5)
+			hitbox.Position = ent.RootPart.Position
+			hitbox.CanCollide = false
+			hitbox.Massless = true
+			hitbox.Transparency = 1
+			hitbox.Parent = ent.Character
+			local weld = Instance.new('Motor6D')
+			weld.Part0 = hitbox
+			weld.Part1 = ent.RootPart
+			weld.Parent = hitbox
+			objects[ent] = hitbox
+		end
+	end
+	
+	HitBoxes = larp.Categories.Blatant:CreateModule({
+		Name = 'HitBoxes',
+		Function = function(callback)
+			if callback then
+				if Mode.Value == 'Sword' then
+					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (Expand.Value / 3))
+					set = true
+				else
+					HitBoxes:Clean(entitylib.Events.EntityAdded:Connect(createHitbox))
+					HitBoxes:Clean(entitylib.Events.LocalAdded:Connect(function()
+						for _, ent in entitylib.List do
+							createHitbox(ent)
+						end
+					end))
+					HitBoxes:Clean(entitylib.Events.EntityRemoving:Connect(function(ent)
+						if objects[ent] then
+							objects[ent]:Destroy()
+							objects[ent] = nil
+						end
+					end))
+					for _, ent in entitylib.List do
+						createHitbox(ent)
+					end
+				end
+			else
+				if set then
+					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, 3.8)
+					set = nil
+				end
+				for _, part in objects do
+					part:Destroy()
+				end
+				table.clear(objects)
+			end
+		end,
+		Tooltip = 'Expands attack hitbox'
+	})
+	Mode = HitBoxes:CreateDropdown({
+		Name = 'Mode',
+		List = {'Sword', 'Player'},
+		Function = function()
+			if HitBoxes.Enabled then
+				HitBoxes:Toggle()
+				HitBoxes:Toggle()
+			end
+		end,
+		Tooltip = 'Sword - Increases the range around you to hit entities\nPlayer - Increases the players hitbox'
+	})
+	Expand = HitBoxes:CreateSlider({
+		Name = 'Expand amount',
+		Min = 0,
+		Max = 14.4,
+		Default = 14.4,
+		Decimal = 10,
+		Function = function(val)
+			if HitBoxes.Enabled then
+				if Mode.Value == 'Sword' then
+					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (val / 3))
+				else
+					for _, part in objects do
+						part.Size = Vector3.new(3, 6, 3) + Vector3.one * (val / 5)
+					end
+				end
+			end
+		end,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+end)
+
+run(function()
+	larp.Categories.Blatant:CreateModule({
+		Name = 'KeepSprint',
+		Function = function(callback)
+			debug.setconstant(bedwars.SprintController.startSprinting, 5, callback and 'blockSprinting' or 'blockSprint')
+			bedwars.SprintController:stopSprinting()
+		end,
+		Tooltip = 'Lets you sprint with a speed potion.'
+	})
+end)
+
+run(function()
+	local Killaura
+	local Targets
+	local LimitItems
+	local SwingOnly
+	local SwingRange
+	local AttackRange
+	local MaxAngle
+	local CPS
+	local SwingTime
+
+	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
+	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
+
+	local function getTarget()
+		local character = entitylib.character
+		if not character or not character.HumanoidRootPart or not character.RootPart then return end
+		local selfpos = character.HumanoidRootPart.Position
+		local localfacing = character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+		local halfangle = MaxAngle.Value >= 360 and math.pi * 2 or math.rad(MaxAngle.Value) / 2
+		local nearest, nearestmag
+		for _, ent in entitylib.List do
+			if ent.Player and not Targets.Players.Enabled then continue end
+			if ent.NPC and not Targets.NPCs.Enabled then continue end
+			if not ent.Targetable then continue end
+			if not entitylib.isVulnerable(ent) then continue end
+			local rp = ent.RootPart
+			if not rp or not rp.Position then continue end
+			local delta = rp.Position - selfpos
+			local mag = delta.Magnitude
+			if mag > SwingRange.Value then continue end
+			local horizontal = delta * Vector3.new(1, 0, 1)
+			if halfangle < math.pi * 2 and horizontal.Magnitude > 0.01 then
+				local dot = localfacing:Dot(horizontal.Unit)
+				if math.acos(math.clamp(dot, -1, 1)) > halfangle then continue end
+			end
+			if Targets.Walls.Enabled and entitylib.Wallcheck(selfpos, rp.Position) then continue end
+			if not nearest or mag < nearestmag then
+				nearest = ent
+				nearestmag = mag
+			end
+		end
+		return nearest
+	end
+
+	local function setSwingRadius()
+		if realSwingInRegion then
+			debug.setconstant(realSwingInRegion, 6, (SwingOnly.Enabled and 3.8 or swingRadius))
+		end
+	end
+
+	local lastVisualSwing = 0
+
+	local function swingVisual()
+		if tick() - lastVisualSwing >= 0.3 then
+			lastVisualSwing = tick()
+			if SwordController then
+				pcall(SwordController.swingSwordInRegion, SwordController)
+			end
+		end
+	end
+
+	Killaura = larp.Categories.Blatant:CreateModule({
+		Name = 'KillAura',
+		Function = function(callback)
+			if callback then
+				SwordController = bedwars.SwordController
+				realSwingInRegion = SwordController.swingSwordInRegion
+SwordController.swingSwordInRegion = function(self, ...)
+				lastManualSwing = tick()
+				if SwingOnly.Enabled then
+					local target = getTarget()
+					if target and target.RootPart and target.RootPart.Parent then
+						store.KillauraTarget = target
+						local root = entitylib.character.RootPart
+						local oldcf = root.CFrame
+						root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
+						local result = realSwingInRegion(self, ...)
+						root.CFrame = oldcf
+						return result
+					end
+				end
+				return realSwingInRegion(self, ...)
+			end
+				swingRadius = AttackRange.Value / 3
+				setSwingRadius()
+
+				repeat
+					local target
+					if entitylib.isAlive and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
+						if not LimitItems.Enabled or (store.hand.tool and store.hand.toolType == 'sword') then
+							target = getTarget()
+							if target and target.RootPart and target.RootPart.Parent then
+								store.KillauraTarget = target
+								if not SwingOnly.Enabled then
+									swingVisual()
+								end
+							end
+						end
+					end
+					if not target then
+						store.KillauraTarget = nil
+					end
+
+					task.wait(math.max(0.05, math.min(1 / CPS.Value, SwingTime.Value)))
+				until not Killaura.Enabled
+			else
+				store.KillauraTarget = nil
+				if realSwingInRegion then
+					SwordController.swingSwordInRegion = realSwingInRegion
+				end
+				debug.setconstant(SwordController.swingSwordInRegion, 6, 3.8)
+				realSwingInRegion = nil
+				SwordController = nil
+			end
+		end,
+		Tooltip = 'Attack players around you without aiming'
+	})
+	Targets = Killaura:CreateTargets({
+		Players = true,
+		NPCs = true
+	})
+	LimitItems = Killaura:CreateToggle({
+		Name = 'Limit to items',
+		Tooltip = 'Only attacks when a sword is held.\nOff: attacks with anything held'
+	})
+	SwingOnly = Killaura:CreateToggle({
+		Name = 'Swing only',
+		Function = function()
+			setSwingRadius()
+		end,
+		Tooltip = 'Only attacks when you swing'
+	})
+	SwingRange = Killaura:CreateSlider({
+		Name = 'Swing range',
+		Min = 1,
+		Max = 20,
+		Default = 15,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Range where killaura swings'
+	})
+	AttackRange = Killaura:CreateSlider({
+		Name = 'Attack range',
+		Min = 1,
+		Max = 18.1,
+		Default = 15,
+		Decimal = 10,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Function = function(val)
+			swingRadius = val / 3
+			setSwingRadius()
+		end,
+		Tooltip = 'Range where attacks land'
+	})
+	MaxAngle = Killaura:CreateSlider({
+		Name = 'Max angle',
+		Min = 1,
+		Max = 360,
+		Default = 360,
+		Tooltip = 'Maximum angle between your view and the target'
+	})
+	SwingTime = Killaura:CreateSlider({
+		Name = 'Swing time',
+		Min = 0.01,
+		Max = 1,
+		Default = 0.11,
+		Decimal = 100,
+		Suffix = function(val)
+			return 's'
+		end,
+		Tooltip = 'Delay between swings'
+	})
+	CPS = Killaura:CreateSlider({
+		Name = 'Attacks per second (CPS)',
+		Min = 1,
+		Max = 20,
+		Default = 15,
+		Decimal = 10,
+		Suffix = function(val)
+			return 'cps'
+		end,
+		Tooltip = 'Swings attempted per second'
+	})
+end)
+
+run(function()
+	local AutoTNT
+	local Range
+	local Delay
+	local AutoSwitch
+
+	local function getEnemyBedNear(pos)
+		local bed, lastmag = nil, math.huge
+		local localPosition = pos or Vector3.zero
+		local team = lplr:GetAttribute('Team') or -1
+		for _, v in collectionService:GetTagged('bed') do
+			if not v:GetAttribute('Team' .. team .. 'NoBreak') then
+				local mag = (localPosition - v.Position).Magnitude
+				if mag < lastmag then
+					bed = v
+					lastmag = mag
+				end
+			end
+		end
+		return bed, lastmag
+	end
+
+	AutoTNT = larp.Categories.Blatant:CreateModule({
+		Name = 'AutoTNT',
+		Function = function(callback)
+			if callback then
+				local lastThrow = 0
+				repeat
+					if entitylib.isAlive and tick() - lastThrow >= Delay.Value then
+						local item = getItem('tnt')
+						if item then
+							local bed, mag = getEnemyBedNear(entitylib.character.RootPart.Position)
+							if bed and mag <= Range.Value then
+								if AutoSwitch.Enabled then
+									switchItem(item.tool, 0)
+								end
+								lastThrow = tick()
+								task.spawn(function()
+									local dir = bed.Position - entitylib.character.RootPart.Position
+									dir = Vector3.new(dir.X, 0, dir.Z)
+									if dir.Magnitude > 0.01 then
+										dir = dir.Unit
+									end
+									local rounded = roundPos(bed.Position)
+									bedwars.placeBlock(rounded, item.itemType, false)
+									task.wait(0.1)
+									if not getPlacedBlock(rounded) then
+										bedwars.placeBlock(roundPos(bed.Position - dir * 3), item.itemType, false)
+									end
+								end)
+							end
+						end
+					end
+					task.wait(0.1)
+				until not AutoTNT.Enabled
+			end
+		end,
+		Tooltip = 'Automatically drops TNT on the nearest enemy bed'
+	})
+	Range = AutoTNT:CreateSlider({
+		Name = 'Range',
+		Min = 1,
+		Max = 80,
+		Default = 40,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Max distance to the enemy bed'
+	})
+	Delay = AutoTNT:CreateSlider({
+		Name = 'Throw delay',
+		Min = 0.5,
+		Max = 5,
+		Default = 1.5,
+		Decimal = 10,
+		Suffix = 's',
+		Tooltip = 'Delay between TNT throws'
+	})
+	AutoSwitch = AutoTNT:CreateToggle({
+		Name = 'Auto switch',
+		Default = true,
+		Tooltip = 'Switches to TNT before throwing'
+	})
+end)
+
+run(function()
+	local AntiKillAura
+	local touched = {}
+
+	local function apply(state)
+		local character = lplr.Character
+		if not character then
+			return
+		end
+		for _, part in character:GetDescendants() do
+			if part:IsA('BasePart') then
+				if not state and touched[part] == nil then
+					touched[part] = part.CanQuery
+				end
+				part.CanQuery = state
+			end
+		end
+	end
+
+	AntiKillAura = larp.Categories.Blatant:CreateModule({
+		Name = 'Anti KillAura',
+		Function = function(callback)
+			if callback then
+				apply(false)
+				repeat
+					task.wait(1)
+					apply(false)
+				until not AntiKillAura.Enabled
+			else
+				apply(true)
+				for part, state in touched do
+					if part.Parent then
+						part.CanQuery = state
+					end
+				end
+				table.clear(touched)
+			end
+		end,
+		Tooltip = 'Stops swing and projectile killauras\nfrom hitting you. Direct-fire killauras\ncan still hit (server side)'
+	})
+end)
+
+
+run(function()
+	local Value
+	local CameraDir
+	local start
+	local JumpTick, JumpSpeed, Direction = tick(), 0
+	local projectileRemote = {InvokeServer = function() end}
+	task.spawn(function()
+		projectileRemote = bedwars.Handler:Get('ProjectileFire').Remote.instance
+	end)
+	
+	local function launchProjectile(item, pos, proj, speed, dir)
+		if not pos then return end
+	
+		pos = pos - dir * 0.1
+		local shootPosition = (CFrame.lookAlong(pos, Vector3.new(0, -speed, 0)) * CFrame.new(Vector3.new(-bedwars.BowConstantsTable.RelX, -bedwars.BowConstantsTable.RelY, -bedwars.BowConstantsTable.RelZ)))
+		switchItem(item.tool, 0)
+		task.wait(0.1)
+		bedwars.ProjectileController:createLocalProjectile(bedwars.ProjectileMeta[proj], proj, proj, shootPosition.Position, '', shootPosition.LookVector * speed, {drawDurationSeconds = 1})
+		if projectileRemote:InvokeServer(item.tool, proj, proj, shootPosition.Position, pos, shootPosition.LookVector * speed, httpService:GenerateGUID(true), {drawDurationSeconds = 1}, workspace:GetServerTimeNow() - 0.045) then
+			local shoot = bedwars.ItemMeta[item.itemType].projectileSource.launchSound
+			shoot = shoot and shoot[math.random(1, #shoot)] or nil
+			if shoot then
+				bedwars.SoundManager:playSound(shoot)
+			end
+		end
+	end
+	
+	local LongJumpMethods = {
+		cannon = function(_, pos, dir)
+			pos = pos - Vector3.new(0, (entitylib.character.HipHeight + (entitylib.character.RootPart.Size.Y / 2)) - 3, 0)
+			local rounded = Vector3.new(math.round(pos.X / 3) * 3, math.round(pos.Y / 3) * 3, math.round(pos.Z / 3) * 3)
+			bedwars.placeBlock(rounded, 'cannon', false)
+	
+			task.delay(0, function()
+				local block, blockpos = getPlacedBlock(rounded)
+				if block and block.Name == 'cannon' and (entitylib.character.RootPart.Position - block.Position).Magnitude < 20 then
+					local breaktype = bedwars.ItemMeta[block.Name].block.breakType
+					local tool = store.tools[breaktype]
+					if tool then
+						switchItem(tool.tool)
+					end
+	
+					bedwars.Handler:Get(AimCannon):Fire('SendToServer', {
+						cannonBlockPos = blockpos,
+						lookVector = dir
+					})
+	
+					local broken = 0.1
+					if bedwars.BlockController:calculateBlockDamage(lplr, {blockPosition = blockpos}) < block:GetAttribute('Health') then
+						broken = 0.4
+						bedwars.breakBlock(block, true, true)
+					end
+	
+					task.delay(broken, function()
+						for _ = 1, 3 do
+							local call = bedwars.Handler:Get('LaunchSelfFromCannon'):Fire('CallServer', {cannonBlockPos = blockpos})
+							if call then
+								bedwars.breakBlock(block, true, true)
+								JumpSpeed = 5.25 * Value.Value
+								JumpTick = tick() + 2.3
+								Direction = Vector3.new(dir.X, 0, dir.Z).Unit
+								break
+							end
+							task.wait(0.1)
+						end
+					end)
+				end
+			end)
+		end,
+		cat = function(_, _, dir)
+			LongJump:Clean(larpEvents.CatPounce.Event:Connect(function()
+				JumpSpeed = 4 * Value.Value
+				JumpTick = tick() + 2.5
+				Direction = Vector3.new(dir.X, 0, dir.Z).Unit
+				entitylib.character.RootPart.Velocity = Vector3.zero
+			end))
+	
+			if not bedwars.AbilityController:canUseAbility('CAT_POUNCE') then
+				repeat task.wait() until bedwars.AbilityController:canUseAbility('CAT_POUNCE') or not LongJump.Enabled
+			end
+	
+			if bedwars.AbilityController:canUseAbility('CAT_POUNCE') and LongJump.Enabled then
+				bedwars.AbilityController:useAbility('CAT_POUNCE')
+			end
+		end,
+		fireball = function(item, pos, dir)
+			launchProjectile(item, pos, 'fireball', 60, dir)
+		end,
+		grappling_hook = function(item, pos, dir)
+			launchProjectile(item, pos, 'grappling_hook_projectile', 140, dir)
+		end,
+		jade_hammer = function(item, _, dir)
+			if not bedwars.AbilityController:canUseAbility(item.itemType..'_jump') then
+				repeat task.wait() until bedwars.AbilityController:canUseAbility(item.itemType..'_jump') or not LongJump.Enabled
+			end
+	
+			if bedwars.AbilityController:canUseAbility(item.itemType..'_jump') and LongJump.Enabled then
+				bedwars.AbilityController:useAbility(item.itemType..'_jump')
+				JumpSpeed = 1.4 * Value.Value
+				JumpTick = tick() + 2.5
+				Direction = Vector3.new(dir.X, 0, dir.Z).Unit
+			end
+		end,
+		tnt = function(item, pos, dir)
+			pos = pos - Vector3.new(0, (entitylib.character.HipHeight + (entitylib.character.RootPart.Size.Y / 2)) - 3, 0)
+			local rounded = Vector3.new(math.round(pos.X / 3) * 3, math.round(pos.Y / 3) * 3, math.round(pos.Z / 3) * 3)
+			start = Vector3.new(rounded.X, start.Y, rounded.Z) + (dir * (item.itemType == 'pirate_gunpowder_barrel' and 2.6 or 0.2))
+			bedwars.placeBlock(rounded, item.itemType, false)
+		end,
+		wood_dao = function(item, pos, dir)
+			if (lplr.Character:GetAttribute('CanDashNext') or 0) > workspace:GetServerTimeNow() or not bedwars.AbilityController:canUseAbility('dash') then
+				repeat task.wait() until (lplr.Character:GetAttribute('CanDashNext') or 0) < workspace:GetServerTimeNow() and bedwars.AbilityController:canUseAbility('dash') or not LongJump.Enabled
+			end
+	
+			if LongJump.Enabled then
+				bedwars.SwordController.lastAttack = workspace:GetServerTimeNow()
+				switchItem(item.tool, 0.1)
+				replicatedStorage['events-@easy-games/game-core:shared/game-core-networking@getEvents.Events'].useAbility:FireServer('dash', {
+					direction = dir,
+					origin = pos,
+					weapon = item.itemType
+				})
+				JumpSpeed = 4.5 * Value.Value
+				JumpTick = tick() + 2.4
+				Direction = Vector3.new(dir.X, 0, dir.Z).Unit
+			end
+		end
+	}
+	for _, v in {'stone_dao', 'iron_dao', 'diamond_dao', 'emerald_dao'} do
+		LongJumpMethods[v] = LongJumpMethods.wood_dao
+	end
+	LongJumpMethods.void_axe = LongJumpMethods.jade_hammer
+	LongJumpMethods.siege_tnt = LongJumpMethods.tnt
+	LongJumpMethods.pirate_gunpowder_barrel = LongJumpMethods.tnt
+	
+	LongJump = larp.Categories.Blatant:CreateModule({
+		Name = 'LongJump',
+		Function = function(callback)
+			frictionTable.LongJump = callback or nil
+			updateVelocity()
+			if callback then
+				LongJump:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+					if damageTable.entityInstance == lplr.Character and damageTable.fromEntity == lplr.Character and (not damageTable.knockbackMultiplier or not damageTable.knockbackMultiplier.disabled) then
+						local knockbackBoost = bedwars.KnockbackUtil.calculateKnockbackVelocity(Vector3.one, 1, {
+							vertical = 0,
+							horizontal = (damageTable.knockbackMultiplier and damageTable.knockbackMultiplier.horizontal or 1)
+						}).Magnitude * 1.1
+	
+						if knockbackBoost >= JumpSpeed then
+							local pos = damageTable.fromPosition and Vector3.new(damageTable.fromPosition.X, damageTable.fromPosition.Y, damageTable.fromPosition.Z) or damageTable.fromEntity and damageTable.fromEntity.PrimaryPart.Position
+							if not pos then return end
+							local vec = (entitylib.character.RootPart.Position - pos)
+							JumpSpeed = knockbackBoost
+							JumpTick = tick() + 2.5
+							Direction = Vector3.new(vec.X, 0, vec.Z).Unit
+						end
+					end
+				end))
+				LongJump:Clean(larpEvents.GrapplingHookFunctions.Event:Connect(function(dataTable)
+					if dataTable.hookFunction == 'PLAYER_IN_TRANSIT' then
+						local vec = entitylib.character.RootPart.CFrame.LookVector
+						JumpSpeed = 2.5 * Value.Value
+						JumpTick = tick() + 2.5
+						Direction = Vector3.new(vec.X, 0, vec.Z).Unit
+					end
+				end))
+	
+				start = entitylib.isAlive and entitylib.character.RootPart.Position or nil
+				LongJump:Clean(runService.PreSimulation:Connect(function(dt)
+					local root = entitylib.isAlive and entitylib.character.RootPart or nil
+	
+					if root and isnetworkowner(root) then
+						if JumpTick > tick() then
+							root.AssemblyLinearVelocity = Direction * (getSpeed() + ((JumpTick - tick()) > 1.1 and JumpSpeed or 0)) + Vector3.new(0, root.AssemblyLinearVelocity.Y, 0)
+							if entitylib.character.Humanoid.FloorMaterial == Enum.Material.Air and not start then
+								root.AssemblyLinearVelocity += Vector3.new(0, dt * (workspace.Gravity - 23), 0)
+							else
+								root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 15, root.AssemblyLinearVelocity.Z)
+							end
+							start = nil
+						else
+							if start then
+								root.CFrame = CFrame.lookAlong(start, root.CFrame.LookVector)
+							end
+							root.AssemblyLinearVelocity = Vector3.zero
+							JumpSpeed = 0
+						end
+					else
+						start = nil
+					end
+				end))
+	
+				if store.hand and LongJumpMethods[store.hand.tool.Name] then
+					task.spawn(LongJumpMethods[store.hand.tool.Name], getItem(store.hand.tool.Name), start, (CameraDir.Enabled and gameCamera or entitylib.character.RootPart).CFrame.LookVector)
+					return
+				end
+	
+				for i, v in LongJumpMethods do
+					local item = getItem(i)
+					if item or store.equippedKit == i then
+						task.spawn(v, item, start, (CameraDir.Enabled and gameCamera or entitylib.character.RootPart).CFrame.LookVector)
+						break
+					end
+				end
+			else
+				JumpTick = tick()
+				Direction = nil
+				JumpSpeed = 0
+			end
+		end,
+		ExtraText = function()
+			return 'Heatseeker'
+		end,
+		Tooltip = 'Lets you jump farther'
+	})
+	Value = LongJump:CreateSlider({
+		Name = 'Speed',
+		Min = 1,
+		Max = 37,
+		Default = 37,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+	CameraDir = LongJump:CreateToggle({
+		Name = 'Camera Direction'
+	})
+end)
+
+run(function()
+	local NoFall
+	
+	NoFall = larp.Categories.Blatant:CreateModule({
+		Name = 'NoFall',
+		Function = function(callback)
+			if callback then
+				NoFall:Clean(runService.PostSimulation:Connect(function(dt)
+					if entitylib.isAlive and store.matchState == 1 then
+						local root = entitylib.character.RootPart
+						local velo = root.Velocity
+	
+						if root.Velocity.Y < -45 then
+							root.Velocity = Vector3.new(0, 2.5 + dt, 0)
+							entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+							runService.PreRender:Wait()
+							root.Velocity = velo
+						end
+					end
+				end))
+	
+				NoFall:Clean(entitylib.Events.LocalAdded:Connect(function(ent)
+					local animator = ent.Humanoid:WaitForChild('Animator', 5)
+					if animator and NoFall.Enabled then
+						task.wait(.5)
+						NoFall:Toggle()
+						NoFall:Toggle()
+					end
+				end))
+			end
+		end,
+		Tooltip = 'Prevents taking fall damage.'
+	})
+end)
+
+run(function()
+	local old
+	
+	larp.Categories.Blatant:CreateModule({
+		Name = 'NoSlow',
+		Function = function(callback)
+			local modifier = bedwars.SprintController:getMovementStatusModifier()
+			if callback then
+				old = modifier.addModifier
+				modifier.addModifier = function(self, tab)
+					if tab.moveSpeedMultiplier then
+						tab.moveSpeedMultiplier = math.max(tab.moveSpeedMultiplier, 1)
+					end
+					return old(self, tab)
+				end
+	
+				for i in modifier.modifiers do
+					if (i.moveSpeedMultiplier or 1) < 1 then
+						modifier:removeModifier(i)
+					end
+				end
+			else
+				modifier.addModifier = old
+				old = nil
+			end
+		end,
+		Tooltip = 'Prevents slowing down when using items.'
+	})
+end)
+
+run(function()
+	local OwlAura
+	local Targets
+	local Mode
+	local Range
+	
+	OwlAura = larp.Categories.Blatant:CreateModule({
+	    Name = 'OwlAura',
+	    Function = function(callback)
+	        if callback then
+	            local owls = collection('Owl', OwlAura, function(self, obj)
+	                task.delay(1, function()
+	    

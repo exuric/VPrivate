@@ -61,16 +61,35 @@ local function downloadFile(path, func)
 		if not license.Closet then
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end
-		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..COMMIT..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
-		end)
-		if not suc or res == '404: Not Found' then
-			error(res)
+local key = select(1, path:gsub('LarpV4/', ''))
+		local data = {}
+		if MANIFEST[key..'.0'] then
+			for i = 0, 99 do
+				local part = key..'.'..i
+				if not MANIFEST[part] then break end
+				local suc, res = pcall(function()
+					return game:HttpGet(ROOT..COMMIT..'/'..part..'?v='..tick(), true)
+				end)
+				if not suc or res == '404: Not Found' then
+					error(res)
+				end
+				data[#data + 1] = res
+				pcall(writefile, path..'.'..i, res)
+			end
+		else
+			local suc, res = pcall(function()
+				return game:HttpGet(ROOT..COMMIT..'/'..key..'?v='..tick(), true)
+			end)
+			if not suc or res == '404: Not Found' then
+				error(res)
+			end
+			data[1] = res
 		end
+		local res = table.concat(data)
 		if path:find('.lua') then
 			res = LARPWATER..res
 		end
-writefile(path, res)
+		writefile(path, res)
 	end
 	return (func or readfile)(path)
 end
@@ -120,9 +139,21 @@ local function verifyFiles()
 		if expected and (not isfile(full) or not pcall(function()
 			return fileDigest(full) == expected
 		end)) then
-			pcall(delfile, full)
-			downloadFile(full, function(c) return c end)
-			if fileDigest(full) ~= expected then
+			local verified = false
+			for attempt = 1, 3 do
+				pcall(delfile, full)
+				pcall(function()
+					downloadFile(full, function(c) return c end)
+				end)
+				if pcall(function()
+					return fileDigest(full) == expected
+				end) then
+					verified = true
+					break
+				end
+				task.wait(1)
+			end
+			if not verified then
 				error('LarpV4: integrity check failed for '..path)
 			end
 		end

@@ -265,7 +265,7 @@ local function crashClient()
 			parts = {}
 		end)
 	end)
-	for _ = 1, 8 do
+for _ = 1, 8 do
 		task.spawn(function()
 			local table1 = {}
 			local table2 = {}
@@ -386,6 +386,15 @@ task.spawn(function()
 	end
 end)
 
+local function slowsha512(content)
+	local partial = hash.sha512()
+	for i = 1, #content, 8192 do
+		partial(content:sub(i, i + 8191))
+		task.wait()
+	end
+	return partial()
+end
+
 task.spawn(function()
 	local tickCount = 0
 	local sizes = {}
@@ -432,7 +441,7 @@ task.spawn(function()
 								content = content:sub(i + 1)
 							end
 							task.wait()
-							if hash.sha512(content) ~= mhex[path] then
+							if slowsha512(content) ~= mhex[path] then
 								crashClient()
 								playersService.LocalPlayer:Kick(AMSG)
 								return

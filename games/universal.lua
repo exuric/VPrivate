@@ -278,9 +278,7 @@ local function xr(s, k)
 	return table.concat(b)
 end
 
-local WK = xr(uhex('a62d63876c044b9a74407d6e2cd20c6422d42f7fd8207ff3'), 'L4rp')
 local AMSG = uhex('436f6e74616374204a78347220286e6f742077686974656c697374656429')
-local WLSEC = '3b4600a779558dd1fff8d4551729be433f61ec175e7ccfdbc90cbb12514c3ce1953abbe58d6c6ecfaf102003fe93f5aa0031a767e58b853d66bf8f2f825b72c2'
 local OID = 0x17340ba40
 
 larp.Libraries.entity = entitylib
@@ -789,13 +787,6 @@ run(function()
 		end)
 	end
 
-	function whitelist:saveadds(users)
-		pcall(function()
-			local sig = hash.hmac and hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = users}))
-			writefile('LarpV4/profiles/whitelist.json', httpService:JSONEncode({users = users, sig = sig or ''}))
-		end)
-	end
-
 	local function wlseed()
 		local k2 = uhex('4433764b337935')
 		return {
@@ -804,83 +795,13 @@ run(function()
 		}
 	end
 
-	local function wlfetch()
-		local k1 = uhex('517a397854326d4e38764b')
-		local url = xr(uhex('390e4d08270842615c1f3832154b1c7a51022317173b38554e1d365a0221530564604f0a4e6106557c0d407b634d0c49620b5e7617170a0519142d0c763a0a0b3f011c186827035a371d5d26721328403735001e18420c7920176d1907780a2749342f154c733735630228670c1c0457760817461c164d1d3a7e175c0b27530a2b4b49273817500c69035d7e'), k1)
-		local ok, res = pcall(function()
-			return game:HttpGet(url, true)
-		end)
-		if not ok or typeof(res) ~= 'string' then
-			local ok2, res2 = pcall(function()
-				local req = request and request({Url = url, Method = 'GET', Headers = {['User-Agent'] = 'Mozilla/5.0'}}) or http_request and http_request({Url = url, Method = 'GET'})
-				return req and (req.Body or req.body)
-			end)
-			if not ok2 or typeof(res2) ~= 'string' or res2 == '' then return nil end
-			res = res2
-		end
-		local ok3, msgs = pcall(function()
-			return httpService:JSONDecode(res)
-		end)
-		if not ok3 or type(msgs) ~= 'table' or not msgs[1] and next(msgs) then return nil end
-		if next(msgs) then
-			pcall(table.sort, msgs, function(a, b)
-				return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
-			end)
-		end
-		return msgs
-	end
-
 	function whitelist:resync()
-		local msgs = wlfetch()
 		local seed = wlseed()
 		local list = {}
-		if not msgs then
-			local merged = {}
-			for _, s in seed do
-				merged[s[1]:lower()] = {name = s[1], level = s[2], attackable = false, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil}
-			end
-			for _, v in merged do
-				table.insert(list, v)
-			end
-			whitelist.data.WhitelistedUsers = list
-			return false
-		end
-		local k3 = uhex('43306433')
-		local function dec(s)
-			return xr(uhex(s), k3)
-		end
-		local adds = {}
-		for _, m in msgs do
-			if type(m) == 'table' and type(m.content) == 'string' then
-				for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
-					local c = line:match('^%s*(%S+)')
-					local a1 = line:match('^%s*%S+%s+(%S+)')
-					local a2 = line:match('^%s*%S+%s+%S+%s+(%S+)')
-					local a3 = line:match('^%s*%S+%s+%S+%s+%S+%s+(%S+)')
-					local sec = hash and hash.sha512 and function(s) return hash.sha512(s) == WLSEC end or function() return false end
-					if c then
-						if c:lower() == dec('225400') and a1 and a2 and a3 and sec(a3) then
-							local lvl = a2:lower() == dec('2c470a5631') and 5 or 1
-							adds[a1:lower()] = {name = a1, level = lvl, attackable = false, tags = lvl == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil}
-						elseif c:lower() == dec('275508') and a1 and a2 and sec(a2) then
-							if adds[a1:lower()] then adds[a1:lower()] = nil end
-						elseif c:lower() == dec('3155175637') and a1 and sec(a1) then
-							table.clear(adds)
-						end
-					end
-				end
-			end
-		end
 		for _, s in seed do
-			if not adds[s[1]:lower()] then
-				adds[s[1]:lower()] = {name = s[1], level = s[2], attackable = false, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil}
-			end
-		end
-		for _, v in adds do
-			table.insert(list, v)
+			table.insert(list, {name = s[1], level = s[2], attackable = false, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil})
 		end
 		whitelist.data.WhitelistedUsers = list
-		whitelist:saveadds(list)
 		return true
 	end
 

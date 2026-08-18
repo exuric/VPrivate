@@ -224,8 +224,8 @@ local function fileDigest(path)
 		content = content:sub(i + 1)
 	end
 	local partial = hash.sha512()
-	for j = 1, #content, 4096 do
-		partial(content:sub(j, j + 4095))
+	for j = 1, #content, 32768 do
+		partial(content:sub(j, j + 32767))
 		task.wait()
 	end
 	return partial()
@@ -244,6 +244,9 @@ local function verifyFiles()
 		pcall(delfile, 'LarpV4/libraries/hash.lua')
 	end
 	hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
+	if getgenv().LarpVerifiedCommit == COMMIT then
+		return
+	end
 	for _, path in VERIFY_FILES do
 		local full = 'LarpV4/'..path
 		local expected = MANIFEST[path]
@@ -257,6 +260,7 @@ local function verifyFiles()
 			end
 		end
 	end
+	getgenv().LarpVerifiedCommit = COMMIT
 end
 
 if not (shared.LarpDeveloper and ISOWNER) then

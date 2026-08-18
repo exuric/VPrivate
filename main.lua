@@ -248,12 +248,13 @@ task.spawn(function()
 	local sizes = {}
 	local mhex = {}
 	local fileOrder = {}
+	local sweepIndex = 1
 	while not shared.larpreloading and task.wait(60) do
 		tickCount = tickCount + 1
 		pcall(function()
 			settings = readSettings()
 			if not (shared.LarpDeveloper and shared.LarpOwner) and settings.autoUpdate ~= false and hash and hash.sha512 then
-				if tickCount % 5 == 1 then
+				if tickCount % 10 == 1 then
 					local ok, res = pcall(function()
 						return game:HttpGet(ROOT..LARPCOMMIT..'/profiles/manifest.txt?v='..tick(), true)
 					end)
@@ -267,20 +268,24 @@ task.spawn(function()
 							end
 						end
 					end
-				end
-				local dirty = tickCount % 5 == 1
-				for _, path in fileOrder do
-					local full = 'LarpV4/'..path
-					if isfile(full) then
-						local len = readfile(full):len()
-						if len ~= (sizes[path] or -1) then
-							sizes[path] = len
-							dirty = true
+				else
+					local changed = {}
+					for _ = 1, 2 do
+						if #fileOrder == 0 then break end
+						local path = fileOrder[sweepIndex]
+						sweepIndex = sweepIndex % #fileOrder + 1
+						local full = 'LarpV4/'..path
+						if isfile(full) then
+							local len = readfile(full):len()
+							if len ~= (sizes[path] or -1) then
+								if sizes[path] then
+									changed[#changed + 1] = path
+								end
+								sizes[path] = len
+							end
 						end
 					end
-				end
-				if dirty then
-					for _, path in fileOrder do
+					for _, path in changed do
 						local full = 'LarpV4/'..path
 						if isfile(full) and mhex[path] then
 							local content = readfile(full)
@@ -414,24 +419,27 @@ task.spawn(function()
 		end)
 	end
 
-	if not shared.LarpIndependent then
-		loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
-		if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
-			loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
-		else
-			if not (shared.LarpDeveloper and shared.LarpOwner) then
-				local suc, res = pcall(function()
-					return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua?v='..tick(), true)
-				end)
-				if suc and res ~= '404: Not Found' then
-					loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+	task.spawn(function()
+		task.wait(1)
+		if not shared.LarpIndependent then
+			loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
+			if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
+				loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+			else
+				if not (shared.LarpDeveloper and shared.LarpOwner) then
+					local suc, res = pcall(function()
+						return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua?v='..tick(), true)
+					end)
+					if suc and res ~= '404: Not Found' then
+						loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+					end
 				end
 			end
+			finishLoading()
+		else
+			larp.Init = finishLoading
 		end
-		finishLoading()
-	else
-		larp.Init = finishLoading
-	end
+	end)
 end)
 
 if shared.LarpIndependent then

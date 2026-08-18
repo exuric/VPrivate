@@ -40,3 +40,4 @@
 ~Fixed the loader getting stuck on downloading hash.lua and whitelisted users crashing
 ~Split large files into parts so downloads never fail and made manifest hashes match the served bytes
 ~Fixed the loader crashing on hash.lua by declaring the manifest before it is used and unstamped the served files
+~Reverted the loader to single-file downloads with corrected served files and manifest hashes

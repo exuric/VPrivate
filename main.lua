@@ -62,29 +62,12 @@ getgenv().LarpReadRoot = ROOT
 local LARPWATER = '--LARP:'..(pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')..'\n'
 local function downloadFile(path, func)
 	if not isfile(path) or (not (shared.LarpDeveloper and shared.LarpOwner) and readfile(path):sub(1, #LARPWATER) ~= LARPWATER) then
-		local data = {}
-		if isfile(path..'.0') then
-			for i = 0, 99 do
-				local part = path..'.'..i
-				local ok, res = pcall(function()
-					return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, part:gsub('LarpV4/', ''))..'?v='..tick(), true)
-				end)
-				if not ok or res == '404: Not Found' then
-					if i == 0 then error(res) end
-					break
-				end
-				data[#data + 1] = res
-			end
-		else
-			local ok, res = pcall(function()
-				return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
-			end)
-			if not ok or res == '404: Not Found' then
-				error(res)
-			end
-			data[1] = res
+		local suc, res = pcall(function()
+			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
+		end)
+		if not suc or res == '404: Not Found' then
+			error(res)
 		end
-		local res = table.concat(data)
 		if path:find('.lua') then
 			res = LARPWATER..res
 		end

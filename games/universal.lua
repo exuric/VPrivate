@@ -8990,52 +8990,13 @@ run(function()
 	end
 	local k1 = uhex('517a397854326d4e38764b')
 	local url = xr(uhex('390e4d08270842615c1f3832154b1c7a51022317173b38554e1d365a0221530564604f0a4e6106557c0d407b634d0c49620b5e7617170a0519142d0c763a0a0b3f011c186827035a371d5d26721328403735001e18420c7920176d1907780a2749342f154c733735630228670c1c0457760817461c164d1d3a7e175c0b27530a2b4b49273817500c69035d7e'), k1)
-	local aliveword = dec('225c0d4526')
-	local kickword = dec('28590758')
-	local blackword = dec('215c055028')
 	local addword = dec('225400')
 	local delword = dec('275508')
-	local resetword = dec('3155175637')
 	local ownerword = dec('2c470a5631')
-	local reloadword = dec('3155085c2254')
-	local notifyword = dec('2d5f105a2549')
-	local function ownerGet()
-		local ok, res = pcall(function()
-			return game:HttpGet(url, true)
-		end)
-		if not ok or typeof(res) ~= 'string' then return nil end
-		local ok3, msgs = pcall(function()
-			return httpService:JSONDecode(res)
-		end)
-		if not ok3 or type(msgs) ~= 'table' then return nil end
-		pcall(table.sort, msgs, function(a, b)
-			return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
-		end)
-		return msgs
-	end
 	local function ownerPost(content)
 		pcall(function()
 			httpService:PostAsync(url, httpService:JSONEncode({content = content}), Enum.HttpContentType.ApplicationJson)
 		end)
-	end
-	local function parseMsgs(msgs, handler)
-		if not msgs then return end
-		for _, m in msgs do
-			if type(m) == 'table' and type(m.content) == 'string' then
-				for line in (m.content..'\n'):gmatch('(.-)\r?\n') do
-					handler(line)
-				end
-			end
-		end
-	end
-	local now = function()
-		return DateTime.now().UnixTimestamp
-	end
-	local function isoTime(m)
-		local ok, dt = pcall(function()
-			return DateTime.fromIsoDate(m.timestamp)
-		end)
-		return ok and dt.UnixTimestamp or now()
 	end
 	local panels = {}
 	local function destroyPanel(panel)
@@ -9198,19 +9159,6 @@ run(function()
 			end
 		end)
 	end
-	local function username(box)
-		return box.Text:match('^%s*([%w_]+)')
-	end
-	local function aliveUsers(msgs)
-		local users = {}
-		parseMsgs(msgs, function(line)
-			local name, uid, display = line:match('^%s*'..aliveword..'%s+(%S+)%|(%d+)%|(.+)$')
-			if name and uid then
-				users[uid] = {name = name, display = display, last = now()}
-			end
-		end)
-		return users
-	end
 	local function makeModule(name, tooltip, refresh)
 		local mod = OwnerCat:CreateModule({
 			Name = name,
@@ -9221,182 +9169,175 @@ run(function()
 					return
 				end
 				mod.Panel = makePanel(name)
-				pcall(refresh, mod.Panel)
-				while mod.Enabled do
-					task.wait(10)
-					if mod.Panel then
-						pcall(refresh, mod.Panel)
+				if refresh then
+					pcall(refresh, mod.Panel)
+					while mod.Enabled do
+						task.wait(10)
+						if mod.Panel then
+							pcall(refresh, mod.Panel)
+						end
 					end
 				end
 			end,
 			Tooltip = tooltip
 		})
 	end
-	makeModule('Kick', 'Lists who is running LarpV4 right now and lets you kick them', function(panel)
-		clearRows(panel)
-		local users = aliveUsers(ownerGet())
-		local nowt = now()
-		local rows = {}
-		for uid, v in users do
-			if nowt - v.last <= 120 then
-				table.insert(rows, {uid = uid, v = v})
-			end
+	local function resultRow(panel, user, imageUrl)
+		if panel.Result then
+			pcall(panel.Result.Destroy, panel.Result)
+			panel.Result = nil
 		end
-		table.sort(rows, function(a, b)
-			return a.v.name < b.v.name
+		local r = rowFrame(panel)
+		r.Size = UDim2.new(1, -8, 0, 48)
+		panel.Result = r
+		local av = Instance.new('ImageLabel')
+		av.Size = UDim2.fromOffset(36, 36)
+		av.Position = UDim2.fromOffset(5, 6)
+		av.BackgroundColor3 = Color3.fromRGB(48, 48, 48)
+		av.BackgroundTransparency = imageUrl and 0 or 1
+		av.Image = imageUrl or ''
+		av.BorderSizePixel = 0
+		av.Parent = r
+		local nameL = Instance.new('TextLabel')
+		nameL.Size = UDim2.new(1, -148, 1, 0)
+		nameL.Position = UDim2.fromOffset(48, 0)
+		nameL.BackgroundTransparency = 1
+		nameL.Text = user.name..(user.displayName and user.displayName ~= user.name and ' ('..user.displayName..')' or '')
+		nameL.TextXAlignment = Enum.TextXAlignment.Left
+		nameL.TextTruncate = Enum.TextTruncate.AtEnd
+		nameL.TextColor3 = Color3.new(1, 1, 1)
+		nameL.TextSize = 13
+		nameL.Font = Enum.Font.Gotham
+		nameL.Parent = r
+		local function isWL()
+			for _, v in (whitelist.data.WhitelistedUsers or {}) do
+				if type(v) == 'table' and type(v.name) == 'string' and v.name:lower() == user.name:lower() then
+					return true
+				end
+			end
+			return false
+		end
+		local plus = Instance.new('TextButton')
+		plus.Size = UDim2.fromOffset(56, 24)
+		plus.Position = UDim2.new(1, -124, 0.5, -12)
+		plus.BackgroundColor3 = Color3.fromRGB(60, 160, 90)
+		plus.BorderSizePixel = 0
+		plus.Text = '+'
+		plus.TextColor3 = Color3.new(1, 1, 1)
+		plus.TextSize = 16
+		plus.Font = Enum.Font.GothamBold
+		plus.Parent = r
+		local ex = Instance.new('TextButton')
+		ex.Size = UDim2.fromOffset(56, 24)
+		ex.Position = UDim2.new(1, -64, 0.5, -12)
+		ex.BackgroundColor3 = Color3.fromRGB(200, 45, 45)
+		ex.BorderSizePixel = 0
+		ex.Text = 'X'
+		ex.TextColor3 = Color3.new(1, 1, 1)
+		ex.TextSize = 16
+		ex.Font = Enum.Font.GothamBold
+		ex.Parent = r
+		local function sync()
+			local wl = isWL()
+			plus.Visible = not wl
+			ex.Visible = wl
+			ex.Position = wl and UDim2.new(1, -124, 0.5, -12) or UDim2.new(1, -64, 0.5, -12)
+		end
+		plus.MouseButton1Click:Connect(function()
+			ownerPost(addword..' '..user.name..' '..ownerword)
+			pcall(function()
+				whitelist:resync()
+			end)
+			sync()
+			larp:CreateNotification('Larp V4', 'Whitelisted '..user.name..' successfully', 3, 'info')
 		end)
-		panel.Title.Text = 'Kick - Online ('..#rows..')'
-		for _, row in rows do
-			addRow(panel, row.v.name..(row.v.display and row.v.display ~= row.v.name and ' ('..row.v.display..')' or ''), kickword:upper(), function(b)
-				b.Text = 'Sent'
-				ownerPost(kickword..' '..row.v.name..' '..row.uid)
-				task.delay(2, function()
-					if b.Parent then
-						b.Text = kickword:upper()
-					end
+		ex.MouseButton1Click:Connect(function()
+			ownerPost(delword..' '..user.name)
+			pcall(function()
+				whitelist:resync()
+			end)
+			sync()
+			larp:CreateNotification('Larp V4', 'Removed '..user.name..' successfully', 3, 'info')
+		end)
+		sync()
+	end
+	local function buildWhitelistPanel(panel)
+		local function doSearch(box)
+			local name = box.Text:match('^%s*([%w_]+)')
+			if not name then return end
+			if panel.Result then
+				pcall(panel.Result.Destroy, panel.Result)
+				panel.Result = nil
+			end
+			local pending = rowFrame(panel)
+			pending.Size = UDim2.new(1, -8, 0, 30)
+			panel.Result = pending
+			local waitL = Instance.new('TextLabel')
+			waitL.Size = UDim2.new(1, -8, 1, 0)
+			waitL.BackgroundTransparency = 1
+			waitL.Text = 'Searching...'
+			waitL.TextColor3 = Color3.new(1, 1, 1)
+			waitL.TextSize = 13
+			waitL.Font = Enum.Font.Gotham
+			waitL.Parent = pending
+			task.spawn(function()
+				local ok, res = pcall(function()
+					return game:HttpGet('https://users.roblox.com/v1/users/search?keyword='..name..'&limit=1', true)
 				end)
-			end)
-		end
-	end)
-	makeModule('Blacklist', 'Blacklist users so they cannot use the script', function(panel)
-		clearRows(panel)
-		local black = {}
-		parseMsgs(ownerGet(), function(line)
-			local word = line:match('^%s*(%S+)')
-			local name = line:match('^%s*%S+%s+(%S+)')
-			if word and name and not name:match('%W') then
-				if word:lower() == '+'..blackword then
-					black[name:lower()] = name
-				elseif word:lower() == '-'..blackword then
-					black[name:lower()] = nil
-				end
-			end
-		end)
-		local names = {}
-		for _, v in black do
-			table.insert(names, v)
-		end
-		table.sort(names)
-		panel.Title.Text = 'Blacklist ('..#names..')'
-		if #names == 0 then
-			addLabel(panel, 'No blacklisted users')
-		end
-		for _, v in names do
-			addRow(panel, v, 'UNBLACK', function(b)
-				b.Text = 'Sent'
-				ownerPost('-'..blackword..' '..v)
-				task.delay(2, function()
-					if b.Parent then
-						b.Text = 'UNBLACK'
+				local user, imageUrl
+				if ok and typeof(res) == 'string' then
+					local ok2, data = pcall(function()
+						return httpService:JSONDecode(res)
+					end)
+					if ok2 and type(data) == 'table' and data.data and data.data[1] and type(data.data[1].id) == 'number' then
+						user = data.data[1]
+						local ok3, thumb = pcall(function()
+							return game:HttpGet('https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds='..user.id..'&size=420x420&format=Png&isCircular=false', true)
+						end)
+						if ok3 and typeof(thumb) == 'string' then
+							local ok4, td = pcall(function()
+								return httpService:JSONDecode(thumb)
+							end)
+							if ok4 and type(td) == 'table' and td.data and td.data[1] and type(td.data[1].imageUrl) == 'string' then
+								imageUrl = td.data[1].imageUrl
+							end
+						end
 					end
-				end)
-			end)
-		end
-		addInputRow(panel, 'username', 'BLACKLIST', function(b, box)
-			local name = username(box)
-			if name then
-				ownerPost('+'..blackword..' '..name)
-				box.Text = ''
-			end
-		end)
-	end)
-	makeModule('Whitelist', 'Add or remove whitelisted users', function(panel)
-		clearRows(panel)
-		addInputRow(panel, 'username', 'ADD (OWNER)', function(b, box)
-			local name = username(box)
-			if name then
-				ownerPost(addword..' '..name..' '..ownerword)
-				box.Text = ''
-			end
-		end)
-		addInputRow(panel, 'username', 'ADD (USER)', function(b, box)
-			local name = username(box)
-			if name then
-				ownerPost(addword..' '..name)
-				box.Text = ''
-			end
-		end)
-		addInputRow(panel, 'username', 'REMOVE', function(b, box)
-			local name = username(box)
-			if name then
-				ownerPost(delword..' '..name)
-				box.Text = ''
-			end
-		end)
-		addRow(panel, 'Reset the whitelist to the default users', 'CLEAR', function(b)
-			b.Text = 'Sent'
-			ownerPost(resetword)
-			task.delay(2, function()
-				if b.Parent then
-					b.Text = 'CLEAR'
+				end
+				if pending.Parent then
+					if user then
+						resultRow(panel, user, imageUrl)
+					else
+						waitL.Text = 'User not found'
+					end
 				end
 			end)
+		end
+		addInputRow(panel, 'username', 'SEARCH', function(b, box)
+			doSearch(box)
 		end)
-	end)
-	makeModule('Commands', 'Notify everyone, kick everyone or force a reload', function(panel)
-		clearRows(panel)
-		addInputRow(panel, 'message to show on every running client', 'NOTIFY', function(b, box)
-			local text = box.Text:match('^%s*(.+)$')
-			if text then
-				ownerPost(notifyword..' '..text)
-				box.Text = ''
-			end
-		end)
-		addRow(panel, 'Kick every currently running user', 'KICK ALL', function(b)
-			b.Text = 'Sent'
-			local seen = {}
-			parseMsgs(ownerGet(), function(line)
-				local name, uid = line:match('^%s*'..aliveword..'%s+(%S+)%|(%d+)')
-				if name and uid and not seen[name:lower()..uid] then
-					seen[name:lower()..uid] = true
-					ownerPost(kickword..' '..name..' '..uid)
+		local searchBox = panel.List:FindFirstChild('TextBox')
+		if searchBox then
+			searchBox.FocusLost:Connect(function(enter)
+				if enter then
+					doSearch(searchBox)
 				end
 			end)
-			task.delay(2, function()
-				if b.Parent then
-					b.Text = 'KICK ALL'
-				end
-			end)
-		end)
-		addRow(panel, 'Force all running users to reload the latest version', 'RELOAD', function(b)
-			b.Text = 'Sent'
-			ownerPost(reloadword)
-			task.delay(2, function()
-				if b.Parent then
-					b.Text = 'RELOAD'
-				end
-			end)
-		end)
-	end)
-	makeModule('Stats', 'Shows how many users are running the script', function(panel)
-		clearRows(panel)
-		local users = aliveUsers(ownerGet())
-		local nowt = now()
-		local online, seen = 0, {}
-		for _, v in users do
-			if nowt - v.last <= 120 then
-				online = online + 1
+		end
+	end
+	local wlmod = OwnerCat:CreateModule({
+		Name = 'Whitelist',
+		Tooltip = 'Search a user to whitelist or remove them',
+		Function = function(callback)
+			if not callback then
+				destroyPanel(wlmod.Panel)
+				wlmod.Panel = nil
+				return
 			end
-			seen[v.name] = true
+			wlmod.Panel = makePanel('Whitelist')
+			buildWhitelistPanel(wlmod.Panel)
 		end
-		local total = 0
-		for _ in seen do
-			total = total + 1
-		end
-		panel.Title.Text = 'Stats'
-		addLabel(panel, 'Online now: '..online)
-		addLabel(panel, 'Distinct users seen: '..total)
-		local active = {}
-		for _, v in users do
-			if nowt - v.last <= 120 then
-				table.insert(active, v.name)
-			end
-		end
-		table.sort(active)
-		for _, name in active do
-			addLabel(panel, name..' - active')
-		end
-	end)
+	})
 	makeModule('Settings', 'Toggles that apply to this client', function(panel)
 		clearRows(panel)
 		local function loadSet()
@@ -9427,26 +9368,6 @@ run(function()
 		addLabel(panel, 'Applies to this client only')
 		toggle('Crash blacklisted users', 'crashBlacklist')
 		toggle('Notify when an owner command fails to send', 'notifyNetwork')
-		toggle('Re-verify files every minute', 'autoUpdate')
-	end)
-	makeModule('Logs', 'Shows recent activity on the script', function(panel)
-		clearRows(panel)
-		local msgs = ownerGet()
-		local nowt = now()
-		local shown = 0
-		for i = #msgs, 1, -1 do
-			if shown >= 15 then break end
-			local m = msgs[i]
-			if type(m) == 'table' and type(m.content) == 'string' then
-				local ago = math.max(0, nowt - isoTime(m))
-				local timeS = ago < 60 and ago..'s' or ago < 3600 and math.floor(ago / 60)..'m' or math.floor(ago / 3600)..'h'
-				local content = m.content:gsub('[\r\n]+', ' ')
-				if #content > 60 then
-					content = content:sub(1, 57)..'...'
-				end
-				addLabel(panel, timeS..' - '..content)
-				shown = shown + 1
-			end
-		end
+		toggle('Re-verify files every 5 minutes', 'autoUpdate')
 	end)
 end)

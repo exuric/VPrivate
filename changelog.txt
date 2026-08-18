@@ -44,3 +44,7 @@
 ~Fixed the loader UI covering the script - the Downloading main.lua label now hides when the script finishes loading, and the loader no longer re-reads the commit file on every request
 ~Added a Settings tab to the owner panel - toggles for crashing blacklisted users, owner command failure notifications, and the 1-minute file re-verify, saved per client
 ~Removed the every-minute lag stutter - files are now only fully re-hashed every 5 minutes (spread out so the game never freezes), every minute only checks file sizes, and the whitelist webhook is fetched half as often
+~Fixed the one-time lag spike on load - file verification now hashes in small chunks with pauses so the game never freezes
++Added a search-based whitelist manager to the owner panel - type a username to see their avatar and name, use the + button to whitelist them and the X button to remove them, both with notifications
+~The changelog window now matches the Larp V4 grey theme instead of the black background
+-Removed the old Kick, Stats, Logs, Blacklist and Commands owner modules - the owner panel is now just Whitelist and Settings

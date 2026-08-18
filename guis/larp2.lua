@@ -7916,14 +7916,14 @@ do
 		window.Size = UDim2.fromOffset(700, 440)
 		window.Position = UDim2.new(0.5, -350, 0.5, -220)
 		window.ZIndex = 9
-		window.BackgroundColor3 = Color3.fromRGB(12, 13, 12)
+		window.BackgroundColor3 = uipallet.Main
 		window.BorderSizePixel = 0
 		window.Parent = clickgui
 		addCorner(window, UDim.new(0, 12))
 		addBlur(window)
 		makeDraggable(window)
 		local windowstroke = Instance.new('UIStroke')
-		windowstroke.Color = Color3.fromRGB(42, 41, 42)
+		windowstroke.Color = color.Light(uipallet.Main, 0.37)
 		windowstroke.Transparency = 0.6
 		windowstroke.Thickness = 1
 		windowstroke.Parent = window

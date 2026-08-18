@@ -966,7 +966,7 @@ run(function()
 	end
 
 	task.spawn(function()
-		while task.wait(90) do
+		while task.wait(180) do
 			pcall(function()
 				whitelist:update()
 			end)

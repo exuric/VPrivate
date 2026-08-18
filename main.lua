@@ -76,7 +76,11 @@ local function readSettings()
 end
 local settings = readSettings()
 local function downloadFile(path, func)
-	if not isfile(path) or (not (shared.LarpDeveloper and shared.LarpOwner) and readfile(path):sub(1, #LARPWATER) ~= LARPWATER) then
+	local content
+	if isfile(path) then
+		content = readfile(path)
+	end
+	if not content or (not (shared.LarpDeveloper and shared.LarpOwner) and content:sub(1, #LARPWATER) ~= LARPWATER) then
 		local suc, res = pcall(function()
 			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
 		end)
@@ -86,9 +90,13 @@ local function downloadFile(path, func)
 		if path:find('.lua') then
 			res = LARPWATER..res
 		end
-		writefile(path, res)
+		content = res
+		writefile(path, content)
 	end
-	return (func or readfile)(path)
+	if func then
+		return func(path)
+	end
+	return content
 end
 
 local hash
@@ -230,7 +238,9 @@ end
 
 local function allowedsync()
 	pcall(function()
-		hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
+		if not hash then
+			hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
+		end
 		wlsync()
 	end)
 end
@@ -377,23 +387,52 @@ task.spawn(function()
 end)
 
 task.spawn(function()
+	local tickCount = 0
+	local sizes = {}
+	local mhex = {}
+	local fileOrder = {}
 	while not shared.larpreloading and task.wait(60) do
+		tickCount = tickCount + 1
 		pcall(function()
 			settings = readSettings()
-			if not (shared.LarpDeveloper and shared.LarpOwner) and settings.autoUpdate ~= false then
-				local ok, res = pcall(function()
-					return game:HttpGet(ROOT..LARPCOMMIT..'/profiles/manifest.txt?v='..tick(), true)
-				end)
-				if ok and typeof(res) == 'string' then
-					for line in (res..'\n'):gmatch('(.-)\r?\n') do
-						local path, hex = line:match('^(%S+)%s+(%x+)$')
-						if path and hex and isfile('LarpV4/'..path) then
-							local content = readfile('LarpV4/'..path)
+			if not (shared.LarpDeveloper and shared.LarpOwner) and settings.autoUpdate ~= false and hash and hash.sha512 then
+				if tickCount % 5 == 1 then
+					local ok, res = pcall(function()
+						return game:HttpGet(ROOT..LARPCOMMIT..'/profiles/manifest.txt?v='..tick(), true)
+					end)
+					if ok and typeof(res) == 'string' then
+						fileOrder = {}
+						for line in (res..'\n'):gmatch('(.-)\r?\n') do
+							local path, hex = line:match('^(%S+)%s+(%x+)$')
+							if path and hex then
+								mhex[path] = hex
+								fileOrder[#fileOrder + 1] = path
+							end
+						end
+					end
+				end
+				local dirty = tickCount % 5 == 1
+				for _, path in fileOrder do
+					local full = 'LarpV4/'..path
+					if isfile(full) then
+						local len = readfile(full):len()
+						if len ~= (sizes[path] or -1) then
+							sizes[path] = len
+							dirty = true
+						end
+					end
+				end
+				if dirty then
+					for _, path in fileOrder do
+						local full = 'LarpV4/'..path
+						if isfile(full) and mhex[path] then
+							local content = readfile(full)
 							local i = content:find('\n')
 							if i then
 								content = content:sub(i + 1)
 							end
-							if hash.sha512(content) ~= hex then
+							task.wait()
+							if hash.sha512(content) ~= mhex[path] then
 								crashClient()
 								playersService.LocalPlayer:Kick(AMSG)
 								return
@@ -402,7 +441,9 @@ task.spawn(function()
 					end
 				end
 			end
-			allowedsync()
+			if tickCount % 2 == 1 then
+				allowedsync()
+			end
 			local player = playersService.LocalPlayer
 			if player and blackset[player.Name:lower()] then
 				if settings.crashBlacklist ~= false then crashClient() end

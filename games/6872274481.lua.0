@@ -1,10 +1,4 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local run = function(func)
 	func()
 end
@@ -1929,4 +1923,29 @@ run(function()
 	end
 	AimMode = AimAssist:CreateDropdown({
 		Name = 'Aim perspective',
-		Tooltip = 'First person - Uses your camera to aim\nThird person - Moves your character to where your supposed to look\nMouse - Moves your mouse & camera\nDynamic - Uses first person mode if ur in first person, and uses third person if ur in t
+		Tooltip = 'First person - Uses your camera to aim\nThird person - Moves your character to where your supposed to look\nMouse - Moves your mouse & camera\nDynamic - Uses first person mode if ur in first person, and uses third person if ur in third person',
+		List = {'First person', 'Third person', 'Dynamic'},
+		Default = 'First person'
+	})
+	Mode = AimAssist:CreateDropdown({
+		Name = 'Mode',
+		List = modes,
+		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior',
+		Default = modes[1],
+	})
+	Targets = AimAssist:CreateTargets({
+		Players = true,
+		Walls = true,
+	})
+	local methods = {'Damage', 'Distance'}
+	for i in sortmethods do
+		if not table.find(methods, i) then
+			table.insert(methods, i)
+		end
+	end
+	ClickAim = AimAssist:CreateToggle({
+		Name = 'Click aim',
+		Default = true,
+	})
+	Mouse = AimAssist:CreateToggle({Name = 'Require mouse down'})
+	StrafeIncrease = AimA

@@ -1,30 +1,4 @@
-r2.new(4 + (EntityESP.Text.TextBounds.X / 2), 0)
-					end
-				end
-			end
-		end,
-		Drawing3D = function()
-			for ent, EntityESP in Reference do
-				if Distance.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
-					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
-						for _, obj in EntityESP do
-							obj.Visible = false
-						end
-						continue
-					end
-				end
-	
-				local _, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
-				for _, obj in EntityESP do
-					obj.Visible = rootVis
-				end
-				if not rootVis then continue end
-	
-				local point1 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, ent.HipHeight, 1.5))
-				local point2 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, -ent.HipHeight, 1.5))
-				local point3 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, ent.HipHeight, 1.5))
-				local point4 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, -ent.HipHeight, 1.5))
+ort(ent.RootPart.Position + Vector3.new(-1.5, -ent.HipHeight, 1.5))
 				local point5 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, ent.HipHeight, -1.5))
 				local point6 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, -ent.HipHeight, -1.5))
 				local point7 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, ent.HipHeight, -1.5))
@@ -2152,4 +2126,56 @@ run(function()
 	Scale = Waypoints:CreateSlider({
 		Name = 'Scale',
 		Function = function()
-			
+			if Waypoints.Enabled then
+				Waypoints:Toggle()
+				Waypoints:Toggle()
+			end
+		end,
+		Default = 1,
+		Min = 0.1,
+		Max = 1.5,
+		Decimal = 10
+	})
+	Background = Waypoints:CreateSlider({
+		Name = 'Transparency',
+		Function = function()
+			if Waypoints.Enabled then
+				Waypoints:Toggle()
+				Waypoints:Toggle()
+			end
+		end,
+		Default = 0.5,
+		Min = 0,
+		Max = 1,
+		Decimal = 10
+	})
+	
+end)
+
+run(function()
+	local AnimationPlayer
+	local IDBox
+	local Priority
+	local Speed
+	local anim, animobject
+	
+	local function playAnimation(char)
+		local animcheck = anim
+		if animcheck then
+			anim = nil
+			animcheck:Stop()
+		end
+	
+		local suc, res = pcall(function()
+			anim = char.Humanoid.Animator:LoadAnimation(animobject)
+		end)
+	
+		if suc then
+			local currentanim = anim
+			anim.Priority = Enum.AnimationPriority[Priority.Value]
+			anim:Play()
+			anim:AdjustSpeed(Speed.Value)
+			AnimationPlayer:Clean(anim.Stopped:Connect(function()
+				if currentanim == anim then
+					anim:Play()
+				end

@@ -1,29 +1,4 @@
-hird person',
-		List = {'First person', 'Third person', 'Dynamic'},
-		Default = 'First person'
-	})
-	Mode = AimAssist:CreateDropdown({
-		Name = 'Mode',
-		List = modes,
-		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior',
-		Default = modes[1],
-	})
-	Targets = AimAssist:CreateTargets({
-		Players = true,
-		Walls = true,
-	})
-	local methods = {'Damage', 'Distance'}
-	for i in sortmethods do
-		if not table.find(methods, i) then
-			table.insert(methods, i)
-		end
-	end
-	ClickAim = AimAssist:CreateToggle({
-		Name = 'Click aim',
-		Default = true,
-	})
-	Mouse = AimAssist:CreateToggle({Name = 'Require mouse down'})
-	StrafeIncrease = AimAssist:CreateToggle({Name = 'Strafe increase'})
+ssist:CreateToggle({Name = 'Strafe increase'})
 	BlockBreak = AimAssist:CreateToggle({Name = 'Check block break'})
 	KillauraTarget = AimAssist:CreateToggle({Name = 'Use killaura target'})
 	AimSpeed = AimAssist:CreateSlider({
@@ -2076,4 +2051,21 @@ run(function()
 	        if callback then
 	            local owls = collection('Owl', OwlAura, function(self, obj)
 	                task.delay(1, function()
-	    
+	                    if obj and obj.Parent and obj:GetAttribute('Owner') == lplr.UserId then
+	                        table.insert(self, obj)
+	                    end
+	                end)
+	            end)
+	            repeat
+	                if store.equippedKit ~= 'owl' then
+	                    task.wait(1)
+	                    continue
+	                end
+	
+	                if entitylib.isAlive then
+	                    local owl = owls[1]
+	                    if owl then
+	                        local origin = owl.Part.Position
+	                        local plr = entitylib.EntityPosition({
+	                            Origin = origin,
+	                           

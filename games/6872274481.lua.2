@@ -1,21 +1,4 @@
-                if obj and obj.Parent and obj:GetAttribute('Owner') == lplr.UserId then
-	                        table.insert(self, obj)
-	                    end
-	                end)
-	            end)
-	            repeat
-	                if store.equippedKit ~= 'owl' then
-	                    task.wait(1)
-	                    continue
-	                end
-	
-	                if entitylib.isAlive then
-	                    local owl = owls[1]
-	                    if owl then
-	                        local origin = owl.Part.Position
-	                        local plr = entitylib.EntityPosition({
-	                            Origin = origin,
-	                            Range = Range.Value,
+ Range = Range.Value,
 	                            Part = 'RootPart',
 	                            Players = Targets.Players.Enabled,
 	                            NPCs = Targets.NPCs.Enabled,
@@ -1921,4 +1904,23 @@ run(function()
 	
 				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
 				nametag.Text.Visible = headVis
-				nametag.
+				nametag.BG.Visible = headVis
+				if not headVis then
+					continue
+				end
+	
+				if Distance.Enabled then
+					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
+					if Sizes[ent] ~= mag then
+						nametag.Text.Text = string.format(Strings[ent], mag)
+						nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
+						Sizes[ent] = mag
+					end
+				end
+				nametag.BG.Position = Vector2.new(headPos.X - (nametag.BG.Size.X / 2), headPos.Y - nametag.BG.Size.Y)
+				nametag.Text.Position = nametag.BG.Position + Vector2.new(4, 3)
+			end
+		end
+	}
+	
+	NameTags = larp.Categor

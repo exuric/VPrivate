@@ -1,7 +1,4 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local license = ...
 local mainapi = {
 	Categories = {},

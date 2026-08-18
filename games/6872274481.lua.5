@@ -1,27 +1,4 @@
-sk.wait(0.1)
-				until not AutoFish.Enabled
-			elseif old then
-	            bedwars.FishingMinigameController.startMinigame = old
-	            old = nil
-			end
-		end,
-		Tooltip = 'Automatically fishes with fishing rod'
-	})
-	
-	Blacklist = AutoFish:CreateTextList({
-		Name = 'Blacklisted loot',
-		Default = {'iron'},
-	    Tooltip = 'Automatically jumps if u found a fish with the blacklisted item'
-	})
-	Show = AutoFish:CreateToggle({
-		Name = 'Show loot drops',
-		Tooltip = 'Notifies ur next lootdrops'
-	})
-	Minigame = AutoFish:CreateToggle({
-		Name = 'Auto Minigame',
-		Function = function(callback)
-			if CompleteDelay.Object then
-				CompleteDelay.Object.Visible = callback
+llback
 			end
 		end,
 	    Default = true,
@@ -2250,4 +2227,19 @@ run(function()
 	    Function = function(callback)
 	        if callback then
 	            repeat
-	                if entitylib.isAlive and store.equippedKit == 'glacial_skater' and bedwars.AbilityController:canUseAbility('skating_fr
+	                if entitylib.isAlive and store.equippedKit == 'glacial_skater' and bedwars.AbilityController:canUseAbility('skating_freeze') then
+	                    local bed = getBed()
+	                    if bed then
+	                        for _, v in store.blocks do
+	                            if v:GetAttribute('PlacedByUserId') ~= nil and (bed.Position - v.Position).Magnitude <= 20 then
+	                                bedwars.AbilityController:useAbility('skating_freeze')
+	                                break
+	                            end
+	                        end
+	                    end
+	                end
+	                task.wait(0.1)
+	            until not AutoKrystal.Enabled
+	        end
+	    end,
+	    Tooltip = 'Automatically uses freeze ability when near\nopponent\'s bed d

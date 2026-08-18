@@ -1,23 +1,4 @@
-BG.Visible = headVis
-				if not headVis then
-					continue
-				end
-	
-				if Distance.Enabled then
-					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
-					if Sizes[ent] ~= mag then
-						nametag.Text.Text = string.format(Strings[ent], mag)
-						nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
-						Sizes[ent] = mag
-					end
-				end
-				nametag.BG.Position = Vector2.new(headPos.X - (nametag.BG.Size.X / 2), headPos.Y - nametag.BG.Size.Y)
-				nametag.Text.Position = nametag.BG.Position + Vector2.new(4, 3)
-			end
-		end
-	}
-	
-	NameTags = larp.Categories.Render:CreateModule({
+ies.Render:CreateModule({
 		Name = 'NameTags',
 		Function = function(callback)
 			if callback then
@@ -2147,4 +2128,35 @@ run(function()
 							bodyforce.Force = Vector3.new(0, projectile.PrimaryPart.AssemblyMass * workspace.Gravity, 0)
 							bodyforce.Parent = projectile.PrimaryPart
 	
-							i
+							if plr then
+								task.spawn(function()
+									for _ = 1, 20 do
+										if plr.RootPart and projectile then
+											projectile:SetPrimaryPartCFrame(CFrame.lookAlong(plr.RootPart.Position, gameCamera.CFrame.LookVector))
+										end
+										task.wait(0.05)
+									end
+								end)
+								task.wait(0.3)
+								bedwars.RavenController:detonateRaven()
+							end
+						end
+					end)
+				end
+			end
+		end,
+		Tooltip = 'Spawns and teleports a raven to a player\nnear your mouse.'
+	})
+end)
+
+run(function()
+	local Scaffold
+	local Expand
+	local Tower
+	local Downwards
+	local Diagonal
+	local LimitItem
+	local Mouse
+	local Visual
+	local FillColor
+	local O

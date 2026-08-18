@@ -1,15 +1,4 @@
-tWindow'
-		window.Size = UDim2.fromOffset(220, 85)
-		window.BackgroundColor3 = uipallet.Main
-		window.BorderSizePixel = 0
-		window.AutoButtonColor = false
-		window.Visible = false
-		window.Text = ''
-		window.Parent = api.Legit and mainapi.Legit.Window or clickgui
-		optionapi.Window = window
-		addBlur(window)
-		addCorner(window)
-		local icon = Instance.new('ImageLabel')
+al icon = Instance.new('ImageLabel')
 		icon.Name = 'Icon'
 		icon.Size = optionsettings.TabSize or UDim2.fromOffset(19, 16)
 		icon.Position = UDim2.fromOffset(10, 13)
@@ -1844,4 +1833,13 @@ function mainapi:CreateCategory(categorysettings)
 	title.Position = UDim2.fromOffset(math.abs(title.Size.X.Offset), 0)
 	title.BackgroundTransparency = 1
 	title.Text = categorysettings.Name
-	title.TextXAlign
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextColor3 = uipallet.Text
+	title.TextSize = 13
+	title.FontFace = uipallet.Font
+	title.Parent = window
+	local arrowbutton = Instance.new('TextButton')
+	arrowbutton.Name = 'Arrow'
+	arrowbutton.Size = UDim2.fromOffset(40, 40)
+	arrowbutton.Position = UDim2.new(1, -40, 0, 0)
+	arrowbutton.BackgroundTra

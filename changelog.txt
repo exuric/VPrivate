@@ -39,3 +39,4 @@
 ~Added blacklist, whitelist, commands, stats and logs modules to the owner tab and hardened owner checks
 ~Fixed the loader getting stuck on downloading hash.lua and whitelisted users crashing
 ~Split large files into parts so downloads never fail and made manifest hashes match the served bytes
+~Fixed the loader crashing on hash.lua by declaring the manifest before it is used and unstamped the served files

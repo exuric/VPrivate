@@ -1,56 +1,4 @@
-if Waypoints.Enabled then
-				Waypoints:Toggle()
-				Waypoints:Toggle()
-			end
-		end,
-		Default = 1,
-		Min = 0.1,
-		Max = 1.5,
-		Decimal = 10
-	})
-	Background = Waypoints:CreateSlider({
-		Name = 'Transparency',
-		Function = function()
-			if Waypoints.Enabled then
-				Waypoints:Toggle()
-				Waypoints:Toggle()
-			end
-		end,
-		Default = 0.5,
-		Min = 0,
-		Max = 1,
-		Decimal = 10
-	})
-	
-end)
 
-run(function()
-	local AnimationPlayer
-	local IDBox
-	local Priority
-	local Speed
-	local anim, animobject
-	
-	local function playAnimation(char)
-		local animcheck = anim
-		if animcheck then
-			anim = nil
-			animcheck:Stop()
-		end
-	
-		local suc, res = pcall(function()
-			anim = char.Humanoid.Animator:LoadAnimation(animobject)
-		end)
-	
-		if suc then
-			local currentanim = anim
-			anim.Priority = Enum.AnimationPriority[Priority.Value]
-			anim:Play()
-			anim:AdjustSpeed(Speed.Value)
-			AnimationPlayer:Clean(anim.Stopped:Connect(function()
-				if currentanim == anim then
-					anim:Play()
-				end
 			end))
 		else
 			notif('AnimationPlayer', 'failed to load anim : '..(res or 'invalid animation id'), 5, 'warning')
@@ -2369,4 +2317,45 @@ run(function()
 	Color = Keystrokes:CreateColorSlider({
 		Name = 'Color',
 		DefaultValue = 0,
-		Defaul
+		DefaultOpacity = 0.5,
+		Function = function(hue, sat, val, opacity)
+			for _, v in keys do
+				if not v.Pressed then
+					v.Key.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+					v.Key.BackgroundTransparency = 1 - opacity
+				end
+			end
+		end
+	})
+	Keystrokes:CreateToggle({
+		Name = 'Show Spacebar',
+		Function = function(callback)
+			Keystrokes.Children.Size = UDim2.fromOffset(110, callback and 107 or 78)
+	
+			if callback then
+				createKeystroke(Enum.KeyCode.Space, UDim2.new(0, 0, 0, 83), '______')
+			else
+				keys[Enum.KeyCode.Space].Key:Destroy()
+				keys[Enum.KeyCode.Space] = nil
+			end
+		end,
+		Default = true
+	})
+end)
+
+run(function()
+	local Memory
+	local label
+	
+	Memory = larp.Legit:CreateModule({
+		Name = 'Memory',
+		Function = function(callback)
+			if callback then
+				repeat
+					label.Text = math.floor(tonumber(stats.PerformanceStats.Memory:GetValue()))..' MB'
+					task.wait(1)
+				until not Memory.Enabled
+			end
+		end,
+		Size = UDim2.fromOffset(100, 41),
+		Tooltip = 'A label

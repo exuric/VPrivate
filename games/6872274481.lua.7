@@ -1,24 +1,4 @@
-pos
-				local ray = cloneref(lplr:GetMouse()).UnitRay
-				rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera}
-				ray = workspace:Raycast(ray.Origin, ray.Direction * 1000000, rayCheck)
-				if ray then
-					targetpos = ray.Position
-				end
-	
-				if targetpos then
-					local cannon, dis = nil, Range.Value + 0.1
-					for _, v in store.blocks do
-						local mag = (entitylib.character.RootPart.Position - v.Position).Magnitude
-						if v.Name == 'cannon' and mag < dis then
-							cannon = v
-							dis = mag
-							break
-						end
-					end
-	
-					if cannon then
-						local lookpos, blockpos = targetpos, bedwars.BlockController:getBlockPosition(cannon.Position) -- why am i using getblockposition?
+tion) -- why am i using getblockposition?
 						if lookpos then
 							if Mode.Value == 'Legit' then
 								cannon.AimPrompt:InputHoldBegin()
@@ -2127,4 +2107,32 @@ run(function()
 		end
 	end
 
-	local function setupBlockMoni
+	local function setupBlockMonitor(simplify)
+		for _, conn in blockMonitorConnections do
+			conn:Disconnect()
+		end
+		table.clear(blockMonitorConnections)
+
+		if not simplify then return end
+
+		local mainConn = workspace.DescendantAdded:Connect(function(descendant)
+			if isTargetBlock(descendant) then
+				enqueueBlock(simplifyBlock, descendant)
+			end
+		end)
+
+		table.insert(blockMonitorConnections, mainConn)
+
+		local lastCleanup = 0
+		local cleanupConn = runService.Heartbeat:Connect(function()
+			local now = tick()
+			if now - lastCleanup >= 5 then
+				lastCleanup = now
+				cleanupDeadReferences()
+			end
+		end)
+
+		table.insert(blockMonitorConnections, cleanupConn)
+	end
+
+	PotatoMode = la

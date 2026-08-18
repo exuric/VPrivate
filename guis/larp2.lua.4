@@ -1,10 +1,4 @@
-haracter and v.Character.Name or targetinfoname.Text
-			TargetInfoName.Text = targetinfoname.Text
-			TargetInfoNameShadow.Text = targetinfoname.Text
-			targetinfoshot.Image = 'rbxthumb://type=AvatarHeadShot&id='..(v.Player and v.Player.UserId or 1)..'&w=420&h=420'
-			TargetInfoImage.Image = targetinfoshot.Image
-
-			local maxhealth = v.MaxHealth or 100
+Health or 100
 			local health = math.clamp(v.Health or 0, 0, maxhealth)
 			local percent = maxhealth > 0 and health / maxhealth or 0
 			targetinfohptext.Visible = targetinfoshowhp.Enabled

@@ -1,7 +1,4 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local license = ...
 local mainapi = {
 	Categories = {},
@@ -1821,4 +1818,15 @@ components = {
 		items.Parent = button
 		addCorner(button, UDim.new(0, 4))
 		local window = Instance.new('TextButton')
-		window.Name = optionsettings.Name..'Tex
+		window.Name = optionsettings.Name..'TextWindow'
+		window.Size = UDim2.fromOffset(220, 85)
+		window.BackgroundColor3 = uipallet.Main
+		window.BorderSizePixel = 0
+		window.AutoButtonColor = false
+		window.Visible = false
+		window.Text = ''
+		window.Parent = api.Legit and mainapi.Legit.Window or clickgui
+		optionapi.Window = window
+		addBlur(window)
+		addCorner(window)
+		loc

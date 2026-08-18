@@ -1,13 +1,4 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and larp then
@@ -2029,4 +2020,33 @@ run(function()
 			if not YLevel then
 				YLevel = root.Position.Y
 			end
-			YLevel = YLevel + ((up + down) 
+			YLevel = YLevel + ((up + down) * VerticalValue.Value * dt)
+			if root.Position.Y < YLevel then
+				entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			end
+		end
+	}
+
+	Fly = larp.Categories.Blatant:CreateModule({
+		Name = 'Fly',
+		Function = function(callback)
+			if Platform then
+				Platform.Parent = callback and gameCamera or nil
+			end
+
+			frictionTable.Fly = callback and CustomProperties.Enabled or nil
+			updateVelocity()
+			if callback then
+				Fly:Clean(runService.PreSimulation:Connect(function(dt)
+					if entitylib.isAlive then
+						if PlatformStanding.Enabled then
+							entitylib.character.Humanoid.PlatformStand = true
+							entitylib.character.RootPart.RotVelocity = Vector3.zero
+							entitylib.character.RootPart.CFrame = CFrame.lookAlong(entitylib.character.RootPart.CFrame.Position, gameCamera.CFrame.LookVector)
+						end
+
+						if State.Value ~= 'None' then
+							entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType[State.Value])
+						end
+
+						SpeedMethods[Mode.Value](Opti

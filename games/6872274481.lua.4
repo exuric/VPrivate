@@ -1,35 +1,4 @@
-f plr then
-								task.spawn(function()
-									for _ = 1, 20 do
-										if plr.RootPart and projectile then
-											projectile:SetPrimaryPartCFrame(CFrame.lookAlong(plr.RootPart.Position, gameCamera.CFrame.LookVector))
-										end
-										task.wait(0.05)
-									end
-								end)
-								task.wait(0.3)
-								bedwars.RavenController:detonateRaven()
-							end
-						end
-					end)
-				end
-			end
-		end,
-		Tooltip = 'Spawns and teleports a raven to a player\nnear your mouse.'
-	})
-end)
-
-run(function()
-	local Scaffold
-	local Expand
-	local Tower
-	local Downwards
-	local Diagonal
-	local LimitItem
-	local Mouse
-	local Visual
-	local FillColor
-	local OutlineColor
+utlineColor
 	local adjacent, lastpos, label, visualBlock = {}, Vector3.zero
 	
 	for x = -3, 3, 3 do
@@ -2057,4 +2026,27 @@ run(function()
 							task.wait(0.1)
 						end
 					end
-					ta
+					task.wait(0.1)
+				until not AutoFish.Enabled
+			elseif old then
+	            bedwars.FishingMinigameController.startMinigame = old
+	            old = nil
+			end
+		end,
+		Tooltip = 'Automatically fishes with fishing rod'
+	})
+	
+	Blacklist = AutoFish:CreateTextList({
+		Name = 'Blacklisted loot',
+		Default = {'iron'},
+	    Tooltip = 'Automatically jumps if u found a fish with the blacklisted item'
+	})
+	Show = AutoFish:CreateToggle({
+		Name = 'Show loot drops',
+		Tooltip = 'Notifies ur next lootdrops'
+	})
+	Minigame = AutoFish:CreateToggle({
+		Name = 'Auto Minigame',
+		Function = function(callback)
+			if CompleteDelay.Object then
+				CompleteDelay.Object.Visible = ca

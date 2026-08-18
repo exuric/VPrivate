@@ -13,6 +13,7 @@ end
 local delfile = delfile or function(file)
 	writefile(file, '')
 end
+local MANIFEST = {}
 
 local downloader = Instance.new('TextLabel')
 downloader.Size = UDim2.new(1, 0, 0, 40)
@@ -106,7 +107,6 @@ local VERIFY_FILES = {
 	'games/8444591321.lua',
 }
 
-local MANIFEST = {}
 do
 	local ok, res = pcall(function()
 		return game:HttpGet(ROOT..COMMIT..'/profiles/manifest.txt?v='..tick(), true)

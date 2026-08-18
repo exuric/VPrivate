@@ -1,13 +1,4 @@
-tshadow:Clone()
-		textlabel.Position = UDim2.fromOffset(-1, -1)
-		textlabel.Text = text
-		textlabel.TextColor3 = Color3.fromRGB(170, 170, 170)
-		textlabel.TextTransparency = 0
-		textlabel.RichText = true
-		textlabel.Parent = textshadow
-		local progress = Instance.new('Frame')
-		progress.Name = 'Progress'
-		progress.Size = UDim2.new(1, -13, 0, 2)
+-13, 0, 2)
 		progress.Position = UDim2.new(0, 3, 1, -4)
 		progress.ZIndex = 5
 		progress.BackgroundColor3 =
@@ -1975,4 +1966,10 @@ targetinfo = {
 			targetinfostats.Text = targetinfoshowdist.Enabled and '100 studs' or ''
 		end
 		if v then
-			targetinfoname.Text = v.Player and (targetinfodisplay.Enabled and v.Player.DisplayName or v.Player.Name) or v.C
+			targetinfoname.Text = v.Player and (targetinfodisplay.Enabled and v.Player.DisplayName or v.Player.Name) or v.Character and v.Character.Name or targetinfoname.Text
+			TargetInfoName.Text = targetinfoname.Text
+			TargetInfoNameShadow.Text = targetinfoname.Text
+			targetinfoshot.Image = 'rbxthumb://type=AvatarHeadShot&id='..(v.Player and v.Player.UserId or 1)..'&w=420&h=420'
+			TargetInfoImage.Image = targetinfoshot.Image
+
+			local maxhealth = v.Max

@@ -1,5 +1,4 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local license = ... or {}
 repeat task.wait() until game:IsLoaded()
 if shared.larp then shared.larp:Uninject() end

@@ -1,33 +1,4 @@
-* VerticalValue.Value * dt)
-			if root.Position.Y < YLevel then
-				entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-			end
-		end
-	}
-
-	Fly = larp.Categories.Blatant:CreateModule({
-		Name = 'Fly',
-		Function = function(callback)
-			if Platform then
-				Platform.Parent = callback and gameCamera or nil
-			end
-
-			frictionTable.Fly = callback and CustomProperties.Enabled or nil
-			updateVelocity()
-			if callback then
-				Fly:Clean(runService.PreSimulation:Connect(function(dt)
-					if entitylib.isAlive then
-						if PlatformStanding.Enabled then
-							entitylib.character.Humanoid.PlatformStand = true
-							entitylib.character.RootPart.RotVelocity = Vector3.zero
-							entitylib.character.RootPart.CFrame = CFrame.lookAlong(entitylib.character.RootPart.CFrame.Position, gameCamera.CFrame.LookVector)
-						end
-
-						if State.Value ~= 'None' then
-							entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType[State.Value])
-						end
-
-						SpeedMethods[Mode.Value](Options, TargetStrafeVector or MoveMethod.Value == 'Direct' and calculateMoveVector(Vector3.new(a + d, 0, w + s)) or entitylib.character.Humanoid.MoveDirection, dt)
+ons, TargetStrafeVector or MoveMethod.Value == 'Direct' and calculateMoveVector(Vector3.new(a + d, 0, w + s)) or entitylib.character.Humanoid.MoveDirection, dt)
 						Functions[FloatMode.Value](dt)
 					else
 						YLevel = nil
@@ -2094,4 +2065,30 @@ run(function()
 					EntityESP.Drop.Position = EntityESP.Text.Position + Vector2.new(1, 1)
 					if EntityESP.TextBKG then
 						EntityESP.TextBKG.Size = EntityESP.Text.TextBounds + Vector2.new(8, 4)
-						EntityESP.TextBKG.Position = EntityESP.Text.Position - Vecto
+						EntityESP.TextBKG.Position = EntityESP.Text.Position - Vector2.new(4 + (EntityESP.Text.TextBounds.X / 2), 0)
+					end
+				end
+			end
+		end,
+		Drawing3D = function()
+			for ent, EntityESP in Reference do
+				if Distance.Enabled then
+					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
+						for _, obj in EntityESP do
+							obj.Visible = false
+						end
+						continue
+					end
+				end
+	
+				local _, rootVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position)
+				for _, obj in EntityESP do
+					obj.Visible = rootVis
+				end
+				if not rootVis then continue end
+	
+				local point1 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, ent.HipHeight, 1.5))
+				local point2 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(1.5, -ent.HipHeight, 1.5))
+				local point3 = ESPWorldToViewport(ent.RootPart.Position + Vector3.new(-1.5, ent.HipHeight, 1.5))
+				local point4 = ESPWorldToViewp

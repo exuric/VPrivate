@@ -212,6 +212,7 @@ if not _larpchunk then
 	error('LarpV4/main.lua failed to compile: '..tostring(_larperr))
 end
 local _larpok, _larpres = pcall(_larpchunk, license)
+downloader.Visible = false
 if not _larpok then
 	error('LarpV4/main.lua: '..tostring(_larpres))
 end

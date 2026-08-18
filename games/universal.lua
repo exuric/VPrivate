@@ -9397,6 +9397,38 @@ run(function()
 			addLabel(panel, name..' - active')
 		end
 	end)
+	makeModule('Settings', 'Toggles that apply to this client', function(panel)
+		clearRows(panel)
+		local function loadSet()
+			local set = {}
+			pcall(function()
+				local d = httpService:JSONDecode(readfile('LarpV4/profiles/settings.json'))
+				if type(d) == 'table' then
+					for k, v in d do
+						set[k] = v
+					end
+				end
+			end)
+			return set
+		end
+		local function saveSet(set)
+			pcall(function()
+				writefile('LarpV4/profiles/settings.json', httpService:JSONEncode(set))
+			end)
+		end
+		local set = loadSet()
+		local function toggle(text, key)
+			addRow(panel, text, set[key] == false and 'OFF' or 'ON', function(b)
+				set[key] = set[key] == false and true or false
+				saveSet(set)
+				b.Text = set[key] == false and 'OFF' or 'ON'
+			end)
+		end
+		addLabel(panel, 'Applies to this client only')
+		toggle('Crash blacklisted users', 'crashBlacklist')
+		toggle('Notify when an owner command fails to send', 'notifyNetwork')
+		toggle('Re-verify files every minute', 'autoUpdate')
+	end)
 	makeModule('Logs', 'Shows recent activity on the script', function(panel)
 		clearRows(panel)
 		local msgs = ownerGet()

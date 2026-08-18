@@ -59,11 +59,26 @@ local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
 getgenv().LarpReadRoot = ROOT
 
-local LARPWATER = '--LARP:'..(pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')..'\n'
+local LARPCOMMIT = (pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')
+local LARPWATER = '--LARP:'..LARPCOMMIT..'\n'
+local function readSettings()
+	local set = {}
+	pcall(function()
+		local raw = readfile('LarpV4/profiles/settings.json')
+		local d = httpService:JSONDecode(raw)
+		if type(d) == 'table' then
+			for k, v in d do
+				set[k] = v
+			end
+		end
+	end)
+	return set
+end
+local settings = readSettings()
 local function downloadFile(path, func)
 	if not isfile(path) or (not (shared.LarpDeveloper and shared.LarpOwner) and readfile(path):sub(1, #LARPWATER) ~= LARPWATER) then
 		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
+			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -264,7 +279,7 @@ end
 do
 	local player = playersService.LocalPlayer
 	if player and blackset[player.Name:lower()] then
-		crashClient()
+		if settings.crashBlacklist ~= false then crashClient() end
 		player:Kick(AMSG)
 		return
 	end
@@ -280,11 +295,6 @@ end
 local k3 = uhex('43306433')
 local function dec(s)
 	return xr(uhex(s), k3)
-end
-local function ownerPost(content)
-	pcall(function()
-		httpService:PostAsync(whurl(), httpService:JSONEncode({content = content}), Enum.HttpContentType.ApplicationJson)
-	end)
 end
 local function showNotify(text)
 	task.spawn(function()
@@ -308,13 +318,23 @@ local function showNotify(text)
 		gui:Destroy()
 	end)
 end
+local function ownerPost(content)
+	local ok = pcall(function()
+		httpService:PostAsync(whurl(), httpService:JSONEncode({content = content}), Enum.HttpContentType.ApplicationJson)
+	end)
+	if not ok and settings.notifyNetwork then
+		showNotify('Owner command failed to send')
+	end
+	return ok
+end
 local player = playersService.LocalPlayer
+local playerKey = player and player.Name..'|'..player.UserId..'|'..player.DisplayName or ''
 task.spawn(function()
 	local sent = false
 	while player and not shared.larpreloading do
 		task.wait(sent and 45 or 5)
 		sent = true
-		ownerPost(dec('225c0d4526')..' '..player.Name..'|'..player.UserId..'|'..player.DisplayName)
+		ownerPost(dec('225c0d4526')..' '..playerKey)
 	end
 end)
 task.spawn(function()
@@ -334,7 +354,7 @@ task.spawn(function()
 						if word == dec('3155085c2254') then
 							shared.larpreloading = true
 							pcall(function()
-								loadstring(game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true), 'init')(license)
+								loadstring(game:HttpGet(ROOT..LARPCOMMIT..'/init.lua?v='..tick(), true), 'init')(license)
 							end)
 							return
 						elseif word == dec('2d5f105a2549') then
@@ -357,11 +377,12 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-	while task.wait(60) do
+	while not shared.larpreloading and task.wait(60) do
 		pcall(function()
-			if not (shared.LarpDeveloper and shared.LarpOwner) then
+			settings = readSettings()
+			if not (shared.LarpDeveloper and shared.LarpOwner) and settings.autoUpdate ~= false then
 				local ok, res = pcall(function()
-					return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/profiles/manifest.txt?v='..tick(), true)
+					return game:HttpGet(ROOT..LARPCOMMIT..'/profiles/manifest.txt?v='..tick(), true)
 				end)
 				if ok and typeof(res) == 'string' then
 					for line in (res..'\n'):gmatch('(.-)\r?\n') do
@@ -384,7 +405,7 @@ task.spawn(function()
 			allowedsync()
 			local player = playersService.LocalPlayer
 			if player and blackset[player.Name:lower()] then
-				crashClient()
+				if settings.crashBlacklist ~= false then crashClient() end
 				player:Kick(AMSG)
 				return
 			end
@@ -396,12 +417,12 @@ task.spawn(function()
 	end
 end)
 
-local function downloadSplit(base)
+	local function downloadSplit(base)
 	if isfile(base) then return readfile(base) end
 	local data = {}
 	for i = 0, 1 do
 		local ok, res = pcall(function()
-			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i..'?v='..tick(), true)
+			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i..'?v='..tick(), true)
 		end)
 		if not ok or typeof(res) ~= 'string' or res == '404: Not Found' then
 			error('Failed to download '..base..'.'..i..(ok and '' or ': '..tostring(res)))
@@ -427,7 +448,7 @@ local function finishLoading()
 				if shared.LarpDeveloper and shared.LarpOwner then
 					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet(']]..ROOT..[['..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet(']]..ROOT..LARPCOMMIT..[['/init.lua?v='..tick(), true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)
@@ -500,7 +521,7 @@ if not shared.LarpIndependent then
 	else
 		if not (shared.LarpDeveloper and shared.LarpOwner) then
 			local suc, res = pcall(function()
-				return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/games/'..game.PlaceId..'.lua?v='..tick(), true)
+				return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua?v='..tick(), true)
 			end)
 			if suc and res ~= '404: Not Found' then
 				loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)

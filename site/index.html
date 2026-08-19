@@ -545,6 +545,21 @@ if (savedTheme !== null) {
   applyTheme(0);
 }
 
+const navLinks = document.querySelectorAll('.menu a');
+const spy = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) {
+      navLinks.forEach(function(link) {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+      });
+    }
+  });
+}, { rootMargin: '-40% 0px -55% 0px' });
+navLinks.forEach(function(link) {
+  const target = document.querySelector(link.getAttribute('href'));
+  if (target) spy.observe(target);
+});
+
 applyFilter('combat');
 </script>
 </body>

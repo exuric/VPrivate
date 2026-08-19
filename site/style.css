@@ -74,7 +74,7 @@ a {
 }
 
 .menu a:hover {
-  color: #f2f2f4;
+  color: var(--accent);
 }
 
 /* Buttons */
@@ -141,10 +141,11 @@ a {
 }
 
 .settings-btn img {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   object-fit: contain;
   display: block;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .settings-btn:hover {
@@ -301,10 +302,11 @@ a {
 }
 
 .cat img {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
   object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .cat:hover {

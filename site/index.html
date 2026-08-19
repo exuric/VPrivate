@@ -1,49 +1,70 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Larp V4 - Roblox BedWars Script</title>
 <meta name="description" content="A powerful Roblox BedWars script built to give you the edge in every fight.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="nav">
   <div class="nav-inner">
-    <a href="#top" class="logo">
-      <img src="assets/Larp.png" alt="Larp" height="22">
-      <img src="assets/Textv4.png" alt="V4" height="22">
-    </a>
+    <a href="#top" class="logo"><img src="assets/Larp.png" alt="Larp"><img src="assets/Textv4.png" alt="V4"></a>
     <nav class="menu">
       <a href="#modules">Modules</a>
       <a href="#features">Features</a>
       <a href="#discord">Discord</a>
     </nav>
-    <a class="btn" href="https://discord.gg/BUQukruVH">Join Discord</a>
+    <a class="btn nav-btn" href="https://discord.gg/BUQukruVH">Join Discord</a>
   </div>
 </header>
 
 <section class="hero" id="top">
   <div class="hero-inner">
-    <img src="assets/Larp.png" alt="Larp" height="48">
-    <img src="assets/Textv4.png" alt="V4" height="48">
+    <div class="hero-logo"><img src="assets/Larp.png" alt="Larp"><img src="assets/Textv4.png" alt="V4"></div>
     <h1>Like steroids for BedWars.</h1>
-    <p>A powerful Roblox BedWars script built to give you the edge in every fight.</p>
+    <p>Get an unfair advantage over your opponents, while remaining completely undetected</p>
     <div class="hero-btns">
-      <a class="btn big" href="https://discord.gg/BUQukruVH"><img src="assets/discord.png" alt=""> Join the Discord</a>
+      <a class="btn big" href="https://discord.gg/BUQukruVH">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+        Join the Discord
+      </a>
       <a class="btn big ghost" href="#modules">Explore modules</a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="ghost">
+  <div class="section-head">
+    <span>Ghost Modules</span>
+    <h2>Built for domination. Bypass anywhere.</h2>
+  </div>
+  <div class="ghost-grid">
+    <div class="ghost-card">
+      <h3>Made for BedWars</h3>
+      <p>Larp is designed specifically for BedWars, giving you undetectable advantages in every fight.</p>
+    </div>
+    <div class="ghost-card">
+      <h3>Dependable combat modules.</h3>
+      <p>No updates required. Our combat modules are designed to last, built to work on any anticheat without relying on temporary bypasses.</p>
+    </div>
+    <div class="ghost-card">
+      <h3>Silent aiming.</h3>
+      <p>Enhance your performance with super-human aiming on multiple modules, while retaining full control of your cursor.</p>
     </div>
   </div>
 </section>
 
 <section class="section" id="modules">
   <div class="section-head">
-    <span>LARP V4</span>
-    <h2>Modules</h2>
-    <p>Everything you need to dominate.</p>
+    <span>Modules</span>
+    <h2>Everything you need to dominate.</h2>
   </div>
-
   <div class="tabs">
     <button class="tab active" data-filter="all">All</button>
     <button class="tab" data-filter="combat">Combat</button>
@@ -53,8 +74,8 @@
     <button class="tab" data-filter="kit">Kit Assist</button>
     <button class="tab" data-filter="utility">Utilities</button>
   </div>
-
   <div class="grid" id="grid">
+    <div class="grid" id="grid">
     <!-- Combat -->
     <div class="card" data-cat="combat"><h3>KillAura</h3><p>Attacks every enemy in range with perfect timing.</p></div>
     <div class="card" data-cat="combat"><h3>SilentAim</h3><p>Redirects projectiles server-side while your screen stays clean.</p></div>
@@ -202,50 +223,93 @@
     <div class="card" data-cat="utility"><h3>ServerHop</h3><p>Hop servers fast.</p></div>
     <div class="card" data-cat="utility"><h3>LeaveParty</h3><p>Leave your party instantly.</p></div>
   </div>
+
+  </div>
 </section>
 
 <section class="section" id="features">
   <div class="section-head">
-    <span>WHY LARP</span>
-    <h2>Features</h2>
+    <span>Exclusive Features</span>
+    <h2>Unique to the Larp experience</h2>
   </div>
-  <div class="features">
-    <div class="feature">
-      <h3>Silent aiming</h3>
-      <p>Projectile aimbot with self-correcting prediction. Your shots land where you aimed, silently.</p>
+  <div class="feature-row">
+    <div class="feature-text">
+      <h3>Projectile Aimbot</h3>
+      <p>Silent, self-correcting arc prediction. Your shots land where you aimed, without ever moving your cursor.</p>
+      <ul>
+        <li>Adaptive prediction that self-corrects mid flight</li>
+        <li>Grades only aimed projectile hits</li>
+        <li>Works with every projectile in the game</li>
+      </ul>
     </div>
-    <div class="feature">
-      <h3>Undetectable modules</h3>
-      <p>Designed to bypass anticheats with careful, configurable behavior.</p>
-    </div>
-    <div class="feature">
+  </div>
+  <div class="feature-row">
+    <div class="feature-text">
       <h3>Full BedWars automation</h3>
-      <p>Bed defense, auto buy, kit assist, and more - everything handled for you.</p>
+      <p>Let Larp handle the grind so you can focus on the fight.</p>
+      <ul>
+        <li>Auto buy, auto kit and smart hotbar</li>
+        <li>Bed defense, bed patch and bed plates</li>
+        <li>Kit assist for every kit in the game</li>
+      </ul>
     </div>
-    <div class="feature">
-      <h3>Clean, customizable UI</h3>
-      <p>Every module is fully configurable with profiles and binds.</p>
+  </div>
+  <div class="feature-row">
+    <div class="feature-text">
+      <h3>Undetectable by design</h3>
+      <p>Careful, configurable behavior on every module.</p>
+      <ul>
+        <li>Bypasses built into every module</li>
+        <li>No reliance on temporary exploits</li>
+        <li>Staff detector and instant panic mode</li>
+      </ul>
     </div>
   </div>
 </section>
 
-<section class="section discord" id="discord">
+<section class="section" id="closer">
   <div class="section-head">
-    <span>JOIN US</span>
+    <span>A few more things we have to offer</span>
+    <h2>Take a closer look.</h2>
+  </div>
+  <div class="closer-grid">
+    <div class="closer-card"><h3>160+ modules</h3><p>Everything from combat to full BedWars automation.</p></div>
+    <div class="closer-card"><h3>Custom UI</h3><p>Fully configurable modules with profiles and binds.</p></div>
+    <div class="closer-card"><h3>FPS boost</h3><p>Optimizations that keep your frames high while you dominate.</p></div>
+    <div class="closer-card"><h3>Whitelisted access</h3><p>Access granted through our Discord. No public distribution.</p></div>
+    <div class="closer-card"><h3>Active support</h3><p>Whatever the issue may be, we are here to help you solve it.</p></div>
+    <div class="closer-card"><h3>Trusted</h3><p>Built and maintained by exuric and damon.</p></div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="cta-inner">
+    <h2>Like steroids for BedWars.</h2>
+    <p>Get an unfair advantage over your opponents, while remaining completely undetected</p>
+    <a class="btn big" href="https://discord.gg/BUQukruVH">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+      Join the Discord
+    </a>
+  </div>
+</section>
+
+<section class="section" id="discord">
+  <div class="section-head">
+    <span>Join us</span>
     <h2>Discord</h2>
     <p>Get access and updates for Larp V4.</p>
   </div>
   <div class="discord-btn-wrap">
-    <a class="btn big" href="https://discord.gg/BUQukruVH"><img src="assets/discord.png" alt=""> Join the Discord</a>
+    <a class="btn big" href="https://discord.gg/BUQukruVH">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+      Join the Discord
+    </a>
   </div>
 </section>
 
 <footer>
   <div class="footer-inner">
-    <div class="footer-logo">
-      <img src="assets/Larp.png" alt="Larp" height="18">
-      <img src="assets/Textv4.png" alt="V4" height="18">
-    </div>
+    <div class="footer-logo"><img src="assets/Larp.png" alt="Larp"><img src="assets/Textv4.png" alt="V4"></div>
     <p>Made By exuric and damon</p>
     <p>Inspired by 7GrandDad, i love u sir</p>
     <p>Contributors: exuric, damon, sosa</p>

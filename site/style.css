@@ -21,6 +21,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.bg-wave {
+  position: fixed;
+  inset: -60%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(35% 30% at 30% 25%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
+    radial-gradient(30% 28% at 70% 55%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%);
+  animation: wave-drift 20s ease-in-out infinite alternate;
+}
+
+@keyframes wave-drift {
+  from { transform: translate3d(-3%, -2%, 0) rotate(-2deg); }
+  to { transform: translate3d(3%, 2%, 0) rotate(2deg); }
+}
+
 img {
   vertical-align: middle;
 }
@@ -594,13 +610,17 @@ a {
 }
 
 .feature-box li::before {
-  content: '';
+  content: '\2713';
   position: absolute;
   left: 0;
-  top: 8px;
-  width: 10px;
-  height: 10px;
-  background: var(--accent);
+  top: 0;
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.5;
 }
 
 /* Script */
@@ -617,6 +637,68 @@ a {
 .script-box p {
   font-size: 15.5px;
   color: #c7c7cf;
+}
+
+.script-box .btn {
+  margin-top: 22px;
+}
+
+/* Settings font picker */
+.font-search {
+  margin-top: 14px;
+  width: 100%;
+  background: #0b0b0c;
+  border: 1px solid #2a2a31;
+  border-radius: 8px;
+  color: #f2f2f4;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.font-search:focus {
+  border-color: var(--accent);
+}
+
+.font-search::placeholder {
+  color: #6b6b74;
+}
+
+.font-list {
+  margin-top: 10px;
+  max-height: 190px;
+  overflow-y: auto;
+  border: 1px solid #1e1e23;
+  border-radius: 8px;
+  background: #0b0b0c;
+}
+
+.font-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #14141a;
+  color: #c7c7cf;
+  padding: 9px 12px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.font-item:last-child {
+  border-bottom: none;
+}
+
+.font-item:hover {
+  background: #14161d;
+}
+
+.font-item.active {
+  background: var(--accent);
+  color: var(--accent-text);
 }
 
 /* Closer look grid */

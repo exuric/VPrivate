@@ -1,6 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/Larp.png" alt="Larp" height="36" />
-  <img src="https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/Textv4.png" alt="V4" height="36" />
+  <img src="https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/Larp.png" alt="Larp" height="36" /><img src="https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/Textv4.png" alt="V4" height="36" />
 </p>
 
 <p align="center">A powerful Roblox BedWars script built to give you the edge in every fight.</p>
@@ -12,3 +11,9 @@
 ## Credits
 
 Inspired by 7GrandDad, i love u sir
+
+## Contributing
+
+Exuric
+Damon
+Sosa

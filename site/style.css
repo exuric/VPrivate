@@ -255,12 +255,21 @@ a {
   border: 1px solid transparent;
   color: #9a9aa3;
   text-align: left;
-  padding: 11px 14px;
+  padding: 10px 14px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   transition: all 0.15s;
+}
+
+.cat img {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .cat:hover {
@@ -273,11 +282,15 @@ a {
   color: #0b0b0c;
 }
 
+.cat.active img {
+  filter: invert(1);
+}
+
 /* Module grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   flex: 1;
   min-width: 0;
 }
@@ -286,14 +299,9 @@ a {
   background: #101013;
   border: 1px solid #1e1e23;
   border-radius: 10px;
-  padding: 12px 8px;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  padding: 18px 20px;
   cursor: pointer;
+  text-align: left;
   transition: border-color 0.15s, transform 0.15s;
 }
 
@@ -303,22 +311,66 @@ a {
 }
 
 .card h3 {
-  font-size: 12.5px;
+  font-size: 15.5px;
   font-weight: 800;
-  line-height: 1.25;
 }
 
 .card p {
-  display: none;
+  margin-top: 6px;
+  font-size: 13.5px;
+  color: #9a9aa3;
 }
 
-.card[data-cat="kit"] {
+.card[data-cat="minigames"] {
   cursor: default;
 }
 
-.card[data-cat="kit"]:hover {
+.card[data-cat="minigames"]:hover {
   border-color: #1e1e23;
   transform: none;
+}
+
+/* Info panels (Profiles / Overlays) */
+.info-panel {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #1e1e23;
+  border-radius: 12px;
+  padding: 34px;
+}
+
+.info-panel h3 {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.info-panel p {
+  margin-top: 12px;
+  font-size: 15px;
+  color: #9a9aa3;
+}
+
+.info-panel ul {
+  margin-top: 16px;
+  list-style: none;
+}
+
+.info-panel li {
+  padding-left: 22px;
+  position: relative;
+  font-size: 14.5px;
+  color: #c7c7cf;
+  margin-top: 8px;
+}
+
+.info-panel li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 10px;
+  height: 10px;
+  background: #f2f2f4;
 }
 
 /* Modal */
@@ -576,5 +628,8 @@ footer {
     white-space: nowrap;
     text-align: center;
     padding: 9px 16px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
   }
 }

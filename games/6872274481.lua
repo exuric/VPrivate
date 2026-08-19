@@ -3429,11 +3429,12 @@ run(function()
 		end
 	end
 
-	local lastVisualSwing = 0
+	local nextVisualSwing = 0
 
 	local function swingVisual()
-		if tick() - lastVisualSwing >= 0.3 then
-			lastVisualSwing = tick()
+		local now = tick()
+		if now >= nextVisualSwing then
+			nextVisualSwing = nextVisualSwing + 0.294
 			if SwordController then
 				pcall(SwordController.swingSwordInRegion, SwordController)
 			end

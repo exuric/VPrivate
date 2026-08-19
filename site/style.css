@@ -91,6 +91,14 @@ a {
   transform: scaleX(1);
 }
 
+.menu a.active {
+  color: #f2f2f4;
+}
+
+.menu a.active::after {
+  transform: scaleX(1);
+}
+
 .menu a:hover {
   color: var(--accent);
 }

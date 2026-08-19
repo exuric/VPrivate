@@ -1,6 +1,13 @@
-# Larp <img src="https://www.vape.gg/img/logo.png" height="20" alt="V4" />
+<p align="center">
+  <img src="https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/Larp.png" alt="Larp" />
+  <img src="https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/Textv4.png" alt="V4" />
+</p>
 
-Made By exur1c and damon
+<p align="center">A powerful Roblox BedWars script built to give you the edge in every fight.</p>
+
+<p align="center">
+  <a href="https://discord.gg/BUQukruVH"><img src="https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/discord.png" alt="Discord" /> Discord</a>
+</p>
 
 ## Credits
 

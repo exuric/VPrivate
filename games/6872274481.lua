@@ -47,6 +47,7 @@ local getfontsize = larp.Libraries.getfontsize
 local getcustomasset = larp.Libraries.getcustomasset
 
 local rankCache = {}
+local projectileShotTimes = {}
 local store = {
 	attackReach = 0,
 	lastHit = 0,
@@ -2941,9 +2942,12 @@ run(function()
 				if Mode.Value ~= 'Adaptive' then
 					return
 				end
+				if damageTable.damageType == 0 or not damageTable.fromEntity then
+					return
+				end
 				if damageTable.fromEntity == lplr.Character or damageTable.fromEntity == lplr then
 					local victim = entitylib.getEntity(damageTable.entityInstance)
-					if victim and victim.RootPart then
+					if victim and victim.RootPart and tick() - (projectileShotTimes[victim.RootPart] or -9e9) < 5 then
 						prediction.reportHit(victim.RootPart)
 						prediction.markKnockback(victim.RootPart, damageTable.knockbackMultiplier)
 					end
@@ -4186,7 +4190,7 @@ run(function()
 local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
 						local targetPart = TargetPart.Value == 'Neck' and plr.RootPart or (plr[TargetPart.Value] or plr.RootPart)
 						local targetPos = targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
-						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.Velocity
+						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
 						if VelocityLerp.Value > 1 then
 							local prev = velHistory[plr]
 							targetVel = prev and prev:Lerp(targetVel, 1 / VelocityLerp.Value) or targetVel
@@ -4194,7 +4198,7 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 						end
 						local isFireball = projmeta.projectile == 'fireball'
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local projSpeedTotal = projSpeed * Prediction.Value * charge
+						local projSpeedTotal = projSpeed * (Mode.Value == 'Adaptive' and math.clamp(Prediction.Value, 0.9, 1.1) or Prediction.Value) * charge
 						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 						local dir
 						if calc and travelTime and travelTime <= lifetime then
@@ -4216,6 +4220,12 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 							if clear then
 								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 								if Mode.Value == 'Adaptive' then
+									projectileShotTimes[plr.RootPart] = tick()
+									for root, shotTime in projectileShotTimes do
+										if tick() - shotTime >= 5 then
+											projectileShotTimes[root] = nil
+										end
+									end
 									prediction.trackShot(plr.RootPart)
 								end
 								return {

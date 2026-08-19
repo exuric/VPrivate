@@ -65,16 +65,17 @@
     <span>Modules</span>
     <h2>Everything you need to dominate.</h2>
   </div>
-  <div class="tabs">
-    <button class="tab active" data-filter="all">All</button>
-    <button class="tab" data-filter="combat">Combat</button>
-    <button class="tab" data-filter="movement">Movement</button>
-    <button class="tab" data-filter="visuals">Visuals</button>
-    <button class="tab" data-filter="bedwars">BedWars</button>
-    <button class="tab" data-filter="kit">Kit Assist</button>
-    <button class="tab" data-filter="utility">Utilities</button>
-  </div>
-  <div class="grid" id="grid">
+<div class="modules-layout">
+    <aside class="cat-sidebar">
+      <button class="cat active" data-filter="combat">Combat</button>
+      <button class="cat" data-filter="movement">Movement</button>
+      <button class="cat" data-filter="visuals">Visuals</button>
+      <button class="cat" data-filter="bedwars">BedWars</button>
+      <button class="cat" data-filter="kit">Kit Assist</button>
+      <button class="cat" data-filter="utility">Utilities</button>
+      <button class="cat" data-filter="all">All</button>
+    </aside>
+    <div class="grid" id="grid">
     <div class="grid" id="grid">
     <!-- Combat -->
     <div class="card" data-cat="combat"><h3>KillAura</h3><p>Attacks every enemy in range with perfect timing.</p></div>
@@ -225,6 +226,7 @@
   </div>
 
   </div>
+  </div>
 </section>
 
 <section class="section" id="features">
@@ -313,22 +315,71 @@
     <p>Made By exuric and damon</p>
     <p>Inspired by 7GrandDad, i love u sir</p>
     <p>Contributors: exuric, damon, sosa</p>
+    <p class="rights">&copy; 2026 Larp. All rights reserved.</p>
   </div>
 </footer>
 
+<div class="modal" id="modal" hidden>
+  <div class="modal-backdrop" id="modalBackdrop"></div>
+  <div class="modal-box">
+    <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+    <span class="modal-cat" id="mCat"></span>
+    <h3 id="mName"></h3>
+    <p id="mDesc"></p>
+  </div>
+</div>
+
 <script>
-const tabs = document.querySelectorAll('.tab');
+const cats = document.querySelectorAll('.cat');
 const cards = document.querySelectorAll('.card');
-tabs.forEach(function(tab) {
-  tab.addEventListener('click', function() {
-    tabs.forEach(function(t) { t.classList.remove('active'); });
-    tab.classList.add('active');
-    const filter = tab.dataset.filter;
-    cards.forEach(function(card) {
-      card.style.display = (filter === 'all' || card.dataset.cat === filter) ? '' : 'none';
-    });
+const modal = document.getElementById('modal');
+const mCat = document.getElementById('mCat');
+const mName = document.getElementById('mName');
+const mDesc = document.getElementById('mDesc');
+const catNames = {
+  combat: 'Combat',
+  movement: 'Movement',
+  visuals: 'Visuals',
+  bedwars: 'BedWars',
+  kit: 'Kit Assist',
+  utility: 'Utilities',
+  all: 'All'
+};
+
+function applyFilter(filter) {
+  cards.forEach(function(card) {
+    card.style.display = (filter === 'all' || card.dataset.cat === filter) ? '' : 'none';
+  });
+}
+
+cats.forEach(function(cat) {
+  cat.addEventListener('click', function() {
+    cats.forEach(function(c) { c.classList.remove('active'); });
+    cat.classList.add('active');
+    applyFilter(cat.dataset.filter);
   });
 });
+
+cards.forEach(function(card) {
+  card.addEventListener('click', function() {
+    mCat.textContent = catNames[card.dataset.cat] || '';
+    mName.textContent = card.querySelector('h3').textContent;
+    mDesc.textContent = card.querySelector('p').textContent;
+    modal.hidden = false;
+  });
+});
+
+function closeModal() {
+  modal.hidden = true;
+}
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+applyFilter('combat');
 </script>
 </body>
 </html>

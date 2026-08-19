@@ -18,6 +18,7 @@
     <nav class="menu">
       <a href="#modules">Modules</a>
       <a href="#features">Features</a>
+      <a href="#changelogs">Changelogs</a>
       <a href="#discord">Discord</a>
     </nav>
     <a class="btn nav-btn" href="https://discord.gg/BUQukruVH">Join Discord</a>
@@ -38,6 +39,8 @@
     </div>
   </div>
 </section>
+
+<div class="banner">Larp is not released yet - release date soon</div>
 
 <section class="section" id="ghost">
   <div class="section-head">
@@ -71,7 +74,8 @@
       <button class="cat" data-filter="movement">Movement</button>
       <button class="cat" data-filter="visuals">Visuals</button>
       <button class="cat" data-filter="bedwars">BedWars</button>
-      <button class="cat" data-filter="kit">Kit Assist</button>
+      <button class="cat" data-filter="kit">Kits</button>
+      <button class="cat" data-filter="world">World</button>
       <button class="cat" data-filter="utility">Utilities</button>
       <button class="cat" data-filter="all">All</button>
     </aside>
@@ -111,7 +115,7 @@
     <div class="card" data-cat="movement"><h3>InfiniteJump</h3><p>Repeated jumps in air.</p></div>
     <div class="card" data-cat="movement"><h3>Disabler</h3><p>Breaks server movement checks.</p></div>
     <div class="card" data-cat="movement"><h3>NoSlow</h3><p>Move at full speed while using items.</p></div>
-    <div class="card" data-cat="movement"><h3>Timer</h3><p>Alter game speed.</p></div>
+    <div class="card" data-cat="world"><h3>Timer</h3><p>Changes the world speed.</p></div>
     <div class="card" data-cat="movement"><h3>MouseTP</h3><p>Teleport where you aim.</p></div>
 
     <!-- Visuals -->
@@ -229,6 +233,27 @@
   </div>
 </section>
 
+<section class="section" id="changelogs">
+  <div class="section-head">
+    <span>Changelogs</span>
+    <h2>Recent changes</h2>
+  </div>
+  <div class="changelog">
+    <div class="changelog-item">
+      <h3>Improved projectile aimbot</h3>
+      <p>Better target velocity tracking, and the Prediction slider is now clamped in Adaptive mode.</p>
+    </div>
+    <div class="changelog-item">
+      <h3>Adaptive hit grading</h3>
+      <p>Adaptive mode now grades only aimed projectile hits.</p>
+    </div>
+    <div class="changelog-item">
+      <h3>KillAura fix</h3>
+      <p>Fixed swing timing for a consistent 34 hits per 10 seconds.</p>
+    </div>
+  </div>
+</section>
+
 <section class="section" id="features">
   <div class="section-head">
     <span>Exclusive Features</span>
@@ -329,7 +354,8 @@ const catNames = {
   movement: 'Movement',
   visuals: 'Visuals',
   bedwars: 'BedWars',
-  kit: 'Kit Assist',
+  kit: 'Kits',
+  world: 'World',
   utility: 'Utilities',
   all: 'All'
 };
@@ -349,6 +375,7 @@ cats.forEach(function(cat) {
 });
 
 cards.forEach(function(card) {
+  if (card.dataset.cat === 'kit') return;
   card.addEventListener('click', function() {
     mCat.textContent = catNames[card.dataset.cat] || '';
     mName.textContent = card.querySelector('h3').textContent;

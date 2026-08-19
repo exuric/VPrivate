@@ -219,6 +219,20 @@ a {
   color: #9a9aa3;
 }
 
+/* Release banner */
+.banner {
+  text-align: center;
+  padding: 13px 24px;
+  border-top: 1px solid #1e1e23;
+  border-bottom: 1px solid #1e1e23;
+  background: #101013;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #c7c7cf;
+}
+
 /* Modules layout */
 .modules-layout {
   display: flex;
@@ -262,8 +276,8 @@ a {
 /* Module grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
@@ -272,9 +286,14 @@ a {
   background: #101013;
   border: 1px solid #1e1e23;
   border-radius: 10px;
-  padding: 18px 20px;
+  padding: 12px 8px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   cursor: pointer;
-  text-align: left;
   transition: border-color 0.15s, transform 0.15s;
 }
 
@@ -284,14 +303,22 @@ a {
 }
 
 .card h3 {
-  font-size: 15.5px;
+  font-size: 12.5px;
   font-weight: 800;
+  line-height: 1.25;
 }
 
 .card p {
-  margin-top: 6px;
-  font-size: 13.5px;
-  color: #9a9aa3;
+  display: none;
+}
+
+.card[data-cat="kit"] {
+  cursor: default;
+}
+
+.card[data-cat="kit"]:hover {
+  border-color: #1e1e23;
+  transform: none;
 }
 
 /* Modal */
@@ -436,6 +463,28 @@ a {
 
 .closer-card p {
   margin-top: 8px;
+  font-size: 14px;
+  color: #9a9aa3;
+}
+
+/* Changelog */
+.changelog {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.changelog-item {
+  border-top: 1px solid #1e1e23;
+  padding: 26px 0;
+}
+
+.changelog-item h3 {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.changelog-item p {
+  margin-top: 6px;
   font-size: 14px;
   color: #9a9aa3;
 }

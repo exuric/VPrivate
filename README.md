@@ -8,14 +8,14 @@
   <a href="https://discord.gg/BUQukruVH"><img src="https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/discord.png" alt="Discord" /> Discord</a>
 </p>
 
+---
+
 ## Credits
 
 Inspired by 7GrandDad, i love u sir
 
 ## Contributing
 
-Exuric - Luau and lead maintainer of the script
-
-Damon - Security and protection
-
-Sosa - Helped with members
+- **Exuric** — Luau and lead maintainer of the script
+- **Damon** — Security and protection
+- **Sosa** — Helped with members

@@ -1,1 +1,6 @@
-﻿Larp Releasing Soon
+﻿Changelog
+
+- Improved projectile aimbot target velocity tracking (fresher readings, tighter lead on moving targets)
+- Adaptive mode now grades only aimed projectile hits - melee damage no longer distorts the self-correction
+- Prediction slider is clamped in Adaptive mode so it can't fight the latency learner (full range in Simple mode)
+- Fixed KillAura swing timing for a consistent 34 hits per 10 seconds

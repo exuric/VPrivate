@@ -70,7 +70,25 @@ a {
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
+  position: relative;
   transition: color 0.15s;
+}
+
+.menu a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s;
+}
+
+.menu a:hover::after {
+  transform: scaleX(1);
 }
 
 .menu a:hover {

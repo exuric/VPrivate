@@ -14,6 +14,6 @@ Inspired by 7GrandDad, i love u sir
 
 ## Contributing
 
-Exuric
-Damon
-Sosa
+Exuric - Luau and lead maintainer of the script
+Damon - Security and protection
+Sosa - Helped with members

@@ -253,7 +253,34 @@ local whitelist = {
 	said = {},
 	rejected = false
 }
-shared.LarpWhitelist = whitelist
+local UNAUTHORIZED = 'UNAUTHORIZED REQUEST'
+local PUBLIC_WHITELIST_API = {get = true, tag = true, customtags = true}
+local whitelistAPI = setmetatable({}, {
+	__index = function(_, key)
+		if PUBLIC_WHITELIST_API[key] then
+			local member = whitelist[key]
+			if type(member) == 'function' then
+				return function(_, ...)
+					return member(whitelist, ...)
+				end
+			end
+			return member
+		end
+		return UNAUTHORIZED
+	end,
+	__newindex = function(_, key, value)
+		if PUBLIC_WHITELIST_API[key] then
+			whitelist[key] = value
+			return
+		end
+		error(UNAUTHORIZED, 2)
+	end,
+	__pairs = function()
+		return next, {}, nil
+	end,
+	__metatable = UNAUTHORIZED
+})
+shared.LarpWhitelist = whitelistAPI
 
 local function uhex(s)
 	local b = {}
@@ -282,7 +309,7 @@ local AMSG = uhex('436f6e74616374204a78347220286e6f742077686974656c697374656429'
 local OID = 0x17340ba40
 
 larp.Libraries.entity = entitylib
-larp.Libraries.whitelist = whitelist
+larp.Libraries.whitelist = whitelistAPI
 larp.Libraries.prediction = prediction
 larp.Libraries.hash = hash
 larp.Libraries.auraanims = {

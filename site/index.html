@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="bg-wave" aria-hidden="true"></div>
 
 <header class="nav">
   <div class="nav-inner">
@@ -324,19 +325,14 @@
       <h3>Projectile Aimbot</h3>
       <p>Spoofs your aim to never miss.</p>
       <ul>
-        <li>Adaptive prediction that self-corrects</li>
-        <li>Grades only aimed hits</li>
-        <li>Works with all projectiles</li>
+        <li>Adaptive prediction for low, medium and high ping</li>
+        <li>Fireball splash</li>
       </ul>
     </div>
     <div class="feature-box">
       <span class="feature-num">02</span>
-      <h3>BedWars automation</h3>
-      <ul>
-        <li>Auto buy, auto kit, smart hotbar</li>
-        <li>Bed defense, bed patch, bed plates</li>
-        <li>Kit assist for every kit</li>
-      </ul>
+      <h3>Kill Aura</h3>
+      <p>Consistently gets 35 hits.</p>
     </div>
   </div>
 </section>
@@ -347,7 +343,8 @@
     <h2>Releasing soon</h2>
   </div>
   <div class="script-box">
-    <p>Script releasing soon. Once we're done with the script we will put it there.</p>
+    <p>The script isn't released yet.</p>
+    <a class="btn" href="https://discord.gg/BUQukruVH">Join Discord to get the script</a>
   </div>
 </section>
 
@@ -358,7 +355,7 @@
   </div>
   <div class="closer-grid">
     <div class="closer-card"><h3>160+ modules</h3><p>Everything from combat to full BedWars automation.</p></div>
-    <div class="closer-card"><h3>Custom UI</h3><p>Fully configurable modules with profiles and binds.</p></div>
+    <div class="closer-card"><h3>Custom UI</h3><p>Fully configurable modules with binds and settings.</p></div>
     <div class="closer-card"><h3>FPS boost</h3><p>Optimizations that keep your frames high while you dominate.</p></div>
     <div class="closer-card"><h3>Whitelisted access</h3><p>Access granted through our Discord. No public distribution.</p></div>
     <div class="closer-card"><h3>Active support</h3><p>Whatever the issue may be, we are here to help you solve it.</p></div>
@@ -424,6 +421,9 @@
       <div class="slider-knob" id="sliderKnob"></div>
     </div>
     <p class="settings-hint">Slide to change the theme color</p>
+    <p class="settings-label">Font</p>
+    <input class="font-search" id="fontSearch" type="text" placeholder="Search fonts" autocomplete="off">
+    <div class="font-list" id="fontList"></div>
   </div>
 </div>
 
@@ -559,6 +559,60 @@ navLinks.forEach(function(link) {
   const target = document.querySelector(link.getAttribute('href'));
   if (target) spy.observe(target);
 });
+
+const FONTS = [
+  { name: 'Arial', family: 'Arial, Helvetica, sans-serif' },
+  { name: 'Arial Black', family: "'Arial Black', Arial, sans-serif" },
+  { name: 'Verdana', family: 'Verdana, Geneva, sans-serif' },
+  { name: 'Tahoma', family: 'Tahoma, Geneva, sans-serif' },
+  { name: 'Trebuchet MS', family: "'Trebuchet MS', 'Trebuchet', sans-serif" },
+  { name: 'Georgia', family: "Georgia, 'Times New Roman', serif" },
+  { name: 'Times New Roman', family: "'Times New Roman', Times, serif" },
+  { name: 'Courier New', family: "'Courier New', Courier, monospace" },
+  { name: 'Impact', family: "Impact, 'Arial Black', sans-serif" },
+  { name: 'Comic Sans MS', family: "'Comic Sans MS', 'Comic Sans', cursive" }
+];
+const fontSearch = document.getElementById('fontSearch');
+const fontList = document.getElementById('fontList');
+let currentFont = -1;
+
+function renderFonts(query) {
+  fontList.innerHTML = '';
+  FONTS.forEach(function(f, i) {
+    if (query && f.name.toLowerCase().indexOf(query.toLowerCase()) === -1) return;
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'font-item' + (i === currentFont ? ' active' : '');
+    item.textContent = f.name;
+    item.style.fontFamily = f.family;
+    item.dataset.idx = i;
+    fontList.appendChild(item);
+  });
+}
+
+function applyFont(idx) {
+  currentFont = idx;
+  const f = FONTS[idx];
+  document.body.style.fontFamily = f.family;
+  localStorage.setItem('larp-font', idx);
+  document.querySelectorAll('.font-item').forEach(function(item) {
+    item.classList.toggle('active', item.dataset.idx == idx);
+  });
+}
+
+fontList.addEventListener('click', function(e) {
+  const item = e.target.closest('.font-item');
+  if (item) applyFont(parseInt(item.dataset.idx, 10));
+});
+fontSearch.addEventListener('input', function() {
+  renderFonts(fontSearch.value);
+});
+
+const savedFont = localStorage.getItem('larp-font');
+if (savedFont !== null) {
+  applyFont(Math.max(0, Math.min(FONTS.length - 1, parseInt(savedFont, 10) || 0)));
+}
+renderFonts('');
 
 applyFilter('combat');
 </script>

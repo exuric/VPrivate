@@ -23,18 +23,44 @@ body {
 
 .bg-wave {
   position: fixed;
-  inset: -60%;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(35% 30% at 30% 25%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
-    radial-gradient(30% 28% at 70% 55%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%);
-  animation: wave-drift 20s ease-in-out infinite alternate;
+  overflow: hidden;
+}
+
+.wave-blob {
+  position: absolute;
+  width: 130%;
+  height: 48%;
+  left: -15%;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.55;
+}
+
+.wb1 {
+  top: -28%;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  animation: wave-drift 16s ease-in-out infinite alternate;
+}
+
+.wb2 {
+  top: 24%;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  animation: wave-drift 22s ease-in-out infinite alternate-reverse;
+}
+
+.wb3 {
+  bottom: -32%;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  animation: wave-drift 19s ease-in-out infinite alternate;
+  animation-delay: -6s;
 }
 
 @keyframes wave-drift {
-  from { transform: translate3d(-3%, -2%, 0) rotate(-2deg); }
-  to { transform: translate3d(3%, 2%, 0) rotate(2deg); }
+  from { transform: translate3d(-5%, -4%, 0) rotate(-4deg) scale(1); }
+  to { transform: translate3d(5%, 4%, 0) rotate(4deg) scale(1.1); }
 }
 
 img {

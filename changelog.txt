@@ -1,14 +1,5 @@
-﻿Changelog
+Changelog
 
-New Velocity module stops knockback from sword hits and explosions
-New Reach module extends how far your sword hits reach
-New AutoCharge module swings swords fully charged for bonus damage
-New WTap module resets your sprint after every landed hit
-New Spinbot module spins your character to dodge arrows
-KillAura now swings exactly at your sword's real attack speed so every swing lands
-KillAura hits through walls by using the game's own region swing path
-KillAura faces its target automatically so attacks always land
-KillAura attack range slider now actually extends how far hits land, up to 30 studs
 New SkinChanger is now Larp Skins with a clean item type + skin picker and random/reset buttons
 KillAura attack range now matches the slider exactly, up to 30 studs
 KillAura target picking ignores the 15 stud limit so long range always works

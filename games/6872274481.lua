@@ -48,6 +48,7 @@ local getcustomasset = larp.Libraries.getcustomasset
 
 local rankCache = {}
 local projectileShotTimes = {}
+local projectileShotCounter = 0
 local store = {
 	attackReach = 0,
 	lastHit = 0,
@@ -4164,7 +4165,11 @@ run(function()
 						end
 	
 						local meta = projmeta:getProjectileMeta()
+						local isLasso = projmeta.projectile:find('lasso') or projmeta.projectile:find('lassy')
 						local lifetime = (worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3)
+						if isLasso then
+							lifetime = math.max(lifetime, 2.5)
+						end
 						local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
 						local projSpeed = (meta.launchVelocity or 100)
 						local offsetpos = pos + (projmeta.projectile == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
@@ -4189,7 +4194,7 @@ run(function()
 	
 local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
 						local targetPart = TargetPart.Value == 'Neck' and plr.RootPart or (plr[TargetPart.Value] or plr.RootPart)
-						local targetPos = targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
+						local targetPos = isLasso and plr.RootPart.Position + Vector3.new(0, 2, 0) or targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
 						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
 						if VelocityLerp.Value > 1 then
 							local prev = velHistory[plr]
@@ -4221,9 +4226,12 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 								if Mode.Value == 'Adaptive' then
 									projectileShotTimes[plr.RootPart] = tick()
-									for root, shotTime in projectileShotTimes do
-										if tick() - shotTime >= 5 then
-											projectileShotTimes[root] = nil
+									projectileShotCounter = projectileShotCounter + 1
+									if projectileShotCounter % 32 == 0 then
+										for root, shotTime in projectileShotTimes do
+											if tick() - shotTime >= 5 then
+												projectileShotTimes[root] = nil
+											end
 										end
 									end
 									prediction.trackShot(plr.RootPart)

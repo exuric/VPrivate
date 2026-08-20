@@ -1,5 +1,7 @@
 ﻿Changelog
 
+Faster loading: skip re-verification on repeat loads and removed startup waits
+Projectile aimbot now aims the Lasso (and Lassy) items reliably at the body
 Improved projectile aimbot target velocity tracking
 Adaptive mode now grades only aimed projectile hits
 Prediction slider is clamped in Adaptive mode

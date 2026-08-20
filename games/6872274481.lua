@@ -3393,6 +3393,7 @@ run(function()
 	local MaxAngle
 	local CPS
 	local SwingTime
+	local MultiTarget
 
 	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
 	local realSwingInRegion, realCanSee, SwordController = nil, nil, nil
@@ -3446,6 +3447,33 @@ run(function()
 		end
 	end
 
+	local function swingMulti()
+		local character = entitylib.character
+		if not character or not character.HumanoidRootPart or not character.RootPart or not SwordController then return end
+		local selfpos = character.HumanoidRootPart.Position
+		local range = math.max(SwingRange.Value, AttackRange.Value)
+		local targets = {}
+		for _, ent in entitylib.List do
+			if ent.Player and Targets.Players.Enabled and ent.Targetable and entitylib.isVulnerable(ent) and ent.RootPart and ent.RootPart.Parent then
+				local mag = (ent.RootPart.Position - selfpos).Magnitude
+				if mag <= range then
+					table.insert(targets, {ent, mag})
+				end
+			end
+		end
+		if #targets == 0 then return end
+		table.sort(targets, function(a, b) return a[2] < b[2] end)
+		local root = character.RootPart
+		local oldcf = faceTarget(targets[1][1], root)
+		swingVisual()
+		if MultiTarget.Enabled then
+			for i = 2, #targets do
+				pcall(SwordController.sendServerRequest, SwordController, targets[i][1], 0)
+			end
+		end
+		root.CFrame = oldcf
+	end
+
 	Killaura = larp.Categories.Blatant:CreateModule({
 		Name = 'KillAura',
 		Function = function(callback)
@@ -3496,10 +3524,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 							if target and target.RootPart and target.RootPart.Parent then
 								store.KillauraTarget = target
 								if not SwingOnly.Enabled then
-									local root = entitylib.character.RootPart
-									local oldcf = faceTarget(target, root)
-									swingVisual()
-									root.CFrame = oldcf
+									swingMulti()
 								end
 							end
 						end
@@ -3557,6 +3582,11 @@ SwordController.swingSwordInRegion = function(self, ...)
 			return val == 1 and 'stud' or 'studs'
 		end,
 		Tooltip = 'Range where attacks land'
+	})
+	MultiTarget = Killaura:CreateToggle({
+		Name = 'Multi target',
+		Default = true,
+		Tooltip = 'Hits every enemy in range with each swing'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',

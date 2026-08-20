@@ -4665,6 +4665,7 @@ run(function()
 	Folder.Parent = larp.gui
 	local methodused
 	local DeviceCache = {}
+	local Bars = {}
 
 	local function getPlatformIcon(ent)
 		if not ent.Player then return end
@@ -4746,6 +4747,23 @@ run(function()
 			nametag.TextColor3 = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			nametag.RichText = true
 			nametag.Parent = Folder
+			local barBG = Instance.new('TextLabel')
+			barBG.Name = 'BarBG'
+			barBG.Size = UDim2.new(1, -8, 0, 4)
+			barBG.Position = UDim2.new(0.5, 0, 1, 6)
+			barBG.AnchorPoint = Vector2.new(0.5, 1)
+			barBG.BackgroundColor3 = Color3.new()
+			barBG.BackgroundTransparency = math.min(1, Background.Value + 0.35)
+			barBG.BorderSizePixel = 0
+			barBG.Parent = nametag
+			local barFill = Instance.new('TextLabel')
+			barFill.Name = 'BarFill'
+			barFill.Size = UDim2.new(1, 0, 1, 0)
+			barFill.BackgroundColor3 = Color3.fromHSV(0.333, 0.9, 0.85)
+			barFill.BackgroundTransparency = 0.15
+			barFill.BorderSizePixel = 0
+			barFill.Parent = barBG
+			Bars[ent] = barFill
 			Reference[ent] = nametag
 		end,
 		Drawing = function(ent)
@@ -4776,6 +4794,15 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 			nametag.Text.Text = Strings[ent]
 			nametag.Text.Color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
+			nametag.BarBG = Drawing.new('Square')
+			nametag.BarBG.Filled = true
+			nametag.BarBG.Transparency = 0.45
+			nametag.BarBG.Color = Color3.new()
+			nametag.BarBG.ZIndex = 3
+			nametag.BarFill = Drawing.new('Square')
+			nametag.BarFill.Filled = true
+			nametag.BarFill.Transparency = 0
+			nametag.BarFill.ZIndex = 4
 			Reference[ent] = nametag
 		end
 	}
@@ -4790,6 +4817,7 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 				Reference[ent] = nil
 				Strings[ent] = nil
 				Sizes[ent] = nil
+				Bars[ent] = nil
 				v:Destroy()
 			end
 		end,
@@ -4904,6 +4932,14 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 					end
 				end
 				nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
+				local bar = Bars[ent]
+				if bar then
+					bar.Visible = Health.Enabled
+					bar.Parent.Visible = Health.Enabled
+					local frac = math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1)
+					bar.Size = UDim2.new(frac, 0, 1, 0)
+					bar.BackgroundColor3 = Color3.fromHSV(frac / 3, 0.9, 0.85)
+				end
 			end
 		end,
 		Drawing = function()
@@ -4920,6 +4956,8 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
 				nametag.Text.Visible = headVis
 				nametag.BG.Visible = headVis
+				nametag.BarBG.Visible = false
+				nametag.BarFill.Visible = false
 				if not headVis then
 					continue
 				end
@@ -4934,6 +4972,15 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 				end
 				nametag.BG.Position = Vector2.new(headPos.X - (nametag.BG.Size.X / 2), headPos.Y - nametag.BG.Size.Y)
 				nametag.Text.Position = nametag.BG.Position + Vector2.new(4, 3)
+				local frac = math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1)
+				local barW = math.min(nametag.BG.Size.X - 8, 90)
+				nametag.BarBG.Visible = Health.Enabled and nametag.BG.Visible
+				nametag.BarFill.Visible = nametag.BarBG.Visible
+				nametag.BarBG.Size = Vector2.new(barW, 4)
+				nametag.BarBG.Position = Vector2.new(headPos.X - barW / 2, nametag.BG.Position.Y + nametag.BG.Size.Y - 2)
+				nametag.BarFill.Size = Vector2.new(barW * frac, 4)
+				nametag.BarFill.Position = nametag.BarBG.Position
+				nametag.BarFill.Color = Color3.fromHSV(frac / 3, 0.9, 0.85)
 			end
 		end
 	}

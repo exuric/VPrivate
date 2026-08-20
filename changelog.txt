@@ -1,5 +1,9 @@
 ﻿Changelog
 
+KillAura attack range now matches the slider exactly, up to 30 studs
+KillAura target picking ignores the 15 stud limit so long range always works
+KillAura swings as fast as the server allows for consistent full-rate hits
+NameTags health bars show fill color that drains from green to red
 Faster loading: skip re-verification on repeat loads and removed startup waits
 Projectile aimbot now aims the Lasso (and Lassy) items reliably at the body
 Improved projectile aimbot target velocity tracking

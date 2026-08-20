@@ -88,7 +88,9 @@ local VERIFY_FILES = {
 }
 
 local MANIFEST = {}
-do
+
+local function fetchManifest()
+	table.clear(MANIFEST)
 	local ok, res = pcall(function()
 		return game:HttpGet(ROOT..COMMIT..'/profiles/manifest.txt', true)
 	end)
@@ -226,12 +228,18 @@ local function fileDigest(path)
 	local partial = hash.sha512()
 	for j = 1, #content, 32768 do
 		partial(content:sub(j, j + 32767))
-		task.wait()
+		if j % 262144 == 0 then
+			task.wait()
+		end
 	end
 	return partial()
 end
 
 local function verifyFiles()
+	if getgenv().LarpVerifiedCommit == COMMIT then
+		return
+	end
+	fetchManifest()
 	local ok, good = pcall(function()
 		local content = readfile('LarpV4/libraries/hash.lua')
 		local i = content:find('\n')
@@ -244,9 +252,6 @@ local function verifyFiles()
 		pcall(delfile, 'LarpV4/libraries/hash.lua')
 	end
 	hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
-	if getgenv().LarpVerifiedCommit == COMMIT then
-		return
-	end
 	local todo = {}
 	for _, path in VERIFY_FILES do
 		local full = 'LarpV4/'..path

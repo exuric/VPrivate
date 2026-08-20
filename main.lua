@@ -307,7 +307,7 @@ end
 local gui = 'larp'--readfile('LarpV4/profiles/gui.txt')
 
 task.spawn(function()
-	task.wait(1)
+	task.wait()
 	if not isfolder('LarpV4/assets/'..gui) then
 		makefolder('LarpV4/assets/'..gui)
 	end
@@ -334,7 +334,7 @@ task.spawn(function()
 	end
 
 	task.spawn(function()
-		task.wait(1)
+		task.wait()
 		if not shared.LarpIndependent then
 			loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
 			if isfile('LarpV4/games/'..game.PlaceId..'.lua') then

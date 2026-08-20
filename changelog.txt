@@ -1,9 +1,6 @@
 ﻿Changelog
 
 New SkinChanger is now Larp Skins with a clean item type + skin picker and random/reset buttons
-AutoSword switches to your strongest sword when an enemy is in range
-AutoDefense builds and repairs a wool wall around your bed
-BridgeAssist places blocks under you while you run
 KillAura attack range now matches the slider exactly, up to 30 studs
 KillAura target picking ignores the 15 stud limit so long range always works
 KillAura swings as fast as the server allows for consistent full-rate hits

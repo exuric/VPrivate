@@ -3395,7 +3395,8 @@ run(function()
 	local SwingTime
 
 	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
-	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
+	local realSwingInRegion, lastSwing, SwordController = nil, 0, nil
+	local realCanSee
 
 	local function getTarget()
 		local character = entitylib.character
@@ -3428,22 +3429,52 @@ run(function()
 		return nearest
 	end
 
-	local function setSwingRadius()
-		if realSwingInRegion then
-			debug.setconstant(realSwingInRegion, 6, (SwingOnly.Enabled and 3.8 or swingRadius))
+	local function getSwordSpeed()
+		local tool = store.hand and store.hand.tool
+		if tool then
+			local meta = bedwars.ItemMeta[tool.Name]
+			if meta and meta.sword and meta.sword.attackSpeed then
+				return meta.sword.attackSpeed
+			end
+		end
+		return 0.35
+	end
+
+	local function swingReady()
+		local sc = SwordController
+		if not sc then return false end
+		local lastAttack = sc.lastAttack
+		if not lastAttack or lastAttack == 0 then return true end
+		return workspace:GetServerTimeNow() >= lastAttack + getSwordSpeed()
+	end
+
+	local function bumpRange(tool, range)
+		local meta = bedwars.ItemMeta[tool.Name]
+		if meta and meta.sword then
+			local old = meta.sword.attackRange
+			meta.sword.attackRange = math.max(range, old or 0)
+			return {old}
 		end
 	end
 
-	local nextVisualSwing = 0
+	local function faceTarget(target, root)
+		local oldcf = root.CFrame
+		root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
+		return oldcf
+	end
 
-	local function swingVisual()
-		local now = tick()
-		if now >= nextVisualSwing then
-			nextVisualSwing = nextVisualSwing + math.max(0.2, math.min(0.294, 1 / CPS.Value))
-			if SwordController then
-				pcall(SwordController.swingSwordInRegion, SwordController)
-			end
+	local function trySwing(target)
+		local root = entitylib.character.RootPart
+		if not root then return end
+		local oldcf = faceTarget(target, root)
+		local tool = store.hand and store.hand.tool
+		local oldRange = tool and not SwingOnly.Enabled and bumpRange(tool, math.max(SwingRange.Value, AttackRange.Value))
+		local ok = pcall(SwordController.swingSwordInRegion, SwordController, 0)
+		if oldRange then
+			bedwars.ItemMeta[tool.Name].sword.attackRange = oldRange[1]
 		end
+		root.CFrame = oldcf
+		return ok
 	end
 
 	Killaura = larp.Categories.Blatant:CreateModule({
@@ -3452,15 +3483,15 @@ run(function()
 			if callback then
 				SwordController = bedwars.SwordController
 				realSwingInRegion = SwordController.swingSwordInRegion
+				realCanSee = SwordController.canSee
 SwordController.swingSwordInRegion = function(self, ...)
-				lastManualSwing = tick()
+				lastSwing = tick()
 				if SwingOnly.Enabled then
 					local target = getTarget()
 					if target and target.RootPart and target.RootPart.Parent then
 						store.KillauraTarget = target
 						local root = entitylib.character.RootPart
-						local oldcf = root.CFrame
-						root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
+						local oldcf = faceTarget(target, root)
 						local result = realSwingInRegion(self, ...)
 						root.CFrame = oldcf
 						return result
@@ -3468,8 +3499,12 @@ SwordController.swingSwordInRegion = function(self, ...)
 				end
 				return realSwingInRegion(self, ...)
 			end
-				swingRadius = AttackRange.Value
-				setSwingRadius()
+				SwordController.canSee = function(self, ent)
+					if ent then
+						return true
+					end
+					return realCanSee(self, ent)
+				end
 
 				repeat
 					local target
@@ -3478,8 +3513,8 @@ SwordController.swingSwordInRegion = function(self, ...)
 							target = getTarget()
 							if target and target.RootPart and target.RootPart.Parent then
 								store.KillauraTarget = target
-								if not SwingOnly.Enabled then
-									swingVisual()
+								if not SwingOnly.Enabled and swingReady() and tick() - lastSwing >= math.max(getSwordSpeed(), 1 / CPS.Value, SwingTime.Value) then
+									trySwing(target)
 								end
 							end
 						end
@@ -3488,15 +3523,18 @@ SwordController.swingSwordInRegion = function(self, ...)
 						store.KillauraTarget = nil
 					end
 
-					task.wait(math.max(0.05, math.min(1 / CPS.Value, SwingTime.Value)))
+					task.wait(0.016)
 				until not Killaura.Enabled
 			else
 				store.KillauraTarget = nil
 				if realSwingInRegion then
 					SwordController.swingSwordInRegion = realSwingInRegion
 				end
-				debug.setconstant(SwordController.swingSwordInRegion, 6, 3.8)
+				if realCanSee then
+					SwordController.canSee = realCanSee
+				end
 				realSwingInRegion = nil
+				realCanSee = nil
 				SwordController = nil
 			end
 		end,
@@ -3512,9 +3550,6 @@ SwordController.swingSwordInRegion = function(self, ...)
 	})
 	SwingOnly = Killaura:CreateToggle({
 		Name = 'Swing only',
-		Function = function()
-			setSwingRadius()
-		end,
 		Tooltip = 'Only attacks when you swing'
 	})
 	SwingRange = Killaura:CreateSlider({
@@ -3535,10 +3570,6 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Decimal = 10,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
-		end,
-		Function = function(val)
-			swingRadius = val
-			setSwingRadius()
 		end,
 		Tooltip = 'Range where attacks land'
 	})
@@ -3570,6 +3601,221 @@ SwordController.swingSwordInRegion = function(self, ...)
 			return 'cps'
 		end,
 		Tooltip = 'Swings attempted per second'
+	})
+end)
+
+run(function()
+	local Velocity
+	local Horizontal
+	local Vertical
+
+	Velocity = larp.Categories.Combat:CreateModule({
+		Name = 'Velocity',
+		Function = function(callback)
+			if callback then
+				Velocity:Clean(runService.Heartbeat:Connect(function()
+					if Horizontal.Value < 100 or Vertical.Value < 100 then
+						local kc = bedwars.KnockbackController
+						local sc = bedwars.StatefulEntityKnockbackController
+						if kc then
+							kc.lastKnockbackTime = workspace:GetServerTimeNow()
+						end
+						if sc then
+							sc.lastImpulseTime = time()
+						end
+					end
+				end))
+			end
+		end,
+		Tooltip = 'Stops knockback from sword hits and explosions'
+	})
+	Horizontal = Velocity:CreateSlider({
+		Name = 'Horizontal',
+		Min = 0,
+		Max = 100,
+		Default = 0,
+		Suffix = '%',
+		Tooltip = 'Knockback kept horizontally. 100% = full'
+	})
+	Vertical = Velocity:CreateSlider({
+		Name = 'Vertical',
+		Min = 0,
+		Max = 100,
+		Default = 0,
+		Suffix = '%',
+		Tooltip = 'Knockback kept vertically. 100% = full'
+	})
+end)
+
+run(function()
+	local Reach
+	local Distance
+	local saved = {}
+	local touched = {}
+
+	local function applyReach()
+		local tool = store.hand and store.hand.tool
+		if not tool then return end
+		local meta = bedwars.ItemMeta[tool.Name]
+		if not meta or not meta.sword then return end
+		if not touched[tool.Name] then
+			touched[tool.Name] = true
+			saved[tool.Name] = meta.sword.attackRange
+		end
+		meta.sword.attackRange = math.max(Distance.Value, saved[tool.Name] or 14.4)
+	end
+
+	local function restoreReach()
+		for name in touched do
+			local meta = bedwars.ItemMeta[name]
+			if meta and meta.sword then
+				meta.sword.attackRange = saved[name]
+			end
+		end
+		table.clear(saved)
+		table.clear(touched)
+	end
+
+	Reach = larp.Categories.Combat:CreateModule({
+		Name = 'Reach',
+		Function = function(callback)
+			if callback then
+				applyReach()
+				repeat
+					task.wait(0.2)
+					applyReach()
+				until not Reach.Enabled
+			else
+				restoreReach()
+			end
+		end,
+		Tooltip = 'Extends how far your sword hits reach'
+	})
+	Distance = Reach:CreateSlider({
+		Name = 'Distance',
+		Min = 1,
+		Max = 30,
+		Default = 6.5,
+		Decimal = 10,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Function = function(val)
+			if Reach.Enabled then
+				applyReach()
+			end
+		end,
+		Tooltip = 'How far sword hits reach'
+	})
+end)
+
+run(function()
+	local AutoCharge
+	local Range
+
+	local function targetNear(range)
+		local root = entitylib.character and entitylib.character.RootPart
+		if not root then return false end
+		for _, ent in entitylib.List do
+			if ent.Player and ent.Targetable and entitylib.isVulnerable(ent) and ent.RootPart then
+				if (ent.RootPart.Position - root.Position).Magnitude <= range then
+					return true
+				end
+			end
+		end
+		return false
+	end
+
+	AutoCharge = larp.Categories.Combat:CreateModule({
+		Name = 'AutoCharge',
+		Function = function(callback)
+			if callback then
+				local chargeUntil
+				repeat
+					if entitylib.isAlive and store.hand.tool and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
+						local tool = store.hand.tool
+						local meta = bedwars.ItemMeta[tool.Name]
+						local ctrl = bedwars.SwordChargeController
+						local sc = bedwars.SwordController
+						if meta and meta.sword and meta.sword.chargedAttack and ctrl and sc then
+							local charged = meta.sword.chargedAttack
+							if not ctrl:isWeaponCharging(tool.Name) then
+								chargeUntil = nil
+								if sc:getRemainingChargeCooldown(tool.Name) <= 0 and targetNear(Range.Value) then
+									ctrl:startCharging(tool.Name)
+									chargeUntil = tick() + (charged.maxChargeTimeSec or 0.5)
+								end
+							elseif tick() >= (chargeUntil or 0) then
+								chargeUntil = nil
+								if store.hand.tool == tool then
+									local chargeTime = ctrl:stopCharging(tool.Name)
+									if chargeTime > 0 then
+										sc:swingSwordAtMouse(chargeTime)
+									end
+								end
+							end
+						end
+					end
+					task.wait(0.05)
+				until not AutoCharge.Enabled
+			end
+		end,
+		Tooltip = 'Charges swords that support it and swings fully charged'
+	})
+	Range = AutoCharge:CreateSlider({
+		Name = 'Target range',
+		Min = 1,
+		Max = 30,
+		Default = 12,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Only charges when an enemy is this close'
+	})
+end)
+
+run(function()
+	local WTap
+	local Interval
+	local realSend
+	local lastTap = 0
+
+	WTap = larp.Categories.Combat:CreateModule({
+		Name = 'WTap',
+		Function = function(callback)
+			if callback then
+				local sc = bedwars.SwordController
+				realSend = sc.sendServerRequest
+				sc.sendServerRequest = function(self, target, chargeRatio, extra)
+					local result = realSend(self, target, chargeRatio, extra)
+					if target and tick() - lastTap >= 0.15 then
+						lastTap = tick()
+						task.spawn(function()
+							local sprint = bedwars.SprintController
+							sprint:stopSprinting()
+							task.wait(Interval.Value)
+							sprint:startSprinting()
+						end)
+					end
+					return result
+				end
+			else
+				if realSend then
+					bedwars.SwordController.sendServerRequest = realSend
+				end
+				realSend = nil
+			end
+		end,
+		Tooltip = 'Resets your sprint after each hit to throw off the enemy'
+	})
+	Interval = WTap:CreateSlider({
+		Name = 'Interval',
+		Min = 0.01,
+		Max = 0.3,
+		Default = 0.06,
+		Decimal = 100,
+		Suffix = 's',
+		Tooltip = 'How long sprint is dropped after a hit'
 	})
 end)
 
@@ -3697,6 +3943,38 @@ run(function()
 			end
 		end,
 		Tooltip = 'Stops swing and projectile killauras\nfrom hitting you. Direct-fire killauras\ncan still hit (server side)'
+	})
+end)
+
+run(function()
+	local Spinbot
+	local Speed
+	local angle = 0
+
+	Spinbot = larp.Categories.Blatant:CreateModule({
+		Name = 'Spinbot',
+		Function = function(callback)
+			if callback then
+				Spinbot:Clean(runService.Heartbeat:Connect(function(dt)
+					local root = entitylib.character and entitylib.character.RootPart
+					if root then
+						angle = (angle + dt * Speed.Value) % (math.pi * 2)
+						root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, angle, 0)
+					end
+				end))
+			end
+		end,
+		Tooltip = 'Spins your character constantly to dodge arrows'
+	})
+	Speed = Spinbot:CreateSlider({
+		Name = 'Speed',
+		Min = 1,
+		Max = 30,
+		Default = 15,
+		Suffix = function(val)
+			return val .. ' rad/s'
+		end,
+		Tooltip = 'Spin speed'
 	})
 end)
 

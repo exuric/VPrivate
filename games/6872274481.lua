@@ -3393,10 +3393,9 @@ run(function()
 	local MaxAngle
 	local CPS
 	local SwingTime
-	local MultiTarget
 
 	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
-	local realSwingInRegion, realCanSee, SwordController = nil, nil, nil
+	local realSwingInRegion, swingRadius, lastSwing, lastManualSwing, SwordController = nil, 3.8, 0, 0, nil
 
 	local function getTarget()
 		local character = entitylib.character
@@ -3429,10 +3428,10 @@ run(function()
 		return nearest
 	end
 
-	local function faceTarget(target, root)
-		local oldcf = root.CFrame
-		root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
-		return oldcf
+	local function setSwingRadius()
+		if realSwingInRegion then
+			debug.setconstant(realSwingInRegion, 6, (SwingOnly.Enabled and 3.8 or swingRadius))
+		end
 	end
 
 	local nextVisualSwing = 0
@@ -3442,36 +3441,9 @@ run(function()
 		if now >= nextVisualSwing then
 			nextVisualSwing = nextVisualSwing + math.max(0.2, math.min(0.294, 1 / CPS.Value))
 			if SwordController then
-				pcall(SwordController.swingSwordInRegion, SwordController, 0)
+				pcall(SwordController.swingSwordInRegion, SwordController)
 			end
 		end
-	end
-
-	local function swingMulti()
-		local character = entitylib.character
-		if not character or not character.HumanoidRootPart or not character.RootPart or not SwordController then return end
-		local selfpos = character.HumanoidRootPart.Position
-		local range = math.max(SwingRange.Value, AttackRange.Value)
-		local targets = {}
-		for _, ent in entitylib.List do
-			if ent.Player and Targets.Players.Enabled and ent.Targetable and entitylib.isVulnerable(ent) and ent.RootPart and ent.RootPart.Parent then
-				local mag = (ent.RootPart.Position - selfpos).Magnitude
-				if mag <= range then
-					table.insert(targets, {ent, mag})
-				end
-			end
-		end
-		if #targets == 0 then return end
-		table.sort(targets, function(a, b) return a[2] < b[2] end)
-		local root = character.RootPart
-		local oldcf = faceTarget(targets[1][1], root)
-		swingVisual()
-		if MultiTarget.Enabled then
-			for i = 2, #targets do
-				pcall(SwordController.sendServerRequest, SwordController, targets[i][1], 0)
-			end
-		end
-		root.CFrame = oldcf
 	end
 
 	Killaura = larp.Categories.Blatant:CreateModule({
@@ -3480,41 +3452,24 @@ run(function()
 			if callback then
 				SwordController = bedwars.SwordController
 				realSwingInRegion = SwordController.swingSwordInRegion
-				realCanSee = SwordController.canSee
 SwordController.swingSwordInRegion = function(self, ...)
-				local tool = store.hand and store.hand.tool
-				local meta = tool and bedwars.ItemMeta[tool.Name]
-				local oldRange
-				if meta and meta.sword and not SwingOnly.Enabled then
-					oldRange = meta.sword.attackRange
-					meta.sword.attackRange = AttackRange.Value
-				end
+				lastManualSwing = tick()
 				if SwingOnly.Enabled then
 					local target = getTarget()
 					if target and target.RootPart and target.RootPart.Parent then
 						store.KillauraTarget = target
 						local root = entitylib.character.RootPart
-						local oldcf = faceTarget(target, root)
+						local oldcf = root.CFrame
+						root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
 						local result = realSwingInRegion(self, ...)
 						root.CFrame = oldcf
-						if oldRange ~= nil then
-							bedwars.ItemMeta[tool.Name].sword.attackRange = oldRange
-						end
 						return result
 					end
 				end
-				local result = realSwingInRegion(self, ...)
-				if oldRange ~= nil then
-					bedwars.ItemMeta[tool.Name].sword.attackRange = oldRange
-				end
-				return result
+				return realSwingInRegion(self, ...)
 			end
-				SwordController.canSee = function(self, ent)
-					if ent then
-						return true
-					end
-					return realCanSee(self, ent)
-				end
+				swingRadius = AttackRange.Value
+				setSwingRadius()
 
 				repeat
 					local target
@@ -3524,7 +3479,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 							if target and target.RootPart and target.RootPart.Parent then
 								store.KillauraTarget = target
 								if not SwingOnly.Enabled then
-									swingMulti()
+									swingVisual()
 								end
 							end
 						end
@@ -3540,11 +3495,8 @@ SwordController.swingSwordInRegion = function(self, ...)
 				if realSwingInRegion then
 					SwordController.swingSwordInRegion = realSwingInRegion
 				end
-				if realCanSee then
-					SwordController.canSee = realCanSee
-				end
+				debug.setconstant(SwordController.swingSwordInRegion, 6, 3.8)
 				realSwingInRegion = nil
-				realCanSee = nil
 				SwordController = nil
 			end
 		end,
@@ -3560,6 +3512,9 @@ SwordController.swingSwordInRegion = function(self, ...)
 	})
 	SwingOnly = Killaura:CreateToggle({
 		Name = 'Swing only',
+		Function = function()
+			setSwingRadius()
+		end,
 		Tooltip = 'Only attacks when you swing'
 	})
 	SwingRange = Killaura:CreateSlider({
@@ -3576,17 +3531,16 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Name = 'Attack range',
 		Min = 1,
 		Max = 30,
-		Default = 20,
+		Default = 15,
 		Decimal = 10,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
+		Function = function(val)
+			swingRadius = val
+			setSwingRadius()
+		end,
 		Tooltip = 'Range where attacks land'
-	})
-	MultiTarget = Killaura:CreateToggle({
-		Name = 'Multi target',
-		Default = true,
-		Tooltip = 'Hits every enemy in range with each swing'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',
@@ -3745,6 +3699,7 @@ run(function()
 		Tooltip = 'Stops swing and projectile killauras\nfrom hitting you. Direct-fire killauras\ncan still hit (server side)'
 	})
 end)
+
 
 run(function()
 	local Value
@@ -17184,5 +17139,81 @@ run(function()
 				setfpscap(value)
 			end
 		end
+	})
+end)
+
+run(function()
+	local Tracker
+	local ShowDistance
+	local lastSeen = 0
+	local hitTimes = {}
+
+	local function nearestDistance()
+		local character = entitylib.character
+		if not character or not character.RootPart then return end
+		local selfpos = character.RootPart.Position
+		local best
+		for _, ent in entitylib.List do
+			if ent.Targetable and entitylib.isVulnerable(ent) and ent.RootPart and ent.RootPart.Parent then
+				local mag = (ent.RootPart.Position - selfpos).Magnitude
+				if not best or mag < best.mag then
+					best = {ent = ent, mag = mag}
+				end
+			end
+		end
+		return best
+	end
+
+	Tracker = larp:CreateOverlay({
+		Name = 'Sword Tracker',
+		Icon = getcustomasset('LarpV4/assets/larp/info.png'),
+		Size = UDim2.fromOffset(14, 14),
+		Position = UDim2.fromOffset(12, 14),
+		Function = function(callback)
+			if callback then
+				lastSeen = 0
+				table.clear(hitTimes)
+				local label = Instance.new('TextLabel')
+				label.Size = UDim2.fromOffset(220, 70)
+				label.Position = UDim2.fromOffset(10, 10)
+				label.BackgroundTransparency = 1
+				label.TextColor3 = Color3.new(1, 1, 1)
+				label.TextXAlignment = 'Left'
+				label.TextYAlignment = 'Top'
+				label.Font = Enum.Font.Code
+				label.TextSize = 14
+				label.Text = 'Sword Tracker'
+				label.Parent = Tracker.Children
+				Tracker:Clean(runService.Heartbeat:Connect(function()
+					local sc = bedwars.SwordController
+					if sc and sc.lastAttack and sc.lastAttack ~= lastSeen then
+						lastSeen = sc.lastAttack
+						table.insert(hitTimes, workspace:GetServerTimeNow())
+						if #hitTimes > 300 then
+							table.remove(hitTimes, 1)
+						end
+					end
+					local now = workspace:GetServerTimeNow()
+					local count = 0
+					for i = #hitTimes, 1, -1 do
+						if now - hitTimes[i] <= 10 then
+							count = i
+							break
+						end
+					end
+					local text = string.format('Hits: %d\nHits/10s: %d', #hitTimes, count)
+					if ShowDistance.Enabled then
+						local near = nearestDistance()
+						text = text .. '\nTarget: ' .. (near and string.format('%.1f studs', near.mag) or 'none')
+					end
+					label.Text = text
+				end))
+			end
+		end
+	})
+	ShowDistance = Tracker:CreateToggle({
+		Name = 'Show distance',
+		Default = true,
+		Tooltip = 'Shows distance to the nearest enemy'
 	})
 end)

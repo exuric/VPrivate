@@ -1,6 +1,7 @@
 Changelog
 
-KillAura Multi target hits every enemy in range with each swing
+New Sword Tracker overlay shows live hits, hits per 10 seconds, and distance to the nearest enemy
+KillAura restored to the standard version
 New SkinChanger is now Larp Skins with a clean item type + skin picker and random/reset buttons
 KillAura attack range now matches the slider exactly, up to 30 studs
 KillAura target picking ignores the 15 stud limit so long range always works

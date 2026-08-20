@@ -3413,7 +3413,7 @@ run(function()
 			if not rp or not rp.Position then continue end
 			local delta = rp.Position - selfpos
 			local mag = delta.Magnitude
-			if mag > SwingRange.Value then continue end
+			if mag > math.max(SwingRange.Value, AttackRange.Value) then continue end
 			local horizontal = delta * Vector3.new(1, 0, 1)
 			if halfangle < math.pi * 2 and horizontal.Magnitude > 0.01 then
 				local dot = localfacing:Dot(horizontal.Unit)
@@ -3439,7 +3439,7 @@ run(function()
 	local function swingVisual()
 		local now = tick()
 		if now >= nextVisualSwing then
-			nextVisualSwing = nextVisualSwing + 0.294
+			nextVisualSwing = nextVisualSwing + math.max(0.2, math.min(0.294, 1 / CPS.Value))
 			if SwordController then
 				pcall(SwordController.swingSwordInRegion, SwordController)
 			end
@@ -3468,7 +3468,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 				end
 				return realSwingInRegion(self, ...)
 			end
-				swingRadius = AttackRange.Value / 3
+				swingRadius = AttackRange.Value
 				setSwingRadius()
 
 				repeat
@@ -3530,14 +3530,14 @@ SwordController.swingSwordInRegion = function(self, ...)
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
 		Min = 1,
-		Max = 18.1,
+		Max = 30,
 		Default = 15,
 		Decimal = 10,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
 		Function = function(val)
-			swingRadius = val / 3
+			swingRadius = val
 			setSwingRadius()
 		end,
 		Tooltip = 'Range where attacks land'

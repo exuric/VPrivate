@@ -2768,6 +2768,12 @@ function mainapi:CreateGUI()
 			})
 			button.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			categorysettings.Window.Visible = self.Enabled
+			if self.Enabled then
+				local win = categorysettings.Window
+				local target = win.Position
+				win.Position = target - UDim2.fromOffset(0, 14)
+				tween:Tween(win, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = target})
+			end
 		end
 
 		button.MouseEnter:Connect(function()
@@ -4215,6 +4221,11 @@ function mainapi:CreateOverlay(categorysettings)
 			Name = categorysettings.Name,
 			Function = function(callback)
 				window.Visible = callback and (clickgui.Visible or categoryapi.Pinned)
+				if callback and window.Visible then
+					local target = window.Position
+					window.Position = target - UDim2.fromOffset(0, 14)
+					tween:Tween(window, TweenInfo.new(0.22, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = target})
+				end
 				if not callback then
 					for _, v in categoryapi.Connections do
 						v:Disconnect()
@@ -4317,11 +4328,10 @@ function mainapi:CreateOverlay(categorysettings)
 		self.Expanded = not self.Expanded
 		children.Visible = self.Expanded
 		dots.ImageColor3 = self.Expanded and uipallet.Text or color.Light(uipallet.Main, 0.37)
-		if self.Expanded then
-			window.Size = UDim2.fromOffset(window.Size.X.Offset, math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601))
-		else
-			window.Size = UDim2.fromOffset(window.Size.X.Offset, 41)
-		end
+		local target = self.Expanded and math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601) or 41
+		tween:Tween(window, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.fromOffset(window.Size.X.Offset, target)
+		})
 	end
 
 	function categoryapi:Pin()
@@ -4854,7 +4864,10 @@ function mainapi:CreateCategoryList(categorysettings)
 		self.Expanded = not self.Expanded
 		children.Visible = self.Expanded
 		arrow.Rotation = self.Expanded and 0 or 180
-		window.Size = UDim2.fromOffset(220, self.Expanded and math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611) or 45)
+		local target = self.Expanded and math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611) or 45
+		tween:Tween(window, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.fromOffset(220, target)
+		})
 		divider.Visible = children.CanvasPosition.Y > 10 and children.Visible
 	end
 
@@ -6456,7 +6469,7 @@ mainapi:Clean(targets.Update)
 ]]
 local avatarwindow = Instance.new('TextButton')
 avatarwindow.Name = 'AvatarCategoryList'
-avatarwindow.Size = UDim2.fromOffset(220, 200)
+avatarwindow.Size = UDim2.fromOffset(220, 266)
 avatarwindow.Position = UDim2.fromOffset(240, 46)
 avatarwindow.BackgroundColor3 = uipallet.Main
 avatarwindow.AutoButtonColor = false
@@ -6494,28 +6507,52 @@ avatardivider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 avatardivider.Parent = avatarwindow
 local avatarimage = Instance.new('ImageLabel')
 avatarimage.Name = 'Thumbnail'
-avatarimage.Size = UDim2.fromOffset(56, 56)
-avatarimage.Position = UDim2.fromOffset(82, 52)
+avatarimage.Size = UDim2.fromOffset(64, 64)
+avatarimage.Position = UDim2.fromOffset(13, 52)
 avatarimage.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
 avatarimage.BorderSizePixel = 0
 avatarimage.Image = ''
 avatarimage.Parent = avatarwindow
 addCorner(avatarimage, UDim.new(1, 0))
 local avatarstroke = Instance.new('UIStroke')
-avatarstroke.Color = color.Light(uipallet.Main, 0.14)
-avatarstroke.Transparency = 0.4
+avatarstroke.Color = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+avatarstroke.Thickness = 2
 avatarstroke.Parent = avatarimage
 local avatarname = Instance.new('TextLabel')
-avatarname.Name = 'Username'
-avatarname.Size = UDim2.new(1, -26, 0, 18)
-avatarname.Position = UDim2.fromOffset(13, 112)
+avatarname.Name = 'DisplayName'
+avatarname.Size = UDim2.new(1, -110, 0, 18)
+avatarname.Position = UDim2.fromOffset(88, 58)
 avatarname.BackgroundTransparency = 1
 avatarname.Text = ''
-avatarname.TextXAlignment = Enum.TextXAlignment.Center
+avatarname.TextXAlignment = Enum.TextXAlignment.Left
 avatarname.TextColor3 = uipallet.Text
-avatarname.TextSize = 14
-avatarname.FontFace = uipallet.Font
+avatarname.TextSize = 16
+avatarname.FontFace = uipallet.FontSemiBold
+avatarname.TruncateTextWhere = Enum.TruncateAt.Right
 avatarname.Parent = avatarwindow
+local avataruser = Instance.new('TextLabel')
+avataruser.Name = 'Username'
+avataruser.Size = UDim2.new(1, -110, 0, 14)
+avataruser.Position = UDim2.fromOffset(88, 78)
+avataruser.BackgroundTransparency = 1
+avataruser.Text = ''
+avataruser.TextXAlignment = Enum.TextXAlignment.Left
+avataruser.TextColor3 = color.Dark(uipallet.Text, 0.29)
+avataruser.TextSize = 12
+avataruser.FontFace = uipallet.Font
+avataruser.TruncateTextWhere = Enum.TruncateAt.Right
+avataruser.Parent = avatarwindow
+local avatarbadge = Instance.new('TextLabel')
+avatarbadge.Name = 'RoleBadge'
+avatarbadge.Size = UDim2.fromOffset(100, 20)
+avatarbadge.Position = UDim2.fromOffset(88, 98)
+avatarbadge.BackgroundColor3 = Color3.fromRGB(160, 160, 160)
+avatarbadge.Text = 'User'
+avatarbadge.TextColor3 = Color3.new(1, 1, 1)
+avatarbadge.TextSize = 12
+avatarbadge.FontFace = uipallet.FontSemiBold
+avatarbadge.Parent = avatarwindow
+addCorner(avatarbadge, UDim.new(1, 0))
 local avatardivider2 = Instance.new('Frame')
 avatardivider2.Name = 'Divider2'
 avatardivider2.Size = UDim2.new(1, 0, 0, 1)
@@ -6528,32 +6565,46 @@ local avatarrows = {}
 local function avatarrow(name, y)
 	local label = Instance.new('TextLabel')
 	label.Name = name..'Label'
-	label.Size = UDim2.fromOffset(120, 30)
+	label.Size = UDim2.fromOffset(120, 28)
 	label.Position = UDim2.fromOffset(13, y)
 	label.BackgroundTransparency = 1
 	label.Text = name
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextColor3 = color.Dark(uipallet.Text, 0.16)
-	label.TextSize = 14
+	label.TextSize = 13
 	label.FontFace = uipallet.Font
 	label.Parent = avatarwindow
 	local value = Instance.new('TextLabel')
 	value.Name = name..'Value'
-	value.Size = UDim2.new(1, -26, 0, 30)
+	value.Size = UDim2.new(1, -26, 0, 28)
 	value.Position = UDim2.fromOffset(13, y)
 	value.BackgroundTransparency = 1
 	value.Text = '-'
 	value.TextXAlignment = Enum.TextXAlignment.Right
 	value.TextColor3 = uipallet.Text
-	value.TextSize = 14
+	value.TextSize = 13
 	value.FontFace = uipallet.Font
+	value.TruncateTextWhere = Enum.TruncateAt.Right
 	value.Parent = avatarwindow
 	avatarrows[name] = value
 end
 
 avatarrow('Level', 144)
-avatarrow('Role', 170)
+avatarrow('User ID', 172)
+avatarrow('Executor', 200)
+avatarrow('Session', 228)
 
+local avatarexecutor = '-'
+pcall(function()
+	avatarexecutor = (identifyexecutor and select(1, identifyexecutor())) or '-'
+end)
+local avatarstart = tick()
+local avatarrolecolors = {
+	Owner = Color3.fromRGB(255, 45, 85),
+	Admin = Color3.fromRGB(255, 170, 0),
+	Whitelisted = Color3.fromRGB(5, 134, 105),
+	User = Color3.fromRGB(160, 160, 160)
+}
 local function avatarrefresh()
 	local player = cloneref(game:GetService('Players')).LocalPlayer
 	if not player then return end
@@ -6574,8 +6625,20 @@ local function avatarrefresh()
 		role = 'Whitelisted'
 	end
 	avatarrows.Level.Text = tostring(level)
-	avatarrows.Role.Text = role
+	avatarrows['User ID'].Text = tostring(player.UserId)
+	avatarrows.Executor.Text = avatarexecutor
+	local session = tick() - avatarstart
+	local minutes = math.floor(session / 60)
+	if minutes >= 60 then
+		avatarrows.Session.Text = string.format('%dh %02dm', math.floor(minutes / 60), minutes % 60)
+	else
+		avatarrows.Session.Text = string.format('%dm %02ds', minutes, math.floor(session % 60))
+	end
 	avatarname.Text = player.DisplayName
+	avataruser.Text = '@'..player.Name
+	avatarbadge.Text = role
+	avatarbadge.BackgroundColor3 = avatarrolecolors[role]
+	avatarstroke.Color = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 	if avatarimage.Image == '' and player.UserId then
 		avatarimage.Image = 'rbxthumb://type=AvatarHeadShot&id='..player.UserId..'&w=150&h=150'
 	end
@@ -6584,7 +6647,7 @@ end
 task.spawn(function()
 	while avatarwindow.Parent do
 		avatarrefresh()
-		task.wait(3)
+		task.wait(1)
 	end
 end)
 

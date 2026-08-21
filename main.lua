@@ -338,18 +338,45 @@ task.spawn(function()
 	task.spawn(function()
 		task.wait()
 		if not shared.LarpIndependent then
-			loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
-			if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
-				loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
-			else
+			local unichunk, unierr = loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')
+			if not unichunk then
+				pcall(delfile, 'LarpV4/games/universal.lua')
+				unichunk, unierr = loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')
+			end
+			if not unichunk then
+				error('LarpV4/games/universal.lua failed to compile: '..tostring(unierr))
+			end
+			local uniok, unirunerr = pcall(unichunk, license)
+			if not uniok then
+				warn('LarpV4: universal.lua error: '..tostring(unirunerr))
+			end
+
+			local gamepath = 'LarpV4/games/'..game.PlaceId..'.lua'
+			local gamechunk, gameerr
+			if isfile(gamepath) then
+				gamechunk, gameerr = loadstring(readfile(gamepath), tostring(game.PlaceId))
+				if not gamechunk then
+					warn('LarpV4: cached '..game.PlaceId..' failed to compile, redownloading')
+					pcall(delfile, gamepath)
+				end
+			end
+			if not gamechunk then
 				if not (shared.LarpDeveloper and shared.LarpOwner) then
 					local suc, res = pcall(function()
 						return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua', true)
 					end)
 					if suc and res ~= '404: Not Found' then
-						loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+						gamechunk, gameerr = loadstring(downloadFile(gamepath), tostring(game.PlaceId))
 					end
 				end
+			end
+			if gamechunk then
+				local gameok, gamerunerr = pcall(gamechunk, license)
+				if not gameok then
+					warn('LarpV4: '..game.PlaceId..' error: '..tostring(gamerunerr))
+				end
+			elseif gameerr then
+				warn('LarpV4: '..game.PlaceId..' failed to compile: '..tostring(gameerr))
 			end
 			finishLoading()
 		else

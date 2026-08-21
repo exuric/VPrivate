@@ -241,9 +241,6 @@ local function fileDigest(path)
 end
 
 local function verifyFiles()
-	if getgenv().LarpVerifiedCommit == COMMIT then
-		return
-	end
 	fetchManifest()
 	local ok, good = pcall(function()
 		local content = readfile('LarpV4/libraries/hash.lua')

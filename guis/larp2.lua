@@ -6456,7 +6456,7 @@ mainapi:Clean(targets.Update)
 ]]
 local avatarwindow = Instance.new('TextButton')
 avatarwindow.Name = 'AvatarCategoryList'
-avatarwindow.Size = UDim2.fromOffset(220, 110)
+avatarwindow.Size = UDim2.fromOffset(220, 200)
 avatarwindow.Position = UDim2.fromOffset(240, 46)
 avatarwindow.BackgroundColor3 = uipallet.Main
 avatarwindow.AutoButtonColor = false
@@ -6492,59 +6492,75 @@ avatardivider.Position = UDim2.fromOffset(0, 41)
 avatardivider.BorderSizePixel = 0
 avatardivider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 avatardivider.Parent = avatarwindow
-local avatarchildren = Instance.new('Frame')
-avatarchildren.Name = 'Children'
-avatarchildren.Size = UDim2.new(1, 0, 1, -42)
-avatarchildren.Position = UDim2.fromOffset(0, 42)
-avatarchildren.BackgroundTransparency = 1
-avatarchildren.Parent = avatarwindow
-local avatarlist = Instance.new('UIListLayout')
-avatarlist.SortOrder = Enum.SortOrder.LayoutOrder
-avatarlist.Parent = avatarchildren
+local avatarimage = Instance.new('ImageLabel')
+avatarimage.Name = 'Thumbnail'
+avatarimage.Size = UDim2.fromOffset(56, 56)
+avatarimage.Position = UDim2.fromOffset(82, 52)
+avatarimage.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+avatarimage.BorderSizePixel = 0
+avatarimage.Image = ''
+avatarimage.Parent = avatarwindow
+addCorner(avatarimage, UDim.new(1, 0))
+local avatarstroke = Instance.new('UIStroke')
+avatarstroke.Color = color.Light(uipallet.Main, 0.14)
+avatarstroke.Transparency = 0.4
+avatarstroke.Parent = avatarimage
+local avatarname = Instance.new('TextLabel')
+avatarname.Name = 'Username'
+avatarname.Size = UDim2.new(1, -26, 0, 18)
+avatarname.Position = UDim2.fromOffset(13, 112)
+avatarname.BackgroundTransparency = 1
+avatarname.Text = ''
+avatarname.TextXAlignment = Enum.TextXAlignment.Center
+avatarname.TextColor3 = uipallet.Text
+avatarname.TextSize = 14
+avatarname.FontFace = uipallet.Font
+avatarname.Parent = avatarwindow
+local avatardivider2 = Instance.new('Frame')
+avatardivider2.Name = 'Divider2'
+avatardivider2.Size = UDim2.new(1, 0, 0, 1)
+avatardivider2.Position = UDim2.fromOffset(0, 136)
+avatardivider2.BorderSizePixel = 0
+avatardivider2.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+avatardivider2.Parent = avatarwindow
 
 local avatarrows = {}
-local function avatarrow(name, order)
-	local row = Instance.new('Frame')
-	row.Name = name
-	row.Size = UDim2.new(1, 0, 0, 34)
-	row.BackgroundColor3 = uipallet.Main
-	row.BorderSizePixel = 0
-	row.LayoutOrder = order
-	row.Parent = avatarchildren
+local function avatarrow(name, y)
 	local label = Instance.new('TextLabel')
-	label.Name = 'Label'
-	label.Size = UDim2.fromOffset(120, 34)
-	label.Position = UDim2.fromOffset(13, 0)
+	label.Name = name..'Label'
+	label.Size = UDim2.fromOffset(120, 30)
+	label.Position = UDim2.fromOffset(13, y)
 	label.BackgroundTransparency = 1
 	label.Text = name
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextColor3 = color.Dark(uipallet.Text, 0.16)
 	label.TextSize = 14
 	label.FontFace = uipallet.Font
-	label.Parent = row
+	label.Parent = avatarwindow
 	local value = Instance.new('TextLabel')
-	value.Name = 'Value'
-	value.Size = UDim2.new(1, -26, 1, 0)
-	value.Position = UDim2.fromOffset(13, 0)
+	value.Name = name..'Value'
+	value.Size = UDim2.new(1, -26, 0, 30)
+	value.Position = UDim2.fromOffset(13, y)
 	value.BackgroundTransparency = 1
 	value.Text = '-'
 	value.TextXAlignment = Enum.TextXAlignment.Right
 	value.TextColor3 = uipallet.Text
 	value.TextSize = 14
 	value.FontFace = uipallet.Font
-	value.Parent = row
+	value.Parent = avatarwindow
 	avatarrows[name] = value
 end
 
-avatarrow('Level', 1)
-avatarrow('Role', 2)
+avatarrow('Level', 144)
+avatarrow('Role', 170)
 
 local function avatarrefresh()
 	local player = cloneref(game:GetService('Players')).LocalPlayer
+	if not player then return end
 	local level = 0
 	if shared.LarpOwner then
 		level = 5
-	elseif player and shared.LarpWhitelist then
+	elseif shared.LarpWhitelist then
 		pcall(function()
 			level = shared.LarpWhitelist:get(player) or 0
 		end)
@@ -6559,6 +6575,10 @@ local function avatarrefresh()
 	end
 	avatarrows.Level.Text = tostring(level)
 	avatarrows.Role.Text = role
+	avatarname.Text = player.DisplayName
+	if avatarimage.Image == '' and player.UserId then
+		avatarimage.Image = 'rbxthumb://type=AvatarHeadShot&id='..player.UserId..'&w=150&h=150'
+	end
 end
 
 task.spawn(function()
@@ -6568,12 +6588,13 @@ task.spawn(function()
 	end
 end)
 
-mainapi.Categories.Main:CreateButton({
+local avatarbutton = mainapi.Categories.Main:CreateButton({
 	Name = 'Avatar',
 	Icon = getcustomasset('LarpV4/assets/larp/targetnpc1.png'),
 	Size = UDim2.fromOffset(12, 16),
 	Window = avatarwindow
 })
+avatarbutton.Object.Icon.Position = UDim2.fromOffset(13, 12)
 
 mainapi:CreateLegit()
 mainapi:CreateSearch()

@@ -268,7 +268,7 @@ local function finishLoading()
 				if shared.LarpDeveloper and shared.LarpOwner then
 					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet(']]..ROOT..LARPCOMMIT..[['/init.lua', true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet(']]..ROOT..[[init.lua?cb='..tick(), true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)
@@ -362,12 +362,21 @@ task.spawn(function()
 				end
 			end
 			if not gamechunk then
-				if not (shared.LarpDeveloper and shared.LarpOwner) then
-					local suc, res = pcall(function()
-						return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua', true)
+				local suc, res = pcall(function()
+					return downloadFile(gamepath)
+				end)
+				if suc and type(res) == 'string' then
+					gamechunk, gameerr = loadstring(res, tostring(game.PlaceId))
+				end
+				if not gamechunk then
+					local suc2, res2 = pcall(function()
+						return game:HttpGet(ROOT..'games/'..game.PlaceId..'.lua', true)
 					end)
-					if suc and res ~= '404: Not Found' then
-						gamechunk, gameerr = loadstring(downloadFile(gamepath), tostring(game.PlaceId))
+					if suc2 and type(res2) == 'string' and res2 ~= '404: Not Found' and #res2 > 1000 then
+						gamechunk, gameerr = loadstring(res2, tostring(game.PlaceId))
+						if gamechunk then
+							pcall(writefile, gamepath, '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res2)
+						end
 					end
 				end
 			end
@@ -375,9 +384,15 @@ task.spawn(function()
 				local gameok, gamerunerr = pcall(gamechunk, license)
 				if not gameok then
 					warn('LarpV4: '..game.PlaceId..' error: '..tostring(gamerunerr))
+					pcall(function()
+						larp:CreateNotification('Larp V4', 'Game modules error: '..tostring(gamerunerr):sub(1, 60), 6, 'warning')
+					end)
 				end
-			elseif gameerr then
-				warn('LarpV4: '..game.PlaceId..' failed to compile: '..tostring(gameerr))
+			else
+				warn('LarpV4: '..game.PlaceId..' modules failed to load: '..tostring(gameerr))
+				pcall(function()
+					larp:CreateNotification('Larp V4', 'Game modules failed to load', 6, 'warning')
+				end)
 			end
 			finishLoading()
 		else

@@ -6394,7 +6394,7 @@ run(function()
 	local oldcap
 
 	FpsUnlocker = larp.Categories.Utility:CreateModule({
-		Name = 'Fps Unlocker',
+		Name = 'FPS Unlocker',
 		Function = function(callback)
 			if not setfpscap then return end
 			if callback then
@@ -7274,7 +7274,7 @@ run(function()
 	local connections = {}
 	
 	larp.Categories.World:CreateModule({
-		Name = 'Anti-AFK',
+		Name = 'Anti AFK',
 		Function = function(callback)
 			if callback then
 				for _, v in getconnections(lplr.Idled) do

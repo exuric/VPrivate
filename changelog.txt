@@ -1,5 +1,6 @@
 Changelog
 
+Module polish pass: TriggerBot gets a Range override slider, cleaner tooltips, and simpler names (Skins, FPS Unlocker, Anti AFK, Bed Break FX, Kill FX)
 Sword Tracker overlay gets a sword icon plus font, text color, text size, and scale settings
 New Sword Tracker overlay shows live hits, hits per 10 seconds, and distance to the nearest enemy
 KillAura restored to the standard version

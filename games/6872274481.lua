@@ -2512,13 +2512,14 @@ run(function()
 				bedwars.SprintController:stopSprinting()
 			end
 		end,
-		Tooltip = 'Sets your sprinting to true.'
+		Tooltip = 'Keeps you sprinting at all times'
 	})
 end)
 
 run(function()
 	local TriggerBot
 	local CPS
+	local Range
 	local rayParams = RaycastParams.new()
 	
 	TriggerBot = larp.Categories.Combat:CreateModule({
@@ -2531,13 +2532,13 @@ run(function()
 						if entitylib.isAlive and store.hand.toolType == 'sword' and bedwars.DaoController.chargingMaid == nil then
 							local attackRange = bedwars.ItemMeta[store.hand.tool.Name].sword.attackRange
 							rayParams.FilterDescendantsInstances = {lplr.Character}
-	
+
 							local unit = lplr:GetMouse().UnitRay
 							local localPos = entitylib.character.RootPart.Position
-							local rayRange = (attackRange or 14.4)
+							local rayRange = Range.Value > 0 and Range.Value or (attackRange or 14.4)
 							local ray = bedwars.QueryUtil:raycast(unit.Origin, unit.Direction * 200, rayParams)
 							if ray and (localPos - ray.Instance.Position).Magnitude <= rayRange then
-								local limit = (attackRange)
+								local limit = rayRange
 								for _, ent in entitylib.List do
 									doAttack = ent.Targetable and ray.Instance:IsDescendantOf(ent.Character) and (localPos - ent.RootPart.Position).Magnitude <= rayRange
 									if doAttack then
@@ -2565,6 +2566,16 @@ run(function()
 		Max = 9,
 		DefaultMin = 7,
 		DefaultMax = 7
+	})
+	Range = TriggerBot:CreateSlider({
+		Name = 'Range',
+		Min = 0,
+		Max = 30,
+		Default = 0,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Overrides how far away you can trigger hits. 0 = uses your sword range'
 	})
 end)
 
@@ -6478,7 +6489,7 @@ run(function()
 	end
 	
 	LarpSkins = larp.Categories.Render:CreateModule({
-		Name = 'Larp Skins',
+		Name = 'Skins',
 		Function = function(callback)
 			if callback then
 				LarpSkins:Clean(larpEvents.InventoryChanged.Event:Connect(applySkins))
@@ -8773,7 +8784,7 @@ end)
 
 run(function()
 	larp.Categories.World:CreateModule({
-		Name = 'Anti-AFK',
+		Name = 'Anti AFK',
 		Function = function(callback)
 			if callback then
 				for _, v in getconnections(lplr.Idled) do
@@ -15155,7 +15166,7 @@ run(function()
 	local NameToId = {}
 	
 	BedBreakEffect = larp.Legit:CreateModule({
-		Name = 'Bed Break Effect',
+		Name = 'Bed Break FX',
 		Function = function(callback)
 			if callback then
 	            BedBreakEffect:Clean(larpEvents.BedwarsBedBreak.Event:Connect(function(data)
@@ -15688,7 +15699,7 @@ run(function()
 	}
 	
 	KillEffect = larp.Legit:CreateModule({
-		Name = 'Kill Effect',
+		Name = 'Kill FX',
 		Function = function(callback)
 			if callback then
 				for i, v in killeffects do
@@ -17117,7 +17128,7 @@ run(function()
 	local oldcap
 
 	FpsUnlocker = larp.Categories.Utility:CreateModule({
-		Name = 'Fps Unlocker',
+		Name = 'FPS Unlocker',
 		Function = function(callback)
 			if not setfpscap then return end
 			if callback then

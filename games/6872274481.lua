@@ -17145,6 +17145,10 @@ end)
 run(function()
 	local Tracker
 	local ShowDistance
+	local TextSize
+	local label
+	local trackerfont = Font.fromEnum(Enum.Font.Code)
+	local textcolor = Color3.new(1, 1, 1)
 	local lastSeen = 0
 	local hitTimes = {}
 
@@ -17166,25 +17170,26 @@ run(function()
 
 	Tracker = larp:CreateOverlay({
 		Name = 'Sword Tracker',
-		Icon = getcustomasset('LarpV4/assets/larp/info.png'),
+		Icon = getcustomasset('LarpV4/assets/larp/combaticon.png'),
 		Size = UDim2.fromOffset(14, 14),
 		Position = UDim2.fromOffset(12, 14),
 		Function = function(callback)
 			if callback then
 				lastSeen = 0
 				table.clear(hitTimes)
-				local label = Instance.new('TextLabel')
+				label = Instance.new('TextLabel')
 				label.Size = UDim2.fromOffset(220, 70)
 				label.Position = UDim2.fromOffset(10, 10)
 				label.BackgroundTransparency = 1
-				label.TextColor3 = Color3.new(1, 1, 1)
+				label.TextColor3 = textcolor
 				label.TextXAlignment = 'Left'
 				label.TextYAlignment = 'Top'
-				label.Font = Enum.Font.Code
-				label.TextSize = 14
+				label.FontFace = trackerfont
+				label.TextSize = TextSize.Value
 				label.Text = 'Sword Tracker'
 				label.Parent = Tracker.Children
 				Tracker:Clean(runService.Heartbeat:Connect(function()
+					if not label then return end
 					local sc = bedwars.SwordController
 					if sc and sc.lastAttack and sc.lastAttack ~= lastSeen then
 						lastSeen = sc.lastAttack
@@ -17208,6 +17213,8 @@ run(function()
 					end
 					label.Text = text
 				end))
+			else
+				label = nil
 			end
 		end
 	})
@@ -17215,5 +17222,47 @@ run(function()
 		Name = 'Show distance',
 		Default = true,
 		Tooltip = 'Shows distance to the nearest enemy'
+	})
+	TextSize = Tracker:CreateSlider({
+		Name = 'Text size',
+		Min = 8,
+		Max = 28,
+		Default = 14,
+		Function = function(val)
+			if label then
+				label.TextSize = val
+			end
+		end
+	})
+	Tracker:CreateFont({
+		Name = 'Font',
+		Blacklist = 'Arial',
+		Function = function(val)
+			trackerfont = val
+			if label then
+				label.FontFace = val
+			end
+		end
+	})
+	Tracker:CreateColorSlider({
+		Name = 'Text color',
+		Function = function(hue, sat, val)
+			textcolor = Color3.fromHSV(hue, sat, val)
+			if label then
+				label.TextColor3 = textcolor
+			end
+		end
+	})
+	local trackerscale = Instance.new('UIScale')
+	trackerscale.Parent = Tracker.Children
+	Tracker:CreateSlider({
+		Name = 'Scale',
+		Min = 0.5,
+		Max = 2,
+		Default = 1,
+		Decimal = 10,
+		Function = function(val)
+			trackerscale.Scale = val
+		end
 	})
 end)

@@ -1,5 +1,6 @@
 Changelog
 
+Sword Tracker overlay gets a sword icon plus font, text color, text size, and scale settings
 New Sword Tracker overlay shows live hits, hits per 10 seconds, and distance to the nearest enemy
 KillAura restored to the standard version
 New SkinChanger is now Larp Skins with a clean item type + skin picker and random/reset buttons

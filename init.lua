@@ -30,7 +30,7 @@ local SELFCOMMIT = '9d143030d7fd68a93c237ec654f90082582fa3dd'
 
 local function fetchCommit()
 	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..'profiles/commit.txt', true)
+		return game:HttpGet(ROOT..'profiles/commit.txt?cb='..tostring(math.floor(tick() * 1000)), true)
 	end)
 	if ok and res then
 		local commit = res:gsub('%s+$', ''):gsub('^%s+', '')

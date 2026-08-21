@@ -6451,6 +6451,130 @@ targets = mainapi:CreateCategoryList({
 targets.Update = Instance.new('BindableEvent')
 mainapi:Clean(targets.Update)
 
+--[[
+	Avatar
+]]
+local avatarwindow = Instance.new('TextButton')
+avatarwindow.Name = 'AvatarCategoryList'
+avatarwindow.Size = UDim2.fromOffset(220, 110)
+avatarwindow.Position = UDim2.fromOffset(240, 46)
+avatarwindow.BackgroundColor3 = uipallet.Main
+avatarwindow.AutoButtonColor = false
+avatarwindow.Visible = false
+avatarwindow.Text = ''
+avatarwindow.Parent = clickgui
+addBlur(avatarwindow)
+addCorner(avatarwindow)
+makeDraggable(avatarwindow)
+local avataricon = Instance.new('ImageLabel')
+avataricon.Name = 'Icon'
+avataricon.Size = UDim2.fromOffset(12, 16)
+avataricon.Position = UDim2.fromOffset(13, 12)
+avataricon.BackgroundTransparency = 1
+avataricon.Image = getcustomasset('LarpV4/assets/larp/targetnpc1.png')
+avataricon.ImageColor3 = uipallet.Text
+avataricon.Parent = avatarwindow
+local avatartitle = Instance.new('TextLabel')
+avatartitle.Name = 'Title'
+avatartitle.Size = UDim2.new(1, -44, 0, 20)
+avatartitle.Position = UDim2.fromOffset(36, 12)
+avatartitle.BackgroundTransparency = 1
+avatartitle.Text = 'Avatar'
+avatartitle.TextXAlignment = Enum.TextXAlignment.Left
+avatartitle.TextColor3 = uipallet.Text
+avatartitle.TextSize = 13
+avatartitle.FontFace = uipallet.Font
+avatartitle.Parent = avatarwindow
+local avatardivider = Instance.new('Frame')
+avatardivider.Name = 'Divider'
+avatardivider.Size = UDim2.new(1, 0, 0, 1)
+avatardivider.Position = UDim2.fromOffset(0, 41)
+avatardivider.BorderSizePixel = 0
+avatardivider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+avatardivider.Parent = avatarwindow
+local avatarchildren = Instance.new('Frame')
+avatarchildren.Name = 'Children'
+avatarchildren.Size = UDim2.new(1, 0, 1, -42)
+avatarchildren.Position = UDim2.fromOffset(0, 42)
+avatarchildren.BackgroundTransparency = 1
+avatarchildren.Parent = avatarwindow
+local avatarlist = Instance.new('UIListLayout')
+avatarlist.SortOrder = Enum.SortOrder.LayoutOrder
+avatarlist.Parent = avatarchildren
+
+local avatarrows = {}
+local function avatarrow(name, order)
+	local row = Instance.new('Frame')
+	row.Name = name
+	row.Size = UDim2.new(1, 0, 0, 34)
+	row.BackgroundColor3 = uipallet.Main
+	row.BorderSizePixel = 0
+	row.LayoutOrder = order
+	row.Parent = avatarchildren
+	local label = Instance.new('TextLabel')
+	label.Name = 'Label'
+	label.Size = UDim2.fromOffset(120, 34)
+	label.Position = UDim2.fromOffset(13, 0)
+	label.BackgroundTransparency = 1
+	label.Text = name
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	label.TextSize = 14
+	label.FontFace = uipallet.Font
+	label.Parent = row
+	local value = Instance.new('TextLabel')
+	value.Name = 'Value'
+	value.Size = UDim2.new(1, -26, 1, 0)
+	value.Position = UDim2.fromOffset(13, 0)
+	value.BackgroundTransparency = 1
+	value.Text = '-'
+	value.TextXAlignment = Enum.TextXAlignment.Right
+	value.TextColor3 = uipallet.Text
+	value.TextSize = 14
+	value.FontFace = uipallet.Font
+	value.Parent = row
+	avatarrows[name] = value
+end
+
+avatarrow('Level', 1)
+avatarrow('Role', 2)
+
+local function avatarrefresh()
+	local player = cloneref(game:GetService('Players')).LocalPlayer
+	local level = 0
+	if shared.LarpOwner then
+		level = 5
+	elseif player and shared.LarpWhitelist then
+		pcall(function()
+			level = shared.LarpWhitelist:get(player) or 0
+		end)
+	end
+	local role = 'User'
+	if shared.LarpOwner then
+		role = 'Owner'
+	elseif level >= 5 then
+		role = 'Admin'
+	elseif level >= 1 then
+		role = 'Whitelisted'
+	end
+	avatarrows.Level.Text = tostring(level)
+	avatarrows.Role.Text = role
+end
+
+task.spawn(function()
+	while avatarwindow.Parent do
+		avatarrefresh()
+		task.wait(3)
+	end
+end)
+
+mainapi.Categories.Main:CreateButton({
+	Name = 'Avatar',
+	Icon = getcustomasset('LarpV4/assets/larp/targetnpc1.png'),
+	Size = UDim2.fromOffset(12, 16),
+	Window = avatarwindow
+})
+
 mainapi:CreateLegit()
 mainapi:CreateSearch()
 mainapi.Categories.Main:CreateOverlayBar()

@@ -86,11 +86,16 @@ local function downloadFile(path, func)
 		content = readfile(path)
 	end
 	if not content or (not (shared.LarpDeveloper and shared.LarpOwner) and content:sub(1, #LARPWATER) ~= LARPWATER) then
-		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', '')), true)
-		end)
-		if not suc or res == '404: Not Found' then
-			error(res)
+		local suc, res
+		for attempt = 1, 3 do
+			suc, res = pcall(function()
+				return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', '')), true)
+			end)
+			if suc and res and res ~= '404: Not Found' then break end
+			if attempt < 3 then task.wait(0.4) end
+		end
+		if not suc or not res or res == '404: Not Found' then
+			error(tostring(res))
 		end
 		if path:find('.lua') then
 			res = LARPWATER..res

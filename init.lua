@@ -330,19 +330,7 @@ if not (shared.LarpDeveloper and ISOWNER) then
 			shared.updated = stored
 		end
 		writefile('LarpV4/profiles/commit.txt', COMMIT)
-		pcall(delfile, 'LarpV4/main.lua')
-		pcall(delfile, 'LarpV4/guis/larp.lua')
-		pcall(delfile, 'LarpV4/guis/larp2.lua')
 		for _, file in {'LarpV4/6872274481.lua', 'LarpV4/8444591321.lua', 'LarpV4/universal.lua', 'LarpV4/entity.lua', 'LarpV4/prediction.lua', 'LarpV4/hash.lua', 'LarpV4/larp2.lua', 'LarpV4/larp.lua'} do
-			if isfile(file) then
-				pcall(delfile, file)
-			end
-		end
-		wipeFolder('LarpV4/games')
-		wipeFolder('LarpV4/guis')
-		wipeFolder('LarpV4/libraries')
-		wipeFolder('LarpV4/assets')
-		for _, file in {'LarpV4/assets/larp/Larp.png', 'LarpV4/assets/larp/Textv4.png'} do
 			if isfile(file) then
 				pcall(delfile, file)
 			end

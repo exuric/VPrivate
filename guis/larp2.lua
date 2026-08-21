@@ -1002,7 +1002,7 @@ components = {
 		title.Name = 'Title'
 		title.Size = UDim2.new(1, 0, 0, 29)
 		title.BackgroundTransparency = 1
-		title.Text = '         '..optionsettings.Name..' - '..optionapi.Value
+		title.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name..' - '..optionapi.Value
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		title.TextSize = 13
@@ -1079,7 +1079,7 @@ components = {
 					dropdownoption.BackgroundColor3 = uipallet.Main
 					dropdownoption.BorderSizePixel = 0
 					dropdownoption.AutoButtonColor = false
-					dropdownoption.Text = '         '..v
+					dropdownoption.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..v
 					dropdownoption.TextXAlignment = Enum.TextXAlignment.Left
 					dropdownoption.TextColor3 = color.Dark(uipallet.Text, 0.16)
 					dropdownoption.TextSize = 13
@@ -2123,7 +2123,7 @@ components = {
 		toggle.BorderSizePixel = 0
 		toggle.AutoButtonColor = false
 		toggle.Visible = optionsettings.Visible == nil or optionsettings.Visible
-		toggle.Text = '          '..optionsettings.Name
+		toggle.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name
 		toggle.TextXAlignment = Enum.TextXAlignment.Left
 		toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		toggle.TextSize = 14
@@ -2437,7 +2437,7 @@ components = {
 			label.Name = 'DividerLabel'
 			label.Size = UDim2.fromOffset(218, 27)
 			label.BackgroundTransparency = 1
-			label.Text = '          '..text:upper()
+			label.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..text:upper()
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.TextColor3 = color.Dark(uipallet.Text, 0.43)
 			label.TextSize = 9
@@ -2621,7 +2621,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = '          Rebind GUI'
+		button.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€ŠRebind GUI'
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2709,7 +2709,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = (categorysettings.Icon and '                                 ' or '             ')..categorysettings.Name
+		button.Text = (categorysettings.Icon and 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š' or 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š')..categorysettings.Name
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2896,7 +2896,7 @@ function mainapi:CreateGUI()
 			toggle.Size = UDim2.new(1, 0, 0, 40)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
-			toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
+			toggle.Text = string.rep('â€Š', 33 * scale.Scale)..togglesettings.Name
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
 			toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			toggle.TextSize = 14
@@ -2940,7 +2940,7 @@ function mainapi:CreateGUI()
 			end
 
 			scale:GetPropertyChangedSignal('Scale'):Connect(function()
-				toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
+				toggle.Text = string.rep('â€Š', 33 * scale.Scale)..togglesettings.Name
 			end)
 			toggle.MouseEnter:Connect(function()
 				hovered = true
@@ -3034,7 +3034,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = '          '..categorysettings.Name
+		button.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..categorysettings.Name
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -3131,7 +3131,7 @@ function mainapi:CreateGUI()
 			window.Size = UDim2.fromOffset(220, 45 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 			for _, v in categoryapi.Buttons do
 				if v.Icon then
-					v.Object.Text = string.rep(' ', 33 * scale.Scale)..v.Name
+					v.Object.Text = string.rep('â€Š', 33 * scale.Scale)..v.Name
 				end
 			end
 		end)
@@ -3636,7 +3636,7 @@ function mainapi:CreateGUI()
 		window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 		for _, v in categoryapi.Buttons do
 			if v.Icon then
-				v.Object.Text = string.rep(' ', 36 * scale.Scale)..v.Name
+				v.Object.Text = string.rep('â€Š', 36 * scale.Scale)..v.Name
 			end
 		end
 	end)
@@ -3751,7 +3751,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = '            '..modulesettings.Name
+		modulebutton.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..modulesettings.Name
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
@@ -6546,7 +6546,7 @@ avatarname.TextXAlignment = Enum.TextXAlignment.Left
 avatarname.TextColor3 = uipallet.Text
 avatarname.TextSize = 16
 avatarname.FontFace = uipallet.FontSemiBold
-avatarname.TruncateTextWhere = Enum.TruncateAt.Right
+avatarname.TextTruncate = Enum.TextTruncate.AtEnd
 avatarname.Parent = avatarwindow
 local avataruser = Instance.new('TextLabel')
 avataruser.Name = 'Username'
@@ -6558,7 +6558,7 @@ avataruser.TextXAlignment = Enum.TextXAlignment.Left
 avataruser.TextColor3 = color.Dark(uipallet.Text, 0.29)
 avataruser.TextSize = 12
 avataruser.FontFace = uipallet.Font
-avataruser.TruncateTextWhere = Enum.TruncateAt.Right
+avataruser.TextTruncate = Enum.TextTruncate.AtEnd
 avataruser.Parent = avatarwindow
 local avatarbadge = Instance.new('TextLabel')
 avatarbadge.Name = 'RoleBadge'
@@ -6602,7 +6602,7 @@ local function avatarrow(name, y)
 	value.TextColor3 = uipallet.Text
 	value.TextSize = 13
 	value.FontFace = uipallet.Font
-	value.TruncateTextWhere = Enum.TruncateAt.Right
+	value.TextTruncate = Enum.TextTruncate.AtEnd
 	value.Parent = avatarwindow
 	avatarrows[name] = value
 end
@@ -8279,7 +8279,7 @@ do
 		if modified > 0 then
 			statusparts[#statusparts + 1] = modified..' changed'
 		end
-		status.Text = isnew and #entries > 0 and table.concat(statusparts, ' · ') or 'Old changelogs'
+		status.Text = isnew and #entries > 0 and table.concat(statusparts, ' Â· ') or 'Old changelogs'
 		local empty = Instance.new('TextLabel')
 		empty.Name = 'Empty'
 		empty.Size = UDim2.new(1, -28, 0, 20)

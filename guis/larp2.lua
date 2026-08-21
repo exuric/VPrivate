@@ -4336,10 +4336,11 @@ function mainapi:CreateOverlay(categorysettings)
 		self.Expanded = not self.Expanded
 		children.Visible = self.Expanded
 		dots.ImageColor3 = self.Expanded and uipallet.Text or color.Light(uipallet.Main, 0.37)
-		local target = self.Expanded and math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601) or 41
-		tween:Tween(window, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.fromOffset(window.Size.X.Offset, target)
-		})
+		if self.Expanded then
+			window.Size = UDim2.fromOffset(window.Size.X.Offset, math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601))
+		else
+			window.Size = UDim2.fromOffset(window.Size.X.Offset, 41)
+		end
 	end
 
 	function categoryapi:Pin()
@@ -4872,10 +4873,7 @@ function mainapi:CreateCategoryList(categorysettings)
 		self.Expanded = not self.Expanded
 		children.Visible = self.Expanded
 		arrow.Rotation = self.Expanded and 0 or 180
-		local target = self.Expanded and math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611) or 45
-		tween:Tween(window, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.fromOffset(220, target)
-		})
+		window.Size = UDim2.fromOffset(220, self.Expanded and math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611) or 45)
 		divider.Visible = children.CanvasPosition.Y > 10 and children.Visible
 	end
 
@@ -6510,7 +6508,7 @@ avatartitle.Name = 'Title'
 avatartitle.Size = UDim2.new(1, -44, 0, 20)
 avatartitle.Position = UDim2.fromOffset(36, 12)
 avatartitle.BackgroundTransparency = 1
-avatartitle.Text = 'Avatar'
+avatartitle.Text = 'Player'
 avatartitle.TextXAlignment = Enum.TextXAlignment.Left
 avatartitle.TextColor3 = uipallet.Text
 avatartitle.TextSize = 13
@@ -6670,7 +6668,7 @@ task.spawn(function()
 end)
 
 local avatarbutton = mainapi.Categories.Main:CreateButton({
-	Name = 'Avatar',
+	Name = 'Player',
 	Icon = getcustomasset('LarpV4/assets/larp/targetnpc1.png'),
 	Size = UDim2.fromOffset(12, 16),
 	Window = avatarwindow

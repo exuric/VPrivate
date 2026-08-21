@@ -819,7 +819,7 @@ run(function()
 		return {
 			{xr(uhex('365617276c0a50295819'), k2), 5},
 			{xr(uhex('0d571925470c4621521f26520a462d40027a'), k2), 5},
-			{xr(uhex('2d5a1f225a105c2d5a053147'), k2), 4}
+			{xr(uhex('2d5a1f225a105c2d5a053147'), k2), 5}
 		}
 	end
 

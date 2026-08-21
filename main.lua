@@ -357,12 +357,18 @@ task.spawn(function()
 				warn('LarpV4: universal.lua error: '..tostring(unirunerr))
 			end
 
-			local gamepath = 'LarpV4/games/'..game.PlaceId..'.lua'
+			local gamefileid = game.PlaceId
+			local isbedwars = game.GameId == 2619619496
+			if isbedwars and not isfile('LarpV4/games/'..gamefileid..'.lua') then
+				gamefileid = 6872274481
+			end
+			local gamepath = 'LarpV4/games/'..gamefileid..'.lua'
+			local gamename = tostring(gamefileid)
 			local gamechunk, gameerr
 			if isfile(gamepath) then
-				gamechunk, gameerr = loadstring(readfile(gamepath), tostring(game.PlaceId))
+				gamechunk, gameerr = loadstring(readfile(gamepath), gamename)
 				if not gamechunk then
-					warn('LarpV4: cached '..game.PlaceId..' failed to compile, redownloading')
+					warn('LarpV4: cached '..gamename..' failed to compile, redownloading')
 					pcall(delfile, gamepath)
 				end
 			end
@@ -371,14 +377,14 @@ task.spawn(function()
 					return downloadFile(gamepath)
 				end)
 				if suc and type(res) == 'string' then
-					gamechunk, gameerr = loadstring(res, tostring(game.PlaceId))
+					gamechunk, gameerr = loadstring(res, gamename)
 				end
 				if not gamechunk then
 					local suc2, res2 = pcall(function()
-						return game:HttpGet(ROOT..'games/'..game.PlaceId..'.lua', true)
+						return game:HttpGet(ROOT..'games/'..gamefileid..'.lua', true)
 					end)
 					if suc2 and type(res2) == 'string' and res2 ~= '404: Not Found' and #res2 > 1000 then
-						gamechunk, gameerr = loadstring(res2, tostring(game.PlaceId))
+						gamechunk, gameerr = loadstring(res2, gamename)
 						if gamechunk then
 							pcall(writefile, gamepath, '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res2)
 						end
@@ -388,15 +394,15 @@ task.spawn(function()
 			if gamechunk then
 				local gameok, gamerunerr = pcall(gamechunk, license)
 				if not gameok then
-					warn('LarpV4: '..game.PlaceId..' error: '..tostring(gamerunerr))
+					warn('LarpV4: '..gamename..' error: '..tostring(gamerunerr))
 					pcall(function()
 						larp:CreateNotification('Larp V4', 'Game modules error: '..tostring(gamerunerr):sub(1, 60), 6, 'warning')
 					end)
 				end
-			else
-				warn('LarpV4: '..game.PlaceId..' modules failed to load: '..tostring(gameerr))
+			elseif isbedwars then
+				warn('LarpV4: '..gamename..' modules failed to load: '..tostring(gameerr))
 				pcall(function()
-					larp:CreateNotification('Larp V4', 'Game modules failed to load', 6, 'warning')
+					larp:CreateNotification('Larp V4', 'BedWars modules failed to load', 6, 'warning')
 				end)
 			end
 			finishLoading()

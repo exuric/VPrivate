@@ -1041,20 +1041,28 @@ components = {
 		
 		function optionapi:SetValue(val, mouse)
 			self.Value = table.find(optionsettings.List, val) and val or optionsettings.List[1] or 'None'
-			title.Text = '         '..optionsettings.Name..' - '..self.Value
+			title.Text = '         '..optionsettings.Name..' - '..self.Value
 			if dropdownchildren then
-				arrow.Rotation = 90
-				dropdownchildren:Destroy()
+				tween:Tween(arrow, uipallet.Tween, {Rotation = 90})
+				local closingchildren = dropdownchildren
 				dropdownchildren = nil
-				dropdown.Size = UDim2.new(1, 0, 0, 40)
+				tween:Tween(dropdown, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Size = UDim2.new(1, 0, 0, 40)
+				})
+				task.delay(0.15, function()
+					closingchildren:Destroy()
+				end)
 			end
 			optionsettings.Function(self.Value, mouse)
 		end
-		
+
 		button.MouseButton1Click:Connect(function()
 			if not dropdownchildren then
-				arrow.Rotation = 270
-				dropdown.Size = UDim2.new(1, 0, 0, 40 + (#optionsettings.List - 1) * 26)
+				tween:Tween(arrow, uipallet.Tween, {Rotation = 270})
+				dropdown.ClipsDescendants = true
+				tween:Tween(dropdown, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Size = UDim2.new(1, 0, 0, 40 + (#optionsettings.List - 1) * 26)
+				})
 				dropdownchildren = Instance.new('Frame')
 				dropdownchildren.Name = 'Children'
 				dropdownchildren.Size = UDim2.new(1, 0, 0, (#optionsettings.List - 1) * 26)

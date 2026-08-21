@@ -6105,6 +6105,16 @@ mainapi:Clean(scale:GetPropertyChangedSignal('Scale'):Connect(function()
 	end
 end))
 
+local openscale = Instance.new('UIScale')
+openscale.Scale = 1
+openscale.Parent = clickgui
+mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
+	if clickgui.Visible then
+		openscale.Scale = 0.97
+		tween:Tween(openscale, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Scale = 1})
+	end
+end))
+
 mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
 	mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
 	if not clickgui.Visible then

@@ -34,7 +34,7 @@ local function fetchCommit()
 	end)
 	if ok and res then
 		local commit = res:gsub('%s+$', ''):gsub('^%s+', '')
-		if #commit > 20 then
+		if #commit == 40 and commit:match('^%x+$') then
 			return commit
 		end
 	end
@@ -61,11 +61,16 @@ local function downloadFile(path, func)
 		if not license.Closet then
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end
-		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..COMMIT..'/'..select(1, path:gsub('LarpV4/', '')), true)
-		end)
-		if not suc or res == '404: Not Found' then
-			error(res)
+		local suc, res
+		for attempt = 1, 3 do
+			suc, res = pcall(function()
+				return game:HttpGet(ROOT..COMMIT..'/'..select(1, path:gsub('LarpV4/', '')), true)
+			end)
+			if suc and res and res ~= '404: Not Found' then break end
+			if attempt < 3 then task.wait(0.4) end
+		end
+		if not suc or not res or res == '404: Not Found' then
+			error(tostring(res))
 		end
 		if path:find('.lua') then
 			res = LARPWATER..res
@@ -372,11 +377,11 @@ end
 
 downloader.Text = ''
 local _larpchunk, _larperr = loadstring(downloadFile('LarpV4/main.lua'), 'main')
+downloader.Visible = false
 if not _larpchunk then
 	error('LarpV4/main.lua failed to compile: '..tostring(_larperr))
 end
 local _larpok, _larpres = pcall(_larpchunk, license)
-downloader.Visible = false
 if not _larpok then
 	error('LarpV4/main.lua: '..tostring(_larpres))
 end

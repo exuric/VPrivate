@@ -390,6 +390,12 @@ local function makeDraggable(gui, window)
 					if ended then
 						ended:Disconnect()
 					end
+					local api = shared.larp or getgenv().larp
+					if api and api.QueueSave then
+						pcall(function()
+							api:QueueSave()
+						end)
+					end
 				end
 			end)
 		end
@@ -3708,6 +3714,7 @@ function mainapi:CreateCategory(categorysettings)
 	children.Visible = false
 	children.ScrollBarThickness = 2
 	children.ScrollBarImageTransparency = 0.75
+	children.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	children.CanvasSize = UDim2.new()
 	children.Parent = window
 	local divider = Instance.new('Frame')
@@ -4323,6 +4330,7 @@ function mainapi:CreateOverlay(categorysettings)
 	children.Visible = false
 	children.ScrollBarThickness = 2
 	children.ScrollBarImageTransparency = 0.75
+	children.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	children.CanvasSize = UDim2.new()
 	children.Parent = window
 	local windowlist = Instance.new('UIListLayout')
@@ -4489,6 +4497,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	children.Visible = false
 	children.ScrollBarThickness = 2
 	children.ScrollBarImageTransparency = 0.75
+	children.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	children.CanvasSize = UDim2.new()
 	children.Parent = window
 	local childrentwo = Instance.new('Frame')
@@ -5030,6 +5039,7 @@ function mainapi:CreateSearch()
 	children.BorderSizePixel = 0
 	children.ScrollBarThickness = 2
 	children.ScrollBarImageTransparency = 0.75
+	children.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	children.CanvasSize = UDim2.new()
 	children.Parent = searchbkg
 	local divider = Instance.new('Frame')
@@ -5148,6 +5158,7 @@ function mainapi:CreateLegit()
 	children.BorderSizePixel = 0
 	children.ScrollBarThickness = 2
 	children.ScrollBarImageTransparency = 0.75
+	children.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	children.CanvasSize = UDim2.new()
 	children.Parent = window
 	local windowlist = Instance.new('UIGridLayout')
@@ -6108,16 +6119,6 @@ mainapi:Clean(scale:GetPropertyChangedSignal('Scale'):Connect(function()
 			v.Visible = false
 			v.Visible = true
 		end
-	end
-end))
-
-local openscale = Instance.new('UIScale')
-openscale.Scale = 1
-openscale.Parent = clickgui
-mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
-	if clickgui.Visible then
-		openscale.Scale = 0.97
-		tween:Tween(openscale, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Scale = 1})
 	end
 end))
 

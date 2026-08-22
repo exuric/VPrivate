@@ -1,17 +1,8 @@
-Changelog
-
-Module polish pass: TriggerBot gets a Range override slider, cleaner tooltips, and simpler names (Skins, FPS Unlocker, Anti AFK, Bed Break FX, Kill FX)
-Sword Tracker overlay gets a sword icon plus font, text color, text size, and scale settings
-New Sword Tracker overlay shows live hits, hits per 10 seconds, and distance to the nearest enemy
-KillAura restored to the standard version
-New SkinChanger is now Larp Skins with a clean item type + skin picker and random/reset buttons
-KillAura attack range now matches the slider exactly, up to 30 studs
-KillAura target picking ignores the 15 stud limit so long range always works
-KillAura swings as fast as the server allows for consistent full-rate hits
-NameTags health bars show fill color that drains from green to red
-Faster loading: skip re-verification on repeat loads and removed startup waits
-Projectile aimbot now aims the Lasso (and Lassy) items reliably at the body
-Improved projectile aimbot target velocity tracking
-Adaptive mode now grades only aimed projectile hits
-Prediction slider is clamped in Adaptive mode
-Fixed KillAura swing timing for a consistent 34 hits per 10 seconds
++ AimAssist Assist mode - Simple keeps aim clean, Advanced unlocks overshoot, reaction delay and max turn speed
++ TriggerBot Range override slider to trigger hits further than your sword range
++ Player tab showing your avatar, level, role, user id, executor and session time
+~ Smoother ui with window drop animations and sliding dropdowns
+~ Module renames for clarity: Skins, FPS Unlocker, Anti AFK, Bed Break FX, Kill FX
+~ Fixed cut-off settings in module menus, every list now fully scrollable
+~ Gui layout saves the moment you drag windows so it persists across reinjects
+~ Redesigned changelog window

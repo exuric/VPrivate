@@ -1675,6 +1675,7 @@ run(function()
 	local Overshoot
 	local Reaction
 	local MaxTurn
+	local Humanize
 	local VerticalAim
 	local Distance
 	local AngleSlider
@@ -1740,7 +1741,7 @@ run(function()
 			humanState.prevTime = tick()
 			humanState.bias = Vector3.new(0, 0, 0)
 		end
-		if Overshoot.Value > 0 then
+		if Humanize.Value == 'Advanced' and Overshoot.Value > 0 then
 			local prev = humanState.prevAim or rawAim
 			local deltaT = math.min(tick() - humanState.prevTime, 0.25)
 			local vel = deltaT > 0 and (rawAim - prev) / deltaT or Vector3.new(0, 0, 0)
@@ -1769,7 +1770,7 @@ run(function()
 			return localcframe
 		end
 		local direction = want
-		if MaxTurn.Value > 0 then
+		if Humanize.Value == 'Advanced' and MaxTurn.Value > 0 then
 			local maxStep = math.rad(MaxTurn.Value) * dt
 			if ang > maxStep then
 				direction = (forward + (want - forward) * (maxStep / ang)).Unit
@@ -1850,7 +1851,7 @@ run(function()
 	
 		if ent ~= lasttarget then
 			started = tick()
-			if Reaction.Value > 0 then
+			if Humanize.Value == 'Advanced' and Reaction.Value > 0 then
 				humanState.reactUntil = tick() + (Reaction.Value / 1000) * Random.new():NextNumber(0.75, 1.25)
 			end
 		end
@@ -2007,8 +2008,29 @@ run(function()
 		Suffix = function()
 			return 'deg/s'
 		end,
-		Tooltip = 'Hard cap on how fast the crosshair can rotate, in degrees per second. 0 = unlimited',
+		Tooltip = 'Hard cap on how fast the crosshair can rotate, in degrees per second. 0 = unlimited'
 	})
+	Humanize = AimAssist:CreateDropdown({
+		Name = 'Assist mode',
+		List = {'Simple', 'Advanced'},
+		Default = 'Simple',
+		Function = function(val)
+			local advanced = val == 'Advanced'
+			if Overshoot and Overshoot.Object then
+				Overshoot.Object.Visible = advanced
+			end
+			if Reaction and Reaction.Object then
+				Reaction.Object.Visible = advanced
+			end
+			if MaxTurn and MaxTurn.Object then
+				MaxTurn.Object.Visible = advanced
+			end
+		end,
+		Tooltip = 'Simple - clean aim only\nAdvanced - unlocks overshoot, reaction delay and max turn speed'
+	})
+	Overshoot.Object.Visible = false
+	Reaction.Object.Visible = false
+	MaxTurn.Object.Visible = false
 	VerticalAim = AimAssist:CreateToggle({
 		Name = 'Vertical aim',
 		Default = true,

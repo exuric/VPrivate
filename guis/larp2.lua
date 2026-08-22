@@ -391,9 +391,9 @@ local function makeDraggable(gui, window)
 						ended:Disconnect()
 					end
 					local api = shared.larp or getgenv().larp
-					if api and api.QueueSave then
+					if api and api.Save then
 						pcall(function()
-							api:QueueSave()
+							api:Save()
 						end)
 					end
 				end
@@ -8161,11 +8161,11 @@ do
 		subtitle.Position = UDim2.fromOffset(14, 31)
 		subtitle.ZIndex = 10
 		subtitle.BackgroundTransparency = 1
-		subtitle.Text = '> update log'
+		subtitle.Text = 'Everything that changed in this update'
 		subtitle.TextXAlignment = Enum.TextXAlignment.Left
-		subtitle.TextColor3 = Color3.fromRGB(80, 250, 123)
-		subtitle.TextSize = 11
-		subtitle.FontFace = Font.fromEnum(Enum.Font.Code)
+		subtitle.TextColor3 = color.Dark(uipallet.Text, 0.29)
+		subtitle.TextSize = 12
+		subtitle.FontFace = uipallet.Font
 		subtitle.Parent = window
 		local status = Instance.new('TextLabel')
 		status.Name = 'Status'
@@ -8227,45 +8227,54 @@ do
 		updateList()
 
 		local codefont = Font.fromEnum(Enum.Font.Code)
-		local rows = {}
 		for _, v in entries do
 			local entry = Instance.new('Frame')
-			entry.Size = UDim2.new(1, 0, 0, 30)
-			entry.BackgroundTransparency = 1
+			entry.Size = UDim2.new(1, 0, 0, 34)
+			entry.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+			entry.BackgroundTransparency = 0.5
 			entry.BorderSizePixel = 0
 			entry.Parent = list
-			local tag = Instance.new('TextLabel')
-			tag.Size = UDim2.fromOffset(44, 30)
-			tag.Position = UDim2.fromOffset(14, 0)
+			addCorner(entry, UDim.new(0, 6))
+			local tag = Instance.new('Frame')
+			tag.Size = UDim2.fromOffset(64, 20)
+			tag.Position = UDim2.fromOffset(14, 7)
 			tag.ZIndex = 11
-			tag.BackgroundTransparency = 1
-			tag.FontFace = codefont
-			tag.TextSize = 13
-			tag.TextXAlignment = Enum.TextXAlignment.Left
+			tag.BackgroundColor3 = Color3.new()
+			tag.BorderSizePixel = 0
 			tag.Parent = entry
-			local tagtext, tagcolor
+			addCorner(tag, UDim.new(1, 0))
+			local tagtext, tagcolor, taglabel
 			if v.status == 'added' then
-				tagtext, tagcolor = '[+]', Color3.fromRGB(80, 250, 123)
+				tagtext, tagcolor, taglabel = 'Added', Color3.fromRGB(80, 250, 123), '+'
 			elseif v.status == 'removed' then
-				tagtext, tagcolor = '[-]', Color3.fromRGB(255, 85, 85)
+				tagtext, tagcolor, taglabel = 'Removed', Color3.fromRGB(255, 85, 85), '-'
 			else
-				tagtext, tagcolor = '[*]', Color3.fromRGB(241, 250, 140)
+				tagtext, tagcolor, taglabel = 'Changed', Color3.fromRGB(241, 250, 140), '~'
 			end
-			tag.TextColor3 = tagcolor
-			tag.Text = ''
+			tag.BackgroundColor3 = tagcolor
+			tag.BackgroundTransparency = 0.86
+			local tagtextlabel = Instance.new('TextLabel')
+			tagtextlabel.Size = UDim2.new(1, 0, 1, 0)
+			tagtextlabel.ZIndex = 12
+			tagtextlabel.BackgroundTransparency = 1
+			tagtextlabel.Text = taglabel..' '..tagtext
+			tagtextlabel.TextColor3 = tagcolor
+			tagtextlabel.TextSize = 11
+			tagtextlabel.FontFace = codefont
+			tagtextlabel.Parent = tag
 			local name = Instance.new('TextLabel')
-			name.Size = UDim2.new(1, -74, 0, 30)
-			name.Position = UDim2.fromOffset(60, 0)
+			name.Size = UDim2.new(1, -110, 1, 0)
+			name.Position = UDim2.fromOffset(90, 0)
 			name.ZIndex = 11
 			name.BackgroundTransparency = 1
 			name.TextXAlignment = Enum.TextXAlignment.Left
+			name.TextYAlignment = Enum.TextYAlignment.Center
 			name.TextTruncate = Enum.TextTruncate.AtEnd
-			name.TextColor3 = color.Dark(uipallet.Text, 0.16)
+			name.TextColor3 = uipallet.Text
 			name.TextSize = 13
-			name.FontFace = codefont
-			name.Text = ''
+			name.FontFace = uipallet.Font
+			name.Text = v.name
 			name.Parent = entry
-			rows[#rows + 1] = {tag = tag, name = name, tagtext = tagtext, nametext = v.name}
 		end
 
 		local statusparts = {}
@@ -8312,33 +8321,12 @@ do
 		footleft.Position = UDim2.fromOffset(14, 12)
 		footleft.ZIndex = 11
 		footleft.BackgroundTransparency = 1
-		footleft.Text = '> Larp V4'
+		footleft.Text = 'Larp V4'
 		footleft.TextXAlignment = Enum.TextXAlignment.Left
-		footleft.TextColor3 = Color3.fromRGB(80, 250, 123)
+		footleft.TextColor3 = color.Dark(uipallet.Text, 0.29)
 		footleft.TextSize = 12
-		footleft.FontFace = Font.fromEnum(Enum.Font.Code)
+		footleft.FontFace = uipallet.Font
 		footleft.Parent = footer
-		task.spawn(function()
-			for _, row in rows do
-				if not row.tag.Parent then return end
-				for i = 1, #row.tagtext do
-					row.tag.Text = row.tagtext:sub(1, i)
-					task.wait(0.02)
-				end
-				if not row.name.Parent then return end
-				for i = 1, #row.nametext do
-					row.name.Text = row.nametext:sub(1, i)
-					task.wait(0.015)
-				end
-				task.wait(0.05)
-			end
-			task.wait(0.2)
-			if footer.Parent then
-				tween:Tween(footer, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
-					BackgroundTransparency = 0.98
-				})
-			end
-		end)
 	end
 
 	local function parseChangelog(text)

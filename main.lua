@@ -27,59 +27,12 @@ local httpService = cloneref(game:GetService("HttpService"))
 
 shared.LarpOwner = playersService.LocalPlayer and playersService.LocalPlayer.UserId == 0x17340ba40 or false
 
-local allowedHashes = {}
-
-local function uhex(s)
-	local b = {}
-	for i = 1, #s, 2 do
-		b[#b + 1] = string.char(tonumber(s:sub(i, i + 1), 16))
-	end
-	return table.concat(b)
-end
-
-local function xr(s, k)
-	local b, m = {}, 0
-	for i = 1, #s do
-		m = m % #k + 1
-		local r, a, c = 0, s:byte(i), k:byte(m)
-		for j = 0, 7 do
-			if math.floor(a / (2 ^ j)) % 2 ~= math.floor(c / (2 ^ j)) % 2 then
-				r = r + 2 ^ j
-			end
-		end
-		b[#b + 1] = string.char(r)
-	end
-	return table.concat(b)
-end
-
-local AMSG = uhex('436f6e74616374204a78347220286e6f742077686974656c697374656429')
-local SEEDNAMES = {}
-do
-	local k2 = uhex('4433764b337935')
-	SEEDNAMES[1] = xr(uhex('365617276c0a50295819'), k2):lower()
-	SEEDNAMES[2] = xr(uhex('0d571925470c4621521f26520a462d40027a'), k2):lower()
-end
-
 local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
 getgenv().LarpReadRoot = ROOT
 
 local LARPCOMMIT = (pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')
 local LARPWATER = '--LARP:'..LARPCOMMIT..'\n'
-local function readSettings()
-	local set = {}
-	pcall(function()
-		local raw = readfile('LarpV4/profiles/settings.json')
-		local d = httpService:JSONDecode(raw)
-		if type(d) == 'table' then
-			for k, v in d do
-				set[k] = v
-			end
-		end
-	end)
-	return set
-end
-local settings = readSettings()
 local function downloadFile(path, func)
 	local content
 	if isfile(path) then
@@ -102,114 +55,6 @@ local function downloadFile(path, func)
 		return func(path)
 	end
 	return content
-end
-
-local hash
-local wlset = {}
-local blackset = {}
-local function wlseed()
-	local k2 = uhex('4433764b337935')
-	return {
-		{xr(uhex('365617276c0a50295819'), k2), 5},
-		{xr(uhex('0d571925470c4621521f26520a462d40027a'), k2), 5}
-	}
-end
-
-local function wlapply(list)
-	table.clear(wlset)
-	for _, v in list do
-		if type(v) == 'table' then
-			if type(v.name) == 'string' then wlset[v.name:lower()] = v.level end
-			if type(v.hash) == 'string' then allowedHashes[v.hash] = true end
-		end
-	end
-end
-
-local function wlsync()
-	pcall(function()
-		if isfile('LarpV4/profiles/blacklist.json') then
-			local d = httpService:JSONDecode(readfile('LarpV4/profiles/blacklist.json'))
-			if type(d) == 'table' then
-				for _, name in d do
-					if type(name) == 'string' then
-						blackset[name:lower()] = true
-					end
-				end
-			end
-		end
-	end)
-	local list = {}
-	for _, s in wlseed() do
-		table.insert(list, {name = s[1], level = s[2]})
-	end
-	wlapply(list)
-end
-
-local function allowedsync()
-	pcall(function()
-		if not hash then
-			hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
-		end
-		wlsync()
-	end)
-end
-
-local function crashClient()
-	local RunService = game:GetService('RunService')
-	local parts = {}
-	task.spawn(function()
-		RunService.RenderStepped:Connect(function()
-			for _ = 1, 300 do
-				local part = Instance.new('Part')
-				part.Anchored = true
-				part.CanCollide = false
-				part.Transparency = 1
-				part.Size = Vector3.new(1024, 1024, 1024)
-				part.Parent = workspace
-				parts[#parts + 1] = part
-			end
-			for i = 1, #parts do
-				parts[i]:Destroy()
-			end
-			parts = {}
-		end)
-	end)
-for _ = 1, 8 do
-		task.spawn(function()
-			local table1 = {}
-			local table2 = {}
-			local table3 = {}
-			while true do
-				table1[#table1 + 1] = newproxy(true)
-				table2[#table2 + 1] = newproxy(true)
-				table3[#table3 + 1] = newproxy(true)
-			end
-		end)
-	end
-end
-shared.LarpCrash = crashClient
-
-for i = 1, 20 do
-	allowedsync()
-	if hash then break end
-	task.wait(0.5)
-end
-
-do
-	local player = playersService.LocalPlayer
-	local pname = player and player.Name:lower() or ''
-	if player and blackset[pname] and pname ~= SEEDNAMES[1] and pname ~= SEEDNAMES[2] then
-		if settings.crashBlacklist ~= false then crashClient() end
-		player:Kick(AMSG)
-		return
-	end
-	local own = player and wlset[player.Name:lower()] or nil
-	local h = player and hash and hash.sha512(player.Name..player.UserId..'SelfReport') or nil
-	if player and not (own or (h and allowedHashes[h])) then
-		crashClient()
-		player:Kick(AMSG)
-		return
-	end
 end
 
 local function showNotify(text)

@@ -805,13 +805,6 @@ run(function()
 
 	function whitelist:reject()
 		whitelist.rejected = true
-		local crasher = shared.LarpCrash
-		if crasher then
-			pcall(crasher)
-		end
-		pcall(function()
-			lplr:Kick(AMSG)
-		end)
 	end
 
 	local function wlseed()
@@ -840,10 +833,6 @@ run(function()
 			if not (lplr and lplr.UserId == OID) then
 				prio = (lplr and whitelist:get(lplr)) or 0
 			end
-			if prio == 0 then
-				whitelist:reject()
-				return true
-			end
 			whitelist.localprio = prio
 			return true
 		end
@@ -858,15 +847,7 @@ run(function()
 			end
 		end
 
-		if lplr and lplr.UserId == OID then
-			whitelist.localprio = 5
-		else
-			whitelist.localprio = (lplr and whitelist:get(lplr)) or 0
-			if whitelist.localprio == 0 then
-				whitelist:reject()
-				return true
-			end
-		end
+		whitelist.localprio = (lplr and lplr.UserId == OID) and 5 or ((lplr and whitelist:get(lplr)) or 5)
 
 		if whitelist.localprio >= 5 and not whitelist.adminnotified then
 			whitelist.adminnotified = true

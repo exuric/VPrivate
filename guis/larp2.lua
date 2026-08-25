@@ -3799,7 +3799,7 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(bind, 'Click to bind')
 		bind.Name = 'Bind'
 		bind.Size = UDim2.fromOffset(20, 21)
-		bind.Position = UDim2.new(1, -36, 0, 9)
+		bind.Position = UDim2.new(1, -58, 0, 9)
 		bind.AnchorPoint = Vector2.new(1, 0)
 		bind.BackgroundColor3 = Color3.new(1, 1, 1)
 		bind.BackgroundTransparency = 0.92
@@ -3863,7 +3863,7 @@ function mainapi:CreateCategory(categorysettings)
 		local pinicon = Instance.new('ImageButton')
 		pinicon.Name = 'Pin'
 		pinicon.Size = UDim2.fromOffset(16, 16)
-		pinicon.Position = UDim2.new(1, -58, 0, 12)
+		pinicon.Position = UDim2.new(1, -36, 0, 12)
 		pinicon.AnchorPoint = Vector2.new(1, 0)
 		pinicon.BackgroundTransparency = 1
 		pinicon.AutoButtonColor = false
@@ -4039,10 +4039,20 @@ function mainapi:CreateCategory(categorysettings)
 			end
 		end)
 		dotsbutton.MouseButton1Click:Connect(function()
-			modulechildren.Visible = not modulechildren.Visible
+			if modulechildren.Parent ~= moduleapi.ChildrenParent then
+				modulechildren.Parent = moduleapi.ChildrenParent
+				modulechildren.Visible = not modulechildren.Visible
+			else
+				modulechildren.Visible = not modulechildren.Visible
+			end
 		end)
 		dotsbutton.MouseButton2Click:Connect(function()
-			modulechildren.Visible = not modulechildren.Visible
+			if modulechildren.Parent ~= moduleapi.ChildrenParent then
+				modulechildren.Parent = moduleapi.ChildrenParent
+				modulechildren.Visible = not modulechildren.Visible
+			else
+				modulechildren.Visible = not modulechildren.Visible
+			end
 		end)
 		modulebutton.MouseEnter:Connect(function()
 			hovered = true
@@ -4119,14 +4129,7 @@ function mainapi:CreateCategory(categorysettings)
 			if mainapi.ThreadFix then
 				setthreadidentity(8)
 			end
-			if modulechildren.Parent then
-				local plist = modulechildren.Parent:FindFirstChildOfClass('UIListLayout')
-				if plist then
-					modulechildren.Size = UDim2.new(1, 0, 0, plist.AbsoluteContentSize.Y / scale.Scale)
-				else
-					modulechildren.Size = UDim2.new(1, 0, 0, windowlist.AbsoluteContentSize.Y / scale.Scale)
-				end
-			end
+			modulechildren.Size = UDim2.new(1, 0, 0, windowlist.AbsoluteContentSize.Y / scale.Scale)
 		end)
 
 		moduleapi.Object = modulebutton
@@ -6194,6 +6197,13 @@ function mainapi:UpdatePinned()
 								ch.Parent = pinnedchildren
 								ch.LayoutOrder = moduleapi.Index + 1
 								ch.Visible = true
+								task.wait(0.02)
+								pcall(function()
+									local wl = ch:FindFirstChildOfClass('UIListLayout')
+									if wl then
+										ch.Size = UDim2.new(1, 0, 0, wl.AbsoluteContentSize.Y / scale.Scale)
+									end
+								end)
 							else
 								ch.Visible = not ch.Visible
 							end
@@ -8001,7 +8011,7 @@ do
 		window.Size = UDim2.fromOffset(640, 430)
 		window.Position = UDim2.new(0.5, -320, 0.5, -215)
 		window.ZIndex = 10
-		window.BackgroundColor3 = color.Dark(uipallet.Main, 0.08)
+		window.BackgroundColor3 = uipallet.Main
 		window.BorderSizePixel = 0
 		window.Parent = clickgui
 		addCorner(window, UDim.new(0, 10))
@@ -8029,7 +8039,7 @@ do
 		title.BackgroundTransparency = 1
 		title.Text = 'Larp V4 // update log'
 		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		title.TextColor3 = uipallet.Text
 		title.TextSize = 12
 		title.FontFace = uipallet.FontSemiBold
 		title.Parent = header
@@ -8040,7 +8050,7 @@ do
 		status.BackgroundTransparency = 1
 		status.Text = ''
 		status.TextXAlignment = Enum.TextXAlignment.Right
-		status.TextColor3 = color.Dark(uipallet.Text, 0.3)
+		status.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		status.TextSize = 11
 		status.FontFace = uipallet.Font
 		status.Parent = header
@@ -8056,7 +8066,7 @@ do
 		local screen = Instance.new('Frame')
 		screen.Size = UDim2.new(1, -24, 0, 300)
 		screen.Position = UDim2.fromOffset(12, 58)
-		screen.BackgroundColor3 = color.Dark(uipallet.Main, 0.16)
+		screen.BackgroundColor3 = color.Light(uipallet.Main, 0.24)
 		screen.BorderSizePixel = 0
 		screen.Parent = window
 		addCorner(screen, UDim.new(0, 6))
@@ -8111,6 +8121,17 @@ do
 				color = statuscolors[v.status],
 				name = v.name
 			}
+		end
+		local function writetype(row)
+			local full = row.prefix..' '..row.name
+			row.label.TextColor3 = row.color
+			local i = 0
+			while i < #full do
+				if not row.label.Parent then return end
+				i += 1
+				row.label.Text = full:sub(1, i)
+				task.wait(0.025)
+			end
 		end
 
 		local statusparts = {}
@@ -8205,18 +8226,13 @@ do
 		end)
 
 		task.spawn(function()
-			local localfont = Font.fromEnum(Enum.Font.Code)
 			for _, row in rows do
-				if not row.label.Parent then return end
-				local full = row.prefix..' '..row.name
-				for i = 1, #full do
-					if not row.label.Parent then return end
-					row.label.TextColor3 = row.color
-					row.label.Text = full:sub(1, i)
-					task.wait(0.025)
-				end
+				local ok = pcall(writetype, row)
+				if not ok then break end
 				task.wait(0.08)
-				list.CanvasPosition = Vector2.new(0, math.max(list.CanvasPosition.Y, list.CanvasSize.Y.Offset - list.AbsoluteWindowSize.Y + 16))
+				pcall(function()
+					list.CanvasPosition = Vector2.new(0, math.max(list.CanvasPosition.Y, list.CanvasSize.Y.Offset - list.AbsoluteWindowSize.Y + 16))
+				end)
 			end
 			task.wait(0.2)
 			if footer.Parent then

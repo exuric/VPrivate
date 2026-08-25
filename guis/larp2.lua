@@ -4126,7 +4126,7 @@ function mainapi:CreateCategory(categorysettings)
 		favicon.Position = UDim2.new(1, -58, 0, 12)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
-		favicon.Image = getcustomasset('LarpV4/assets/larp/favouritestar2.png')
+		favicon.Image = getcustomasset('LarpV4/assets/larp/star.png')
 		favicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favicon.Visible = false
 		favicon.Parent = modulebutton
@@ -5753,7 +5753,7 @@ function mainapi:CreateNotification(title, text, duration, type)
 		local notification = Instance.new('ImageLabel')
 		notification.Name = 'Notification'
 		notification.Size = UDim2.fromOffset(math.max(266, math.max(getfontsize(removeTags(text), 14, uipallet.Font).X, getfontsize(removeTags(title), 14, uipallet.FontSemiBold).X) + 80), 75)
-		notification.AnchorPoint = Vector2.new(1, 0)
+		notification.AnchorPoint = Vector2.new(0, 0)
 		notification.Position = UDim2.new(1, 0, 1, 0)
 		notification.ZIndex = 5
 		notification.BackgroundTransparency = 1
@@ -5835,9 +5835,10 @@ function mainapi:CreateNotification(title, text, duration, type)
 		end
 
 		if tween.Tween then
-			tween:Tween(notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
-				AnchorPoint = Vector2.new(0, 0)
-			}, tween.tweenstwo)
+			notification.ImageTransparency = 1
+			tween:Tween(notification, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+				ImageTransparency = 0
+			})
 		end
 		restack()
 		tween:Tween(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
@@ -5845,11 +5846,11 @@ function mainapi:CreateNotification(title, text, duration, type)
 		})
 		task.delay(duration, function()
 			if tween.Tween then
-				tween:Tween(notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
-					AnchorPoint = Vector2.new(1, 0)
-				}, tween.tweenstwo)
+				tween:Tween(notification, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
+					ImageTransparency = 1
+				})
 			end
-			task.wait(0.2)
+			task.wait(0.3)
 			notification:ClearAllChildren()
 			notification:Destroy()
 			restack()

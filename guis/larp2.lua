@@ -87,7 +87,6 @@ local getcustomassets = {
 	['LarpV4/assets/larp/expandright.png'] = 'rbxassetid://14368316544',
 	['LarpV4/assets/larp/expandup.png'] = 'rbxassetid://14368317595',
 	['LarpV4/assets/larp/friendstab.png'] = 'rbxassetid://14397462778',
-	['LarpV4/assets/larp/favourite.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/favouritestar.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/favouritestar2.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
@@ -2827,15 +2826,21 @@ function mainapi:CreateGUI()
 		favbutton.BackgroundTransparency = 1
 		favbutton.AutoButtonColor = false
 		favbutton.Image = getcustomasset('LarpV4/assets/larp/favouritestar2.png')
-		favbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		favbutton.ImageColor3 = Color3.new(1, 1, 1)
 		favbutton.Parent = bar
 		addCorner(favbutton, UDim.new(1, 0))
 		addTooltip(favbutton, 'Favourites (not finished)')
 		favbutton.MouseEnter:Connect(function()
-			favbutton.ImageColor3 = uipallet.Text
+			tween:Tween(favbutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+				ImageColor3 = Color3.new(1, 1, 1),
+				Rotation = -8
+			})
 		end)
 		favbutton.MouseLeave:Connect(function()
-			favbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+			tween:Tween(favbutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+				ImageColor3 = Color3.new(1, 1, 1),
+				Rotation = 0
+			})
 		end)
 		local shadow = Instance.new('TextButton')
 		shadow.Name = 'Shadow'
@@ -6139,11 +6144,6 @@ mainapi:CreateCategory({
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
-mainapi:CreateCategory({
-	Name = 'Favourites (not finished)',
-	Icon = getcustomasset('LarpV4/assets/larp/favourite.png'),
-	Size = UDim2.fromOffset(16, 16)
-})
 mainapi.Categories.Main:CreateDivider('misc')
 
 --[[
@@ -6435,9 +6435,8 @@ guipane:CreateButton({
 			WorldCategory = 6,
 			InventoryCategory = 7,
 			MinigamesCategory = 8,
-			FavouritesCategory = 9,
-			FriendsCategory = 10,
-			ProfilesCategory = 11
+			FriendsCategory = 9,
+			ProfilesCategory = 10
 		}
 		local categories = {}
 		for _, v in mainapi.Categories do

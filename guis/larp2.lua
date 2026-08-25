@@ -88,6 +88,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/expandup.png'] = 'rbxassetid://14368317595',
 	['LarpV4/assets/larp/friendstab.png'] = 'rbxassetid://14397462778',
 	['LarpV4/assets/larp/favourite.png'] = 'rbxassetid://14368342301',
+	['LarpV4/assets/larp/favouritestar.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
 	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
 	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
@@ -6086,7 +6087,7 @@ end))
 mainapi:CreateGUI()
 local favouritescategory = mainapi:CreateCategory({
 	Name = 'Favourites (not finished)',
-	Icon = getcustomasset('LarpV4/assets/larp/favourite.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/favouritestar.png'),
 	Size = UDim2.fromOffset(16, 16)
 })
 favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)

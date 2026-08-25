@@ -2550,15 +2550,6 @@ function mainapi:CreateGUI()
 	discordbutton.Image = getcustomasset('LarpV4/assets/larp/discord.png')
 	discordbutton.Parent = window
 	addTooltip(discordbutton, 'Copy discord: jx4r')
-	local favouritesbutton = Instance.new('ImageButton')
-	favouritesbutton.Name = 'Favourites'
-	favouritesbutton.Size = UDim2.fromOffset(16, 16)
-	favouritesbutton.Position = UDim2.new(1, -74, 0, 11)
-	favouritesbutton.BackgroundTransparency = 1
-	favouritesbutton.Image = getcustomasset('LarpV4/assets/larp/favouritestar.png')
-	favouritesbutton.ImageColor3 = Color3.new(1, 1, 1)
-	favouritesbutton.Parent = window
-	addTooltip(favouritesbutton, 'Favourites (not finished)')
 	local settingspane = Instance.new('TextButton')
 	settingspane.Size = UDim2.fromScale(1, 1)
 	settingspane.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -2828,6 +2819,17 @@ function mainapi:CreateGUI()
 		button.Parent = bar
 		addCorner(button, UDim.new(1, 0))
 		addTooltip(button, 'Open overlays menu')
+		local favbutton = Instance.new('ImageButton')
+		favbutton.Name = 'Favourites'
+		favbutton.Size = UDim2.fromOffset(22, 22)
+		favbutton.Position = UDim2.new(1, -55, 0, 8)
+		favbutton.BackgroundTransparency = 1
+		favbutton.AutoButtonColor = false
+		favbutton.Image = getcustomasset('LarpV4/assets/larp/favouritestar.png')
+		favbutton.ImageColor3 = Color3.new(1, 1, 1)
+		favbutton.Parent = bar
+		addCorner(favbutton, UDim.new(1, 0))
+		addTooltip(favbutton, 'Favourites (not finished)')
 		local shadow = Instance.new('TextButton')
 		shadow.Name = 'Shadow'
 		shadow.Size = UDim2.new(1, 0, 1, -5)

@@ -5401,6 +5401,10 @@ function mainapi:CreateLegit()
 		module.Parent = children
 		addTooltip(module, modulesettings.Tooltip)
 		addCorner(module)
+		local modulegradient = Instance.new('UIGradient')
+		modulegradient.Rotation = 90
+		modulegradient.Enabled = false
+		modulegradient.Parent = module
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
 		title.Size = UDim2.new(1, -16, 0, 20)
@@ -5424,13 +5428,13 @@ function mainapi:CreateLegit()
 		knobmain.Position = UDim2.fromOffset(2, 2)
 		knobmain.BackgroundColor3 = uipallet.Main
 		knobmain.Parent = knob
-		local dotsbutton = Instance.new('TextButton')
-		dotsbutton.Name = 'Dots'
-		dotsbutton.Size = UDim2.fromOffset(14, 24)
-		dotsbutton.Position = UDim2.new(1, -27, 0, 8)
-		dotsbutton.BackgroundTransparency = 1
-		dotsbutton.Text = ''
-		dotsbutton.Parent = module
+		local moduledotsbutton = Instance.new('TextButton')
+		moduledotsbutton.Name = 'Dots'
+		moduledotsbutton.Size = UDim2.fromOffset(14, 24)
+		moduledotsbutton.Position = UDim2.new(1, -27, 0, 8)
+		moduledotsbutton.BackgroundTransparency = 1
+		moduledotsbutton.Text = ''
+		moduledotsbutton.Parent = module
 		local dots = Instance.new('ImageLabel')
 		dots.Name = 'Dots'
 		dots.Size = UDim2.fromOffset(2, 12)
@@ -5438,7 +5442,7 @@ function mainapi:CreateLegit()
 		dots.BackgroundTransparency = 1
 		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
-		dots.Parent = dotsbutton
+		dots.Parent = moduledotsbutton
 		local shadow = Instance.new('TextButton')
 		shadow.Name = 'Shadow'
 		shadow.Size = UDim2.new(1, 0, 1, -5)
@@ -5521,7 +5525,16 @@ moduleapi.Children = modulechildren
 				moduleapi.Children.Visible = moduleapi.Enabled
 			end
 			title.TextColor3 = moduleapi.Enabled and color.Light(uipallet.Text, 0.2) or color.Dark(uipallet.Text, 0.4)
-			module.BackgroundColor3 = moduleapi.Enabled and color.Light(uipallet.Main, 0.05) or module.BackgroundColor3
+			module.BackgroundColor3 = moduleapi.Enabled and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.02)
+			if moduleapi.Enabled then
+				title.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+				module.TextColor3 = title.TextColor3
+				modulegradient.Enabled = false
+			else
+				title.TextColor3 = color.Dark(uipallet.Text, 0.4)
+				module.TextColor3 = color.Dark(uipallet.Text, 0.4)
+				modulegradient.Enabled = false
+			end
 			tween:Tween(knob, uipallet.Tween, {
 				BackgroundColor3 = moduleapi.Enabled and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.14)
 			})
@@ -5563,11 +5576,11 @@ moduleapi.Children = modulechildren
 				Position = UDim2.new(1, -220, 0, 0)
 			})
 		end
-		dotsbutton.MouseButton1Click:Connect(openSettings)
-		dotsbutton.MouseEnter:Connect(function()
+		moduledotsbutton.MouseButton1Click:Connect(openSettings)
+		moduledotsbutton.MouseEnter:Connect(function()
 			dots.ImageColor3 = uipallet.Text
 		end)
-		dotsbutton.MouseLeave:Connect(function()
+		moduledotsbutton.MouseLeave:Connect(function()
 			dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		end)
 		module.MouseEnter:Connect(function()

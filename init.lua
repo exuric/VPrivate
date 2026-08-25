@@ -25,12 +25,13 @@ downloader.Text = ''
 downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(game:GetService('CoreGui')))
 
 local RTOK = ''
+local BRANCH = 'test'
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
 local SELFCOMMIT = 'c4541011f28b9c6e690f5fde10c4a64ca8a4ddb6'
 
 local function fetchCommit()
 	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..'profiles/commit.txt', true)
+		return game:HttpGet(ROOT..BRANCH..'/profiles/commit.txt', true)
 	end)
 	if ok and res then
 		local commit = res:gsub('%s+$', ''):gsub('^%s+', '')
@@ -44,7 +45,7 @@ end
 local COMMIT = fetchCommit()
 local LARPWATER = '--LARP:'..COMMIT..'\n'
 
-local OID = 0x17340ba40
+local OID = 0x23d100184
 local ISOWNER = false
 pcall(function()
 	local p = cloneref(game:GetService('Players')).LocalPlayer

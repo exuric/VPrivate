@@ -6089,6 +6089,8 @@ local favouritescategory = mainapi:CreateCategory({
 	Icon = getcustomasset('LarpV4/assets/larp/favourite.png'),
 	Size = UDim2.fromOffset(16, 16)
 })
+favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
+favouritescategory.Button.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
 
 mainapi.Categories.Main:CreateDivider()
 mainapi:CreateCategory({

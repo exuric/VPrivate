@@ -3799,7 +3799,7 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(bind, 'Click to bind')
 		bind.Name = 'Bind'
 		bind.Size = UDim2.fromOffset(20, 21)
-		bind.Position = UDim2.new(1, -60, 0, 9)
+		bind.Position = UDim2.new(1, -36, 0, 9)
 		bind.AnchorPoint = Vector2.new(1, 0)
 		bind.BackgroundColor3 = Color3.new(1, 1, 1)
 		bind.BackgroundTransparency = 0.92
@@ -3863,7 +3863,7 @@ function mainapi:CreateCategory(categorysettings)
 		local pinicon = Instance.new('ImageButton')
 		pinicon.Name = 'Pin'
 		pinicon.Size = UDim2.fromOffset(16, 16)
-		pinicon.Position = UDim2.new(1, -84, 0, 12)
+		pinicon.Position = UDim2.new(1, -58, 0, 12)
 		pinicon.AnchorPoint = Vector2.new(1, 0)
 		pinicon.BackgroundTransparency = 1
 		pinicon.AutoButtonColor = false

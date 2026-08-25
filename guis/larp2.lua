@@ -5678,11 +5678,11 @@ function mainapi:CreateNotification(title, text, duration, type)
 		if self.ThreadFix then
 			setthreadidentity(8)
 		end
-		local i = #notifications:GetChildren() + 1
 		local notification = Instance.new('ImageLabel')
 		notification.Name = 'Notification'
 		notification.Size = UDim2.fromOffset(math.max(266, math.max(getfontsize(removeTags(text), 14, uipallet.Font).X, getfontsize(removeTags(title), 14, uipallet.FontSemiBold).X) + 80), 75)
-		notification.Position = UDim2.new(1, 0, 1, -(29 + (78 * i)))
+		notification.AnchorPoint = Vector2.new(1, 0)
+		notification.Position = UDim2.new(1, 0, 1, 0)
 		notification.ZIndex = 5
 		notification.BackgroundTransparency = 1
 		notification.Image = getcustomasset('LarpV4/assets/larp/notification.png')
@@ -5746,23 +5746,41 @@ function mainapi:CreateNotification(title, text, duration, type)
 			or Color3.fromRGB(220, 220, 220)
 		progress.BorderSizePixel = 0
 		progress.Parent = notification
+
+		local function restack()
+			local height = 78
+			local index = 0
+			for _, v in notifications:GetChildren() do
+				if v:IsA('ImageLabel') and v.Enabled then
+					index = index + 1
+					local target = UDim2.new(1, 0, 1, -(29 + (height * index)))
+					tween:Cancel(v)
+					tween:Tween(v, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+						Position = target
+					})
+				end
+			end
+		end
+
 		if tween.Tween then
 			tween:Tween(notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
-				AnchorPoint = Vector2.new(1, 0)
+				AnchorPoint = Vector2.new(0, 0)
 			}, tween.tweenstwo)
-			tween:Tween(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-				Size = UDim2.fromOffset(0, 2)
-			})
 		end
+		restack()
+		tween:Tween(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+			Size = UDim2.fromOffset(0, 2)
+		})
 		task.delay(duration, function()
 			if tween.Tween then
 				tween:Tween(notification, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
-					AnchorPoint = Vector2.new(0, 0)
+					AnchorPoint = Vector2.new(1, 0)
 				}, tween.tweenstwo)
 			end
 			task.wait(0.2)
 			notification:ClearAllChildren()
 			notification:Destroy()
+			restack()
 		end)
 	end)
 end

@@ -79,6 +79,10 @@ local getcustomassets = {
 	['LarpV4/assets/larp/closemini.png'] = 'rbxassetid://14368310467',
 	['LarpV4/assets/larp/colorpreview.png'] = 'rbxassetid://14368311578',
 	['LarpV4/assets/larp/combaticon.png'] = 'rbxassetid://14368312652',
+	['LarpV4/assets/larp/auraicon.png'] = '',
+	['LarpV4/assets/larp/autoicon.png'] = '',
+	['LarpV4/assets/larp/charicon.png'] = '',
+	['LarpV4/assets/larp/ghosticons.png'] = '',
 	['LarpV4/assets/larp/customsettings.png'] = 'rbxassetid://14403726449',
 	['LarpV4/assets/larp/discord.png'] = '',
 	['LarpV4/assets/larp/dots.png'] = 'rbxassetid://14368314459',
@@ -6370,6 +6374,26 @@ mainapi:CreateCategory({
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
+mainapi:CreateCategory({
+	Name = 'Char (not finished)',
+	Icon = getcustomasset('LarpV4/assets/larp/charicon.png'),
+	Size = UDim2.fromOffset(16, 16)
+})
+mainapi:CreateCategory({
+	Name = 'Aura (not finished)',
+	Icon = getcustomasset('LarpV4/assets/larp/auraicon.png'),
+	Size = UDim2.fromOffset(16, 16)
+})
+mainapi:CreateCategory({
+	Name = 'Ghost (not finished)',
+	Icon = getcustomasset('LarpV4/assets/larp/ghosticons.png'),
+	Size = UDim2.fromOffset(16, 16)
+})
+mainapi:CreateCategory({
+	Name = 'Auto (not finished)',
+	Icon = getcustomasset('LarpV4/assets/larp/autoicon.png'),
+	Size = UDim2.fromOffset(16, 16)
+})
 local favouritescategory = mainapi:CreateCategory({
 	Name = 'Favourites (not finished)',
 	Icon = getcustomasset('LarpV4/assets/larp/favouritestar2.png'),
@@ -6668,9 +6692,13 @@ guipane:CreateButton({
 			WorldCategory = 6,
 			InventoryCategory = 7,
 			MinigamesCategory = 8,
-			FavouritesCategory = 9,
-			FriendsCategory = 10,
-			ProfilesCategory = 11
+			CharCategory = 9,
+			AuraCategory = 10,
+			GhostCategory = 11,
+			AutoCategory = 12,
+			FavouritesCategory = 13,
+			FriendsCategory = 14,
+			ProfilesCategory = 15
 		}
 		local categories = {}
 		for _, v in mainapi.Categories do

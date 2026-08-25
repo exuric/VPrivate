@@ -89,6 +89,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/friendstab.png'] = 'rbxassetid://14397462778',
 	['LarpV4/assets/larp/favourite.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/favouritestar.png'] = 'rbxassetid://14368342301',
+	['LarpV4/assets/larp/favouritestar2.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
 	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
 	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
@@ -2825,7 +2826,7 @@ function mainapi:CreateGUI()
 		favbutton.Position = UDim2.new(1, -55, 0, 8)
 		favbutton.BackgroundTransparency = 1
 		favbutton.AutoButtonColor = false
-		favbutton.Image = getcustomasset('LarpV4/assets/larp/favouritestar.png')
+		favbutton.Image = getcustomasset('LarpV4/assets/larp/favouritestar2.png')
 		favbutton.ImageColor3 = Color3.new(1, 1, 1)
 		favbutton.Parent = bar
 		addCorner(favbutton, UDim.new(1, 0))

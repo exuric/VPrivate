@@ -6237,7 +6237,7 @@ function mainapi:UpdatePinned()
 							end
 						end)
 						addTooltip(pinicon, 'Hold to unpin')
-						updatePin()
+						updatePinVisible()
 					end
 					if dots then
 						dots.MouseButton1Click:Connect(openPinnedSettings)

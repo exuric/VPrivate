@@ -3799,7 +3799,7 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(bind, 'Click to bind')
 		bind.Name = 'Bind'
 		bind.Size = UDim2.fromOffset(20, 21)
-		bind.Position = UDim2.new(1, -58, 0, 9)
+		bind.Position = UDim2.new(1, -36, 0, 9)
 		bind.AnchorPoint = Vector2.new(1, 0)
 		bind.BackgroundColor3 = Color3.new(1, 1, 1)
 		bind.BackgroundTransparency = 0.92
@@ -3863,7 +3863,7 @@ function mainapi:CreateCategory(categorysettings)
 		local pinicon = Instance.new('ImageButton')
 		pinicon.Name = 'Pin'
 		pinicon.Size = UDim2.fromOffset(16, 16)
-		pinicon.Position = UDim2.new(1, -36, 0, 12)
+		pinicon.Position = UDim2.new(1, -58, 0, 12)
 		pinicon.AnchorPoint = Vector2.new(1, 0)
 		pinicon.BackgroundTransparency = 1
 		pinicon.AutoButtonColor = false
@@ -6197,12 +6197,21 @@ function mainapi:UpdatePinned()
 								ch.Parent = pinnedchildren
 								ch.LayoutOrder = moduleapi.Index + 1
 								ch.Visible = true
-								task.wait(0.02)
-								pcall(function()
-									local wl = ch:FindFirstChildOfClass('UIListLayout')
-									if wl then
-										ch.Size = UDim2.new(1, 0, 0, wl.AbsoluteContentSize.Y / scale.Scale)
-									end
+								task.delay(0.05, function()
+									if ch.Parent ~= pinnedchildren then return end
+									pcall(function()
+										local wl = ch:FindFirstChildOfClass('UIListLayout')
+										if wl then
+											ch.Size = UDim2.new(1, 0, 0, wl.AbsoluteContentSize.Y / scale.Scale)
+										end
+									end)
+									pcall(function()
+										local wp = pinnedcategory.Object
+										local wl2 = pinnedchildren:FindFirstChildOfClass('UIListLayout')
+										if wp and wl2 then
+											wp.Size = UDim2.fromOffset(220, math.min(41 + wl2.AbsoluteContentSize.Y / scale.Scale, 601))
+										end
+									end)
 								end)
 							else
 								ch.Visible = not ch.Visible
@@ -6217,7 +6226,7 @@ function mainapi:UpdatePinned()
 					local function updatePinVisible()
 						local bindvisible = bind and (bind.Visible or hovered or (moduleapi.Children and moduleapi.Children.Visible))
 						if pinicon then
-							pinicon.Visible = true
+							pinicon.Visible = not bindvisible
 						end
 					end
 					clone.MouseButton1Click:Connect(function()
@@ -8151,7 +8160,7 @@ do
 		empty.Position = UDim2.new(0, 14, 0.5, 10)
 		empty.BackgroundTransparency = 1
 		empty.Text = 'No changelogs found'
-		empty.TextColor3 = color.Dark(uipallet.Text, 0.3)
+		empty.TextColor3 = color.Light(uipallet.Text, 0.3)
 		empty.TextSize = 12
 		empty.FontFace = uipallet.Font
 		empty.Visible = #entries == 0
@@ -8254,6 +8263,14 @@ do
 				end
 			end
 		end
+		if #entries == 0 then
+			for _, line in text:split('\n') do
+				local name = line:gsub('^%s+', ''):gsub('%s+$', '')
+				if name ~= '' and name ~= 'Changelog' then
+					entries[#entries + 1] = {status = 'modified', name = name}
+				end
+			end
+		end
 		return entries
 	end
 
@@ -8266,11 +8283,21 @@ do
 	end
 
 	local function fetchChangelog()
-		local ok, req = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..currentCommit()..'/changelog.txt?v='..tick(), true)
-		end)
-		if not ok or not req or req == '404: Not Found' then return nil end
-		return req
+		local c = currentCommit()
+		local urls = {}
+		if c ~= 'main' then
+			urls[#urls + 1] = 'https://raw.githubusercontent.com/exuric/VPrivate/'..c..'/changelog.txt?v='..tick()
+		end
+		urls[#urls + 1] = 'https://raw.githubusercontent.com/exuric/VPrivate/main/changelog.txt?v='..tick()
+		for _, u in urls do
+			local ok, req = pcall(function()
+				return game:HttpGet(u, true)
+			end)
+			if ok and req and req ~= '404: Not Found' and req ~= '' then
+				return req
+			end
+		end
+		return nil
 	end
 
 	function mainapi.Changelog()

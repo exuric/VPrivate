@@ -2827,10 +2827,16 @@ function mainapi:CreateGUI()
 		favbutton.BackgroundTransparency = 1
 		favbutton.AutoButtonColor = false
 		favbutton.Image = getcustomasset('LarpV4/assets/larp/favouritestar2.png')
-		favbutton.ImageColor3 = Color3.new(1, 1, 1)
+		favbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favbutton.Parent = bar
 		addCorner(favbutton, UDim.new(1, 0))
 		addTooltip(favbutton, 'Favourites (not finished)')
+		favbutton.MouseEnter:Connect(function()
+			favbutton.ImageColor3 = uipallet.Text
+		end)
+		favbutton.MouseLeave:Connect(function()
+			favbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		end)
 		local shadow = Instance.new('TextButton')
 		shadow.Name = 'Shadow'
 		shadow.Size = UDim2.new(1, 0, 1, -5)

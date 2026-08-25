@@ -4003,6 +4003,7 @@ function mainapi:CreateCategory(categorysettings)
 			end
 		end)
 		dotsbutton.MouseButton1Click:Connect(function()
+			if modulechildren:GetChildren() == 0 then return end
 			if modulechildren.Parent ~= moduleapi.ChildrenParent then
 				modulechildren.Parent = moduleapi.ChildrenParent
 				modulechildren.Visible = not modulechildren.Visible
@@ -4011,6 +4012,7 @@ function mainapi:CreateCategory(categorysettings)
 			end
 		end)
 		dotsbutton.MouseButton2Click:Connect(function()
+			if modulechildren:GetChildren() == 0 then return end
 			if modulechildren.Parent ~= moduleapi.ChildrenParent then
 				modulechildren.Parent = moduleapi.ChildrenParent
 				modulechildren.Visible = not modulechildren.Visible
@@ -7485,9 +7487,6 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			button.Object.Bind.Icon.ImageColor3 = button.Object.TextColor3
 			button.Object.Bind.TextLabel.TextColor3 = button.Object.TextColor3
 			button.Object.Dots.Dots.ImageColor3 = button.Object.TextColor3
-			if button.Object.Pin then
-				button.Object.Pin.ImageColor3 = button.Object.TextColor3
-			end
 		end
 
 		for _, option in button.Options do

@@ -3799,7 +3799,7 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(bind, 'Click to bind')
 		bind.Name = 'Bind'
 		bind.Size = UDim2.fromOffset(20, 21)
-		bind.Position = UDim2.new(1, -36, 0, 9)
+		bind.Position = UDim2.new(1, -60, 0, 9)
 		bind.AnchorPoint = Vector2.new(1, 0)
 		bind.BackgroundColor3 = Color3.new(1, 1, 1)
 		bind.BackgroundTransparency = 0.92
@@ -3859,26 +3859,38 @@ function mainapi:CreateCategory(categorysettings)
 		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = dotsbutton
-		local pinicon = Instance.new('ImageLabel')
+		local pinsubmit = nil
+		local pinicon = Instance.new('ImageButton')
 		pinicon.Name = 'Pin'
 		pinicon.Size = UDim2.fromOffset(16, 16)
-		pinicon.Position = UDim2.new(1, -48, 0, 12)
+		pinicon.Position = UDim2.new(1, -34, 0, 12)
+		pinicon.AnchorPoint = Vector2.new(1, 0)
 		pinicon.BackgroundTransparency = 1
+		pinicon.AutoButtonColor = false
 		pinicon.Image = getcustomasset('LarpV4/assets/larp/pin.png')
 		pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		pinicon.Visible = false
 		pinicon.ZIndex = 2
 		pinicon.Parent = modulebutton
+		addTooltip(pinicon, 'Pin to top')
 		local pinned = false
 		local function updatePin()
-			pinicon.Visible = pinned and not bind.Visible
+			pinicon.ImageColor3 = pinned and uipallet.Text or color.Light(uipallet.Main, 0.37)
 		end
+		pinicon.MouseButton1Click:Connect(function()
+			local api = shared.larp or getgenv().larp
+			local mod = api and api.Modules and api.Modules[modulesettings.Name]
+			if mod and mod.togglePin then
+				mod:togglePin()
+			end
+		end)
 		modulechildren.Name = modulesettings.Name..'Children'
 		modulechildren.Size = UDim2.new(1, 0, 0, 0)
 		modulechildren.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
 		modulechildren.BorderSizePixel = 0
 		modulechildren.Visible = false
 		modulechildren.Parent = children
+		moduleapi.ChildrenParent = children
 		addCorner(modulechildren, UDim.new(0, 6))
 		moduleapi.Children = modulechildren
 		local windowlist = Instance.new('UIListLayout')
@@ -4033,6 +4045,7 @@ function mainapi:CreateCategory(categorysettings)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			pinicon.Visible = pinned or hovered or modulechildren.Visible
 			updatePin()
 		end)
 		modulebutton.MouseLeave:Connect(function()
@@ -4042,6 +4055,7 @@ function mainapi:CreateCategory(categorysettings)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			pinicon.Visible = pinned or hovered or modulechildren.Visible
 			updatePin()
 		end)
 		modulebutton.MouseButton1Click:Connect(function()
@@ -4099,7 +4113,14 @@ function mainapi:CreateCategory(categorysettings)
 			if mainapi.ThreadFix then
 				setthreadidentity(8)
 			end
-			modulechildren.Size = UDim2.new(1, 0, 0, windowlist.AbsoluteContentSize.Y / scale.Scale)
+			if modulechildren.Parent then
+				local plist = modulechildren.Parent:FindFirstChildOfClass('UIListLayout')
+				if plist then
+					modulechildren.Size = UDim2.new(1, 0, 0, plist.AbsoluteContentSize.Y / scale.Scale)
+				else
+					modulechildren.Size = UDim2.new(1, 0, 0, windowlist.AbsoluteContentSize.Y / scale.Scale)
+				end
+			end
 		end)
 
 		moduleapi.Object = modulebutton
@@ -4147,6 +4168,11 @@ function mainapi:CreateCategory(categorysettings)
 			end,
 			Tooltip = 'Moves this module to the Pinned tab.'
 		})
+		function moduleapi:togglePin()
+			if pin then
+				pin:Toggle()
+			end
+		end
 
 		return moduleapi
 	end
@@ -6155,21 +6181,64 @@ function mainapi:UpdatePinned()
 					local hovered = false
 					local function openPinnedSettings()
 						if moduleapi.Children then
-							moduleapi.Children.Visible = not moduleapi.Children.Visible
+							local ch = moduleapi.Children
+							if ch.Parent ~= pinnedchildren then
+								ch.Parent = pinnedchildren
+								ch.LayoutOrder = moduleapi.Index + 1
+								ch.Visible = true
+							else
+								ch.Visible = not ch.Visible
+							end
 						elseif moduleapi.OpenSettings then
 							moduleapi.OpenSettings()
+						end
+						if moduleapi.Children and moduleapi.Children.Visible then
+							pinnedchildren.Visible = true
 						end
 					end
 					local function updatePinVisible()
 						local bindvisible = bind and (bind.Visible or hovered or (moduleapi.Children and moduleapi.Children.Visible))
 						if pinicon then
-							pinicon.Visible = enabled and not bindvisible
+							pinicon.Visible = true
 						end
 					end
 					clone.MouseButton1Click:Connect(function()
-						moduleapi:Toggle()
+						if moduleapi.Children and moduleapi.Children.Visible then
+							openPinnedSettings()
+						else
+							moduleapi:Toggle()
+						end
 					end)
 					clone.MouseButton2Click:Connect(openPinnedSettings)
+					if pinicon then
+						local pinup = false
+						local pinhold = false
+						pinicon.MouseButton1Down:Connect(function()
+							pinhold = true
+							local hold = tick()
+							repeat
+								if not pinhold or not pinicon.Parent then break end
+								task.wait()
+							until tick() - hold >= 0.4
+							if pinhold then
+								local mod = moduleapi
+								if mod and mod.togglePin then
+									mod:togglePin()
+								end
+								return
+							end
+						end)
+						pinicon.MouseButton1Up:Connect(function()
+							pinhold = false
+						end)
+						pinicon.MouseButton1Click:Connect(function()
+							if moduleapi.Children then
+								moduleapi.Children.Visible = not moduleapi.Children.Visible
+							end
+						end)
+						addTooltip(pinicon, 'Hold to unpin')
+						updatePin()
+					end
 					if dots then
 						dots.MouseButton1Click:Connect(openPinnedSettings)
 						dots.MouseButton2Click:Connect(openPinnedSettings)
@@ -6302,6 +6371,10 @@ function mainapi:UpdatePinned()
 		elseif moduleapi.PinnedClone then
 			moduleapi.PinnedClone:Destroy()
 			moduleapi.PinnedClone = nil
+			if moduleapi.Children and moduleapi.Children.Parent ~= moduleapi.ChildrenParent then
+				moduleapi.Children.Parent = moduleapi.ChildrenParent
+				moduleapi.Children.Visible = false
+			end
 		end
 	end
 	if count > 0 and not pinnedcategory.Expanded then
@@ -7885,6 +7958,14 @@ if shared.LarpPresetInstall then
 end
 
 do
+	local function currentCommit()
+		local ok, res = pcall(readfile, 'LarpV4/profiles/commit.txt')
+		if ok and type(res) == 'string' and #res == 40 then
+			return res:gsub('%s+$', '')
+		end
+		return 'main'
+	end
+
 	local function buildChangelog(entries, isnew)
 		repeat task.wait(0.1) until not clickgui:FindFirstChild('PromptShadow')
 
@@ -7906,95 +7987,90 @@ do
 
 		local window = Instance.new('Frame')
 		window.Name = 'Changelog'
-		window.Size = UDim2.fromOffset(700, 440)
-		window.Position = UDim2.new(0.5, -350, 0.5, -220)
-		window.ZIndex = 9
-		window.BackgroundColor3 = uipallet.Main
+		window.Size = UDim2.fromOffset(640, 430)
+		window.Position = UDim2.new(0.5, -320, 0.5, -215)
+		window.ZIndex = 10
+		window.BackgroundColor3 = color.Dark(uipallet.Main, 0.08)
 		window.BorderSizePixel = 0
 		window.Parent = clickgui
-		addCorner(window, UDim.new(0, 12))
+		addCorner(window, UDim.new(0, 10))
 		addBlur(window)
 		makeDraggable(window)
 		local windowstroke = Instance.new('UIStroke')
-		windowstroke.Color = color.Light(uipallet.Main, 0.37)
-		windowstroke.Transparency = 0.6
+		windowstroke.Color = color.Light(uipallet.Main, 0.38)
 		windowstroke.Thickness = 1
 		windowstroke.Parent = window
+
+		local header = Instance.new('Frame')
+		header.Size = UDim2.new(1, 0, 0, 47)
+		header.BackgroundTransparency = 1
+		header.Parent = window
+		local logologo = Instance.new('ImageLabel')
+		logologo.Size = UDim2.fromOffset(62, 18)
+		logologo.Position = UDim2.fromOffset(12, 13)
+		logologo.BackgroundTransparency = 1
+		logologo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
+		logologo.ImageColor3 = uipallet.Text
+		logologo.Parent = header
 		local title = Instance.new('TextLabel')
-		title.Size = UDim2.new(1, -100, 0, 20)
-		title.Position = UDim2.fromOffset(14, 10)
-		title.ZIndex = 10
+		title.Size = UDim2.new(1, -120, 0, 16)
+		title.Position = UDim2.fromOffset(14, 30)
 		title.BackgroundTransparency = 1
-		title.Text = 'Larp V4'
+		title.Text = 'Larp V4 // update log'
 		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.TextColor3 = uipallet.Text
-		title.TextSize = 15
+		title.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		title.TextSize = 12
 		title.FontFace = uipallet.FontSemiBold
-		title.Parent = window
-		local subtitle = Instance.new('TextLabel')
-		subtitle.Size = UDim2.new(1, -100, 0, 16)
-		subtitle.Position = UDim2.fromOffset(14, 31)
-		subtitle.ZIndex = 10
-		subtitle.BackgroundTransparency = 1
-		subtitle.Text = '> update log'
-		subtitle.TextXAlignment = Enum.TextXAlignment.Left
-		subtitle.TextColor3 = Color3.fromRGB(80, 250, 123)
-		subtitle.TextSize = 11
-		subtitle.FontFace = Font.fromEnum(Enum.Font.Code)
-		subtitle.Parent = window
+		title.Parent = header
 		local status = Instance.new('TextLabel')
 		status.Name = 'Status'
-		status.Size = UDim2.new(1, -170, 0, 16)
+		status.Size = UDim2.new(1, -110, 0, 18)
 		status.Position = UDim2.fromOffset(0, 14)
-		status.ZIndex = 10
 		status.BackgroundTransparency = 1
 		status.Text = ''
 		status.TextXAlignment = Enum.TextXAlignment.Right
-		status.TextColor3 = Color3.fromRGB(122, 132, 122)
+		status.TextColor3 = color.Dark(uipallet.Text, 0.3)
 		status.TextSize = 11
 		status.FontFace = uipallet.Font
-		status.Parent = window
-		local close = Instance.new('ImageButton')
-		close.Name = 'Close'
-		close.Size = UDim2.fromOffset(24, 24)
-		close.Position = UDim2.new(1, -35, 0, 11)
-		close.ZIndex = 12
-		close.BackgroundTransparency = 1
-		close.AutoButtonColor = false
-		close.Image = getcustomasset('LarpV4/assets/larp/close.png')
-		close.ImageColor3 = uipallet.Text
-		close.Parent = window
-		close.MouseEnter:Connect(function()
-			close.ImageColor3 = Color3.fromRGB(255, 85, 85)
-		end)
-		close.MouseLeave:Connect(function()
-			close.ImageColor3 = uipallet.Text
-		end)
-		close.MouseButton1Click:Connect(function()
-			window:Destroy()
-		end)
+		status.Parent = header
+		local close = addCloseButton(header, 11)
+
 		local divider = Instance.new('Frame')
-		divider.Size = UDim2.new(1, -28, 0, 1)
-		divider.Position = UDim2.fromOffset(14, 52)
-		divider.ZIndex = 10
-		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		divider.Size = UDim2.new(1, -24, 0, 1)
+		divider.Position = UDim2.fromOffset(12, 47)
+		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
 		divider.BorderSizePixel = 0
 		divider.Parent = window
+
+		local screen = Instance.new('Frame')
+		screen.Size = UDim2.new(1, -24, 0, 300)
+		screen.Position = UDim2.fromOffset(12, 58)
+		screen.BackgroundColor3 = color.Dark(uipallet.Main, 0.16)
+		screen.BorderSizePixel = 0
+		screen.Parent = window
+		addCorner(screen, UDim.new(0, 6))
 		local list = Instance.new('ScrollingFrame')
 		list.Name = 'List'
-		list.Size = UDim2.new(1, 0, 1, -99)
-		list.Position = UDim2.fromOffset(0, 53)
-		list.ZIndex = 10
+		list.Size = UDim2.new(1, -16, 1, -16)
+		list.Position = UDim2.fromOffset(8, 8)
 		list.BackgroundTransparency = 1
 		list.BorderSizePixel = 0
-		list.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.3)
 		list.ScrollBarThickness = 4
+		list.ScrollBarImageTransparency = 0.75
+		list.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.3)
 		list.CanvasSize = UDim2.fromScale(1, 0)
-		list.Parent = window
+		list.Parent = screen
 		local listlayout = Instance.new('UIListLayout')
-		listlayout.Padding = UDim.new(0, 2)
+		listlayout.Padding = UDim.new(0, 3)
 		listlayout.SortOrder = Enum.SortOrder.LayoutOrder
+		listlayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		listlayout.Parent = list
+		local listpad = Instance.new('UIPadding')
+		listpad.PaddingLeft = UDim.new(0, 6)
+		listpad.PaddingRight = UDim.new(0, 6)
+		listpad.PaddingTop = UDim.new(0, 6)
+		listpad.PaddingBottom = UDim.new(0, 6)
+		listpad.Parent = list
 		local function updateList()
 			list.CanvasSize = UDim2.fromOffset(0, listlayout.AbsoluteContentSize.Y)
 		end
@@ -8002,45 +8078,28 @@ do
 		updateList()
 
 		local codefont = Font.fromEnum(Enum.Font.Code)
+		local statuscolors = {
+			added = Color3.fromRGB(143, 214, 158),
+			modified = Color3.fromRGB(224, 215, 152),
+			removed = Color3.fromRGB(224, 152, 152)
+		}
+		local prefixes = {added = '[+]', modified = '[~]', removed = '[-]'}
 		local rows = {}
 		for _, v in entries do
-			local entry = Instance.new('Frame')
-			entry.Size = UDim2.new(1, 0, 0, 30)
-			entry.BackgroundTransparency = 1
-			entry.BorderSizePixel = 0
-			entry.Parent = list
-			local tag = Instance.new('TextLabel')
-			tag.Size = UDim2.fromOffset(44, 30)
-			tag.Position = UDim2.fromOffset(14, 0)
-			tag.ZIndex = 11
-			tag.BackgroundTransparency = 1
-			tag.FontFace = codefont
-			tag.TextSize = 13
-			tag.TextXAlignment = Enum.TextXAlignment.Left
-			tag.Parent = entry
-			local tagtext, tagcolor
-			if v.status == 'added' then
-				tagtext, tagcolor = '[+]', Color3.fromRGB(80, 250, 123)
-			elseif v.status == 'removed' then
-				tagtext, tagcolor = '[-]', Color3.fromRGB(255, 85, 85)
-			else
-				tagtext, tagcolor = '[*]', Color3.fromRGB(241, 250, 140)
-			end
-			tag.TextColor3 = tagcolor
-			tag.Text = ''
-			local name = Instance.new('TextLabel')
-			name.Size = UDim2.new(1, -74, 0, 30)
-			name.Position = UDim2.fromOffset(60, 0)
-			name.ZIndex = 11
-			name.BackgroundTransparency = 1
-			name.TextXAlignment = Enum.TextXAlignment.Left
-			name.TextTruncate = Enum.TextTruncate.AtEnd
-			name.TextColor3 = color.Dark(uipallet.Text, 0.16)
-			name.TextSize = 13
-			name.FontFace = codefont
-			name.Text = ''
-			name.Parent = entry
-			rows[#rows + 1] = {tag = tag, name = name, tagtext = tagtext, nametext = v.name}
+			local line = Instance.new('TextLabel')
+			line.Size = UDim2.fromOffset(560, 30)
+			line.BackgroundTransparency = 1
+			line.TextXAlignment = Enum.TextXAlignment.Left
+			line.Text = ''
+			line.TextSize = 13
+			line.FontFace = codefont
+			line.Parent = list
+			rows[#rows + 1] = {
+				label = line,
+				prefix = prefixes[v.status],
+				color = statuscolors[v.status],
+				name = v.name
+			}
 		end
 
 		local statusparts = {}
@@ -8053,59 +8112,100 @@ do
 		if modified > 0 then
 			statusparts[#statusparts + 1] = modified..' changed'
 		end
-		status.Text = isnew and #entries > 0 and table.concat(statusparts, ' · ') or 'Old changelogs'
+		status.Text = #statusparts > 0 and table.concat(statusparts, ' - ') or 'No changelogs found'
 		local empty = Instance.new('TextLabel')
 		empty.Name = 'Empty'
 		empty.Size = UDim2.new(1, -28, 0, 20)
 		empty.Position = UDim2.new(0, 14, 0.5, 10)
-		empty.ZIndex = 11
 		empty.BackgroundTransparency = 1
 		empty.Text = 'No changelogs found'
-		empty.TextColor3 = Color3.fromRGB(122, 132, 122)
+		empty.TextColor3 = color.Dark(uipallet.Text, 0.3)
 		empty.TextSize = 12
 		empty.FontFace = uipallet.Font
 		empty.Visible = #entries == 0
-		empty.Parent = window
+		empty.Parent = screen
 
 		local footer = Instance.new('Frame')
 		footer.Size = UDim2.new(1, 0, 0, 46)
 		footer.Position = UDim2.new(0, 0, 1, -46)
-		footer.ZIndex = 10
-		footer.BackgroundColor3 = Color3.new(1, 1, 1)
 		footer.BackgroundTransparency = 1
 		footer.BorderSizePixel = 0
 		footer.Parent = window
 		local footline = Instance.new('Frame')
-		footline.Size = UDim2.new(1, -28, 0, 1)
-		footline.Position = UDim2.fromOffset(14, 0)
-		footline.ZIndex = 11
-		footline.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		footline.Size = UDim2.new(1, -24, 0, 1)
+		footline.Position = UDim2.fromOffset(12, 0)
+		footline.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
 		footline.BorderSizePixel = 0
 		footline.Parent = footer
-		local footleft = Instance.new('TextLabel')
-		footleft.Size = UDim2.new(1, -28, 0, 20)
-		footleft.Position = UDim2.fromOffset(14, 12)
-		footleft.ZIndex = 11
-		footleft.BackgroundTransparency = 1
-		footleft.Text = '> Larp V4'
-		footleft.TextXAlignment = Enum.TextXAlignment.Left
-		footleft.TextColor3 = Color3.fromRGB(80, 250, 123)
-		footleft.TextSize = 12
-		footleft.FontFace = Font.fromEnum(Enum.Font.Code)
-		footleft.Parent = footer
+		local dont = false
+		local dontbox = Instance.new('TextButton')
+		dontbox.Size = UDim2.fromOffset(196, 22)
+		dontbox.Position = UDim2.fromOffset(14, 12)
+		dontbox.BackgroundTransparency = 1
+		dontbox.Text = ''
+		dontbox.AutoButtonColor = false
+		dontbox.Parent = footer
+		local box = Instance.new('Frame')
+		box.Size = UDim2.fromOffset(14, 14)
+		box.Position = UDim2.fromOffset(0, 4)
+		box.BackgroundColor3 = color.Dark(uipallet.Main, 0.14)
+		box.BorderSizePixel = 0
+		box.Parent = dontbox
+		addCorner(box, UDim.new(0, 3))
+		local boxtick = Instance.new('TextLabel')
+		boxtick.Size = UDim2.fromScale(1, 1)
+		boxtick.BackgroundTransparency = 1
+		boxtick.Text = ''
+		boxtick.TextColor3 = uipallet.Text
+		boxtick.TextSize = 10
+		boxtick.FontFace = uipallet.FontSemiBold
+		boxtick.Parent = box
+		local dontlabel = Instance.new('TextLabel')
+		dontlabel.Size = UDim2.new(1, -22, 1, 0)
+		dontlabel.Position = UDim2.fromOffset(20, 0)
+		dontlabel.BackgroundTransparency = 1
+		dontlabel.Text = "Don't show again until a new update"
+		dontlabel.TextXAlignment = Enum.TextXAlignment.Left
+		dontlabel.TextColor3 = color.Dark(uipallet.Text, 0.26)
+		dontlabel.TextSize = 12
+		dontlabel.FontFace = uipallet.Font
+		dontlabel.Parent = dontbox
+		local dcommit = currentCommit()
+		if isfile('LarpV4/seenchangelog.txt') then
+			dont = readfile('LarpV4/seenchangelog.txt'):gsub('%s+$', '') == dcommit
+			if dont then
+				boxtick.Text = 'x'
+			end
+		end
+		local function handleDont()
+			dont = not dont
+			boxtick.Text = dont and 'x' or ''
+			pcall(function()
+				if dont then
+					writefile('LarpV4/seenchangelog.txt', dcommit)
+				else
+					pcall(delfile, 'LarpV4/seenchangelog.txt')
+				end
+			end)
+		end
+		dontbox.MouseButton1Click:Connect(handleDont)
+		close.MouseButton1Click:Connect(function()
+			window:Destroy()
+		end)
+
 		task.spawn(function()
+			local localfont = Font.fromEnum(Enum.Font.Code)
 			for _, row in rows do
-				if not row.tag.Parent then return end
-				for i = 1, #row.tagtext do
-					row.tag.Text = row.tagtext:sub(1, i)
-					task.wait(0.02)
+				if not row.label.Parent then return end
+				local full = row.prefix..' '..row.name
+				for i = 1, #full do
+					if not row.label.Parent then return end
+					row.label.TextColor3 = row.color
+					row.label.Text = full:sub(1, i)
+					task.wait(0.025)
 				end
-				if not row.name.Parent then return end
-				for i = 1, #row.nametext do
-					row.name.Text = row.nametext:sub(1, i)
-					task.wait(0.015)
-				end
-				task.wait(0.05)
+				task.wait(0.08)
+				list.CanvasPosition = Vector2.new(0, math.max(list.CanvasPosition.Y, list.CanvasSize.Y.Offset - list.AbsoluteWindowSize.Y + 16))
 			end
 			task.wait(0.2)
 			if footer.Parent then
@@ -8130,11 +8230,19 @@ do
 		return entries
 	end
 
+	local function currentCommit()
+		local ok, res = pcall(readfile, 'LarpV4/profiles/commit.txt')
+		if ok and type(res) == 'string' and #res == 40 then
+			return res:gsub('%s+$', '')
+		end
+		return 'main'
+	end
+
 	local function fetchChangelog()
-		local suc, req = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/changelog.txt?v='..tick(), true)
+		local ok, req = pcall(function()
+			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..currentCommit()..'/changelog.txt?v='..tick(), true)
 		end)
-		if not suc or not req or req == '404: Not Found' then return nil end
+		if not ok or not req or req == '404: Not Found' then return nil end
 		return req
 	end
 
@@ -8145,22 +8253,21 @@ do
 			mainapi:CreateNotification('Changelog', 'Failed to fetch changelog', 3, 'warning')
 			return
 		end
-		local seen = isfile('LarpV4/seenchangelog.txt') and readfile('LarpV4/seenchangelog.txt') or nil
 		local entries = parseChangelog(text)
-		buildChangelog(entries, seen ~= nil and text ~= seen)
-		writefile('LarpV4/seenchangelog.txt', text)
+		buildChangelog(entries)
 	end
 
+	local autoshown = false
 	local function checkChangelog()
-		local text = fetchChangelog()
-		if not text then return end
-		local seen = isfile('LarpV4/seenchangelog.txt') and readfile('LarpV4/seenchangelog.txt') or nil
-		if seen ~= text or not seen and isfile('LarpV4/seencommit.txt') then
-			mainapi.PendingChangelog = true
-			if clickgui.Visible then
-				mainapi.PendingChangelog = false
-				mainapi.Changelog()
-			end
+		if autoshown then return end
+		autoshown = true
+		if isfile('LarpV4/seenchangelog.txt') and readfile('LarpV4/seenchangelog.txt'):gsub('%s+$', '') == currentCommit() then
+			return
+		end
+		mainapi.PendingChangelog = true
+		if clickgui.Visible then
+			mainapi.PendingChangelog = false
+			mainapi.Changelog()
 		end
 	end
 

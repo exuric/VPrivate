@@ -1,14 +1,8 @@
 Changelog
 
-KillAura Multi target hits every enemy in range with each swing
-New SkinChanger is now Larp Skins with a clean item type + skin picker and random/reset buttons
-KillAura attack range now matches the slider exactly, up to 30 studs
-KillAura target picking ignores the 15 stud limit so long range always works
-KillAura swings as fast as the server allows for consistent full-rate hits
-NameTags health bars show fill color that drains from green to red
-Faster loading: skip re-verification on repeat loads and removed startup waits
-Projectile aimbot now aims the Lasso (and Lassy) items reliably at the body
-Improved projectile aimbot target velocity tracking
-Adaptive mode now grades only aimed projectile hits
-Prediction slider is clamped in Adaptive mode
-Fixed KillAura swing timing for a consistent 34 hits per 10 seconds
++ Changelog terminal window (Larp.png, gray code font, typewriter lines, prev/next state)
++ "Don't show again until a new update" checkbox on the changelog
++ Pin button next to the bind button on every module
++ Pinned tab clones the module, keeps settings, unpin via holding the pin
+~ ProjectileAimbot: aim lock extended to 1s, Lasso uses full force so it stops ghosting
+~ ProjectileAimbot: fireball splash arc now uses the prediction and charge velocity

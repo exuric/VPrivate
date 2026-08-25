@@ -6132,6 +6132,11 @@ mainapi:CreateCategory({
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
+mainapi:CreateCategory({
+	Name = 'Favourites (not finished)',
+	Icon = getcustomasset('LarpV4/assets/larp/favourite.png'),
+	Size = UDim2.fromOffset(16, 16)
+})
 mainapi.Categories.Main:CreateDivider('misc')
 
 --[[

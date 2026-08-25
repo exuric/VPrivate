@@ -306,7 +306,7 @@ local function xr(s, k)
 end
 
 local AMSG = uhex('436f6e74616374204a78347220286e6f742077686974656c697374656429')
-local OID = 0x17340ba40
+local OID = 0x23d100184
 
 larp.Libraries.entity = entitylib
 larp.Libraries.whitelist = whitelistAPI
@@ -810,8 +810,8 @@ run(function()
 	local function wlseed()
 		local k2 = uhex('4433764b337935')
 		return {
-			{xr(uhex('365617276c0a50295819'), k2), 5},
-			{xr(uhex('0d571925470c4621521f26520a462d40027a'), k2), 5}
+			{xr(uhex('005a05285a0959217c100c5c1d51'), k2), 5},
+			{xr(uhex('0d571925470c4621521f26520a462d40027a'), k2), 4}
 		}
 	end
 

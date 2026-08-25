@@ -4252,13 +4252,12 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 						local dir
 						if calc and travelTime and travelTime <= lifetime then
-							dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeedTotal * (1 / (charge > 0 and charge or 1)))
-							if projmeta.velocityMultiplier then projmeta.velocityMultiplier = charge end
+							dir = CFrame.new(newlook.Position, calc).LookVector * projSpeedTotal
 							local clear = prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck)
 							if not clear and isFireball and FireballSplash.Enabled then
 								local feetCalc, _, feetTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos - Vector3.new(0, 2.8, 0), targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 								if feetCalc and feetTime and feetTime <= lifetime then
-									local feetDir = CFrame.new(newlook.Position, feetCalc).LookVector * (projSpeedTotal * (1 / (charge > 0 and charge or 1)))
+									local feetDir = CFrame.new(newlook.Position, feetCalc).LookVector * projSpeedTotal
 									if prediction.IsTrajectoryClear(newlook.Position, feetDir, gravity, feetTime, rayCheck) then
 										dir = feetDir
 										clear = true
@@ -4296,7 +4295,7 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 							if tt <= lifetime + 0.5 then
 								local aimPoint = targetPos + targetVel * tt + Vector3.new(0, 0.5 * gravity * tt * tt, 0)
 								return {
-									initialVelocity = CFrame.lookAt(newlook.p, aimPoint).LookVector * (projSpeedTotal * (1 / (charge > 0 and charge or 1))),
+									initialVelocity = CFrame.lookAt(newlook.p, aimPoint).LookVector * projSpeedTotal,
 									positionFrom = offsetpos,
 									deltaT = lifetime,
 									gravitationalAcceleration = gravity,

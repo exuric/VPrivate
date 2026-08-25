@@ -2591,25 +2591,32 @@ function mainapi:CreateGUI()
 	local profilebutton = Instance.new('ImageButton')
 	profilebutton.Name = 'Profile'
 	profilebutton.Size = UDim2.fromOffset(16, 16)
-	profilebutton.Position = UDim2.new(1, -74, 0, 11)
+	profilebutton.Position = UDim2.new(1, -82, 0, 11)
 	profilebutton.BackgroundTransparency = 1
 	profilebutton.Image = getcustomasset('LarpV4/assets/larp/profileicon.png')
 	profilebutton.ImageColor3 = Color3.new(1, 1, 1)
 	profilebutton.Parent = window
 	addTooltip(profilebutton, 'Profile')
 	profilebutton.MouseEnter:Connect(function()
-		profilebutton.ImageColor3 = Color3.new(1, 1, 1)
+		tween:Tween(profilebutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			ImageColor3 = Color3.fromRGB(255, 235, 130),
+			Rotation = -8
+		})
 	end)
 	profilebutton.MouseLeave:Connect(function()
-		profilebutton.ImageColor3 = Color3.new(1, 1, 1)
+		tween:Tween(profilebutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			ImageColor3 = Color3.new(1, 1, 1),
+			Rotation = 0
+		})
 	end)
 	local profilepanel = Instance.new('Frame')
 	profilepanel.Name = 'ProfilePanel'
 	profilepanel.Size = UDim2.fromOffset(220, 232)
-	profilepanel.Position = UDim2.new(1, -230, 0, 46)
+	profilepanel.Position = UDim2.new(0, -232, 0, 46)
 	profilepanel.BackgroundColor3 = uipallet.Main
 	profilepanel.BorderSizePixel = 0
 	profilepanel.Visible = false
+	profilepanel.ZIndex = 10
 	profilepanel.Parent = window
 	addBlur(profilepanel)
 	addCorner(profilepanel, UDim.new(0, 6))
@@ -2638,8 +2645,8 @@ function mainapi:CreateGUI()
 	profiledivider.BorderSizePixel = 0
 	profiledivider.Parent = profilepanel
 	local profileavatar = Instance.new('Frame')
-	profileavatar.Size = UDim2.fromOffset(72, 72)
-	profileavatar.Position = UDim2.fromOffset(14, 13)
+	profileavatar.Size = UDim2.fromOffset(64, 64)
+	profileavatar.Position = UDim2.fromOffset(14, 49)
 	profileavatar.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
 	profileavatar.BorderSizePixel = 0
 	profileavatar.Parent = profilepanel
@@ -2656,7 +2663,7 @@ function mainapi:CreateGUI()
 	profilestroke2.Parent = profileavatar
 	local profilename = Instance.new('TextLabel')
 	profilename.Size = UDim2.new(1, -108, 0, 18)
-	profilename.Position = UDim2.fromOffset(96, 20)
+	profilename.Position = UDim2.fromOffset(94, 54)
 	profilename.BackgroundTransparency = 1
 	profilename.TextXAlignment = Enum.TextXAlignment.Left
 	profilename.TextColor3 = uipallet.Text
@@ -2666,26 +2673,26 @@ function mainapi:CreateGUI()
 	profilename.Parent = profilepanel
 	local profilename2 = Instance.new('TextLabel')
 	profilename2.Size = UDim2.new(1, -108, 0, 14)
-	profilename2.Position = UDim2.fromOffset(96, 40)
+	profilename2.Position = UDim2.fromOffset(94, 74)
 	profilename2.BackgroundTransparency = 1
 	profilename2.TextXAlignment = Enum.TextXAlignment.Left
-	profilename2.TextColor3 = color.Dark(uipallet.Text, 0.38)
+	profilename2.TextColor3 = color.Dark(uipallet.Text, 0.45)
 	profilename2.TextSize = 12
 	profilename2.FontFace = uipallet.Font
 	profilename2.TextTruncate = Enum.TextTruncate.AtEnd
 	profilename2.Parent = profilepanel
 	local profstyle = Instance.new('TextLabel')
 	profstyle.Size = UDim2.new(1, -108, 0, 14)
-	profstyle.Position = UDim2.fromOffset(96, 58)
+	profstyle.Position = UDim2.fromOffset(94, 92)
 	profstyle.BackgroundTransparency = 1
 	profstyle.TextXAlignment = Enum.TextXAlignment.Left
-	profstyle.TextColor3 = color.Dark(uipallet.Text, 0.38)
+	profstyle.TextColor3 = color.Dark(uipallet.Text, 0.45)
 	profstyle.TextSize = 11
 	profstyle.FontFace = uipallet.Font
 	profstyle.Parent = profilepanel
 	local profiledivider2 = Instance.new('Frame')
 	profiledivider2.Size = UDim2.new(1, -28, 0, 1)
-	profiledivider2.Position = UDim2.fromOffset(14, 100)
+	profiledivider2.Position = UDim2.fromOffset(14, 118)
 	profiledivider2.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
 	profiledivider2.BorderSizePixel = 0
 	profiledivider2.Parent = profilepanel
@@ -2697,7 +2704,7 @@ function mainapi:CreateGUI()
 		label.BackgroundTransparency = 1
 		label.Text = name
 		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.TextColor3 = color.Dark(uipallet.Text, 0.38)
+		label.TextColor3 = color.Dark(uipallet.Text, 0.45)
 		label.TextSize = 12
 		label.FontFace = uipallet.Font
 		label.Parent = profilepanel
@@ -2713,8 +2720,8 @@ function mainapi:CreateGUI()
 		value.Parent = profilepanel
 		profilerows[key] = value
 	end
-	profilerow('Time in game', 110, 'time')
-	profilerow('Times executed', 138, 'exec')
+	profilerow('Time in game', 128, 'time')
+	profilerow('Times executed', 156, 'exec')
 	pcall(function()
 		local player = cloneref(game:GetService('Players')).LocalPlayer
 		if player and player.UserId then

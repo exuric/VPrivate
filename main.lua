@@ -165,19 +165,6 @@ task.spawn(function()
 	getgenv().larp = larp
 	getgenv().used_init = true
 
-	if hookmetamethod then
-		pcall(function()
-			local old; old = hookmetamethod(game, '__namecall', function(self, Remote, ...)
-				if not checkcaller() and getnamecallmethod() == 'FireServer' then
-					if typeof(Remote) == "Instance" and Remote.Name == 'TabFreezeAnticheat_ClientToServerReport' then
-						return
-					end
-				end
-				return old(self, Remote, ...)
-			end)
-		end)
-	end
-
 	task.spawn(function()
 		task.wait()
 		if not shared.LarpIndependent then

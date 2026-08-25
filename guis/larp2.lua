@@ -2695,6 +2695,12 @@ function mainapi:CreateGUI()
 	profiledivider2.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
 	profiledivider2.BorderSizePixel = 0
 	profiledivider2.Parent = profilepanel
+	local profiledivider2 = Instance.new('Frame')
+	profiledivider2.Size = UDim2.new(1, -28, 0, 1)
+	profiledivider2.Position = UDim2.fromOffset(14, 118)
+	profiledivider2.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
+	profiledivider2.BorderSizePixel = 0
+	profiledivider2.Parent = profilepanel
 	local profilerows = {}
 	local function profilerow(name, y, key)
 		local label = Instance.new('TextLabel')
@@ -2747,6 +2753,14 @@ function mainapi:CreateGUI()
 	pcall(function()
 		profileexec = (identifyexecutor and select(1, identifyexecutor())) or '-'
 	end)
+	local execCount = 0
+	pcall(function()
+		if isfile('LarpV4/profiles/executions.txt') then
+			execCount = tonumber(readfile('LarpV4/profiles/executions.txt')) or 0
+		end
+		execCount = execCount + 1
+		writefile('LarpV4/profiles/executions.txt', tostring(execCount))
+	end)
 	pcall(function()
 		local isnow = tick()
 		if isfile('LarpV4/profiles/time.txt') then
@@ -2763,7 +2777,7 @@ function mainapi:CreateGUI()
 			else
 				profilerows.time.Text = string.format('%dm %02ds', minutes, math.floor((tick() - start) % 60))
 			end
-			profilerows.exec.Text = profileexec
+			profilerows.exec.Text = tostring(execCount)
 			task.wait(1)
 		until not profilepanel.Parent
 	end)

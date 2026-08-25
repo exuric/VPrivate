@@ -80,9 +80,6 @@ local getcustomassets = {
 	['LarpV4/assets/larp/colorpreview.png'] = 'rbxassetid://14368311578',
 	['LarpV4/assets/larp/combaticon.png'] = 'rbxassetid://14368312652',
 	['LarpV4/assets/larp/auraicon.png'] = '',
-	['LarpV4/assets/larp/autoicon.png'] = '',
-	['LarpV4/assets/larp/charicon.png'] = '',
-	['LarpV4/assets/larp/ghosticons.png'] = '',
 	['LarpV4/assets/larp/customsettings.png'] = 'rbxassetid://14403726449',
 	['LarpV4/assets/larp/discord.png'] = '',
 	['LarpV4/assets/larp/dots.png'] = 'rbxassetid://14368314459',
@@ -5340,15 +5337,42 @@ function mainapi:CreateLegit()
 	icon.Image = getcustomasset('LarpV4/assets/larp/legittab.png')
 	icon.ImageColor3 = uipallet.Text
 	icon.Parent = window
+	local legitheader = Instance.new('TextLabel')
+	legitheader.Size = UDim2.new(1, -100, 0, 22)
+	legitheader.Position = UDim2.fromOffset(44, 10)
+	legitheader.BackgroundTransparency = 1
+	legitheader.Text = 'Legit'
+	legitheader.TextXAlignment = Enum.TextXAlignment.Left
+	legitheader.TextColor3 = uipallet.Text
+	legitheader.TextSize = 14
+	legitheader.FontFace = uipallet.FontSemiBold
+	legitheader.Parent = window
+	local legitheaderdim = Instance.new('TextLabel')
+	legitheaderdim.Size = UDim2.new(1, -100, 0, 13)
+	legitheaderdim.Position = UDim2.fromOffset(44, 28)
+	legitheaderdim.BackgroundTransparency = 1
+	legitheaderdim.Text = 'Clean, safe modules'
+	legitheaderdim.TextXAlignment = Enum.TextXAlignment.Left
+	legitheaderdim.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	legitheaderdim.TextSize = 11
+	legitheaderdim.FontFace = uipallet.Font
+	legitheaderdim.Parent = window
 	local close = addCloseButton(window)
+	local legitdivider = Instance.new('Frame')
+	legitdivider.Size = UDim2.new(1, -28, 0, 1)
+	legitdivider.Position = UDim2.fromOffset(14, 47)
+	legitdivider.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
+	legitdivider.BorderSizePixel = 0
+	legitdivider.Parent = window
 	local children = Instance.new('ScrollingFrame')
 	children.Name = 'Children'
-	children.Size = UDim2.fromOffset(684, 340)
-	children.Position = UDim2.fromOffset(14, 41)
+	children.Size = UDim2.new(1, -28, 0, 320)
+	children.Position = UDim2.fromOffset(14, 57)
 	children.BackgroundTransparency = 1
 	children.BorderSizePixel = 0
 	children.ScrollBarThickness = 2
 	children.ScrollBarImageTransparency = 0.75
+	children.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.3)
 	children.CanvasSize = UDim2.new()
 	children.Parent = window
 	local windowlist = Instance.new('UIGridLayout')
@@ -5384,7 +5408,7 @@ function mainapi:CreateLegit()
 		title.BackgroundTransparency = 1
 		title.Text = modulesettings.Name
 		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.TextColor3 = color.Dark(uipallet.Text, 0.31)
+		title.TextColor3 = color.Dark(uipallet.Text, 0.4)
 		title.TextSize = 13
 		title.FontFace = uipallet.Font
 		title.Parent = module
@@ -5440,10 +5464,16 @@ function mainapi:CreateLegit()
 		settingstitle.BackgroundTransparency = 1
 		settingstitle.Text = modulesettings.Name
 		settingstitle.TextXAlignment = Enum.TextXAlignment.Left
-		settingstitle.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		settingstitle.TextColor3 = uipallet.Text
 		settingstitle.TextSize = 13
 		settingstitle.FontFace = uipallet.Font
 		settingstitle.Parent = settingspane
+		local settingsdivider = Instance.new('Frame')
+		settingsdivider.Size = UDim2.new(1, -20, 0, 1)
+		settingsdivider.Position = UDim2.fromOffset(10, 37)
+		settingsdivider.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
+		settingsdivider.BorderSizePixel = 0
+		settingsdivider.Parent = settingspane
 		local back = Instance.new('ImageButton')
 		back.Name = 'Back'
 		back.Size = UDim2.fromOffset(16, 16)
@@ -5490,7 +5520,7 @@ moduleapi.Children = modulechildren
 			if moduleapi.Children then
 				moduleapi.Children.Visible = moduleapi.Enabled
 			end
-			title.TextColor3 = moduleapi.Enabled and color.Light(uipallet.Text, 0.2) or color.Dark(uipallet.Text, 0.31)
+			title.TextColor3 = moduleapi.Enabled and color.Light(uipallet.Text, 0.2) or color.Dark(uipallet.Text, 0.4)
 			module.BackgroundColor3 = moduleapi.Enabled and color.Light(uipallet.Main, 0.05) or module.BackgroundColor3
 			tween:Tween(knob, uipallet.Tween, {
 				BackgroundColor3 = moduleapi.Enabled and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.14)
@@ -5543,11 +5573,13 @@ moduleapi.Children = modulechildren
 		module.MouseEnter:Connect(function()
 			if not moduleapi.Enabled then
 				module.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+				title.TextColor3 = uipallet.Text
 			end
 		end)
 		module.MouseLeave:Connect(function()
 			if not moduleapi.Enabled then
 				module.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+				title.TextColor3 = color.Dark(uipallet.Text, 0.4)
 			end
 		end)
 		module.MouseButton1Click:Connect(function()
@@ -6374,26 +6406,6 @@ mainapi:CreateCategory({
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
-mainapi:CreateCategory({
-	Name = 'Char (not finished)',
-	Icon = getcustomasset('LarpV4/assets/larp/charicon.png'),
-	Size = UDim2.fromOffset(16, 16)
-})
-mainapi:CreateCategory({
-	Name = 'Aura (not finished)',
-	Icon = getcustomasset('LarpV4/assets/larp/auraicon.png'),
-	Size = UDim2.fromOffset(16, 16)
-})
-mainapi:CreateCategory({
-	Name = 'Ghost (not finished)',
-	Icon = getcustomasset('LarpV4/assets/larp/ghosticons.png'),
-	Size = UDim2.fromOffset(16, 16)
-})
-mainapi:CreateCategory({
-	Name = 'Auto (not finished)',
-	Icon = getcustomasset('LarpV4/assets/larp/autoicon.png'),
-	Size = UDim2.fromOffset(16, 16)
-})
 local favouritescategory = mainapi:CreateCategory({
 	Name = 'Favourites (not finished)',
 	Icon = getcustomasset('LarpV4/assets/larp/favouritestar2.png'),
@@ -6692,13 +6704,9 @@ guipane:CreateButton({
 			WorldCategory = 6,
 			InventoryCategory = 7,
 			MinigamesCategory = 8,
-			CharCategory = 9,
-			AuraCategory = 10,
-			GhostCategory = 11,
-			AutoCategory = 12,
-			FavouritesCategory = 13,
-			FriendsCategory = 14,
-			ProfilesCategory = 15
+			FavouritesCategory = 9,
+			FriendsCategory = 10,
+			ProfilesCategory = 11
 		}
 		local categories = {}
 		for _, v in mainapi.Categories do

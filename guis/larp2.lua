@@ -2594,14 +2594,14 @@ function mainapi:CreateGUI()
 	profilebutton.Position = UDim2.new(1, -74, 0, 11)
 	profilebutton.BackgroundTransparency = 1
 	profilebutton.Image = getcustomasset('LarpV4/assets/larp/profileicon.png')
-	profilebutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+	profilebutton.ImageColor3 = Color3.new(1, 1, 1)
 	profilebutton.Parent = window
 	addTooltip(profilebutton, 'Profile')
 	profilebutton.MouseEnter:Connect(function()
-		profilebutton.ImageColor3 = uipallet.Text
+		profilebutton.ImageColor3 = Color3.new(1, 1, 1)
 	end)
 	profilebutton.MouseLeave:Connect(function()
-		profilebutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		profilebutton.ImageColor3 = Color3.new(1, 1, 1)
 	end)
 	local profilepanel = Instance.new('Frame')
 	profilepanel.Name = 'ProfilePanel'
@@ -2669,7 +2669,7 @@ function mainapi:CreateGUI()
 	profilename2.Position = UDim2.fromOffset(96, 40)
 	profilename2.BackgroundTransparency = 1
 	profilename2.TextXAlignment = Enum.TextXAlignment.Left
-	profilename2.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	profilename2.TextColor3 = color.Dark(uipallet.Text, 0.38)
 	profilename2.TextSize = 12
 	profilename2.FontFace = uipallet.Font
 	profilename2.TextTruncate = Enum.TextTruncate.AtEnd
@@ -2679,7 +2679,7 @@ function mainapi:CreateGUI()
 	profstyle.Position = UDim2.fromOffset(96, 58)
 	profstyle.BackgroundTransparency = 1
 	profstyle.TextXAlignment = Enum.TextXAlignment.Left
-	profstyle.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	profstyle.TextColor3 = color.Dark(uipallet.Text, 0.38)
 	profstyle.TextSize = 11
 	profstyle.FontFace = uipallet.Font
 	profstyle.Parent = profilepanel
@@ -2697,7 +2697,7 @@ function mainapi:CreateGUI()
 		label.BackgroundTransparency = 1
 		label.Text = name
 		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		label.TextColor3 = color.Dark(uipallet.Text, 0.38)
 		label.TextSize = 12
 		label.FontFace = uipallet.Font
 		label.Parent = profilepanel
@@ -3843,9 +3843,11 @@ function mainapi:CreateGUI()
 	end)
 	discordbutton.MouseButton1Click:Connect(function()
 		task.spawn(function()
-			tooltip.Text = 'Copied!'
-			scarcitybanner.Text = 'Discord: jx4r'
-			setclipboard('jx4r')
+			pcall(function()
+				if tooltip then tooltip.Text = 'Copied!' end
+				if scarcitybanner then scarcitybanner.Text = 'Discord: jx4r' end
+				pcall(setclipboard, 'jx4r')
+			end)
 		end)
 	end)
 	settingsbutton.MouseEnter:Connect(function()

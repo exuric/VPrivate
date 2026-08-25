@@ -91,6 +91,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/favouritestar.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/favouritestar2.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/star.png'] = 'rbxassetid://14368342301',
+	['LarpV4/assets/larp/star2.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
 	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
 	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
@@ -4126,7 +4127,7 @@ function mainapi:CreateCategory(categorysettings)
 		favicon.Position = UDim2.new(1, -58, 0, 12)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
-		favicon.Image = getcustomasset('LarpV4/assets/larp/star.png')
+		favicon.Image = getcustomasset('LarpV4/assets/larp/star2.png')
 		favicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favicon.Visible = false
 		favicon.Parent = modulebutton
@@ -6483,7 +6484,7 @@ end))
 mainapi:CreateGUI()
 local favouritescategory = mainapi:CreateCategory({
 	Name = 'Favourites',
-	Icon = getcustomasset('LarpV4/assets/larp/star.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/star2.png'),
 	Size = UDim2.fromOffset(16, 16)
 })
 favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)

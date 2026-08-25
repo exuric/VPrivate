@@ -103,6 +103,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/overlaysicon.png'] = 'rbxassetid://14368339581',
 	['LarpV4/assets/larp/overlaystab.png'] = 'rbxassetid://14397380433',
 	['LarpV4/assets/larp/pin.png'] = 'rbxassetid://14368342301',
+	['LarpV4/assets/larp/profileicon.png'] = 'rbxassetid://14368359107',
 	['LarpV4/assets/larp/profilesicon.png'] = 'rbxassetid://14397465323',
 	['LarpV4/assets/larp/radaricon.png'] = 'rbxassetid://14368343291',
 	['LarpV4/assets/larp/rainbow_1.png'] = 'rbxassetid://14368344374',
@@ -2548,8 +2549,224 @@ function mainapi:CreateGUI()
 	discordbutton.Position = UDim2.new(1, -56, 0, 11)
 	discordbutton.BackgroundTransparency = 1
 	discordbutton.Image = getcustomasset('LarpV4/assets/larp/discord.png')
+	discordbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	discordbutton.Parent = window
-	addTooltip(discordbutton, 'Copy discord: jx4r')
+	addTooltip(discordbutton, 'Join our discord')
+	discordbutton.MouseEnter:Connect(function()
+		discordbutton.ImageColor3 = uipallet.Text
+	end)
+	discordbutton.MouseLeave:Connect(function()
+		discordbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+	end)
+	discordbutton.MouseButton1Click:Connect(function()
+		pcall(function()
+			discordbutton:SetAttribute('discord', 'j')
+		end)
+		local discordurl = 'https://discord.gg/MwEu9HNK84'
+		local opened = false
+		pcall(function()
+			if isfile('LarpV4/profiles/discord.txt') then
+				local custom = readfile('LarpV4/profiles/discord.txt'):gsub('%s+$', '')
+				if custom ~= '' then discordurl = custom end
+			end
+		end)
+		pcall(function()
+			local ok, app = pcall(function()
+				request({
+					Url = 'discord://-',
+					Method = 'GET',
+					Timeout = 0.1
+				})
+			end)
+			opened = true
+		end)
+		if not opened then
+			pcall(setclipboard, discordurl)
+			mainapi:CreateNotification('Discord', 'Discord link copied', 2, 'info')
+		end
+		pcall(function()
+			game:HttpPost(discordurl, '', false)
+		end)
+	end)
+	local profilebutton = Instance.new('ImageButton')
+	profilebutton.Name = 'Profile'
+	profilebutton.Size = UDim2.fromOffset(16, 16)
+	profilebutton.Position = UDim2.new(1, -74, 0, 11)
+	profilebutton.BackgroundTransparency = 1
+	profilebutton.Image = getcustomasset('LarpV4/assets/larp/profileicon.png')
+	profilebutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+	profilebutton.Parent = window
+	addTooltip(profilebutton, 'Profile')
+	profilebutton.MouseEnter:Connect(function()
+		profilebutton.ImageColor3 = uipallet.Text
+	end)
+	profilebutton.MouseLeave:Connect(function()
+		profilebutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+	end)
+	local profilepanel = Instance.new('Frame')
+	profilepanel.Name = 'ProfilePanel'
+	profilepanel.Size = UDim2.fromOffset(220, 232)
+	profilepanel.Position = UDim2.new(1, -230, 0, 46)
+	profilepanel.BackgroundColor3 = uipallet.Main
+	profilepanel.BorderSizePixel = 0
+	profilepanel.Visible = false
+	profilepanel.Parent = window
+	addBlur(profilepanel)
+	addCorner(profilepanel, UDim.new(0, 6))
+	local profilestroke = Instance.new('UIStroke')
+	profilestroke.Color = color.Light(uipallet.Main, 0.38)
+	profilestroke.Thickness = 1
+	profilestroke.Parent = profilepanel
+	local profiletitle = Instance.new('TextLabel')
+	profiletitle.Size = UDim2.new(1, -44, 0, 20)
+	profiletitle.Position = UDim2.fromOffset(14, 11)
+	profiletitle.BackgroundTransparency = 1
+	profiletitle.Text = 'Profile'
+	profiletitle.TextXAlignment = Enum.TextXAlignment.Left
+	profiletitle.TextColor3 = uipallet.Text
+	profiletitle.TextSize = 13
+	profiletitle.FontFace = uipallet.FontSemiBold
+	profiletitle.Parent = profilepanel
+	local profileclose = addCloseButton(profilepanel, 9)
+	profileclose.MouseButton1Click:Connect(function()
+		profilepanel.Visible = false
+	end)
+	local profiledivider = Instance.new('Frame')
+	profiledivider.Size = UDim2.new(1, -20, 0, 1)
+	profiledivider.Position = UDim2.fromOffset(10, 37)
+	profiledivider.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
+	profiledivider.BorderSizePixel = 0
+	profiledivider.Parent = profilepanel
+	local profileavatar = Instance.new('Frame')
+	profileavatar.Size = UDim2.fromOffset(72, 72)
+	profileavatar.Position = UDim2.fromOffset(14, 13)
+	profileavatar.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+	profileavatar.BorderSizePixel = 0
+	profileavatar.Parent = profilepanel
+	addCorner(profileavatar, UDim.new(1, 0))
+	local profileavatarimg = Instance.new('ImageLabel')
+	profileavatarimg.Size = UDim2.fromScale(1, 1)
+	profileavatarimg.BackgroundTransparency = 1
+	profileavatarimg.Image = ''
+	profileavatarimg.Parent = profileavatar
+	addCorner(profileavatarimg, UDim.new(1, 0))
+	local profilestroke2 = Instance.new('UIStroke')
+	profilestroke2.Color = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	profilestroke2.Thickness = 2
+	profilestroke2.Parent = profileavatar
+	local profilename = Instance.new('TextLabel')
+	profilename.Size = UDim2.new(1, -108, 0, 18)
+	profilename.Position = UDim2.fromOffset(96, 20)
+	profilename.BackgroundTransparency = 1
+	profilename.TextXAlignment = Enum.TextXAlignment.Left
+	profilename.TextColor3 = uipallet.Text
+	profilename.TextSize = 14
+	profilename.FontFace = uipallet.FontSemiBold
+	profilename.TextTruncate = Enum.TextTruncate.AtEnd
+	profilename.Parent = profilepanel
+	local profilename2 = Instance.new('TextLabel')
+	profilename2.Size = UDim2.new(1, -108, 0, 14)
+	profilename2.Position = UDim2.fromOffset(96, 40)
+	profilename2.BackgroundTransparency = 1
+	profilename2.TextXAlignment = Enum.TextXAlignment.Left
+	profilename2.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	profilename2.TextSize = 12
+	profilename2.FontFace = uipallet.Font
+	profilename2.TextTruncate = Enum.TextTruncate.AtEnd
+	profilename2.Parent = profilepanel
+	local profstyle = Instance.new('TextLabel')
+	profstyle.Size = UDim2.new(1, -108, 0, 14)
+	profstyle.Position = UDim2.fromOffset(96, 58)
+	profstyle.BackgroundTransparency = 1
+	profstyle.TextXAlignment = Enum.TextXAlignment.Left
+	profstyle.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	profstyle.TextSize = 11
+	profstyle.FontFace = uipallet.Font
+	profstyle.Parent = profilepanel
+	local profiledivider2 = Instance.new('Frame')
+	profiledivider2.Size = UDim2.new(1, -28, 0, 1)
+	profiledivider2.Position = UDim2.fromOffset(14, 100)
+	profiledivider2.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
+	profiledivider2.BorderSizePixel = 0
+	profiledivider2.Parent = profilepanel
+	local profilerows = {}
+	local function profilerow(name, y, key)
+		local label = Instance.new('TextLabel')
+		label.Size = UDim2.new(1, -28, 0, 24)
+		label.Position = UDim2.fromOffset(14, y)
+		label.BackgroundTransparency = 1
+		label.Text = name
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		label.TextSize = 12
+		label.FontFace = uipallet.Font
+		label.Parent = profilepanel
+		local value = Instance.new('TextLabel')
+		value.Size = UDim2.new(1, -28, 0, 24)
+		value.Position = UDim2.fromOffset(14, y)
+		value.BackgroundTransparency = 1
+		value.Text = '-'
+		value.TextXAlignment = Enum.TextXAlignment.Right
+		value.TextColor3 = uipallet.Text
+		value.TextSize = 12
+		value.FontFace = uipallet.Font
+		value.Parent = profilepanel
+		profilerows[key] = value
+	end
+	profilerow('Time in game', 110, 'time')
+	profilerow('Times executed', 138, 'exec')
+	pcall(function()
+		local player = cloneref(game:GetService('Players')).LocalPlayer
+		if player and player.UserId then
+			profileavatarimg.Image = 'rbxthumb://type=AvatarHeadShot&id='..player.UserId..'&w=150&h=150'
+			profilename.Text = player.DisplayName
+			profilename2.Text = '@'..player.Name
+		end
+	end)
+	task.spawn(function()
+		while profilepanel.Parent do
+			if profilepanel.Visible then
+				local player = cloneref(game:GetService('Players')).LocalPlayer
+				if player then
+					pcall(function()
+						profilename.Text = player.DisplayName
+						profilename2.Text = '@'..player.Name
+					end)
+				end
+			end
+			task.wait(1)
+		end
+	end)
+	local profileexec = '-'
+	pcall(function()
+		profileexec = (identifyexecutor and select(1, identifyexecutor())) or '-'
+	end)
+	pcall(function()
+		local isnow = tick()
+		if isfile('LarpV4/profiles/time.txt') then
+			local stored = tonumber(readfile('LarpV4/profiles/time.txt')) or 0
+			profilepanel:SetAttribute('SessionStart', stored)
+		end
+	end)
+	task.spawn(function()
+		repeat
+			local start = profilepanel:GetAttribute('SessionStart') or tick()
+			local minutes = math.floor((tick() - start) / 60)
+			if minutes >= 60 then
+				profilerows.time.Text = string.format('%dh %02dm', math.floor(minutes / 60), minutes % 60)
+			else
+				profilerows.time.Text = string.format('%dm %02ds', minutes, math.floor((tick() - start) % 60))
+			end
+			profilerows.exec.Text = profileexec
+			task.wait(1)
+		until not profilepanel.Parent
+	end)
+	profilebutton.MouseButton1Click:Connect(function()
+		if profilepanel then
+			profilepanel.Visible = not profilepanel.Visible
+			profilepanel.ZIndex = 10
+		end
+	end)
 	local settingspane = Instance.new('TextButton')
 	settingspane.Size = UDim2.fromScale(1, 1)
 	settingspane.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -6144,11 +6361,13 @@ mainapi:CreateCategory({
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
-mainapi:CreateCategory({
+local favouritescategory = mainapi:CreateCategory({
 	Name = 'Favourites (not finished)',
 	Icon = getcustomasset('LarpV4/assets/larp/favouritestar2.png'),
 	Size = UDim2.fromOffset(16, 16)
 })
+favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
+favouritescategory.Button.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
 mainapi.Categories.Main:CreateDivider('misc')
 
 --[[
@@ -6284,7 +6503,7 @@ general:CreateButton({
 		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')()
 		else
-			loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true))()
+			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true))()
 		end
 	end,
 	Tooltip = 'Reloads larp for debugging purposes'

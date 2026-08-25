@@ -819,7 +819,7 @@ run(function()
 		local seed = wlseed()
 		local list = {}
 		for _, s in seed do
-			table.insert(list, {name = s[1], level = s[2], attackable = false, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil})
+			table.insert(list, {name = s[1], level = s[2], attackable = true, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil})
 		end
 		whitelist.data.WhitelistedUsers = list
 		return true

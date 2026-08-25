@@ -2726,7 +2726,6 @@ function mainapi:CreateGUI()
 		profilerows[key] = value
 	end
 	profilerow('Time in game', 128, 'time')
-	profilerow('Times executed', 156, 'exec')
 	pcall(function()
 		local player = cloneref(game:GetService('Players')).LocalPlayer
 		if player and player.UserId then
@@ -2749,35 +2748,24 @@ function mainapi:CreateGUI()
 			task.wait(1)
 		end
 	end)
-	local profileexec = '-'
+	local profilenow = tick()
+	local profilestart = profilenow
 	pcall(function()
-		profileexec = (identifyexecutor and select(1, identifyexecutor())) or '-'
-	end)
-	local execCount = 0
-	pcall(function()
-		if isfile('LarpV4/profiles/executions.txt') then
-			execCount = tonumber(readfile('LarpV4/profiles/executions.txt')) or 0
-		end
-		execCount = execCount + 1
-		writefile('LarpV4/profiles/executions.txt', tostring(execCount))
-	end)
-	pcall(function()
-		local isnow = tick()
 		if isfile('LarpV4/profiles/time.txt') then
-			local stored = tonumber(readfile('LarpV4/profiles/time.txt')) or 0
-			profilepanel:SetAttribute('SessionStart', stored)
+			profilestart = tonumber(readfile('LarpV4/profiles/time.txt')) or profilenow
+		else
+			writefile('LarpV4/profiles/time.txt', tostring(profilestart))
 		end
 	end)
 	task.spawn(function()
 		repeat
-			local start = profilepanel:GetAttribute('SessionStart') or tick()
-			local minutes = math.floor((tick() - start) / 60)
+			local elapsed = math.max(tick() - profilestart, 0)
+			local minutes = math.floor(elapsed / 60)
 			if minutes >= 60 then
 				profilerows.time.Text = string.format('%dh %02dm', math.floor(minutes / 60), minutes % 60)
 			else
-				profilerows.time.Text = string.format('%dm %02ds', minutes, math.floor((tick() - start) % 60))
+				profilerows.time.Text = string.format('%dm %02ds', minutes, math.floor(elapsed % 60))
 			end
-			profilerows.exec.Text = tostring(execCount)
 			task.wait(1)
 		until not profilepanel.Parent
 	end)

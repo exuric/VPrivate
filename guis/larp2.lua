@@ -87,6 +87,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/expandright.png'] = 'rbxassetid://14368316544',
 	['LarpV4/assets/larp/expandup.png'] = 'rbxassetid://14368317595',
 	['LarpV4/assets/larp/friendstab.png'] = 'rbxassetid://14397462778',
+	['LarpV4/assets/larp/favourite.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
 	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
 	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
@@ -3859,37 +3860,6 @@ function mainapi:CreateCategory(categorysettings)
 		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = dotsbutton
-		local pinsubmit = nil
-		local pinicon = Instance.new('ImageButton')
-		pinicon.Name = 'Pin'
-		pinicon.Size = UDim2.fromOffset(16, 16)
-		pinicon.Position = UDim2.new(1, -58, 0, 12)
-		pinicon.AnchorPoint = Vector2.new(1, 0)
-		pinicon.BackgroundTransparency = 1
-		pinicon.AutoButtonColor = false
-		pinicon.Image = getcustomasset('LarpV4/assets/larp/pin.png')
-		pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
-		pinicon.Visible = false
-		pinicon.ZIndex = 3
-		pinicon.Parent = modulebutton
-		addTooltip(pinicon, 'Pin to top')
-		pinicon.MouseEnter:Connect(function()
-			pinicon.ImageColor3 = uipallet.Text
-		end)
-		pinicon.MouseLeave:Connect(function()
-			pinicon.ImageColor3 = pinned and uipallet.Text or color.Light(uipallet.Main, 0.37)
-		end)
-		local pinned = false
-		local function updatePin()
-			pinicon.ImageColor3 = pinned and uipallet.Text or color.Light(uipallet.Main, 0.37)
-		end
-		pinicon.MouseButton1Click:Connect(function()
-			local api = shared.larp or getgenv().larp
-			local mod = api and api.Modules and api.Modules[modulesettings.Name]
-			if mod and mod.togglePin then
-				mod:togglePin()
-			end
-		end)
 		modulechildren.Name = modulesettings.Name..'Children'
 		modulechildren.Size = UDim2.new(1, 0, 0, 0)
 		modulechildren.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -3947,7 +3917,6 @@ function mainapi:CreateCategory(categorysettings)
 				bindtext.Text = table.concat(tab, ' + '):upper()
 				bind.Size = UDim2.fromOffset(math.max(getfontsize(bindtext.Text, bindtext.TextSize, bindtext.Font).X + 10, 20), 21)
 			end
-			updatePin()
 		end
 
 		function moduleapi:Toggle(multiple)
@@ -3960,7 +3929,6 @@ function mainapi:CreateCategory(categorysettings)
 			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
 			modulebutton.BackgroundColor3 = self.Enabled and ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.07) or color.Light(uipallet.Main, 0.05)) or ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.045) or color.Light(uipallet.Main, 0.02))
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
-			pinicon.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
 			if not self.Enabled then
@@ -3988,7 +3956,6 @@ function mainapi:CreateCategory(categorysettings)
 					})
 				end
 				dots.ImageColor3 = modulebutton.TextColor3
-				pinicon.ImageColor3 = modulebutton.TextColor3
 				bindicon.ImageColor3 = modulebutton.TextColor3
 				bindtext.TextColor3 = modulebutton.TextColor3
 				if mainapi.Loaded ~= nil then
@@ -3996,9 +3963,6 @@ function mainapi:CreateCategory(categorysettings)
 				end
 			else
 				modulebutton.UIGradient.Enabled = false
-			end
-			if mainapi.UpdatePinned then
-				mainapi:UpdatePinned()
 			end
 		end
 
@@ -4061,8 +4025,6 @@ function mainapi:CreateCategory(categorysettings)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
-			pinicon.Visible = pinned or hovered or modulechildren.Visible
-			updatePin()
 		end)
 		modulebutton.MouseLeave:Connect(function()
 			hovered = false
@@ -4071,8 +4033,6 @@ function mainapi:CreateCategory(categorysettings)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
-			pinicon.Visible = pinned or hovered or modulechildren.Visible
-			updatePin()
 		end)
 		modulebutton.MouseButton1Click:Connect(function()
 			moduleapi:Toggle()
@@ -4142,21 +4102,8 @@ function mainapi:CreateCategory(categorysettings)
 				table.insert(sorting[v.Category], v.Name)
 			end
 			for _, sort in sorting do
-				local pinned, rest = {}, {}
-				for _, name in sort do
-					local pinopt = mainapi.Modules[name].Options['Pin to top']
-					if pinopt and pinopt.Enabled then
-						table.insert(pinned, name)
-					else
-						table.insert(rest, name)
-					end
-				end
-				table.sort(pinned)
-				table.sort(rest)
-				local ordered = {}
-				for _, v in pinned do table.insert(ordered, v) end
-				for _, v in rest do table.insert(ordered, v) end
-				for i, v in ordered do
+				table.sort(sort)
+				for i, v in sort do
 					mainapi.Modules[v].Index = i
 					mainapi.Modules[v].Object.LayoutOrder = i
 					mainapi.Modules[v].Children.LayoutOrder = i
@@ -4164,24 +4111,6 @@ function mainapi:CreateCategory(categorysettings)
 			end
 		end
 		resort()
-		local pin = moduleapi:CreateToggle({
-			Name = 'Pin to top',
-			Default = false,
-			Function = function(callback)
-				pinned = callback
-				updatePin()
-				resort()
-				if mainapi.UpdatePinned then
-					mainapi:UpdatePinned()
-				end
-			end,
-			Tooltip = 'Moves this module to the Pinned tab.'
-		})
-		function moduleapi:togglePin()
-			if pin then
-				pin:Toggle()
-			end
-		end
 
 		return moduleapi
 	end
@@ -6153,264 +6082,12 @@ mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
 end))
 
 mainapi:CreateGUI()
-local pinnedcategory = mainapi:CreateCategory({
-	Name = 'Pinned',
-	Icon = getcustomasset('LarpV4/assets/larp/pin.png'),
+local favouritescategory = mainapi:CreateCategory({
+	Name = 'Favourites (not finished)',
+	Icon = getcustomasset('LarpV4/assets/larp/favourite.png'),
 	Size = UDim2.fromOffset(16, 16)
 })
-pinnedcategory.Button.Object.MouseButton1Click:Connect(function()
-	if pinnedcategory.Object.Visible and not pinnedcategory.Expanded then
-		pinnedcategory:Expand()
-	end
-end)
 
-function mainapi:UpdatePinned()
-	local pinnedcategory = self.Categories.Pinned
-	if not pinnedcategory then return end
-	local pinnedchildren = pinnedcategory.Object:FindFirstChild('Children')
-	if not pinnedchildren then return end
-	local count = 0
-	for _, moduleapi in pairs(self.Modules) do
-		local pinopt = moduleapi.Options['Pin to top']
-		local enabled = pinopt and pinopt.Enabled
-		if enabled then
-			count = count + 1
-			if not moduleapi.PinnedClone then
-				pcall(function()
-				local object = moduleapi.Object
-				if object then
-					local clone = object:Clone()
-					clone.LayoutOrder = moduleapi.Index
-					clone.Parent = pinnedchildren
-					moduleapi.PinnedClone = clone
-					local bind = clone:FindFirstChild('Bind')
-					local dots = clone:FindFirstChild('Dots')
-					local pinicon = clone:FindFirstChild('Pin')
-					local divider = clone:FindFirstChild('Divider')
-					local gradient = clone:FindFirstChildOfClass('UIGradient')
-					local cover = clone:FindFirstChild('Cover')
-					local hovered = false
-					local function openPinnedSettings()
-						if moduleapi.Children then
-							local ch = moduleapi.Children
-							if ch.Parent ~= pinnedchildren then
-								ch.Parent = pinnedchildren
-								ch.LayoutOrder = moduleapi.Index + 1
-								ch.Visible = true
-								task.delay(0.05, function()
-									if ch.Parent ~= pinnedchildren then return end
-									pcall(function()
-										local wl = ch:FindFirstChildOfClass('UIListLayout')
-										if wl then
-											ch.Size = UDim2.new(1, 0, 0, wl.AbsoluteContentSize.Y / scale.Scale)
-										end
-									end)
-									pcall(function()
-										local wp = pinnedcategory.Object
-										local wl2 = pinnedchildren:FindFirstChildOfClass('UIListLayout')
-										if wp and wl2 then
-											wp.Size = UDim2.fromOffset(220, math.min(41 + wl2.AbsoluteContentSize.Y / scale.Scale, 601))
-										end
-									end)
-								end)
-							else
-								ch.Visible = not ch.Visible
-							end
-						elseif moduleapi.OpenSettings then
-							moduleapi.OpenSettings()
-						end
-						if moduleapi.Children and moduleapi.Children.Visible then
-							pinnedchildren.Visible = true
-						end
-					end
-					local function updatePinVisible()
-						local bindvisible = bind and (bind.Visible or hovered or (moduleapi.Children and moduleapi.Children.Visible))
-						if pinicon then
-							pinicon.Visible = not bindvisible
-						end
-					end
-					clone.MouseButton1Click:Connect(function()
-						if moduleapi.Children and moduleapi.Children.Visible then
-							openPinnedSettings()
-						else
-							moduleapi:Toggle()
-						end
-					end)
-					clone.MouseButton2Click:Connect(openPinnedSettings)
-					if pinicon then
-						local pinup = false
-						local pinhold = false
-						pinicon.MouseButton1Down:Connect(function()
-							pinhold = true
-							local hold = tick()
-							repeat
-								if not pinhold or not pinicon.Parent then break end
-								task.wait()
-							until tick() - hold >= 0.4
-							if pinhold then
-								local mod = moduleapi
-								if mod and mod.togglePin then
-									mod:togglePin()
-								end
-								return
-							end
-						end)
-						pinicon.MouseButton1Up:Connect(function()
-							pinhold = false
-						end)
-						pinicon.MouseButton1Click:Connect(function()
-							if moduleapi.Children then
-								moduleapi.Children.Visible = not moduleapi.Children.Visible
-							end
-						end)
-						addTooltip(pinicon, 'Hold to unpin')
-						updatePinVisible()
-					end
-					if dots then
-						dots.MouseButton1Click:Connect(openPinnedSettings)
-						dots.MouseButton2Click:Connect(openPinnedSettings)
-						dots.MouseEnter:Connect(function()
-							if not moduleapi.Enabled then
-								dots.Dots.ImageColor3 = uipallet.Text
-							end
-						end)
-						dots.MouseLeave:Connect(function()
-							if not moduleapi.Enabled then
-								dots.Dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
-							end
-						end)
-					end
-					if bind then
-						local bindicon = bind:FindFirstChild('Icon')
-						local bindtext = bind:FindFirstChild('TextLabel')
-						bind.MouseEnter:Connect(function()
-							if bindtext then bindtext.Visible = false end
-							if bindicon then
-								bindicon.Visible = true
-								bindicon.Image = getcustomasset('LarpV4/assets/larp/edit.png')
-								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16) end
-							end
-						end)
-						bind.MouseLeave:Connect(function()
-							if bindtext then bindtext.Visible = #moduleapi.Bind > 0 end
-							if bindicon then
-								bindicon.Visible = not (bindtext and bindtext.Visible)
-								bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
-								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43) end
-							end
-						end)
-						bind.MouseButton1Click:Connect(function()
-							if cover then cover.Visible = true end
-							mainapi.Binding = moduleapi
-						end)
-					end
-					clone.MouseEnter:Connect(function()
-						hovered = true
-						if not moduleapi.Enabled and not (moduleapi.Children and moduleapi.Children.Visible) then
-							clone.TextColor3 = uipallet.Text
-							clone.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
-						end
-						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or (moduleapi.Children and moduleapi.Children.Visible) end
-						updatePinVisible()
-					end)
-					clone.MouseLeave:Connect(function()
-						hovered = false
-						if not moduleapi.Enabled and not (moduleapi.Children and moduleapi.Children.Visible) then
-							clone.TextColor3 = color.Dark(uipallet.Text, 0.16)
-							clone.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
-						end
-						if bind then bind.Visible = #moduleapi.Bind > 0 or hovered or (moduleapi.Children and moduleapi.Children.Visible) end
-						updatePinVisible()
-					end)
-					local origsetbind = moduleapi.SetBind
-					if not moduleapi.SetBindPinned then
-						moduleapi.SetBindPinned = true
-						moduleapi.SetBind = function(self, tab, mouse)
-							origsetbind(self, tab, mouse)
-							local pinnedclone = self.PinnedClone
-							if pinnedclone and pinnedclone.Parent then
-								local clonebind = pinnedclone:FindFirstChild('Bind')
-								if clonebind then
-									local clonebindtext = clonebind:FindFirstChild('TextLabel')
-									local clonebindicon = clonebind:FindFirstChild('Icon')
-									if #tab <= 0 then
-										if clonebindtext then clonebindtext.Visible = false end
-										if clonebindicon then clonebindicon.Visible = true end
-									else
-										clonebind.Visible = true
-										if clonebindtext then
-											clonebindtext.Visible = true
-											clonebindtext.Text = table.concat(tab, ' + '):upper()
-										end
-										if clonebindicon then clonebindicon.Visible = false end
-									end
-								end
-								local clonecover = pinnedclone:FindFirstChild('Cover')
-								if clonecover then clonecover.Visible = false end
-							end
-						end
-					end
-				end
-				end)
-			end
-			local clone = moduleapi.PinnedClone
-			if clone and clone.Parent then
-				local hue, sat, val = self.GUIColor.Hue, self.GUIColor.Sat, self.GUIColor.Value
-				local rainbow = self.GUIColor.Rainbow and self.RainbowMode.Value ~= 'Retro'
-				if moduleapi.Enabled then
-					clone.BackgroundColor3 = rainbow and Color3.fromHSV(self:Color((hue - (moduleapi.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
-					clone.TextColor3 = self.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or self:TextColor(hue, sat, val)
-					if gradient then
-						gradient.Enabled = rainbow and self.RainbowMode.Value == 'Gradient'
-						if gradient.Enabled then
-							clone.BackgroundColor3 = Color3.new(1, 1, 1)
-							gradient.Color = ColorSequence.new({
-								ColorSequenceKeypoint.new(0, Color3.fromHSV(self:Color((hue - (moduleapi.Index * 0.025)) % 1))),
-								ColorSequenceKeypoint.new(1, Color3.fromHSV(self:Color((hue - ((moduleapi.Index + 1) * 0.025)) % 1)))
-							})
-						end
-					end
-					if divider then divider.Visible = true end
-					local clonebind = clone:FindFirstChild('Bind')
-					if clonebind then
-						local clonebindicon = clonebind:FindFirstChild('Icon')
-						if clonebindicon then clonebindicon.ImageColor3 = clone.TextColor3 end
-						local clonebindtext = clonebind:FindFirstChild('TextLabel')
-						if clonebindtext then clonebindtext.TextColor3 = clone.TextColor3 end
-					end
-					local clonedots = clone:FindFirstChild('Dots')
-					if clonedots then clonedots.Dots.ImageColor3 = clone.TextColor3 end
-					if pinicon then pinicon.ImageColor3 = clone.TextColor3 end
-				else
-					clone.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
-					clone.TextColor3 = color.Dark(uipallet.Text, 0.16)
-					if gradient then gradient.Enabled = false end
-					if divider then divider.Visible = false end
-					local clonedots = clone:FindFirstChild('Dots')
-					if clonedots then clonedots.Dots.ImageColor3 = color.Light(uipallet.Main, 0.37) end
-					if pinicon then pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37) end
-					local clonebind = clone:FindFirstChild('Bind')
-					if clonebind then
-						local clonebindicon = clonebind:FindFirstChild('Icon')
-						if clonebindicon then clonebindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43) end
-						local clonebindtext = clonebind:FindFirstChild('TextLabel')
-						if clonebindtext then clonebindtext.TextColor3 = color.Dark(uipallet.Text, 0.43) end
-					end
-				end
-			end
-		elseif moduleapi.PinnedClone then
-			moduleapi.PinnedClone:Destroy()
-			moduleapi.PinnedClone = nil
-			if moduleapi.Children and moduleapi.Children.Parent ~= moduleapi.ChildrenParent then
-				moduleapi.Children.Parent = moduleapi.ChildrenParent
-				moduleapi.Children.Visible = false
-			end
-		end
-	end
-	if count > 0 and not pinnedcategory.Expanded then
-		pinnedcategory:Expand()
-	end
-end
 mainapi.Categories.Main:CreateDivider()
 mainapi:CreateCategory({
 	Name = 'Combat',
@@ -6564,13 +6241,6 @@ mainapi.Categories.Main:CreateSettingsDivider()
 ]]
 
 local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
-general:CreateButton({
-	Name = 'Changelogs',
-	Function = function()
-		mainapi.Changelog()
-	end,
-	Tooltip = 'Shows the latest changes to Larp V4'
-})
 mainapi.MultiKeybind = general:CreateToggle({
 	Name = 'Enable Multi-Keybinding',
 	Tooltip = 'Allows multiple keys to be bound to a module (eg. G + H)'
@@ -6737,7 +6407,6 @@ guipane:CreateButton({
 	Name = 'Sort GUI',
 	Function = function()
 		local priority = {
-			PinnedCategory = 0,
 			GUICategory = 1,
 			CombatCategory = 2,
 			BlatantCategory = 3,
@@ -6746,8 +6415,9 @@ guipane:CreateButton({
 			WorldCategory = 6,
 			InventoryCategory = 7,
 			MinigamesCategory = 8,
-			FriendsCategory = 9,
-			ProfilesCategory = 10
+			FavouritesCategory = 9,
+			FriendsCategory = 10,
+			ProfilesCategory = 11
 		}
 		local categories = {}
 		for _, v in mainapi.Categories do
@@ -7831,34 +7501,6 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			v.BackgroundTransparency = (rainbow or not button.Enabled) and 0 or 0.85
 			v:FindFirstChild('Text').TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
 		end
-
-		if button.PinnedClone and button.Enabled then
-			local pinned = button.PinnedClone
-			pinned.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
-			pinned.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
-			local pgradient = pinned:FindFirstChildOfClass('UIGradient')
-			if pgradient then
-				pgradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
-				if pgradient.Enabled then
-					pinned.BackgroundColor3 = Color3.new(1, 1, 1)
-					pgradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))),
-						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((button.Index + 1) * 0.025)) % 1)))
-					})
-				end
-			end
-			local pbind = pinned:FindFirstChild('Bind')
-			if pbind then
-				local pbindicon = pbind:FindFirstChild('Icon')
-				if pbindicon then pbindicon.ImageColor3 = pinned.TextColor3 end
-				local pbindtext = pbind:FindFirstChild('TextLabel')
-				if pbindtext then pbindtext.TextColor3 = pinned.TextColor3 end
-			end
-			local pdots = pinned:FindFirstChild('Dots')
-			if pdots then pdots.Dots.ImageColor3 = pinned.TextColor3 end
-			local ppin = pinned:FindFirstChild('Pin')
-			if ppin then ppin.ImageColor3 = pinned.TextColor3 end
-		end
 	end
 
 	for i, v in mainapi.Overlays.Toggles do
@@ -7985,367 +7627,6 @@ if shared.LarpPresetInstall then
 			end
 		})
 	end))
-end
-
-do
-	local function currentCommit()
-		local ok, res = pcall(readfile, 'LarpV4/profiles/commit.txt')
-		if ok and type(res) == 'string' and #res == 40 then
-			return res:gsub('%s+$', '')
-		end
-		return 'main'
-	end
-
-	local function buildChangelog(entries, isnew)
-		repeat task.wait(0.1) until not clickgui:FindFirstChild('PromptShadow')
-
-		local existing = clickgui:FindFirstChild('Changelog')
-		if existing then
-			existing:Destroy()
-		end
-
-		local added, removed, modified = 0, 0, 0
-		for _, v in entries do
-			if v.status == 'added' then
-				added += 1
-			elseif v.status == 'removed' then
-				removed += 1
-			else
-				modified += 1
-			end
-		end
-
-		local window = Instance.new('Frame')
-		window.Name = 'Changelog'
-		window.Size = UDim2.fromOffset(640, 430)
-		window.Position = UDim2.new(0.5, -320, 0.5, -215)
-		window.ZIndex = 10
-		window.BackgroundColor3 = uipallet.Main
-		window.BorderSizePixel = 0
-		window.Parent = clickgui
-		addCorner(window, UDim.new(0, 10))
-		addBlur(window)
-		makeDraggable(window)
-		local windowstroke = Instance.new('UIStroke')
-		windowstroke.Color = color.Light(uipallet.Main, 0.38)
-		windowstroke.Thickness = 1
-		windowstroke.Parent = window
-
-		local header = Instance.new('Frame')
-		header.Size = UDim2.new(1, 0, 0, 47)
-		header.BackgroundTransparency = 1
-		header.Parent = window
-		local logologo = Instance.new('ImageLabel')
-		logologo.Size = UDim2.fromOffset(62, 18)
-		logologo.Position = UDim2.fromOffset(12, 13)
-		logologo.BackgroundTransparency = 1
-		logologo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
-		logologo.ImageColor3 = uipallet.Text
-		logologo.Parent = header
-		local title = Instance.new('TextLabel')
-		title.Size = UDim2.new(1, -120, 0, 16)
-		title.Position = UDim2.fromOffset(14, 30)
-		title.BackgroundTransparency = 1
-		title.Text = 'Larp V4 // update log'
-		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.TextColor3 = uipallet.Text
-		title.TextSize = 12
-		title.FontFace = uipallet.FontSemiBold
-		title.Parent = header
-		local status = Instance.new('TextLabel')
-		status.Name = 'Status'
-		status.Size = UDim2.new(1, -110, 0, 18)
-		status.Position = UDim2.fromOffset(0, 14)
-		status.BackgroundTransparency = 1
-		status.Text = ''
-		status.TextXAlignment = Enum.TextXAlignment.Right
-		status.TextColor3 = uipallet.Text
-		status.TextSize = 11
-		status.FontFace = uipallet.Font
-		status.Parent = header
-		local close = addCloseButton(header, 11)
-
-		local divider = Instance.new('Frame')
-		divider.Size = UDim2.new(1, -24, 0, 1)
-		divider.Position = UDim2.fromOffset(12, 47)
-		divider.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
-		divider.BorderSizePixel = 0
-		divider.Parent = window
-
-		local screen = Instance.new('Frame')
-		screen.Size = UDim2.new(1, -24, 0, 300)
-		screen.Position = UDim2.fromOffset(12, 58)
-		screen.BackgroundColor3 = color.Light(uipallet.Main, 0.24)
-		screen.BorderSizePixel = 0
-		screen.Parent = window
-		addCorner(screen, UDim.new(0, 6))
-		local list = Instance.new('ScrollingFrame')
-		list.Name = 'List'
-		list.Size = UDim2.new(1, -16, 1, -16)
-		list.Position = UDim2.fromOffset(8, 8)
-		list.BackgroundTransparency = 1
-		list.BorderSizePixel = 0
-		list.ScrollBarThickness = 4
-		list.ScrollBarImageTransparency = 0.75
-		list.ScrollBarImageColor3 = color.Dark(uipallet.Text, 0.3)
-		list.CanvasSize = UDim2.fromScale(1, 0)
-		list.Parent = screen
-		local listlayout = Instance.new('UIListLayout')
-		listlayout.Padding = UDim.new(0, 3)
-		listlayout.SortOrder = Enum.SortOrder.LayoutOrder
-		listlayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-		listlayout.Parent = list
-		local listpad = Instance.new('UIPadding')
-		listpad.PaddingLeft = UDim.new(0, 6)
-		listpad.PaddingRight = UDim.new(0, 6)
-		listpad.PaddingTop = UDim.new(0, 8)
-		listpad.PaddingBottom = UDim.new(0, 8)
-		listpad.Parent = list
-		local function updateList()
-			list.CanvasSize = UDim2.fromOffset(0, listlayout.AbsoluteContentSize.Y)
-		end
-		listlayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(updateList)
-		updateList()
-
-		local codefont = Font.fromEnum(Enum.Font.Code)
-		local statuscolors = {
-			added = Color3.fromRGB(143, 214, 158),
-			modified = Color3.fromRGB(224, 215, 152),
-			removed = Color3.fromRGB(224, 152, 152)
-		}
-		local prefixes = {added = '[+]', modified = '[~]', removed = '[-]'}
-		local rows = {}
-		for _, v in entries do
-			local line = Instance.new('TextLabel')
-			line.Size = UDim2.new(1, -12, 0, 28)
-			line.BackgroundTransparency = 1
-			line.TextXAlignment = Enum.TextXAlignment.Left
-			line.TextColor3 = statuscolors[v.status]
-			line.Text = prefixes[v.status]..' '..v.name
-			line.TextSize = 13
-			line.FontFace = codefont
-			line.Parent = list
-			rows[#rows + 1] = {
-				label = line,
-				prefix = prefixes[v.status],
-				color = statuscolors[v.status],
-				name = v.name,
-				full = prefixes[v.status]..' '..v.name
-			}
-		end
-		local function writetype(row)
-			local full = row.full
-			row.label.Text = ''
-			row.label.TextColor3 = row.color
-			local i = 0
-			while i < #full do
-				if not row.label.Parent then return end
-				i += 1
-				row.label.Text = full:sub(1, i)
-				task.wait(0.025)
-			end
-		end
-
-		local statusparts = {}
-		if added > 0 then
-			statusparts[#statusparts + 1] = added..' added'
-		end
-		if removed > 0 then
-			statusparts[#statusparts + 1] = removed..' removed'
-		end
-		if modified > 0 then
-			statusparts[#statusparts + 1] = modified..' changed'
-		end
-		status.Text = #statusparts > 0 and table.concat(statusparts, ' - ') or 'No changelogs found'
-		local empty = Instance.new('TextLabel')
-		empty.Name = 'Empty'
-		empty.Size = UDim2.new(1, -28, 0, 20)
-		empty.Position = UDim2.new(0, 14, 0.5, 10)
-		empty.BackgroundTransparency = 1
-		empty.Text = 'No changelogs found'
-		empty.TextColor3 = color.Light(uipallet.Text, 0.3)
-		empty.TextSize = 12
-		empty.FontFace = uipallet.Font
-		empty.Visible = #entries == 0
-		empty.Parent = screen
-
-		local footer = Instance.new('Frame')
-		footer.Size = UDim2.new(1, 0, 0, 46)
-		footer.Position = UDim2.new(0, 0, 1, -46)
-		footer.BackgroundTransparency = 1
-		footer.BorderSizePixel = 0
-		footer.Parent = window
-		local footline = Instance.new('Frame')
-		footline.Size = UDim2.new(1, -24, 0, 1)
-		footline.Position = UDim2.fromOffset(12, 0)
-		footline.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
-		footline.BorderSizePixel = 0
-		footline.Parent = footer
-		local dont = false
-		local dontbox = Instance.new('TextButton')
-		dontbox.Size = UDim2.fromOffset(196, 22)
-		dontbox.Position = UDim2.fromOffset(14, 12)
-		dontbox.BackgroundTransparency = 1
-		dontbox.Text = ''
-		dontbox.AutoButtonColor = false
-		dontbox.Parent = footer
-		local box = Instance.new('Frame')
-		box.Size = UDim2.fromOffset(14, 14)
-		box.Position = UDim2.fromOffset(0, 4)
-		box.BackgroundColor3 = color.Dark(uipallet.Main, 0.14)
-		box.BorderSizePixel = 0
-		box.Parent = dontbox
-		addCorner(box, UDim.new(0, 3))
-		local boxtick = Instance.new('TextLabel')
-		boxtick.Size = UDim2.fromScale(1, 1)
-		boxtick.BackgroundTransparency = 1
-		boxtick.Text = ''
-		boxtick.TextColor3 = uipallet.Text
-		boxtick.TextSize = 10
-		boxtick.FontFace = uipallet.FontSemiBold
-		boxtick.Parent = box
-		local dontlabel = Instance.new('TextLabel')
-		dontlabel.Size = UDim2.new(1, -22, 1, 0)
-		dontlabel.Position = UDim2.fromOffset(20, 0)
-		dontlabel.BackgroundTransparency = 1
-		dontlabel.Text = "Don't show again until a new update"
-		dontlabel.TextXAlignment = Enum.TextXAlignment.Left
-		dontlabel.TextColor3 = uipallet.Text
-		dontlabel.TextSize = 12
-		dontlabel.FontFace = uipallet.Font
-		dontlabel.Parent = dontbox
-		local dcommit = currentCommit()
-		if isfile('LarpV4/seenchangelog.txt') then
-			dont = readfile('LarpV4/seenchangelog.txt'):gsub('%s+$', '') == dcommit
-			if dont then
-				boxtick.Text = 'x'
-			end
-		end
-		local function handleDont()
-			dont = not dont
-			boxtick.Text = dont and 'x' or ''
-			pcall(function()
-				if dont then
-					writefile('LarpV4/seenchangelog.txt', dcommit)
-				else
-					pcall(delfile, 'LarpV4/seenchangelog.txt')
-				end
-			end)
-		end
-		dontbox.MouseButton1Click:Connect(handleDont)
-		close.MouseButton1Click:Connect(function()
-			window:Destroy()
-		end)
-
-		task.spawn(function()
-			for _, row in rows do
-				if not row.label.Parent then break end
-				local ok = pcall(writetype, row)
-				if not ok then
-					row.label.Text = row.full
-					row.label.TextColor3 = row.color
-				end
-				task.wait(0.08)
-				pcall(function()
-					list.CanvasPosition = Vector2.new(0, math.max(list.CanvasPosition.Y, list.CanvasSize.Y.Offset - list.AbsoluteWindowSize.Y + 16))
-				end)
-			end
-			task.wait(0.2)
-			if footer.Parent then
-				tween:Tween(footer, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {
-					BackgroundTransparency = 0.98
-				})
-			end
-		end)
-	end
-
-	local function parseChangelog(text)
-		local entries = {}
-		for _, line in text:split('\n') do
-			local status = line:sub(1, 1)
-			if status == '+' or status == '-' or status == '~' then
-				local name = line:sub(2):gsub('^%s+', ''):gsub('%s+$', '')
-				if name ~= '' then
-					entries[#entries + 1] = {status = status == '+' and 'added' or status == '-' and 'removed' or 'modified', name = name}
-				end
-			end
-		end
-		if #entries == 0 then
-			for _, line in text:split('\n') do
-				local name = line:gsub('^%s+', ''):gsub('%s+$', '')
-				if name ~= '' and name ~= 'Changelog' then
-					entries[#entries + 1] = {status = 'modified', name = name}
-				end
-			end
-		end
-		return entries
-	end
-
-	local function currentCommit()
-		local ok, res = pcall(readfile, 'LarpV4/profiles/commit.txt')
-		if ok and type(res) == 'string' and #res == 40 then
-			return res:gsub('%s+$', '')
-		end
-		return 'main'
-	end
-
-	local function fetchChangelog()
-		local c = currentCommit()
-		local urls = {}
-		if c ~= 'main' then
-			urls[#urls + 1] = 'https://raw.githubusercontent.com/exuric/VPrivate/'..c..'/changelog.txt?v='..tick()
-		end
-		urls[#urls + 1] = 'https://raw.githubusercontent.com/exuric/VPrivate/main/changelog.txt?v='..tick()
-		for _, u in urls do
-			local ok, req = pcall(function()
-				return game:HttpGet(u, true)
-			end)
-			if ok and req and req ~= '404: Not Found' and req ~= '' then
-				return req
-			end
-		end
-		return nil
-	end
-
-	function mainapi.Changelog()
-		if clickgui:FindFirstChild('Changelog') then return end
-		local text = fetchChangelog()
-		if not text then
-			mainapi:CreateNotification('Changelog', 'Failed to fetch changelog', 3, 'warning')
-			return
-		end
-		local entries = parseChangelog(text)
-		buildChangelog(entries)
-	end
-
-	local autoshown = false
-	local function checkChangelog()
-		if autoshown then return end
-		autoshown = true
-		if isfile('LarpV4/seenchangelog.txt') and readfile('LarpV4/seenchangelog.txt'):gsub('%s+$', '') == currentCommit() then
-			return
-		end
-		mainapi.PendingChangelog = true
-		if clickgui.Visible then
-			mainapi.PendingChangelog = false
-			mainapi.Changelog()
-		end
-	end
-
-	mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
-		if not clickgui.Visible then
-			local existing = clickgui:FindFirstChild('Changelog')
-			if existing then
-				existing:Destroy()
-			end
-			return
-		end
-		if not mainapi.PendingChangelog then return end
-		mainapi.PendingChangelog = false
-		mainapi.Changelog()
-	end))
-
-	task.spawn(checkChangelog)
 end
 
 return mainapi

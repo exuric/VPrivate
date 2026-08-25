@@ -5949,17 +5949,17 @@ function mainapi:Uninject()
 	mainapi.Loaded = nil
 	for _, v in self.Modules do
 		if v.Enabled then
-			v:Toggle()
+			pcall(v.Toggle, v)
 		end
 	end
 	for _, v in self.Legit.Modules do
 		if v.Enabled then
-			v:Toggle()
+			pcall(v.Toggle, v)
 		end
 	end
 	for _, v in self.Categories do
 		if v.Type == 'Overlay' and v.Button.Enabled then
-			v.Button:Toggle()
+			pcall(v.Button.Toggle, v.Button)
 		end
 	end
 	for _, v in mainapi.Connections do
@@ -6143,6 +6143,11 @@ mainapi:CreateCategory({
 	Name = 'Minigames',
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
+})
+mainapi:CreateCategory({
+	Name = 'Favourites (not finished)',
+	Icon = getcustomasset('LarpV4/assets/larp/favouritestar2.png'),
+	Size = UDim2.fromOffset(16, 16)
 })
 mainapi.Categories.Main:CreateDivider('misc')
 
@@ -6435,8 +6440,9 @@ guipane:CreateButton({
 			WorldCategory = 6,
 			InventoryCategory = 7,
 			MinigamesCategory = 8,
-			FriendsCategory = 9,
-			ProfilesCategory = 10
+			FavouritesCategory = 9,
+			FriendsCategory = 10,
+			ProfilesCategory = 11
 		}
 		local categories = {}
 		for _, v in mainapi.Categories do

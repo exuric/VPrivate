@@ -3863,16 +3863,22 @@ function mainapi:CreateCategory(categorysettings)
 		local pinicon = Instance.new('ImageButton')
 		pinicon.Name = 'Pin'
 		pinicon.Size = UDim2.fromOffset(16, 16)
-		pinicon.Position = UDim2.new(1, -34, 0, 12)
+		pinicon.Position = UDim2.new(1, -84, 0, 12)
 		pinicon.AnchorPoint = Vector2.new(1, 0)
 		pinicon.BackgroundTransparency = 1
 		pinicon.AutoButtonColor = false
 		pinicon.Image = getcustomasset('LarpV4/assets/larp/pin.png')
 		pinicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		pinicon.Visible = false
-		pinicon.ZIndex = 2
+		pinicon.ZIndex = 3
 		pinicon.Parent = modulebutton
 		addTooltip(pinicon, 'Pin to top')
+		pinicon.MouseEnter:Connect(function()
+			pinicon.ImageColor3 = uipallet.Text
+		end)
+		pinicon.MouseLeave:Connect(function()
+			pinicon.ImageColor3 = pinned and uipallet.Text or color.Light(uipallet.Main, 0.37)
+		end)
 		local pinned = false
 		local function updatePin()
 			pinicon.ImageColor3 = pinned and uipallet.Text or color.Light(uipallet.Main, 0.37)
@@ -6167,11 +6173,13 @@ function mainapi:UpdatePinned()
 		if enabled then
 			count = count + 1
 			if not moduleapi.PinnedClone then
+				pcall(function()
 				local object = moduleapi.Object
 				if object then
 					local clone = object:Clone()
 					clone.LayoutOrder = moduleapi.Index
 					clone.Parent = pinnedchildren
+					moduleapi.PinnedClone = clone
 					local bind = clone:FindFirstChild('Bind')
 					local dots = clone:FindFirstChild('Dots')
 					local pinicon = clone:FindFirstChild('Pin')
@@ -6296,32 +6304,35 @@ function mainapi:UpdatePinned()
 						updatePinVisible()
 					end)
 					local origsetbind = moduleapi.SetBind
-					moduleapi.SetBind = function(self, tab, mouse)
-						origsetbind(self, tab, mouse)
-						local pinnedclone = self.PinnedClone
-						if pinnedclone and pinnedclone.Parent then
-							local clonebind = pinnedclone:FindFirstChild('Bind')
-							if clonebind then
-								local clonebindtext = clonebind:FindFirstChild('TextLabel')
-								local clonebindicon = clonebind:FindFirstChild('Icon')
-								if #tab <= 0 then
-									if clonebindtext then clonebindtext.Visible = false end
-									if clonebindicon then clonebindicon.Visible = true end
-								else
-									clonebind.Visible = true
-									if clonebindtext then
-										clonebindtext.Visible = true
-										clonebindtext.Text = table.concat(tab, ' + '):upper()
+					if not moduleapi.SetBindPinned then
+						moduleapi.SetBindPinned = true
+						moduleapi.SetBind = function(self, tab, mouse)
+							origsetbind(self, tab, mouse)
+							local pinnedclone = self.PinnedClone
+							if pinnedclone and pinnedclone.Parent then
+								local clonebind = pinnedclone:FindFirstChild('Bind')
+								if clonebind then
+									local clonebindtext = clonebind:FindFirstChild('TextLabel')
+									local clonebindicon = clonebind:FindFirstChild('Icon')
+									if #tab <= 0 then
+										if clonebindtext then clonebindtext.Visible = false end
+										if clonebindicon then clonebindicon.Visible = true end
+									else
+										clonebind.Visible = true
+										if clonebindtext then
+											clonebindtext.Visible = true
+											clonebindtext.Text = table.concat(tab, ' + '):upper()
+										end
+										if clonebindicon then clonebindicon.Visible = false end
 									end
-									if clonebindicon then clonebindicon.Visible = false end
 								end
+								local clonecover = pinnedclone:FindFirstChild('Cover')
+								if clonecover then clonecover.Visible = false end
 							end
-							local clonecover = pinnedclone:FindFirstChild('Cover')
-							if clonecover then clonecover.Visible = false end
 						end
 					end
-					moduleapi.PinnedClone = clone
 				end
+				end)
 			end
 			local clone = moduleapi.PinnedClone
 			if clone and clone.Parent then

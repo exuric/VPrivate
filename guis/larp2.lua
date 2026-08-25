@@ -4120,7 +4120,6 @@ function mainapi:CreateCategory(categorysettings)
 		favicon.Image = getcustomasset('LarpV4/assets/larp/favouritestar2.png')
 		favicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favicon.Visible = false
-		favicon.Quality = Enum.ImageQualityQuality.High
 		favicon.Parent = modulebutton
 		addTooltip(favicon, 'Toggle favourite')
 		favicon.MouseEnter:Connect(function()
@@ -5815,7 +5814,7 @@ function mainapi:CreateNotification(title, text, duration, type)
 			local height = 78
 			local index = 0
 			for _, v in notifications:GetChildren() do
-				if v:IsA('ImageLabel') and v.Enabled then
+				if v:IsA('ImageLabel') and v.Visible then
 					index = index + 1
 					local target = UDim2.new(1, 0, 1, -(29 + (height * index)))
 					tween:Cancel(v)

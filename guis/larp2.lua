@@ -8059,7 +8059,7 @@ do
 		status.BackgroundTransparency = 1
 		status.Text = ''
 		status.TextXAlignment = Enum.TextXAlignment.Right
-		status.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		status.TextColor3 = uipallet.Text
 		status.TextSize = 11
 		status.FontFace = uipallet.Font
 		status.Parent = header
@@ -8098,8 +8098,8 @@ do
 		local listpad = Instance.new('UIPadding')
 		listpad.PaddingLeft = UDim.new(0, 6)
 		listpad.PaddingRight = UDim.new(0, 6)
-		listpad.PaddingTop = UDim.new(0, 6)
-		listpad.PaddingBottom = UDim.new(0, 6)
+		listpad.PaddingTop = UDim.new(0, 8)
+		listpad.PaddingBottom = UDim.new(0, 8)
 		listpad.Parent = list
 		local function updateList()
 			list.CanvasSize = UDim2.fromOffset(0, listlayout.AbsoluteContentSize.Y)
@@ -8117,10 +8117,11 @@ do
 		local rows = {}
 		for _, v in entries do
 			local line = Instance.new('TextLabel')
-			line.Size = UDim2.fromOffset(560, 30)
+			line.Size = UDim2.new(1, -12, 0, 28)
 			line.BackgroundTransparency = 1
 			line.TextXAlignment = Enum.TextXAlignment.Left
-			line.Text = ''
+			line.TextColor3 = statuscolors[v.status]
+			line.Text = prefixes[v.status]..' '..v.name
 			line.TextSize = 13
 			line.FontFace = codefont
 			line.Parent = list
@@ -8128,11 +8129,13 @@ do
 				label = line,
 				prefix = prefixes[v.status],
 				color = statuscolors[v.status],
-				name = v.name
+				name = v.name,
+				full = prefixes[v.status]..' '..v.name
 			}
 		end
 		local function writetype(row)
-			local full = row.prefix..' '..row.name
+			local full = row.full
+			row.label.Text = ''
 			row.label.TextColor3 = row.color
 			local i = 0
 			while i < #full do
@@ -8207,7 +8210,7 @@ do
 		dontlabel.BackgroundTransparency = 1
 		dontlabel.Text = "Don't show again until a new update"
 		dontlabel.TextXAlignment = Enum.TextXAlignment.Left
-		dontlabel.TextColor3 = color.Dark(uipallet.Text, 0.26)
+		dontlabel.TextColor3 = uipallet.Text
 		dontlabel.TextSize = 12
 		dontlabel.FontFace = uipallet.Font
 		dontlabel.Parent = dontbox
@@ -8236,8 +8239,12 @@ do
 
 		task.spawn(function()
 			for _, row in rows do
+				if not row.label.Parent then break end
 				local ok = pcall(writetype, row)
-				if not ok then break end
+				if not ok then
+					row.label.Text = row.full
+					row.label.TextColor3 = row.color
+				end
 				task.wait(0.08)
 				pcall(function()
 					list.CanvasPosition = Vector2.new(0, math.max(list.CanvasPosition.Y, list.CanvasSize.Y.Offset - list.AbsoluteWindowSize.Y + 16))

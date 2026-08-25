@@ -2612,7 +2612,7 @@ function mainapi:CreateGUI()
 	local profilepanel = Instance.new('Frame')
 	profilepanel.Name = 'ProfilePanel'
 	profilepanel.Size = UDim2.fromOffset(220, 232)
-	profilepanel.Position = UDim2.new(0, -232, 0, 46)
+	profilepanel.Position = UDim2.new(1, 12, 0, 8)
 	profilepanel.BackgroundColor3 = uipallet.Main
 	profilepanel.BorderSizePixel = 0
 	profilepanel.Visible = false
@@ -2676,7 +2676,7 @@ function mainapi:CreateGUI()
 	profilename2.Position = UDim2.fromOffset(94, 74)
 	profilename2.BackgroundTransparency = 1
 	profilename2.TextXAlignment = Enum.TextXAlignment.Left
-	profilename2.TextColor3 = color.Dark(uipallet.Text, 0.45)
+	profilename2.TextColor3 = color.Light(uipallet.Main, 0.55)
 	profilename2.TextSize = 12
 	profilename2.FontFace = uipallet.Font
 	profilename2.TextTruncate = Enum.TextTruncate.AtEnd
@@ -2686,7 +2686,7 @@ function mainapi:CreateGUI()
 	profstyle.Position = UDim2.fromOffset(94, 92)
 	profstyle.BackgroundTransparency = 1
 	profstyle.TextXAlignment = Enum.TextXAlignment.Left
-	profstyle.TextColor3 = color.Dark(uipallet.Text, 0.45)
+	profstyle.TextColor3 = color.Light(uipallet.Main, 0.55)
 	profstyle.TextSize = 11
 	profstyle.FontFace = uipallet.Font
 	profstyle.Parent = profilepanel
@@ -2704,7 +2704,7 @@ function mainapi:CreateGUI()
 		label.BackgroundTransparency = 1
 		label.Text = name
 		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.TextColor3 = color.Dark(uipallet.Text, 0.45)
+		label.TextColor3 = color.Light(uipallet.Main, 0.55)
 		label.TextSize = 12
 		label.FontFace = uipallet.Font
 		label.Parent = profilepanel

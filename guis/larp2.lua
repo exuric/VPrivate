@@ -2550,6 +2550,15 @@ function mainapi:CreateGUI()
 	discordbutton.Image = getcustomasset('LarpV4/assets/larp/discord.png')
 	discordbutton.Parent = window
 	addTooltip(discordbutton, 'Copy discord: jx4r')
+	local favouritesbutton = Instance.new('ImageButton')
+	favouritesbutton.Name = 'Favourites'
+	favouritesbutton.Size = UDim2.fromOffset(16, 16)
+	favouritesbutton.Position = UDim2.new(1, -74, 0, 11)
+	favouritesbutton.BackgroundTransparency = 1
+	favouritesbutton.Image = getcustomasset('LarpV4/assets/larp/favouritestar.png')
+	favouritesbutton.ImageColor3 = Color3.new(1, 1, 1)
+	favouritesbutton.Parent = window
+	addTooltip(favouritesbutton, 'Favourites (not finished)')
 	local settingspane = Instance.new('TextButton')
 	settingspane.Size = UDim2.fromScale(1, 1)
 	settingspane.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -6121,13 +6130,6 @@ mainapi:CreateCategory({
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
-local favouritescategory = mainapi:CreateCategory({
-	Name = 'Favourites (not finished)',
-	Icon = getcustomasset('LarpV4/assets/larp/favouritestar.png'),
-	Size = UDim2.fromOffset(16, 16)
-})
-favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
-favouritescategory.Button.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
 mainapi.Categories.Main:CreateDivider('misc')
 
 --[[

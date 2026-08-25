@@ -2616,7 +2616,6 @@ function mainapi:CreateGUI()
 	profilepanel.BackgroundColor3 = uipallet.Main
 	profilepanel.BorderSizePixel = 0
 	profilepanel.Visible = false
-	profilepanel.ZIndex = 10
 	profilepanel.Parent = window
 	addBlur(profilepanel)
 	addCorner(profilepanel, UDim.new(0, 6))
@@ -2771,7 +2770,6 @@ function mainapi:CreateGUI()
 	profilebutton.MouseButton1Click:Connect(function()
 		if profilepanel then
 			profilepanel.Visible = not profilepanel.Visible
-			profilepanel.ZIndex = 10
 		end
 	end)
 	local settingspane = Instance.new('TextButton')

@@ -2593,8 +2593,8 @@ function mainapi:CreateGUI()
 	end)
 	local profilebutton = Instance.new('ImageButton')
 	profilebutton.Name = 'Profile'
-	profilebutton.Size = UDim2.fromOffset(20, 20)
-	profilebutton.Position = UDim2.new(1, -84, 0, 10)
+	profilebutton.Size = UDim2.fromOffset(16, 16)
+	profilebutton.Position = UDim2.new(1, -82, 0, 11)
 	profilebutton.BackgroundTransparency = 1
 	profilebutton.Image = getcustomasset('LarpV4/assets/larp/profileicon.png')
 	profilebutton.ImageColor3 = Color3.new(1, 1, 1)

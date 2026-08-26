@@ -2553,14 +2553,14 @@ function mainapi:CreateGUI()
 	discordbutton.Position = UDim2.new(1, -56, 0, 11)
 	discordbutton.BackgroundTransparency = 1
 	discordbutton.Image = getcustomasset('LarpV4/assets/larp/discord.png')
-	discordbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+	discordbutton.ImageColor3 = Color3.new(1, 1, 1)
 	discordbutton.Parent = window
 	addTooltip(discordbutton, 'Join our discord')
 	discordbutton.MouseEnter:Connect(function()
-		discordbutton.ImageColor3 = uipallet.Text
+		discordbutton.ImageColor3 = Color3.new(1, 1, 1)
 	end)
 	discordbutton.MouseLeave:Connect(function()
-		discordbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		discordbutton.ImageColor3 = Color3.new(1, 1, 1)
 	end)
 	discordbutton.MouseButton1Click:Connect(function()
 		local discordurl = 'https://discord.gg/g55Vbzfeum'
@@ -2596,10 +2596,10 @@ function mainapi:CreateGUI()
 	profilebutton.Parent = window
 	addTooltip(profilebutton, 'Profile')
 	profilebutton.MouseEnter:Connect(function()
-		profilebutton.ImageColor3 = uipallet.Text
+		profilebutton.ImageColor3 = Color3.new(1, 1, 1)
 	end)
 	profilebutton.MouseLeave:Connect(function()
-		profilebutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		profilebutton.ImageColor3 = Color3.new(1, 1, 1)
 	end)
 	local profilepanel = Instance.new('Frame')
 	profilepanel.Name = 'ProfilePanel'
@@ -3038,7 +3038,7 @@ function mainapi:CreateGUI()
 		addCorner(button, UDim.new(1, 0))
 		addTooltip(button, 'Open overlays menu')
 		local favbutton = Instance.new('ImageButton')
-		favbutton.Name = 'Favourites'
+		favbutton.Name = 'Favorites'
 		favbutton.Size = UDim2.fromOffset(22, 22)
 		favbutton.Position = UDim2.new(1, -55, 0, 8)
 		favbutton.BackgroundTransparency = 1
@@ -3047,11 +3047,11 @@ function mainapi:CreateGUI()
 		favbutton.ImageColor3 = Color3.new(1, 1, 1)
 		favbutton.Parent = bar
 		addCorner(favbutton, UDim.new(1, 0))
-		addTooltip(favbutton, 'Favourites')
+		addTooltip(favbutton, 'Favorites')
 		task.delay(0.5, function()
 			pcall(function()
 				local api = shared.larp or getgenv().larp
-				local cat = api and api.Categories and api.Categories.Favourites
+				local cat = api and api.Categories and api.Categories.Favorites
 				if cat and cat.Object then
 					cat.Object:GetPropertyChangedSignal('Visible'):Connect(function()
 						favbutton.ImageColor3 = cat.Object.Visible and Color3.fromRGB(255, 140, 0) or Color3.new(1, 1, 1)
@@ -3062,8 +3062,8 @@ function mainapi:CreateGUI()
 		favbutton.MouseButton1Click:Connect(function()
 			pcall(function()
 				local api = shared.larp or getgenv().larp
-				if api and api.Categories and api.Categories.Favourites then
-					local cat = api.Categories.Favourites
+				if api and api.Categories and api.Categories.Favorites then
+					local cat = api.Categories.Favorites
 					if cat.Object then
 						if cat.Object.Visible then
 							cat.Object.Visible = false
@@ -4073,7 +4073,7 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(bind, 'Click to bind')
 		bind.Name = 'Bind'
 		bind.Size = UDim2.fromOffset(20, 21)
-		bind.Position = UDim2.new(1, -36, 0, 9)
+		bind.Position = UDim2.new(1, -27, 0, 9)
 		bind.AnchorPoint = Vector2.new(1, 0)
 		bind.BackgroundColor3 = Color3.new(1, 1, 1)
 		bind.BackgroundTransparency = 0.92
@@ -4122,7 +4122,7 @@ function mainapi:CreateCategory(categorysettings)
 		local favicon = Instance.new('ImageButton')
 		favicon.Name = 'Favourite'
 		favicon.Size = UDim2.fromOffset(16, 16)
-		favicon.Position = UDim2.new(1, -58, 0, 12)
+		favicon.Position = UDim2.new(1, -49, 0, 12)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
 		favicon.Image = getcustomasset('LarpV4/assets/larp/star2.png')
@@ -4139,6 +4139,7 @@ function mainapi:CreateCategory(categorysettings)
 		local favstate = false
 		local function updateFav()
 			favicon.ImageColor3 = favstate and Color3.new(1, 1, 1) or color.Light(uipallet.Main, 0.37)
+			favicon.Visible = favstate
 		end
 		favicon.MouseButton1Click:Connect(function()
 			local mod = (shared.larp or getgenv().larp)
@@ -4428,7 +4429,7 @@ function mainapi:CreateCategory(categorysettings)
 					mainapi:UpdateFavourites()
 				end
 			end,
-			Tooltip = 'Shows this module in the Favourites tab.'
+			Tooltip = 'Shows this module in the Favorites tab.'
 		})
 		function moduleapi:toggleFav()
 			if fav then
@@ -6469,16 +6470,14 @@ end))
 
 mainapi:CreateGUI()
 local favouritescategory = mainapi:CreateCategory({
-	Name = 'Favourites',
+	Name = 'Favorites',
 	Icon = getcustomasset('LarpV4/assets/larp/star2.png'),
 	Size = UDim2.fromOffset(16, 16)
 })
 favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
 favouritescategory.Button.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
 favouritescategory.Button.Object.MouseButton1Click:Connect(function()
-	if favouritescategory.Object.Visible and not favouritescategory.Expanded then
-		favouritescategory:Expand()
-	end
+	-- handled by CreateCategory button logic
 end)
 mainapi.Categories.Main:CreateDivider()
 mainapi:CreateCategory({
@@ -6518,7 +6517,7 @@ mainapi:CreateCategory({
 })
 
 function mainapi:UpdateFavourites()
-	local favcategory = self.Categories.Favourites
+	local favcategory = self.Categories.Favorites
 	if not favcategory then return end
 	local favchildren = favcategory.Object:FindFirstChild('Children')
 	if not favchildren then return end
@@ -6533,9 +6532,10 @@ function mainapi:UpdateFavourites()
 				local object = moduleapi.Object
 				if object then
 					local clone = object:Clone()
-					clone.LayoutOrder = moduleapi.Index
+					clone.LayoutOrder = count
 					clone.Parent = favchildren
 					moduleapi.FavouriteClone = clone
+					moduleapi.FavOrder = count
 					local bind = clone:FindFirstChild('Bind')
 					local favicon = clone:FindFirstChild('Favourite')
 					local dots = clone:FindFirstChild('Dots')
@@ -6544,12 +6544,21 @@ function mainapi:UpdateFavourites()
 							moduleapi:toggleFav()
 						end
 					end
+					local function closeAllFavSettings(exceptModule)
+						for _, m in pairs(self.Modules) do
+							if m ~= exceptModule and m.Children and m.Children.Parent == favchildren then
+								m.Children.Visible = false
+								m.Children.Parent = m.ChildrenParent
+							end
+						end
+					end
 					local function openFavSettings()
 						local ch = moduleapi.Children
 						if ch then
 							if ch.Parent ~= favchildren then
+								closeAllFavSettings(moduleapi)
 								ch.Parent = favchildren
-								ch.LayoutOrder = moduleapi.Index + 1
+								ch.LayoutOrder = (moduleapi.FavOrder or count) + 0.5
 								ch.Visible = true
 								task.delay(0.05, function()
 									if ch.Parent ~= favchildren then return end
@@ -6561,7 +6570,8 @@ function mainapi:UpdateFavourites()
 									end)
 								end)
 							else
-								ch.Visible = not ch.Visible
+								ch.Visible = false
+								ch.Parent = moduleapi.ChildrenParent
 							end
 						end
 					end
@@ -6569,12 +6579,7 @@ function mainapi:UpdateFavourites()
 						moduleapi:Toggle()
 					end)
 					clone.MouseButton2Click:Connect(function()
-						if moduleapi.Children and moduleapi.Children.Visible then
-							moduleapi.Children.Visible = false
-							moduleapi.Children.Parent = moduleapi.ChildrenParent
-						else
-							openFavSettings()
-						end
+						openFavSettings()
 					end)
 					if dots then
 						dots.MouseButton1Click:Connect(openFavSettings)
@@ -6595,6 +6600,8 @@ function mainapi:UpdateFavourites()
 			end
 			local clone = moduleapi.FavouriteClone
 			if clone and clone.Parent then
+				clone.LayoutOrder = count
+				moduleapi.FavOrder = count
 				local hue, sat, val = self.GUIColor.Hue, self.GUIColor.Sat, self.GUIColor.Value
 				local rainbow = self.GUIColor.Rainbow and self.RainbowMode.Value ~= 'Retro'
 				if moduleapi.Enabled then
@@ -6604,19 +6611,22 @@ function mainapi:UpdateFavourites()
 					clone.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 					clone.TextColor3 = color.Dark(uipallet.Text, 0.16)
 				end
+				local cloneFav = clone:FindFirstChild('Favourite')
+				if cloneFav then
+					cloneFav.ImageColor3 = Color3.new(1, 1, 1)
+				end
 			end
 		elseif moduleapi.FavouriteClone then
+			if moduleapi.Children and moduleapi.Children.Parent == favchildren then
+				moduleapi.Children.Visible = false
+				moduleapi.Children.Parent = moduleapi.ChildrenParent
+			end
 			moduleapi.FavouriteClone:Destroy()
 			moduleapi.FavouriteClone = nil
-			if moduleapi.Children and moduleapi.Children.Parent ~= moduleapi.ChildrenParent then
-				moduleapi.Children.Parent = moduleapi.ChildrenParent
-				moduleapi.Children.Visible = false
-			end
+			moduleapi.FavOrder = nil
 		end
 	end
-	if count > 0 and not favouritescategory.Expanded then
-		favouritescategory:Expand()
-	elseif count == 0 and favouritescategory.Expanded then
+	if count == 0 and favouritescategory.Expanded then
 		favouritescategory:Expand()
 	end
 end
@@ -6911,7 +6921,7 @@ guipane:CreateButton({
 			WorldCategory = 6,
 			InventoryCategory = 7,
 			MinigamesCategory = 8,
-			FavouritesCategory = 9,
+			FavoritesCategory = 9,
 			FriendsCategory = 10,
 			ProfilesCategory = 11
 		}
@@ -8028,8 +8038,8 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			end
 		end
 	end
-	if mainapi.Categories.Favourites then
-		local fc = mainapi.Categories.Favourites
+	if mainapi.Categories.Favorites then
+		local fc = mainapi.Categories.Favorites
 		if fc.Object and fc.Object.Icon then fc.Object.Icon.ImageColor3 = Color3.new(1, 1, 1) end
 		if fc.Button and fc.Button.Object and fc.Button.Object.Icon then fc.Button.Object.Icon.ImageColor3 = Color3.new(1, 1, 1) end
 	end

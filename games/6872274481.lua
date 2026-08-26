@@ -4187,7 +4187,7 @@ run(function()
 						Sort = sortmethods[Sort.Value]
 					})
 					if not plr then
-						if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 1 then
+						if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.35 then
 							plr = lockedTarget
 						else
 							lockedTarget = nil
@@ -4252,12 +4252,12 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 						local dir
 						if calc and travelTime and travelTime <= lifetime then
-							dir = CFrame.new(newlook.Position, calc).LookVector * projSpeedTotal
+							dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeed * charge)
 							local clear = prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck)
 							if not clear and isFireball and FireballSplash.Enabled then
 								local feetCalc, _, feetTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos - Vector3.new(0, 2.8, 0), targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 								if feetCalc and feetTime and feetTime <= lifetime then
-									local feetDir = CFrame.new(newlook.Position, feetCalc).LookVector * projSpeedTotal
+									local feetDir = CFrame.new(newlook.Position, feetCalc).LookVector * (projSpeed * charge)
 									if prediction.IsTrajectoryClear(newlook.Position, feetDir, gravity, feetTime, rayCheck) then
 										dir = feetDir
 										clear = true
@@ -4291,11 +4291,11 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 							end
 						elseif isFireball and FireballSplash.Enabled then
 							local dist = (targetPos - newlook.p).Magnitude
-							local tt = math.clamp(dist / projSpeedTotal, 0.1, 3)
+							local tt = math.clamp(dist / (projSpeed * charge), 0.1, 3)
 							if tt <= lifetime + 0.5 then
 								local aimPoint = targetPos + targetVel * tt + Vector3.new(0, 0.5 * gravity * tt * tt, 0)
 								return {
-									initialVelocity = CFrame.lookAt(newlook.p, aimPoint).LookVector * projSpeedTotal,
+									initialVelocity = CFrame.lookAt(newlook.p, aimPoint).LookVector * (projSpeed * charge),
 									positionFrom = offsetpos,
 									deltaT = lifetime,
 									gravitationalAcceleration = gravity,

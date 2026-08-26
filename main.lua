@@ -136,9 +136,6 @@ local function finishLoading()
 			task.delay(1, function()
 				larp:CreateNotification('Larp V4', 'Larp V4 Loaded', 5, 'info')
 			end)
-			task.delay(1.5, function()
-				larp:CreateNotification('Test', 'Notification timing test', 5, 'warning')
-			end)
 			task.delay(0.05 + cloneref(game:GetService('RunService')).PostSimulation:Wait(), function()
 				if shared.updated then
 					local commit = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'unknown'

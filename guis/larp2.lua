@@ -107,6 +107,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/overlaystab.png'] = 'rbxassetid://14397380433',
 	['LarpV4/assets/larp/pin.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/profileicon.png'] = 'rbxassetid://14368359107',
+	['LarpV4/assets/larp/profile.png'] = 'rbxassetid://14368359107',
 	['LarpV4/assets/larp/profilesicon.png'] = 'rbxassetid://14397465323',
 	['LarpV4/assets/larp/radaricon.png'] = 'rbxassetid://14368343291',
 	['LarpV4/assets/larp/rainbow_1.png'] = 'rbxassetid://14368344374',
@@ -2562,10 +2563,7 @@ function mainapi:CreateGUI()
 		discordbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	end)
 	discordbutton.MouseButton1Click:Connect(function()
-		pcall(function()
-			discordbutton:SetAttribute('discord', 'j')
-		end)
-		local discordurl = 'https://discord.gg/MwEu9HNK84'
+		local discordurl = 'https://discord.gg/g55Vbzfeum'
 		local opened = false
 		pcall(function()
 			if isfile('LarpV4/profiles/discord.txt') then
@@ -2574,47 +2572,38 @@ function mainapi:CreateGUI()
 			end
 		end)
 		pcall(function()
-			local ok, app = pcall(function()
+			local ok, resp = pcall(function()
 				request({
-					Url = 'discord://-',
+					Url = discordurl,
 					Method = 'GET',
-					Timeout = 0.1
+					Timeout = 0.5
 				})
 			end)
 			opened = true
 		end)
 		if not opened then
 			pcall(setclipboard, discordurl)
-			mainapi:CreateNotification('Discord', 'Discord link copied', 2, 'info')
+			mainapi:CreateNotification('Discord', 'Copied Discord server invite', 5, 'discord')
 		end
-		pcall(function()
-			game:HttpPost(discordurl, '', false)
-		end)
 	end)
 	local profilebutton = Instance.new('ImageButton')
 	profilebutton.Name = 'Profile'
 	profilebutton.Size = UDim2.fromOffset(16, 16)
 	profilebutton.Position = UDim2.new(1, -82, 0, 11)
 	profilebutton.BackgroundTransparency = 1
-	profilebutton.Image = getcustomasset('LarpV4/assets/larp/profileicon.png')
+	profilebutton.Image = getcustomasset('LarpV4/assets/larp/profile.png')
 	profilebutton.ImageColor3 = Color3.new(1, 1, 1)
 	profilebutton.Parent = window
 	addTooltip(profilebutton, 'Profile')
 	profilebutton.MouseEnter:Connect(function()
-		tween:Tween(profilebutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
-			ImageColor3 = Color3.fromRGB(255, 235, 130),
-			Rotation = -8
-		})
+		profilebutton.ImageColor3 = uipallet.Text
 	end)
 	profilebutton.MouseLeave:Connect(function()
-		tween:Tween(profilebutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
-			ImageColor3 = Color3.new(1, 1, 1),
-			Rotation = 0
-		})
+		profilebutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	end)
 	local profilepanel = Instance.new('Frame')
 	profilepanel.Name = 'ProfilePanel'
-	profilepanel.Size = UDim2.fromOffset(220, 232)
+	profilepanel.Size = UDim2.fromOffset(220, 280)
 	profilepanel.Position = UDim2.new(1, 12, 0, 8)
 	profilepanel.BackgroundColor3 = uipallet.Main
 	profilepanel.BorderSizePixel = 0
@@ -2622,10 +2611,7 @@ function mainapi:CreateGUI()
 	profilepanel.Parent = window
 	addBlur(profilepanel)
 	addCorner(profilepanel, UDim.new(0, 6))
-	local profilestroke = Instance.new('UIStroke')
-	profilestroke.Color = color.Light(uipallet.Main, 0.38)
-	profilestroke.Thickness = 1
-	profilestroke.Parent = profilepanel
+	makeDraggable(profilepanel)
 	local profiletitle = Instance.new('TextLabel')
 	profiletitle.Size = UDim2.new(1, -44, 0, 20)
 	profiletitle.Position = UDim2.fromOffset(14, 11)
@@ -2723,6 +2709,9 @@ function mainapi:CreateGUI()
 		profilerows[key] = value
 	end
 	profilerow('Time in game', 128, 'time')
+	profilerow('Game', 156, 'game')
+	profilerow('Server', 184, 'server')
+	profilerow('Roblox', 212, 'version')
 	pcall(function()
 		local player = cloneref(game:GetService('Players')).LocalPlayer
 		if player and player.UserId then
@@ -2766,6 +2755,11 @@ function mainapi:CreateGUI()
 			else
 				profilerows.time.Text = string.format('%dm %02ds', minutes, math.floor(elapsed % 60))
 			end
+			pcall(function()
+				profilerows.game.Text = game.Name
+				profilerows.server.Text = tostring(game.JobId):sub(1, 8)
+				profilerows.version.Text = (game:GetService('RunService'):GetRobloxVersion()):sub(1, 14)
+			end)
 			task.wait(1)
 		until not profilepanel.Parent
 	end)
@@ -3071,10 +3065,14 @@ function mainapi:CreateGUI()
 				if api and api.Categories and api.Categories.Favourites then
 					local cat = api.Categories.Favourites
 					if cat.Object then
-						cat.Object.Visible = true
-					end
-					if cat.Expand then
-						cat:Expand()
+						if cat.Object.Visible then
+							cat.Object.Visible = false
+						else
+							cat.Object.Visible = true
+							if cat.Expand and not cat.Expanded then
+								cat:Expand()
+							end
+						end
 					end
 				end
 			end)
@@ -3877,8 +3875,8 @@ function mainapi:CreateGUI()
 		task.spawn(function()
 			pcall(function()
 				if tooltip then tooltip.Text = 'Copied!' end
-				if scarcitybanner then scarcitybanner.Text = 'Discord: jx4r' end
-				pcall(setclipboard, 'jx4r')
+				if scarcitybanner then scarcitybanner.Text = 'Discord invite copied' end
+				pcall(setclipboard, 'https://discord.gg/g55Vbzfeum')
 			end)
 		end)
 	end)
@@ -4133,14 +4131,14 @@ function mainapi:CreateCategory(categorysettings)
 		favicon.Parent = modulebutton
 		addTooltip(favicon, 'Toggle favourite')
 		favicon.MouseEnter:Connect(function()
-			favicon.ImageColor3 = uipallet.Text
+			favicon.ImageColor3 = favstate and Color3.new(1, 1, 1) or uipallet.Text
 		end)
 		favicon.MouseLeave:Connect(function()
-			favicon.ImageColor3 = favstate and uipallet.Text or color.Light(uipallet.Main, 0.37)
+			favicon.ImageColor3 = favstate and Color3.new(1, 1, 1) or color.Light(uipallet.Main, 0.37)
 		end)
 		local favstate = false
 		local function updateFav()
-			favicon.ImageColor3 = favstate and uipallet.Text or color.Light(uipallet.Main, 0.37)
+			favicon.ImageColor3 = favstate and Color3.new(1, 1, 1) or color.Light(uipallet.Main, 0.37)
 		end
 		favicon.MouseButton1Click:Connect(function()
 			local mod = (shared.larp or getgenv().larp)
@@ -5777,7 +5775,14 @@ function mainapi:CreateNotification(title, text, duration, type)
 		icon.Position = UDim2.fromOffset(-1, -1)
 		icon.ImageColor3 = Color3.new(1, 1, 1)
 		icon.ImageTransparency = 0
+		icon.ScaleType = Enum.ScaleType.Fit
 		icon.Parent = iconshadow
+		if type == 'discord' then
+			iconshadow.Size = UDim2.fromOffset(36, 36)
+			iconshadow.Position = UDim2.fromOffset(8, 20)
+			icon.Size = UDim2.fromOffset(36, 36)
+			icon.Position = UDim2.fromOffset(0, 0)
+		end
 		local titlelabel = Instance.new('TextLabel')
 		titlelabel.Name = 'Title'
 		titlelabel.Size = UDim2.new(1, -56, 0, 20)

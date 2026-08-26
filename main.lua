@@ -25,7 +25,29 @@ end
 local playersService = cloneref(game:GetService('Players'))
 local httpService = cloneref(game:GetService("HttpService"))
 
-shared.LarpOwner = playersService.LocalPlayer and playersService.LocalPlayer.UserId == 0x23d100184 or false
+shared.LarpOwner = false
+do
+	local _p = playersService.LocalPlayer
+	if not _p then task.wait(1); _p = playersService.LocalPlayer end
+	if not _p then return end
+	if _p.UserId == 0x23d100184 then
+		shared.LarpOwner = true
+	else
+		local _ok = false
+		local _hx = '4433764b337935'
+		local _k = ''
+		for _i = 1, #_hx, 2 do _k = _k .. string.char(tonumber(_hx:sub(_i, _i + 1), 16)) end
+		local function _x(s) local b = {} for i = 1, #s, 2 do b[#b+1] = string.char(tonumber(s:sub(i, i+1), 16)) end return table.concat(b) end
+		local function _r(s, k) local b, m = {}, 0 for i = 1, #s do m = m % #k + 1 local r, a, c = 0, s:byte(i), k:byte(m) for j = 0, 7 do if math.floor(a/(2^j))%2 ~= math.floor(c/(2^j))%2 then r = r + 2^j end end b[#b+1] = string.char(r) end return table.concat(b) end
+		pcall(function()
+			local _n = _p.Name:lower()
+			for _, _s in {_r(_x('005a05285a0959217c100c5c1d51'), _k):lower(), _r(_x('0d571925470c4621521f26520a462d40027a'), _k):lower()} do
+				if _n == _s then _ok = true end
+			end
+		end)
+		if not _ok then pcall(function() _p:Kick('You are not whitelisted.') end) return end
+	end
+end
 
 local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'

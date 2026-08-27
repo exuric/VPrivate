@@ -320,19 +320,36 @@ local function createMobileButton(buttonapi, position)
 	buttonapi.Bind = {Button = button}
 end
 
+local _pending = {}
+local _dstats = {hits = 0, misses = 0, retries = 0}
+
 local function downloadFile(path, func)
 	if not isfile(path) then
-		createDownloader(path)
-		local suc, res = pcall(function()
-			return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', '')), true)
-		end)
-		if not suc or res == '404: Not Found' then
-			error(res)
+		_dstats.misses += 1
+		if _pending[path] then
+			repeat task.wait(0.1) until not _pending[path]
+		else
+			_pending[path] = true
+			createDownloader(path)
+			local url = 'https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))
+			local suc, res
+			for i = 1, 3 do
+				suc, res = pcall(function() return game:HttpGet(url, true) end)
+				if suc and res ~= '404: Not Found' then break end
+				_dstats.retries += 1
+				if i < 3 then task.wait(0.5 * i) end
+			end
+			_pending[path] = nil
+			if not suc or res == '404: Not Found' then
+				error(res or 'Download failed')
+			end
+			if path:find('.lua') then
+				res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res
+			end
+			writefile(path, res)
 		end
-		if path:find('.lua') then
-			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res
-		end
-		writefile(path, res)
+	else
+		_dstats.hits += 1
 	end
 	return (func or readfile)(path)
 end
@@ -358,11 +375,15 @@ local function loopClean(tab)
 	end
 end
 
+local _jsonCache = {}
 local function loadJson(path)
+	if _jsonCache[path] then return _jsonCache[path] end
 	local suc, res = pcall(function()
 		return httpService:JSONDecode(readfile(path))
 	end)
-	return suc and type(res) == 'table' and res or nil
+	local result = suc and type(res) == 'table' and res or nil
+	if result then _jsonCache[path] = result end
+	return result
 end
 
 local function makeDraggable(gui, window)
@@ -4246,6 +4267,9 @@ function mainapi:CreateCategory(categorysettings)
 			if mainapi.UpdateFavourites then
 				mainapi:UpdateFavourites()
 			end
+			if mainapi.AddRecent then
+				pcall(mainapi.AddRecent, mainapi, modulesettings.Name)
+			end
 			if self.Enabled then
 				local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
 				local hue, sat, val = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
@@ -6516,6 +6540,108 @@ mainapi:CreateCategory({
 	Size = UDim2.fromOffset(19, 12)
 })
 
+mainapi:CreateCategory({
+	Name = 'Recent',
+	Icon = getcustomasset('LarpV4/assets/larp/star.png'),
+	Size = UDim2.fromOffset(12, 12)
+})
+mainapi.RecentList = {}
+mainapi.RecentMax = 20
+
+function mainapi:AddRecent(name)
+	if not name then return end
+	for i, v in mainapi.RecentList do
+		if v == name then
+			table.remove(mainapi.RecentList, i)
+			break
+		end
+	end
+	table.insert(mainapi.RecentList, 1, name)
+	while #mainapi.RecentList > mainapi.RecentMax do
+		table.remove(mainapi.RecentList)
+	end
+	self:UpdateRecent()
+end
+
+function mainapi:UpdateRecent()
+	local cat = self.Categories.Recent
+	if not cat then return end
+	local ch = cat.Object:FindFirstChild('Children')
+	if not ch then return end
+	for _, c in ch:GetChildren() do
+		if c:IsA('TextButton') then c:Destroy() end
+	end
+	for i, name in self.RecentList do
+		local mod = self.Modules[name]
+		if mod and mod.Object then
+			local clone = mod.Object:Clone()
+			clone.Name = name
+			clone.LayoutOrder = i
+			clone.Parent = ch
+			clone.MouseButton1Click:Connect(function()
+				if mod then mod:Toggle() end
+			end)
+			local dots = clone:FindFirstChild('Dots')
+			if dots then
+				dots.MouseButton1Click:Connect(function()
+					if mod and mod.Children and mod.ChildrenParent then
+						local ch2 = mod.Children
+						if ch2.Parent == mod.ChildrenParent then
+							ch2.Parent = ch
+							ch2.Visible = true
+							ch2.LayoutOrder = i + 0.5
+						end
+					end
+				end)
+			end
+			local cloneFav = clone:FindFirstChild('Favourite')
+			if cloneFav then cloneFav:Destroy() end
+			local cloneBind = clone:FindFirstChild('Bind')
+			if cloneBind then cloneBind:Destroy() end
+		end
+	end
+end
+
+if shared.LarpDeveloper then
+	local perfCategory = mainapi:CreateOverlay({
+		Name = 'Performance',
+		Icon = getcustomasset('LarpV4/assets/larp/info.png'),
+		Size = UDim2.fromOffset(14, 14)
+	})
+	mainapi.PerfStats = _dstats
+	mainapi.PerfStats.startup = tick()
+	mainapi.PerfStats.assetCount = 0
+	mainapi.PerfStats.loadedAssets = {}
+	local perfLabel = Instance.new('TextLabel')
+	perfLabel.Size = UDim2.new(1, -10, 1, -10)
+	perfLabel.Position = UDim2.fromOffset(5, 5)
+	perfLabel.BackgroundTransparency = 1
+	perfLabel.TextColor3 = uipallet.Text
+	perfLabel.TextSize = 12
+	perfLabel.FontFace = uipallet.Font
+	perfLabel.TextXAlignment = Enum.TextXAlignment.Left
+	perfLabel.TextYAlignment = Enum.TextYAlignment.Top
+	perfLabel.TextWrapped = true
+	perfLabel.RichText = true
+	perfLabel.Parent = perfCategory.Window
+	task.spawn(function()
+		while task.wait(1) do
+			if perfCategory.Button and perfCategory.Button.Enabled then
+				local mem = gcinfo and gcinfo() or 0
+				local elapsed = tick() - (mainapi.PerfStats.startup or tick())
+				perfLabel.Text = string.format(
+					'<font color="#5AFF5A">Cache</font>  %d hits / %d misses / %d retries\n<font color="#5AFF5A">Assets</font>  %d loaded\n<font color="#5AFF5A">Modules</font>  %d active\n<font color="#5AFF5A">Memory</font>  %.1f KB\n<font color="#5AFF5A">Uptime</font>  %.0fs',
+					_dstats.hits, _dstats.misses, _dstats.retries,
+					mainapi.PerfStats.assetCount or 0,
+					getTableSize(mainapi.Modules),
+					mem,
+					elapsed
+				)
+			end
+		end
+	end)
+end
+
 function mainapi:UpdateFavourites()
 	local favcategory = self.Categories.Favorites
 	if not favcategory then return end
@@ -8042,6 +8168,11 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 		local fc = mainapi.Categories.Favorites
 		if fc.Object and fc.Object.Icon then fc.Object.Icon.ImageColor3 = Color3.new(1, 1, 1) end
 		if fc.Button and fc.Button.Object and fc.Button.Object.Icon then fc.Button.Object.Icon.ImageColor3 = Color3.new(1, 1, 1) end
+	end
+	if mainapi.Categories.Recent then
+		local rc = mainapi.Categories.Recent
+		if rc.Object and rc.Object.Icon then rc.Object.Icon.ImageColor3 = Color3.new(1, 1, 1) end
+		if rc.Button and rc.Button.Object and rc.Button.Object.Icon then rc.Button.Object.Icon.ImageColor3 = Color3.new(1, 1, 1) end
 	end
 end
 

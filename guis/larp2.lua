@@ -6770,7 +6770,8 @@ mainapi.Categories.Main:CreateSettingsDivider()
 local perfCategory = mainapi:CreateOverlay({
 	Name = 'Performance',
 	Icon = getcustomasset('LarpV4/assets/larp/info.png'),
-	Size = UDim2.fromOffset(14, 14)
+	Size = UDim2.fromOffset(14, 14),
+	Position = UDim2.fromOffset(12, 14)
 })
 local perfLabel = Instance.new('TextLabel')
 perfLabel.Size = UDim2.new(1, -10, 1, -10)

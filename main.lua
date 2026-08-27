@@ -55,28 +55,57 @@ getgenv().LarpReadRoot = ROOT
 
 local LARPCOMMIT = (pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')
 local LARPWATER = '--LARP:'..LARPCOMMIT..'\n'
+local _pending = {}
+local _dstats = {hits = 0, misses = 0, retries = 0}
+
 local function downloadFile(path, func)
 	local content
 	if isfile(path) then
 		content = readfile(path)
 	end
 	if not content or (not (shared.LarpDeveloper and shared.LarpOwner) and content:sub(1, #LARPWATER) ~= LARPWATER) then
-		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', '')), true)
-		end)
-		if not suc or res == '404: Not Found' then
-			error(res)
+		_dstats.misses += 1
+		if _pending[path] then
+			repeat task.wait(0.1) until not _pending[path]
+			content = isfile(path) and readfile(path) or nil
+		else
+			_pending[path] = true
+			local url = ROOT..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', ''))
+			local suc, res
+			for i = 1, 3 do
+				suc, res = pcall(function() return game:HttpGet(url, true) end)
+				if suc and res ~= '404: Not Found' then break end
+				_dstats.retries += 1
+				if i < 3 then task.wait(0.5 * i) end
+			end
+			_pending[path] = nil
+			if not suc or res == '404: Not Found' then
+				error(res or 'Download failed')
+			end
+			if path:find('.lua') then
+				res = LARPWATER..res
+			end
+			content = res
+			writefile(path, content)
 		end
-		if path:find('.lua') then
-			res = LARPWATER..res
-		end
-		content = res
-		writefile(path, content)
+	else
+		_dstats.hits += 1
 	end
 	if func then
 		return func(path)
 	end
 	return content
+end
+
+local function downloadConcurrent(paths)
+	local done = 0
+	for _, path in paths do
+		task.spawn(function()
+			pcall(downloadFile, path)
+			done += 1
+		end)
+	end
+	while done < #paths do task.wait(0.05) end
 end
 
 local function showNotify(text)
@@ -105,9 +134,15 @@ end
 	if isfile(base) then return readfile(base) end
 	local data = {}
 	for i = 0, 1 do
-		local ok, res = pcall(function()
-			return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
-		end)
+		local ok, res
+		for attempt = 1, 3 do
+			ok, res = pcall(function()
+				return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
+			end)
+			if ok and typeof(res) == 'string' and res ~= '404: Not Found' then break end
+			_dstats.retries += 1
+			if attempt < 3 then task.wait(0.5 * attempt) end
+		end
 		if not ok or typeof(res) ~= 'string' or res == '404: Not Found' then
 			error('Failed to download '..base..'.'..i..(ok and '' or ': '..tostring(res)))
 		end
@@ -163,6 +198,9 @@ local function finishLoading()
 					local commit = isfile('LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'unknown'
 					larp:CreateNotification('Larp V4', 'Script has updated from '..tostring(shared.updated)..' to '..commit, 10, 'info')
 				end
+			end)
+			task.delay(3, function()
+				larp:CreateNotification('Larp V4', 'Security & performance update applied - some features may behave differently', 8, 'warning')
 			end)
 		end	
 	end

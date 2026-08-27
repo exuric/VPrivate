@@ -6616,6 +6616,24 @@ function mainapi:UpdateFavourites()
 					if bind then
 						local bindicon = bind:FindFirstChild('Icon')
 						local bindtext = bind:FindFirstChild('TextLabel')
+						bind.MouseEnter:Connect(function()
+							if bindtext then bindtext.Visible = false end
+							if bindicon then
+								bindicon.Visible = true
+								bindicon.Image = getcustomasset('LarpV4/assets/larp/edit.png')
+								if not moduleapi.Enabled then bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.16) end
+							end
+						end)
+						bind.MouseLeave:Connect(function()
+							if bindtext then bindtext.Visible = #moduleapi.Bind > 0 end
+							if bindicon then
+								bindicon.Visible = not bindtext.Visible
+								bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
+								if not moduleapi.Enabled then
+									bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+								end
+							end
+						end)
 						bind.MouseButton1Click:Connect(function()
 							mainapi.Binding = moduleapi
 						end)
@@ -6767,37 +6785,273 @@ mainapi:CreateSearch()
 mainapi.Categories.Main:CreateOverlayBar()
 mainapi.Categories.Main:CreateSettingsDivider()
 
+local perfIcon = getcustomasset('LarpV4/assets/larp/info.png')
+pcall(function()
+	local p = getcustomasset('LarpV4/assets/larp/perf.svg')
+	if p and p ~= '' then perfIcon = p end
+end)
 local perfCategory = mainapi:CreateOverlay({
 	Name = 'Performance',
-	Icon = getcustomasset('LarpV4/assets/larp/info.png'),
+	Icon = perfIcon,
 	Size = UDim2.fromOffset(14, 14),
 	Position = UDim2.fromOffset(12, 14)
 })
+perfCategory.Children.Size = UDim2.new(1, 0, 0, 300)
+
+local perfRun = game:GetService('RunService')
+local fpsCurrent = 60
+local frameTimes = {}
+mainapi:Clean(perfRun.RenderStepped:Connect(function(_, dt)
+	if not perfCategory or not perfCategory.Button.Enabled then
+		table.clear(frameTimes)
+		return
+	end
+	local ft = math.clamp(dt, 1e-5, 0.5) * 1000
+	fpsCurrent = fpsCurrent * 0.85 + (1000 / math.max(ft, 1e-5)) * 0.15
+	table.insert(frameTimes, ft)
+	if #frameTimes > 300 then table.remove(frameTimes, 1) end
+end))
+
 local perfLabel = Instance.new('TextLabel')
-perfLabel.Size = UDim2.new(1, -10, 1, -10)
-perfLabel.Position = UDim2.fromOffset(5, 5)
+perfLabel.Name = 'PerfLabel'
+perfLabel.Size = UDim2.new(1, -8, 1, -30)
+perfLabel.Position = UDim2.fromOffset(4, 26)
 perfLabel.BackgroundTransparency = 1
+perfLabel.BorderSizePixel = 0
+perfLabel.Text = ''
 perfLabel.TextColor3 = uipallet.Text
-perfLabel.TextSize = 12
+perfLabel.TextSize = 13
 perfLabel.FontFace = uipallet.Font
 perfLabel.TextXAlignment = Enum.TextXAlignment.Left
 perfLabel.TextYAlignment = Enum.TextYAlignment.Top
 perfLabel.TextWrapped = true
 perfLabel.RichText = true
-perfLabel.Parent = perfCategory.Window
+perfLabel.Parent = perfCategory.Children
+
+local perfStamp = Instance.new('UIScale')
+perfStamp.Parent = perfCategory.Children
+
+local perfLogo = Instance.new('ImageLabel')
+perfLogo.Name = 'PerfLogo'
+perfLogo.Size = UDim2.fromOffset(80, 21)
+perfLogo.Position = UDim2.new(1, -92, 0, 3)
+perfLogo.BackgroundTransparency = 1
+perfLogo.BorderSizePixel = 0
+perfLogo.Visible = false
+perfLogo.BackgroundColor3 = Color3.new()
+perfLogo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
+perfLogo.Parent = perfCategory.Children
+local perfLogoV4 = Instance.new('ImageLabel')
+perfLogoV4.Name = 'Logo2'
+perfLogoV4.Size = UDim2.fromOffset(33, 18)
+perfLogoV4.Position = UDim2.new(1, 1, 0, 1)
+perfLogoV4.BackgroundColor3 = Color3.new()
+perfLogoV4.BackgroundTransparency = 1
+perfLogoV4.BorderSizePixel = 0
+perfLogoV4.Image = getcustomasset('LarpV4/assets/larp/Textv4.png')
+perfLogoV4.Parent = perfLogo
+local perfLogoGradient = Instance.new('UIGradient')
+perfLogoGradient.Rotation = 90
+perfLogoGradient.Parent = perfLogo
+local perfLogoGradient2 = Instance.new('UIGradient')
+perfLogoGradient2.Rotation = 90
+perfLogoGradient2.Parent = perfLogoV4
+
+local perfMode = perfCategory:CreateDropdown({
+	Name = 'Mode',
+	Tooltip = 'Amount of information shown.',
+	List = {'Minimal', 'Standard', 'Detailed'}
+})
+local perfFont = perfCategory:CreateFont({
+	Name = 'Font',
+	Blacklist = 'Arial'
+})
+local perfColor
+local perfColorMode = perfCategory:CreateDropdown({
+	Name = 'Color Mode',
+	List = {'Match GUI color', 'Custom color'},
+	Function = function(val)
+		perfColor.Object.Visible = val == 'Custom color'
+	end
+})
+perfColor = perfCategory:CreateColorSlider({
+	Name = 'Text color',
+	Function = function()
+		mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	end,
+	Darker = true,
+	Visible = false
+})
+local perfWatermarkUpdate, updatePerf
+local perfWatermark = perfCategory:CreateToggle({
+	Name = 'Watermark',
+	Tooltip = 'Renders a larp watermark',
+	Function = function(enabled)
+		perfLogo.Visible = enabled
+		perfWatermarkUpdate()
+	end
+})
+local perfGradient
+local perfGradientV4
+perfGradient = perfCategory:CreateToggle({
+	Name = 'Gradient',
+	Tooltip = 'Renders a gradient',
+	Function = function(callback)
+		perfGradientV4.Object.Visible = callback
+		perfWatermarkUpdate()
+	end
+})
+perfGradientV4 = perfCategory:CreateToggle({
+	Name = 'V4 Gradient',
+	Function = function()
+		perfWatermarkUpdate()
+	end,
+	Darker = true,
+	Visible = false
+})
+local perfScale = perfCategory:CreateSlider({
+	Name = 'Scale',
+	Min = 0.4,
+	Max = 3,
+	Decimal = 10,
+	Default = 1,
+	Function = function(val)
+		perfStamp.Scale = val
+	end
+})
+local perfBottleneck = perfCategory:CreateToggle({
+	Name = 'Bottleneck estimate',
+	Tooltip = 'Estimates the current performance bottleneck.',
+	Function = function()
+		updatePerf()
+	end
+})
+
+local function pad(str, width)
+	return str..string.rep(' ', math.max(0, width - utf8.len(str)))
+end
+local function statnum(fn, default)
+	local ok, v = pcall(fn)
+	if ok then v = tonumber(v) end
+	return ok and type(v) == 'number' and v or default
+end
+local function statstr(fn, default)
+	local ok, v = pcall(fn)
+	return ok and tostring(v) or default
+end
+local function getBottleneck(cpu, gpu, ping, memMB)
+	if ping > 150 then return 'NETWORK SPIKE' end
+	if cpu >= 90 and gpu < 80 then return 'CPU LIMITED' end
+	if gpu >= 90 and cpu < 80 then return 'GPU LIMITED' end
+	if memMB > 2500 then return 'MEMORY PRESSURE' end
+	return 'STABLE'
+end
+
+perfWatermarkUpdate = function()
+	if not perfCategory then return end
+	perfLogo.Visible = perfWatermark.Enabled
+	local c0, c1
+	if perfColorMode.Value == 'Custom color' then
+		local cc = Color3.fromHSV(perfColor.Hue, perfColor.Sat, perfColor.Value)
+		c0 = cc
+		c1 = perfGradient.Enabled and cc:Lerp(Color3.new(0, 0, 0), 0.25) or cc
+	else
+		local h, s, v = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
+		c0 = Color3.fromHSV(h, s, v)
+		c1 = perfGradient.Enabled and Color3.fromHSV(mainapi:Color((h - 0.075) % 1)) or c0
+	end
+	perfLogoGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, c0),
+		ColorSequenceKeypoint.new(1, c1)
+	})
+	perfLogoGradient2.Color = perfGradient.Enabled and perfGradientV4.Enabled and perfLogoGradient.Color or ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+		ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1))
+	})
+end
+
+updatePerf = function()
+	if not perfCategory or not perfLabel then return end
+	if not perfCategory.Button.Enabled then return end
+	local fps = fpsCurrent
+	local avgms, lowms = 1000 / fps, 1000 / fps
+	if #frameTimes > 0 then
+		local sum = 0
+		for _, ft in frameTimes do sum += ft end
+		avgms = sum / #frameTimes
+		local sorted = table.clone(frameTimes)
+		table.sort(sorted)
+		lowms = sorted[math.max(1, math.floor(#sorted * 0.99))]
+	end
+
+	local sps = game:GetService('Stats')
+	local cpu = statnum(function()
+		return sps.PerformanceStats.Cpu.PerformanceCounter
+	end, 0)
+	local gpu = statnum(function()
+		return sps.PerformanceStats.Gpu.PerformanceCounter
+	end, 0)
+	local ping = statnum(function()
+		return sps.Network.ServerStatsItem['Data Ping']:GetValue()
+	end, 0)
+	local memMB = statnum(function()
+		return sps:GetMemoryUsageMbForTag('Total')
+	end, 0)
+	local down = statstr(function()
+		return sps.Network.ServerStatsItem['Data Receive']:GetValueString()
+	end, '0 B/s')
+	local up = statstr(function()
+		return sps.Network.ServerStatsItem['Data Send']:GetValueString()
+	end, '0 B/s')
+
+	local fnum = function(v)
+		return string.format('%.0f', v)
+	end
+	local lines = {}
+	if perfMode.Value == 'Detailed' then
+		table.insert(lines, '<font color="#9C9C9C">PERFORMANCE</font>')
+		table.insert(lines, '')
+	end
+	table.insert(lines, pad('FPS', 10)..fnum(fps))
+	table.insert(lines, pad('PING', 10)..fnum(ping)..'ms')
+	if perfMode.Value ~= 'Minimal' then
+		table.insert(lines, '')
+		table.insert(lines, pad('AVG', 10)..fnum(1000 / math.max(avgms, 1e-5)))
+		table.insert(lines, pad('1% LOW', 10)..fnum(1000 / math.max(lowms, 1e-5)))
+		table.insert(lines, pad('FRAME', 10)..string.format('%.1f', avgms)..'ms')
+		table.insert(lines, '')
+		table.insert(lines, pad('CPU', 10)..fnum(cpu)..'%')
+		table.insert(lines, pad('GPU', 10)..fnum(gpu)..'%')
+		table.insert(lines, pad('RAM', 10)..string.format('%.1f', memMB / 1024)..'GB')
+	end
+	if perfMode.Value == 'Detailed' then
+		table.insert(lines, '')
+		table.insert(lines, pad('DOWNLOAD', 10)..down)
+		table.insert(lines, pad('UPLOAD', 10)..up)
+	end
+	if perfBottleneck.Enabled then
+		local bot = getBottleneck(cpu, gpu, ping, memMB)
+		local botcol = bot == 'STABLE' and '#5AFF5A' or ((bot == 'NETWORK SPIKE' or bot == 'MEMORY PRESSURE') and '#FFAA33' or '#FF5A5A')
+		table.insert(lines, '')
+		table.insert(lines, '<font color="#9C9C9C">'..pad('BOTTLENECK', 10)..'</font><font color="'..botcol..'">'..bot..'</font>')
+	end
+
+	perfLabel.Text = table.concat(lines, '\n')
+	perfLabel.FontFace = perfFont.Value
+	if perfColorMode.Value == 'Custom color' then
+		perfLabel.TextColor3 = Color3.fromHSV(perfColor.Hue, perfColor.Sat, perfColor.Value)
+	elseif mainapi.GUIColor.Rainbow then
+		perfLabel.TextColor3 = Color3.fromHSV(mainapi:Color((mainapi.GUIColor.Hue - 0.05) % 1))
+	else
+		perfLabel.TextColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	end
+	perfWatermarkUpdate()
+end
+
 task.spawn(function()
-	while task.wait(1) do
+	while task.wait(0.5) do
 		if perfCategory.Button and perfCategory.Button.Enabled then
-			local mem = gcinfo and gcinfo() or 0
-			local elapsed = tick() - (mainapi.PerfStats.startup or tick())
-			perfLabel.Text = string.format(
-				'<font color="#5AFF5A">Cache</font>  %d hits / %d misses / %d retries\n<font color="#5AFF5A">Assets</font>  %d loaded\n<font color="#5AFF5A">Modules</font>  %d active\n<font color="#5AFF5A">Memory</font>  %.1f KB\n<font color="#5AFF5A">Uptime</font>  %.0fs',
-				_dstats.hits, _dstats.misses, _dstats.retries,
-				mainapi.PerfStats.assetCount or 0,
-				getTableSize(mainapi.Modules),
-				mem,
-				elapsed
-			)
+			updatePerf()
 		end
 	end
 end)

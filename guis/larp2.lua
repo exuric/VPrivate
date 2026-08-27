@@ -6536,43 +6536,10 @@ mainapi:CreateCategory({
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
 })
-local perfCategory = mainapi:CreateOverlay({
-	Name = 'Performance',
-	Icon = getcustomasset('LarpV4/assets/larp/info.png'),
-	Size = UDim2.fromOffset(14, 14)
-})
 mainapi.PerfStats = _dstats
 mainapi.PerfStats.startup = tick()
 mainapi.PerfStats.assetCount = 0
 mainapi.PerfStats.loadedAssets = {}
-local perfLabel = Instance.new('TextLabel')
-perfLabel.Size = UDim2.new(1, -10, 1, -10)
-perfLabel.Position = UDim2.fromOffset(5, 5)
-perfLabel.BackgroundTransparency = 1
-perfLabel.TextColor3 = uipallet.Text
-perfLabel.TextSize = 12
-perfLabel.FontFace = uipallet.Font
-perfLabel.TextXAlignment = Enum.TextXAlignment.Left
-perfLabel.TextYAlignment = Enum.TextYAlignment.Top
-perfLabel.TextWrapped = true
-perfLabel.RichText = true
-perfLabel.Parent = perfCategory.Window
-task.spawn(function()
-	while task.wait(1) do
-		if perfCategory.Button and perfCategory.Button.Enabled then
-			local mem = gcinfo and gcinfo() or 0
-			local elapsed = tick() - (mainapi.PerfStats.startup or tick())
-			perfLabel.Text = string.format(
-				'<font color="#5AFF5A">Cache</font>  %d hits / %d misses / %d retries\n<font color="#5AFF5A">Assets</font>  %d loaded\n<font color="#5AFF5A">Modules</font>  %d active\n<font color="#5AFF5A">Memory</font>  %.1f KB\n<font color="#5AFF5A">Uptime</font>  %.0fs',
-				_dstats.hits, _dstats.misses, _dstats.retries,
-				mainapi.PerfStats.assetCount or 0,
-				getTableSize(mainapi.Modules),
-				mem,
-				elapsed
-			)
-		end
-	end
-end)
 
 function mainapi:UpdateFavourites()
 	local favcategory = self.Categories.Favorites
@@ -6799,6 +6766,40 @@ mainapi:CreateLegit()
 mainapi:CreateSearch()
 mainapi.Categories.Main:CreateOverlayBar()
 mainapi.Categories.Main:CreateSettingsDivider()
+
+local perfCategory = mainapi:CreateOverlay({
+	Name = 'Performance',
+	Icon = getcustomasset('LarpV4/assets/larp/info.png'),
+	Size = UDim2.fromOffset(14, 14)
+})
+local perfLabel = Instance.new('TextLabel')
+perfLabel.Size = UDim2.new(1, -10, 1, -10)
+perfLabel.Position = UDim2.fromOffset(5, 5)
+perfLabel.BackgroundTransparency = 1
+perfLabel.TextColor3 = uipallet.Text
+perfLabel.TextSize = 12
+perfLabel.FontFace = uipallet.Font
+perfLabel.TextXAlignment = Enum.TextXAlignment.Left
+perfLabel.TextYAlignment = Enum.TextYAlignment.Top
+perfLabel.TextWrapped = true
+perfLabel.RichText = true
+perfLabel.Parent = perfCategory.Window
+task.spawn(function()
+	while task.wait(1) do
+		if perfCategory.Button and perfCategory.Button.Enabled then
+			local mem = gcinfo and gcinfo() or 0
+			local elapsed = tick() - (mainapi.PerfStats.startup or tick())
+			perfLabel.Text = string.format(
+				'<font color="#5AFF5A">Cache</font>  %d hits / %d misses / %d retries\n<font color="#5AFF5A">Assets</font>  %d loaded\n<font color="#5AFF5A">Modules</font>  %d active\n<font color="#5AFF5A">Memory</font>  %.1f KB\n<font color="#5AFF5A">Uptime</font>  %.0fs',
+				_dstats.hits, _dstats.misses, _dstats.retries,
+				mainapi.PerfStats.assetCount or 0,
+				getTableSize(mainapi.Modules),
+				mem,
+				elapsed
+			)
+		end
+	end
+end)
 
 --[[
 	General Settings

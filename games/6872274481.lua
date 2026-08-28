@@ -3395,38 +3395,73 @@ run(function()
 	local SwingTime
 	local MultiTarget
 
-	local swordNames = {'wood_sword', 'diamond_sword', 'iron_sword', 'stone_sword', 'ice_sword', 'emerald_sword'}
-	local realSwingInRegion, realCanSee, SwordController = nil, nil, nil
+	local realSwingInRegion, realCanSee, SwordController, EntityUtil = nil, nil, nil, nil
 
-	local function getTarget()
+	local function getHandSword()
+		local tool = store.hand and store.hand.tool
+		local meta = tool and bedwars.ItemMeta[tool.Name]
+		return tool, (meta and meta.sword) or nil
+	end
+
+	local function getAttackInterval()
+		local _, sword = getHandSword()
+		local speed = sword and sword.attackSpeed
+		return math.max((speed and speed > 0 and speed) or 0.3, 0.05)
+	end
+
+	local function getReach()
+		local _, sword = getHandSword()
+		local range = sword and sword.attackRange
+		if range and range > 0 then
+			return range
+		end
+		local constant = bedwars.CombatConstant and bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE
+		return constant or 14.4
+	end
+
+	local function toGameEntity(ent)
+		if not EntityUtil or not ent then return end
+		local e = ent.Character and EntityUtil:getEntity(ent.Character)
+		if not e then
+			e = ent.RootPart and ent.RootPart.Parent and EntityUtil:getEntity(ent.RootPart.Parent)
+		end
+		return e
+	end
+
+	local function isValidTarget(ent, selfpos, localfacing, halfangle, reach)
+		if ent.Player and not Targets.Players.Enabled then return false end
+		if ent.NPC and not Targets.NPCs.Enabled then return false end
+		if not ent.Targetable then return false end
+		if not entitylib.isVulnerable(ent) then return false end
+		local rp = ent.RootPart
+		if not rp or not rp.Position then return false end
+		local delta = rp.Position - selfpos
+		local mag = delta.Magnitude
+		if mag > reach then return false end
+		local horizontal = delta * Vector3.new(1, 0, 1)
+		if halfangle < math.pi * 2 and horizontal.Magnitude > 0.01 then
+			local dot = localfacing:Dot(horizontal.Unit)
+			if math.acos(math.clamp(dot, -1, 1)) > halfangle then return false end
+		end
+		if Targets.Walls.Enabled and entitylib.Wallcheck(selfpos, rp.Position) then return false end
+		return true
+	end
+
+	local function getTargets()
 		local character = entitylib.character
-		if not character or not character.HumanoidRootPart or not character.RootPart then return end
+		if not character or not character.HumanoidRootPart or not character.RootPart then return {} end
 		local selfpos = character.HumanoidRootPart.Position
 		local localfacing = character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
 		local halfangle = MaxAngle.Value >= 360 and math.pi * 2 or math.rad(MaxAngle.Value) / 2
-		local nearest, nearestmag
+		local reach = math.max(SwingRange.Value, math.min(AttackRange.Value, getReach()))
+		local targets = {}
 		for _, ent in entitylib.List do
-			if ent.Player and not Targets.Players.Enabled then continue end
-			if ent.NPC and not Targets.NPCs.Enabled then continue end
-			if not ent.Targetable then continue end
-			if not entitylib.isVulnerable(ent) then continue end
-			local rp = ent.RootPart
-			if not rp or not rp.Position then continue end
-			local delta = rp.Position - selfpos
-			local mag = delta.Magnitude
-			if mag > math.max(SwingRange.Value, AttackRange.Value) then continue end
-			local horizontal = delta * Vector3.new(1, 0, 1)
-			if halfangle < math.pi * 2 and horizontal.Magnitude > 0.01 then
-				local dot = localfacing:Dot(horizontal.Unit)
-				if math.acos(math.clamp(dot, -1, 1)) > halfangle then continue end
-			end
-			if Targets.Walls.Enabled and entitylib.Wallcheck(selfpos, rp.Position) then continue end
-			if not nearest or mag < nearestmag then
-				nearest = ent
-				nearestmag = mag
+			if isValidTarget(ent, selfpos, localfacing, halfangle, reach) then
+				table.insert(targets, {ent, (ent.RootPart.Position - selfpos).Magnitude})
 			end
 		end
-		return nearest
+		table.sort(targets, function(a, b) return a[2] < b[2] end)
+		return targets
 	end
 
 	local function faceTarget(target, root)
@@ -3435,43 +3470,43 @@ run(function()
 		return oldcf
 	end
 
-	local nextVisualSwing = 0
-
-	local function swingVisual()
-		local now = tick()
-		if now >= nextVisualSwing then
-			nextVisualSwing = nextVisualSwing + math.max(0.2, math.min(0.294, 1 / CPS.Value))
-			if SwordController then
-				pcall(SwordController.swingSwordInRegion, SwordController, 0)
-			end
+	local function attack(ent, swingStartTime)
+		if not SwordController then return false end
+		local e = toGameEntity(ent)
+		if not e then return false end
+		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, {
+			swingStartTime = swingStartTime or workspace:GetServerTimeNow()
+		})
+		if ok then
+			store.lastHit = os.clock()
 		end
+		return ok
 	end
 
 	local function swingMulti()
 		local character = entitylib.character
 		if not character or not character.HumanoidRootPart or not character.RootPart or not SwordController then return end
-		local selfpos = character.HumanoidRootPart.Position
-		local range = math.max(SwingRange.Value, AttackRange.Value)
-		local targets = {}
-		for _, ent in entitylib.List do
-			if ent.Player and Targets.Players.Enabled and ent.Targetable and entitylib.isVulnerable(ent) and ent.RootPart and ent.RootPart.Parent then
-				local mag = (ent.RootPart.Position - selfpos).Magnitude
-				if mag <= range then
-					table.insert(targets, {ent, mag})
-				end
-			end
-		end
+		local targets = getTargets()
 		if #targets == 0 then return end
-		table.sort(targets, function(a, b) return a[2] < b[2] end)
 		local root = character.RootPart
 		local oldcf = faceTarget(targets[1][1], root)
-		swingVisual()
-		if MultiTarget.Enabled then
-			for i = 2, #targets do
-				pcall(SwordController.sendServerRequest, SwordController, targets[i][1], 0)
+		store.KillauraTarget = targets[1][1]
+		local swingStartTime = workspace:GetServerTimeNow()
+		for i, t in ipairs(targets) do
+			attack(t[1], swingStartTime)
+			if not MultiTarget.Enabled then break end
+			if i > 1 then
+				task.wait(0.1)
 			end
 		end
 		root.CFrame = oldcf
+	end
+
+	local function canAttack()
+		if not entitylib.isAlive then return false end
+		if bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then return false end
+		if LimitItems.Enabled and not (store.hand.tool and store.hand.toolType == 'sword') then return false end
+		return true
 	end
 
 	Killaura = larp.Categories.Blatant:CreateModule({
@@ -3479,36 +3514,33 @@ run(function()
 		Function = function(callback)
 			if callback then
 				SwordController = bedwars.SwordController
+				EntityUtil = (function()
+					local ok, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
+					if ok and mod and mod.EntityUtil then
+						return mod.EntityUtil
+					end
+					for _, v in getgc(true) do
+						if type(v) == 'table' and rawget(v, 'getLocalPlayerEntity') and rawget(v, 'getAliveEnemyEntityInstances') then
+							return v
+						end
+					end
+				end)()
 				realSwingInRegion = SwordController.swingSwordInRegion
 				realCanSee = SwordController.canSee
-SwordController.swingSwordInRegion = function(self, ...)
-				local tool = store.hand and store.hand.tool
-				local meta = tool and bedwars.ItemMeta[tool.Name]
-				local oldRange
-				if meta and meta.sword and not SwingOnly.Enabled then
-					oldRange = meta.sword.attackRange
-					meta.sword.attackRange = AttackRange.Value
-				end
-				if SwingOnly.Enabled then
-					local target = getTarget()
-					if target and target.RootPart and target.RootPart.Parent then
-						store.KillauraTarget = target
-						local root = entitylib.character.RootPart
-						local oldcf = faceTarget(target, root)
-						local result = realSwingInRegion(self, ...)
-						root.CFrame = oldcf
-						if oldRange ~= nil then
-							bedwars.ItemMeta[tool.Name].sword.attackRange = oldRange
+				SwordController.swingSwordInRegion = function(self, ...)
+					if SwingOnly.Enabled then
+						local target = getTargets()[1]
+						if target and target[1] and target[1].RootPart and target[1].RootPart.Parent and canAttack() then
+							store.KillauraTarget = target[1]
+							local root = entitylib.character.RootPart
+							local oldcf = faceTarget(target[1], root)
+							local result = realSwingInRegion(self, ...)
+							root.CFrame = oldcf
+							return result
 						end
-						return result
 					end
+					return realSwingInRegion(self, ...)
 				end
-				local result = realSwingInRegion(self, ...)
-				if oldRange ~= nil then
-					bedwars.ItemMeta[tool.Name].sword.attackRange = oldRange
-				end
-				return result
-			end
 				SwordController.canSee = function(self, ent)
 					if ent then
 						return true
@@ -3518,14 +3550,12 @@ SwordController.swingSwordInRegion = function(self, ...)
 
 				repeat
 					local target
-					if entitylib.isAlive and not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
-						if not LimitItems.Enabled or (store.hand.tool and store.hand.toolType == 'sword') then
-							target = getTarget()
-							if target and target.RootPart and target.RootPart.Parent then
-								store.KillauraTarget = target
-								if not SwingOnly.Enabled then
-									swingMulti()
-								end
+					if canAttack() then
+						target = getTargets()[1]
+						if target then
+							store.KillauraTarget = target[1]
+							if not SwingOnly.Enabled then
+								swingMulti()
 							end
 						end
 					end
@@ -3533,7 +3563,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 						store.KillauraTarget = nil
 					end
 
-					task.wait(math.max(0.05, math.min(1 / CPS.Value, SwingTime.Value)))
+					task.wait(math.max(getAttackInterval(), 1 / CPS.Value, SwingTime.Value))
 				until not Killaura.Enabled
 			else
 				store.KillauraTarget = nil
@@ -3546,6 +3576,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 				realSwingInRegion = nil
 				realCanSee = nil
 				SwordController = nil
+				EntityUtil = nil
 			end
 		end,
 		Tooltip = 'Attack players around you without aiming'
@@ -3565,7 +3596,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
 		Min = 1,
-		Max = 20,
+		Max = 30,
 		Default = 15,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
@@ -3581,7 +3612,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
-		Tooltip = 'Range where attacks land'
+		Tooltip = 'Range where attacks land, clamped to the held sword reach (max 24 studs for long swords, 14.4 default)'
 	})
 	MultiTarget = Killaura:CreateToggle({
 		Name = 'Multi target',
@@ -3604,7 +3635,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Suffix = function(val)
 			return 's'
 		end,
-		Tooltip = 'Delay between swings'
+		Tooltip = 'Delay between swings, never faster than the sword attack speed'
 	})
 	CPS = Killaura:CreateSlider({
 		Name = 'Attacks per second (CPS)',
@@ -3615,7 +3646,7 @@ SwordController.swingSwordInRegion = function(self, ...)
 		Suffix = function(val)
 			return 'cps'
 		end,
-		Tooltip = 'Swings attempted per second'
+		Tooltip = 'Swings attempted per second, capped by the sword attack speed'
 	})
 end)
 

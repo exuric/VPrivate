@@ -4430,6 +4430,348 @@ else
 end)
 
 run(function()
+	local TargetPart
+	local Targets
+	local Sort
+	local FOV
+	local Prediction
+	local Profile
+	local AutoCharge
+	local Aim = {}
+	local OtherProjectiles
+	local FireballSplash
+	local SplashRadius
+	local Lob
+	local MaxLobTries
+	local Mode
+	local Blacklist
+	local lockedTarget
+	local lockedTime
+	local old
+	local hitConn
+
+	local rayCheck = RaycastParams.new()
+	rayCheck.FilterType = Enum.RaycastFilterType.Include
+	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
+
+	local function solveAt(origin, speed, gravity, targetPos, targetVel, playerGravity, target, minimumTime, aerial)
+		local point, _, travelTime = prediction.SolveTrajectory(
+			origin, speed, gravity, targetPos, targetVel, playerGravity,
+			target.HipHeight, target.Jumping and 42.6 or nil, rayCheck,
+			aerial, target.RootPart.Position, target.RootPart, minimumTime, true
+		)
+		return point, travelTime
+	end
+
+	local function closestApproach(origin, vel, g, tt, targetPos)
+		local closest = math.huge
+		local step = 0.02
+		local time = step
+		while time <= tt do
+			local p = origin + vel * time - Vector3.new(0, 0.5 * g * time * time, 0)
+			local d = (p - targetPos).Magnitude
+			if d < closest then closest = d end
+			time += step
+		end
+		return closest
+	end
+
+	local function buildDir(origin, point, speed)
+		return CFrame.new(origin, point).LookVector * speed
+	end
+
+	local function pickArc(origin, speed, gravity, targetPos, targetVel, playerGravity, lifetime, target, aerial, isFireball)
+		local direct, directTime = solveAt(origin, speed, gravity, targetPos, targetVel, playerGravity, target, nil, aerial)
+		if direct and directTime and directTime <= lifetime then
+			local dir = buildDir(origin, direct, speed)
+			if prediction.IsTrajectoryClear(origin, dir, gravity, directTime, rayCheck) then
+				return direct, directTime, dir
+			end
+		end
+		if isFireball and Lob.Enabled then
+			local tries = 0
+			local minimumTime = 0.15
+			while tries < MaxLobTries.Value do
+				local lob, lobTime = solveAt(origin, speed, gravity, targetPos, targetVel, playerGravity, target, minimumTime, aerial)
+				if lob and lobTime and lobTime <= lifetime then
+					local dir = buildDir(origin, lob, speed)
+					if prediction.IsTrajectoryClear(origin, dir, gravity, lobTime, rayCheck) then
+						return lob, lobTime, dir
+					end
+				end
+				minimumTime += 0.15
+				tries += 1
+			end
+		end
+		return direct, directTime
+	end
+
+	local ProjectileAimbotTest = larp.Categories.Blatant:CreateModule({
+		Name = 'ProjectileAimbot (test)',
+		Function = function(callback)
+			if callback then
+				old = bedwars.ProjectileController.calculateImportantLaunchValues
+				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
+					local self, projmeta, worldmeta, origin, shootpos = ...
+					local plr = entitylib.EntityMouse({
+						Part = 'RootPart',
+						Range = FOV.Value,
+						Players = Targets.Players.Enabled,
+						NPCs = Targets.NPCs.Enabled,
+						Wallcheck = Targets.Walls.Enabled,
+						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero,
+						Sort = sortmethods[Sort.Value]
+					})
+					if not plr then
+						if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.35 then
+							plr = lockedTarget
+						else
+							lockedTarget = nil
+							lockedTime = nil
+						end
+					end
+					lockedTarget, lockedTime = plr, tick()
+					if plr then
+						local pos = shootpos or self:getLaunchPosition(origin)
+						if not pos then
+							return old(...)
+						end
+
+						if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') then
+							return old(...)
+						end
+
+						if table.find(Blacklist.ListEnabled or {}, ((projmeta.projectile == 'glue_trap' or projmeta.projectile == 'glue_projectile') and 'gloop' or projmeta.projectile)) then
+							return old(...)
+						end
+
+						local meta = projmeta:getProjectileMeta()
+						local isLasso = projmeta.projectile:find('lasso') or projmeta.projectile:find('lassy')
+						local lifetime = (worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3)
+						if isLasso then
+							lifetime = math.max(lifetime, 2.5)
+						end
+						local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
+						local projSpeed = (meta.launchVelocity or 100)
+						local offsetpos = pos + (projmeta.projectile == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
+						local balloons = plr.Character:GetAttribute('InflatedBalloons')
+						local playerGravity = workspace.Gravity
+
+						if balloons and balloons > 0 then
+							playerGravity = (workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))))
+						end
+
+						if plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
+							playerGravity = 6
+						end
+
+						if plr.Player and plr.Player:GetAttribute('IsOwlTarget') then
+							for _, owl in collectionService:GetTagged('Owl') do
+								if owl:GetAttribute('Target') == plr.Player.UserId and owl:GetAttribute('Status') == 2 then
+									playerGravity = 0
+								end
+							end
+						end
+
+						local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
+						local targetPart = TargetPart.Value == 'Neck' and plr.RootPart or (plr[TargetPart.Value] or plr.RootPart)
+						local targetPos = isLasso and plr.RootPart.Position + Vector3.new(0, 2, 0) or targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
+						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
+						local isFireball = projmeta.projectile == 'fireball'
+						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
+						local projSpeedTotal = projSpeed * (Mode.Value == 'Adaptive' and math.clamp(Prediction.Value, 0.9, 1.1) or Prediction.Value) * charge
+						local aerial = plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01
+
+						local point, travelTime, dir = pickArc(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, lifetime, plr, aerial, isFireball)
+						local splash
+						if dir and isFireball and FireballSplash.Enabled then
+							splash = closestApproach(newlook.p, dir, gravity, travelTime, targetPos + targetVel * travelTime) <= SplashRadius.Value
+						end
+
+						if dir and travelTime and travelTime <= lifetime and (not isFireball or not FireballSplash.Enabled or splash) then
+							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
+							if Mode.Value == 'Adaptive' then
+								projectileShotTimes[plr.RootPart] = tick()
+								projectileShotCounter = projectileShotCounter + 1
+								if projectileShotCounter % 32 == 0 then
+									for root, shotTime in projectileShotTimes do
+										if tick() - shotTime >= 5 then
+											projectileShotTimes[root] = nil
+										end
+									end
+								end
+								prediction.trackShot(plr.RootPart)
+							end
+							return {
+								initialVelocity = dir,
+								positionFrom = offsetpos,
+								deltaT = lifetime,
+								gravitationalAcceleration = gravity,
+								drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+							}
+						end
+
+						if isFireball and FireballSplash.Enabled then
+							local feet = targetPos - Vector3.new(0, 3, 0)
+							local lpoint, ltime = pickArc(newlook.p, projSpeedTotal, gravity, feet, targetVel, playerGravity, lifetime, plr, aerial, false)
+							if lpoint and ltime and ltime <= lifetime then
+								local ldir = buildDir(newlook.p, lpoint, projSpeedTotal)
+								if prediction.IsTrajectoryClear(newlook.p, ldir, gravity, ltime, rayCheck) then
+									if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
+									return {
+										initialVelocity = ldir,
+										positionFrom = offsetpos,
+										deltaT = lifetime,
+										gravitationalAcceleration = gravity,
+										drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+									}
+								end
+							end
+						end
+					end
+
+					return old(...)
+				end
+				hitConn = larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+					if Mode.Value ~= 'Adaptive' then return end
+					if damageTable.damageType == 0 or not damageTable.fromEntity then return end
+					if damageTable.fromEntity == lplr.Character or damageTable.fromEntity == lplr then
+						local victim = entitylib.getEntity(damageTable.entityInstance)
+						if victim and victim.RootPart and tick() - (projectileShotTimes[victim.RootPart] or -9e9) < 5 then
+							prediction.reportHit(victim.RootPart)
+							prediction.markKnockback(victim.RootPart, damageTable.knockbackMultiplier)
+						end
+					end
+				end)
+			else
+				if old then
+					bedwars.ProjectileController.calculateImportantLaunchValues = old
+					old = nil
+				end
+				if hitConn then
+					hitConn:Disconnect()
+					hitConn = nil
+				end
+				lockedTarget = nil
+				lockedTime = nil
+			end
+		end,
+		Tooltip = 'ProjectileAimbot test build. Feeds raw velocity to the prediction lib, adds a high-arc lob fallback for fireballs over walls, and grades its own shots so adaptive lead self-corrects without any other module.'
+	})
+	Targets = ProjectileAimbotTest:CreateTargets({
+		Players = true,
+		Walls = true
+	})
+	local methods = {'Distance', 'Damage'}
+	for i in sortmethods do
+		if not table.find(methods, i) then
+			table.insert(methods, i)
+		end
+	end
+	Sort = ProjectileAimbotTest:CreateDropdown({
+		Name = 'Target mode',
+		List = methods,
+		Default = 'Distance'
+	})
+	TargetPart = ProjectileAimbotTest:CreateDropdown({
+		Name = 'Part',
+		List = {'RootPart', 'Head', 'Neck'},
+		Default = 'Neck',
+		Tooltip = 'Neck aims at the middle of the body for reliable hits'
+	})
+	Mode = ProjectileAimbotTest:CreateDropdown({
+		Name = 'Mode',
+		List = {'Adaptive', 'Simple'},
+		Default = 'Adaptive',
+		Tooltip = 'Adaptive grades every shot it fires and self-corrects latency lead over time; Simple solves the arc without feedback.'
+	})
+	Prediction = ProjectileAimbotTest:CreateSlider({
+		Name = 'Lead',
+		Min = 0.8,
+		Max = 1.4,
+		Default = 1,
+		Decimal = 10,
+		Tooltip = 'Multiplies the predicted flight lead. Adaptive clamps to 0.9-1.1 automatically.'
+	})
+	Profile = ProjectileAimbotTest:CreateDropdown({
+		Name = 'Profile',
+		List = {'Low Ping', 'Medium Ping', 'High Ping', 'Custom'},
+		Default = 'Custom',
+		Tooltip = 'Preset Lead values for your ping, override them freely after',
+		Function = function(value)
+			if value == 'Low Ping' then
+				Prediction:SetValue(1, nil, true)
+			elseif value == 'Medium Ping' then
+				Prediction:SetValue(1.05, nil, true)
+			elseif value == 'High Ping' then
+				Prediction:SetValue(1.12, nil, true)
+			else
+				Prediction:SetValue(1, nil, true)
+			end
+		end
+	})
+	FOV = ProjectileAimbotTest:CreateSlider({
+		Name = 'FOV',
+		Min = 1,
+		Max = 1000,
+		Default = 1000
+	})
+	AutoCharge = ProjectileAimbotTest:CreateToggle({
+		Name = 'Auto Charge',
+		Function = function(callback)
+			if Aim.Object then
+				Aim.Object.Visible = callback
+			end
+		end,
+		Default = true,
+		Tooltip = 'Fully charges your bow for maximum damage'
+	})
+	Aim = ProjectileAimbotTest:CreateToggle({
+		Name = 'Aim change',
+		Default = true,
+		Darker = true,
+		Tooltip = 'Changes your trajectory to match charge percentage.'
+	})
+	OtherProjectiles = ProjectileAimbotTest:CreateToggle({
+		Name = 'Other Projectiles',
+		Default = true
+	})
+	FireballSplash = ProjectileAimbotTest:CreateToggle({
+		Name = 'Fireball Splash',
+		Default = true,
+		Function = function(callback)
+			if SplashRadius then
+				SplashRadius.Object.Visible = callback
+			end
+		end,
+		Tooltip = 'Fires fireballs so the explosion always covers the enemy'
+	})
+	SplashRadius = ProjectileAimbotTest:CreateSlider({
+		Name = 'Splash Radius',
+		Min = 1,
+		Max = 8,
+		Default = 5,
+		Decimal = 1
+	})
+	Lob = ProjectileAimbotTest:CreateToggle({
+		Name = 'High Arc',
+		Default = true,
+		Tooltip = 'Finds a steep clearance arc over walls when the direct shot is blocked'
+	})
+	MaxLobTries = ProjectileAimbotTest:CreateSlider({
+		Name = 'Arc tries',
+		Min = 1,
+		Max = 8,
+		Default = 4,
+		Tooltip = 'How many progressively higher arcs to test'
+	})
+	Blacklist = ProjectileAimbotTest:CreateTextList({
+		Name = 'Blacklist',
+		Default = {'telepearl'}
+	})
+end)
+
+run(function()
 	local ProjectileAura
 	local Targets
 	local Range

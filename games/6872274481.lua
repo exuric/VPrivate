@@ -3391,16 +3391,23 @@ run(function()
 	local SwingRange
 	local AttackRange
 	local MaxAngle
-	local CPS
-	local SwingTime
 	local MultiTarget
 
 	local realSwingInRegion, realCanSee, SwordController, EntityUtil = nil, nil, nil, nil
 
+	local function getHandItem()
+		if not SwordController or not SwordController.getHandItem then
+			return nil
+		end
+		return SwordController:getHandItem()
+	end
+
 	local function getHandSword()
-		local tool = store.hand and store.hand.tool
-		local meta = tool and bedwars.ItemMeta[tool.Name]
-		return tool, (meta and meta.sword) or nil
+		local hand = getHandItem()
+		if not hand then return nil, nil end
+		local itemType = hand.itemType
+		local meta = itemType and bedwars.ItemMeta[itemType]
+		return hand, (meta and meta.sword) or nil
 	end
 
 	local function getAttackInterval()
@@ -3413,10 +3420,10 @@ run(function()
 		local _, sword = getHandSword()
 		local range = sword and sword.attackRange
 		if range and range > 0 then
-			return range
+			return range + 2
 		end
 		local constant = bedwars.CombatConstant and bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE
-		return constant or 14.4
+		return (constant or 14.4) + 2
 	end
 
 	local function toGameEntity(ent)
@@ -3453,7 +3460,7 @@ run(function()
 		local selfpos = character.HumanoidRootPart.Position
 		local localfacing = character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
 		local halfangle = MaxAngle.Value >= 360 and math.pi * 2 or math.rad(MaxAngle.Value) / 2
-		local reach = math.max(SwingRange.Value, math.min(AttackRange.Value, getReach()))
+		local reach = math.min(AttackRange.Value, getReach())
 		local targets = {}
 		for _, ent in entitylib.List do
 			if isValidTarget(ent, selfpos, localfacing, halfangle, reach) then
@@ -3462,12 +3469,6 @@ run(function()
 		end
 		table.sort(targets, function(a, b) return a[2] < b[2] end)
 		return targets
-	end
-
-	local function faceTarget(target, root)
-		local oldcf = root.CFrame
-		root.CFrame = CFrame.lookAt(root.Position, Vector3.new(target.RootPart.Position.X, root.Position.Y + 0.01, target.RootPart.Position.Z))
-		return oldcf
 	end
 
 	local function attack(ent, swingStartTime)
@@ -3484,12 +3485,9 @@ run(function()
 	end
 
 	local function swingMulti()
-		local character = entitylib.character
-		if not character or not character.HumanoidRootPart or not character.RootPart or not SwordController then return end
+		if not SwordController then return end
 		local targets = getTargets()
 		if #targets == 0 then return end
-		local root = character.RootPart
-		local oldcf = faceTarget(targets[1][1], root)
 		store.KillauraTarget = targets[1][1]
 		local swingStartTime = workspace:GetServerTimeNow()
 		for i, t in ipairs(targets) do
@@ -3499,13 +3497,15 @@ run(function()
 				task.wait(0.1)
 			end
 		end
-		root.CFrame = oldcf
 	end
 
 	local function canAttack()
 		if not entitylib.isAlive then return false end
 		if bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then return false end
-		if LimitItems.Enabled and not (store.hand.tool and store.hand.toolType == 'sword') then return false end
+		if LimitItems.Enabled then
+			local _, sword = getHandSword()
+			if not sword then return false end
+		end
 		return true
 	end
 
@@ -3532,11 +3532,7 @@ run(function()
 						local target = getTargets()[1]
 						if target and target[1] and target[1].RootPart and target[1].RootPart.Parent and canAttack() then
 							store.KillauraTarget = target[1]
-							local root = entitylib.character.RootPart
-							local oldcf = faceTarget(target[1], root)
-							local result = realSwingInRegion(self, ...)
-							root.CFrame = oldcf
-							return result
+							return realSwingInRegion(self, ...)
 						end
 					end
 					return realSwingInRegion(self, ...)
@@ -3563,7 +3559,7 @@ run(function()
 						store.KillauraTarget = nil
 					end
 
-					task.wait(math.max(getAttackInterval(), 1 / CPS.Value, SwingTime.Value))
+					task.wait(getAttackInterval())
 				until not Killaura.Enabled
 			else
 				store.KillauraTarget = nil
@@ -3601,18 +3597,18 @@ run(function()
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
-		Tooltip = 'Range where killaura swings'
+		Tooltip = 'Range where swings are visual'
 	})
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
 		Min = 1,
-		Max = 30,
+		Max = 26,
 		Default = 20,
 		Decimal = 10,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
-		Tooltip = 'Range where attacks land, clamped to the held sword reach (max 24 studs for long swords, 14.4 default)'
+		Tooltip = 'Range where attacks land, capped at the absolute sword reach (16.4 default, 26 max)'
 	})
 	MultiTarget = Killaura:CreateToggle({
 		Name = 'Multi target',
@@ -3625,28 +3621,6 @@ run(function()
 		Max = 360,
 		Default = 360,
 		Tooltip = 'Maximum angle between your view and the target'
-	})
-	SwingTime = Killaura:CreateSlider({
-		Name = 'Swing time',
-		Min = 0.01,
-		Max = 1,
-		Default = 0.11,
-		Decimal = 100,
-		Suffix = function(val)
-			return 's'
-		end,
-		Tooltip = 'Delay between swings, never faster than the sword attack speed'
-	})
-	CPS = Killaura:CreateSlider({
-		Name = 'Attacks per second (CPS)',
-		Min = 1,
-		Max = 20,
-		Default = 15,
-		Decimal = 10,
-		Suffix = function(val)
-			return 'cps'
-		end,
-		Tooltip = 'Swings attempted per second, capped by the sword attack speed'
 	})
 end)
 

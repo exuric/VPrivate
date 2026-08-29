@@ -1798,6 +1798,30 @@ run(function()
 			local speed = (AimSpeed.Value * 0.1 * prog) + (1 - prog) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 5)
 			local jitter = Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
 			return applyHumanAim(localcframe, ent, getAim(ent) + jitter, fps, speed), speed
+		end,
+		Legit = function(localcframe, ent, fps)
+			local rng = Random.new()
+			local aimPoint = getAim(ent)
+			local dist = (aimPoint - localcframe.Position).Magnitude
+
+			-- Human-like: power up gradually from reaction, never instant.
+			local prog = ease(math.min(tick() - started, 1))
+
+			-- Base speed is slow and deliberate, ramps up as we lock on.
+			local speed = 2.5 + 6 * prog
+			-- Near the target, bleed speed off so the crosshair settles (feels human).
+			speed = speed * math.clamp(dist / 24, 0.3, 1)
+
+			-- Light micro-shake that fades as the crosshair closes in, so it
+			-- locks cleanly but never tracks like a robot.
+			local shakeAmt = Shake.Value * (dist < 10 and 0.35 or 0.85)
+			local jitter = Vector3.new(
+				(rng:NextNumber() - 0.5) * shakeAmt * fps,
+				(rng:NextNumber() - 0.5) * shakeAmt * fps,
+				(rng:NextNumber() - 0.5) * shakeAmt * fps
+			)
+
+			return applyHumanAim(localcframe, ent, aimPoint + jitter, fps, speed), speed
 		end
 	}
 
@@ -1929,8 +1953,33 @@ run(function()
 	Mode = AimAssist:CreateDropdown({
 		Name = 'Mode',
 		List = modes,
-		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior',
+		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior\nLegit - Auto-tunes the settings for human-like, believable aim',
 		Default = modes[1],
+		Function = function(val)
+			local saved = Mode._saved
+			if val == 'Legit' then
+				if not saved and AimSpeed then
+					saved = {AimSpeed.Value, Smoothness.Value, Overshoot.Value, Shake.Value, Reaction.Value, MaxTurn.Value}
+					Mode._saved = saved
+				end
+				if saved then
+					AimSpeed:SetValue(8)
+					Smoothness:SetValue(45)
+					Overshoot:SetValue(35)
+					Shake:SetValue(25)
+					Reaction:SetValue(160)
+					MaxTurn:SetValue(220)
+				end
+			elseif saved and AimSpeed then
+				AimSpeed:SetValue(saved[1])
+				Smoothness:SetValue(saved[2])
+				Overshoot:SetValue(saved[3])
+				Shake:SetValue(saved[4])
+				Reaction:SetValue(saved[5])
+				MaxTurn:SetValue(saved[6])
+				Mode._saved = nil
+			end
+		end,
 	})
 	Targets = AimAssist:CreateTargets({
 		Players = true,

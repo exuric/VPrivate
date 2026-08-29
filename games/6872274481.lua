@@ -4506,6 +4506,23 @@ run(function()
 		return direct, directTime
 	end
 
+	local function getModeLead()
+		if Mode.Value == 'Auto' then
+			local pingms = (store.ping.total or 0) * 1000
+			if pingms <= 60 then
+				return 1
+			elseif pingms <= 120 then
+				return 1.05
+			elseif pingms <= 200 then
+				return 1.12
+			end
+			return 1.18
+		elseif Mode.Value == 'Adaptive' then
+			return math.clamp(Prediction.Value, 0.9, 1.1)
+		end
+		return Prediction.Value
+	end
+
 	local ProjectileAimbotTest = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot (test)',
 		Function = function(callback)
@@ -4579,7 +4596,7 @@ run(function()
 						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
 						local isFireball = projmeta.projectile == 'fireball'
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local projSpeedTotal = projSpeed * (Mode.Value == 'Adaptive' and math.clamp(Prediction.Value, 0.9, 1.1) or Prediction.Value) * charge
+						local projSpeedTotal = projSpeed * getModeLead() * charge
 						local aerial = plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01
 
 						local point, travelTime, dir = pickArc(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, lifetime, plr, aerial, isFireball)
@@ -4590,7 +4607,7 @@ run(function()
 
 						if dir and travelTime and travelTime <= lifetime and (not isFireball or not FireballSplash.Enabled or splash) then
 							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
-							if Mode.Value == 'Adaptive' then
+							if Mode.Value == 'Adaptive' or Mode.Value == 'Auto' then
 								projectileShotTimes[plr.RootPart] = tick()
 								projectileShotCounter = projectileShotCounter + 1
 								if projectileShotCounter % 32 == 0 then
@@ -4633,7 +4650,7 @@ run(function()
 					return old(...)
 				end
 				hitConn = larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
-					if Mode.Value ~= 'Adaptive' then return end
+					if Mode.Value ~= 'Adaptive' and Mode.Value ~= 'Auto' then return end
 					if damageTable.damageType == 0 or not damageTable.fromEntity then return end
 					if damageTable.fromEntity == lplr.Character or damageTable.fromEntity == lplr then
 						local victim = entitylib.getEntity(damageTable.entityInstance)
@@ -4681,9 +4698,9 @@ run(function()
 	})
 	Mode = ProjectileAimbotTest:CreateDropdown({
 		Name = 'Mode',
-		List = {'Adaptive', 'Simple'},
-		Default = 'Adaptive',
-		Tooltip = 'Adaptive grades every shot it fires and self-corrects latency lead over time; Simple solves the arc without feedback.'
+		List = {'Auto', 'Adaptive', 'Simple'},
+		Default = 'Auto',
+		Tooltip = 'Auto reads your ping and picks the best lead for it while self-correcting over time; Adaptive grades every shot it fires and self-corrects latency lead; Simple solves the arc without feedback.'
 	})
 	Prediction = ProjectileAimbotTest:CreateSlider({
 		Name = 'Lead',
@@ -4691,13 +4708,13 @@ run(function()
 		Max = 1.4,
 		Default = 1,
 		Decimal = 10,
-		Tooltip = 'Multiplies the predicted flight lead. Adaptive clamps to 0.9-1.1 automatically.'
+		Tooltip = 'Multiplies the predicted flight lead. Auto picks the best lead from your ping; Adaptive clamps to 0.9-1.1 automatically; Simple applies this value directly.'
 	})
 	Profile = ProjectileAimbotTest:CreateDropdown({
 		Name = 'Profile',
 		List = {'Low Ping', 'Medium Ping', 'High Ping', 'Custom'},
 		Default = 'Custom',
-		Tooltip = 'Preset Lead values for your ping, override them freely after',
+		Tooltip = 'Preset Lead values if you want a fixed multiplier instead of Auto, override them freely after',
 		Function = function(value)
 			if value == 'Low Ping' then
 				Prediction:SetValue(1, nil, true)
@@ -9029,12 +9046,17 @@ run(function()
 		elseif Mode.Value == 'Requeue' then
 			bedwars.QueueController:joinQueue(store.queueType)
 		elseif Mode.Value == 'Profile' then
+			local _save = larp.Save
 			larp.Save = function() end
 			if larp.Profile ~= Profile.Value then
 				larp:Load(true, Profile.Value)
 			end
+			task.delay(2.5, function()
+				larp.Save = _save
+			end)
 		elseif Mode.Value == 'AutoConfig' then
 			local safe = {'AutoClicker', 'Reach', 'Sprint', 'HitFix', 'StaffDetector'}
+			local _save = larp.Save
 			larp.Save = function() end
 			for i, v in larp.Modules do
 				if not (table.find(safe, i) or v.Category == 'Render') then
@@ -9044,6 +9066,9 @@ run(function()
 					v:SetBind('')
 				end
 			end
+			task.delay(2.5, function()
+				larp.Save = _save
+			end)
 		end
 	end
 	

@@ -6055,8 +6055,14 @@ function mainapi:Load(skipgui, profile)
 		end
 	end
 	if not savedata then
+		-- Only persist an empty profile when the file genuinely does not exist.
+		-- If the file exists but failed to parse (torn write, corrupt json),
+		-- never overwrite it here, otherwise a transient read failure silently
+		-- wipes the whole saved config back to defaults.
 		savedata = {Categories = {}, Modules = {}, Legit = {}}
-		savenew = true
+		if not isfile(savepath) then
+			savenew = true
+		end
 	end
 
 		for i, v in savedata.Categories do
@@ -6134,6 +6140,7 @@ function mainapi:Load(skipgui, profile)
 				end
 			end)
 		end
+		if not skipgui then
 		task.delay(4, function()
 			if not self.Loaded then return end
 			local modulelookup = {}
@@ -6148,6 +6155,7 @@ function mainapi:Load(skipgui, profile)
 				end
 			end
 		end)
+	end
 
 		self:UpdateTextGUI(true)
 
@@ -6296,6 +6304,7 @@ function mainapi:Save(newprofile)
 	local function writeSave(path, data)
 		if self.SaveCache[path] ~= data then
 			self.SaveCache[path] = data
+			_jsonCache[path] = nil
 			writefile(path, data)
 		end
 	end

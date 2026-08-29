@@ -7123,18 +7123,26 @@ run(function()
 			elseif Mode.Value == 'ServerHop' then
 				serverHop()
 			elseif Mode.Value == 'Profile' then
+				local _save = larp.Save
 				larp.Save = function() end
 				if larp.Profile ~= Profile.Value then
 					larp.Profile = Profile.Value
 					larp:Load(true, Profile.Value)
 				end
+				task.delay(2.5, function()
+					larp.Save = _save
+				end)
 			elseif Mode.Value == 'AutoConfig' then
+				local _save = larp.Save
 				larp.Save = function() end
 				for _, v in larp.Modules do
 					if v.Enabled then
 						v:Toggle()
 					end
 				end
+				task.delay(2.5, function()
+					larp.Save = _save
+				end)
 			end
 		end
 	end

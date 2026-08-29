@@ -1675,7 +1675,6 @@ run(function()
 	local Overshoot
 	local Reaction
 	local MaxTurn
-	local VerticalAim
 	local Distance
 	local AngleSlider
 	local StrafeIncrease
@@ -1755,9 +1754,7 @@ run(function()
 	end
 
 	local function smoothedLook(localcframe, targetPoint, dt, factor)
-		if not VerticalAim.Enabled then
-			targetPoint = Vector3.new(targetPoint.X, localcframe.Position.Y, targetPoint.Z)
-		end
+		targetPoint = Vector3.new(targetPoint.X, localcframe.Position.Y, targetPoint.Z)
 		local forward = localcframe.LookVector
 		local want = (targetPoint - localcframe.Position)
 		if want.Magnitude < 1e-4 then
@@ -2008,11 +2005,6 @@ run(function()
 			return 'deg/s'
 		end,
 		Tooltip = 'Hard cap on how fast the crosshair can rotate, in degrees per second. 0 = unlimited',
-	})
-	VerticalAim = AimAssist:CreateToggle({
-		Name = 'Vertical aim',
-		Default = true,
-		Tooltip = 'When disabled, aims on the horizontal plane only (pitch is left untouched)',
 	})
 	AngleSlider = AimAssist:CreateSlider({
 		Name = 'Max angle',

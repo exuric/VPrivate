@@ -1085,8 +1085,7 @@ run(function()
 
 								if new ~= Vector3.zero then
 									local diffYaw = wrapAngle(math.atan2(facing.X, facing.Z) - math.atan2(new.X, new.Z))
-									local diffPitch = math.asin(facing.Y) - math.asin(new.Y)
-									local angle = Vector2.new(diffYaw, diffPitch) // (moveConst * UserSettings():GetService('UserGameSettings').MouseSensitivity)
+									local angle = Vector2.new(diffYaw, 0) // (moveConst * UserSettings():GetService('UserGameSettings').MouseSensitivity)
 									local smooth = 1 - math.exp(-Smoothness.Value * 60 * dt)
 									angle *= math.min(Speed.Value * dt * smooth, 1)
 									mousemoverel(angle.X, angle.Y)

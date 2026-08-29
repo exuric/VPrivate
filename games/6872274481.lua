@@ -4451,7 +4451,9 @@ run(function()
 	local hitConn
 	local VelocitySmooth
 	local Iterations
+	local AimSmooth
 	local velHistory = {}
+	local aimHistory = {}
 
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
@@ -4487,7 +4489,7 @@ run(function()
 		local solvePoint
 		if Mode.Value == 'Simple' then
 			solvePoint = function(minimumTime)
-				return predictSimple(origin, speed, gravity, targetPos, targetVel, playerGravity, aerial, prediction.getRawLatency(), minimumTime)
+				return predictSimple(origin, speed, gravity, targetPos, targetVel, playerGravity, aerial, prediction.getLatency(), minimumTime)
 			end
 		else
 			solvePoint = function(minimumTime)
@@ -4551,6 +4553,48 @@ run(function()
 			tt = time
 		end
 		return future, tt
+	end
+
+	local function smoothVelocity(root, raw)
+		if VelocitySmooth.Value <= 1 then
+			velHistory[root] = { value = raw, at = tick() }
+			return raw
+		end
+		local entry = velHistory[root]
+		local now = tick()
+		if not entry then
+			velHistory[root] = { value = raw, at = now }
+			return raw
+		end
+		local alpha = 1 - math.exp(-math.max(now - entry.at, 0) / math.max(0.075 * VelocitySmooth.Value, 0.001))
+		local smoothed = alpha >= 1 and raw or entry.value:Lerp(raw, alpha)
+		velHistory[root] = { value = smoothed, at = now }
+		return smoothed
+	end
+
+	local function blendAim(origin, point, root)
+		if AimSmooth.Value <= 0 then
+			return point
+		end
+		local now = tick()
+		local prev = aimHistory[root]
+		if prev and now - prev.at < 0.2 then
+			local a = (prev.point - origin).Unit
+			local b = (point - origin).Unit
+			local angle = math.clamp(math.acos(math.clamp(a:Dot(b), -1, 1)) / math.rad(60), 0, 1)
+			point = prev.point:Lerp(point, 1 - angle * AimSmooth.Value)
+		end
+		aimHistory[root] = { point = point, at = now }
+		if next(aimHistory) then
+			local count = 0
+			for _ in aimHistory do count += 1 end
+			if count > 48 then
+				for key, entry in aimHistory do
+					if now - entry.at > 0.5 then aimHistory[key] = nil end
+				end
+			end
+		end
+		return point
 	end
 
 	local ProjectileAimbotTest = larp.Categories.Blatant:CreateModule({
@@ -4623,18 +4667,19 @@ run(function()
 						local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
 						local targetPart = TargetPart.Value == 'Neck' and plr.RootPart or (plr[TargetPart.Value] or plr.RootPart)
 						local targetPos = isLasso and plr.RootPart.Position + Vector3.new(0, 2, 0) or targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
-						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
-						if VelocitySmooth.Value > 1 then
-							local prev = velHistory[plr]
-							targetVel = prev and prev:Lerp(targetVel, 1 / VelocitySmooth.Value) or targetVel
-							velHistory[plr] = targetVel
-						end
+						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or smoothVelocity(plr, plr.RootPart.AssemblyLinearVelocity)
 						local isFireball = projmeta.projectile == 'fireball'
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
 						local projSpeedTotal = projSpeed * (Mode.Value == 'Adaptive' and math.clamp(Prediction.Value, 0.9, 1.1) or Prediction.Value) * charge
 						local aerial = plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01
 
 						local point, travelTime, dir = pickArc(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, lifetime, plr, aerial, isFireball)
+						if dir then
+							point = blendAim(newlook.p, point, plr)
+							dir = buildDir(newlook.p, point, projSpeedTotal)
+							local nt = staticSolve(newlook.p, projSpeedTotal, gravity, point)
+							if nt then travelTime = nt end
+						end
 						local splash
 						if dir and isFireball and FireballSplash.Enabled then
 							splash = closestApproach(newlook.p, dir, gravity, travelTime, targetPos + targetVel * travelTime) <= SplashRadius.Value
@@ -4642,18 +4687,19 @@ run(function()
 
 						if dir and travelTime and travelTime <= lifetime and (not isFireball or not FireballSplash.Enabled or splash) then
 							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
-							if Mode.Value == 'Adaptive' then
-								projectileShotTimes[plr.RootPart] = tick()
-								projectileShotCounter = projectileShotCounter + 1
-								if projectileShotCounter % 32 == 0 then
-									for root, shotTime in projectileShotTimes do
-										if tick() - shotTime >= 5 then
-											projectileShotTimes[root] = nil
-										end
+							projectileShotTimes[plr.RootPart] = tick()
+							projectileShotCounter = projectileShotCounter + 1
+							if projectileShotCounter % 32 == 0 then
+								for root, shotTime in projectileShotTimes do
+									if tick() - shotTime >= 5 then
+										projectileShotTimes[root] = nil
 									end
 								end
-								prediction.trackShot(plr.RootPart)
 							end
+							if Mode.Value == 'Simple' then
+								prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, aerial, plr.RootPart.Position, plr.RootPart, nil, true)
+							end
+							prediction.trackShot(plr.RootPart)
 							return {
 								initialVelocity = dir,
 								positionFrom = offsetpos,
@@ -4685,7 +4731,6 @@ run(function()
 					return old(...)
 				end
 				hitConn = larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
-					if Mode.Value ~= 'Adaptive' then return end
 					if damageTable.damageType == 0 or not damageTable.fromEntity then return end
 					if damageTable.fromEntity == lplr.Character or damageTable.fromEntity == lplr then
 						local victim = entitylib.getEntity(damageTable.entityInstance)
@@ -4707,9 +4752,10 @@ run(function()
 				lockedTarget = nil
 				lockedTime = nil
 				table.clear(velHistory)
+				table.clear(aimHistory)
 			end
 		end,
-		Tooltip = 'ProjectileAimbot test build. Simple mode uses iterative prediction — estimate travel, predict where the target will be, re-solve until converged — for a plain accurate arc; Adaptive feeds the full prediction library and grades every shot so latency lead, knockback and strafe self-correct on any ping. No other module required.'
+		Tooltip = 'ProjectileAimbot test build. Simple mode uses iterative prediction — estimate travel, predict where the target will be, re-solve until converged — and self-grades ping so latency lead corrects on any connection; Adaptive feeds the full prediction library and grades every shot so knockback and strafe self-correct too. Both modes smooth target velocity over time and blend aim on hops. No other module required.'
 	})
 	Targets = ProjectileAimbotTest:CreateTargets({
 		Players = true,
@@ -4736,7 +4782,7 @@ run(function()
 		Name = 'Mode',
 		List = {'Adaptive', 'Simple'},
 		Default = 'Adaptive',
-		Tooltip = 'Adaptive grades every shot it fires and self-corrects latency lead, knockback and strafe so it stays accurate on any ping; Simple solves the arc with iterative prediction and no feedback.'
+		Tooltip = 'Adaptive grades every shot it fires and self-corrects latency lead, knockback and strafe so it stays accurate on any ping; Simple solves the arc with iterative prediction and self-grades latency only.'
 	})
 	Prediction = ProjectileAimbotTest:CreateSlider({
 		Name = 'Lead',
@@ -4776,6 +4822,14 @@ run(function()
 		Max = 10,
 		Default = 5,
 		Tooltip = 'Convergence passes the Simple solver runs: estimate travel time, predict where the target will be, then re-solve until the answer stabilizes'
+	})
+	AimSmooth = ProjectileAimbotTest:CreateSlider({
+		Name = 'Aim Smoothing',
+		Min = 0,
+		Max = 1,
+		Default = 0.6,
+		Decimal = 2,
+		Tooltip = 'Blends each aim toward the previous one when the target teleports or hops between shots, so the crosshair settles instead of snapping. 0 disables it'
 	})
 	FOV = ProjectileAimbotTest:CreateSlider({
 		Name = 'FOV',

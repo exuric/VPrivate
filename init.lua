@@ -25,9 +25,9 @@ downloader.Text = ''
 downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(game:GetService('CoreGui')))
 
 local RTOK = ''
-local BRANCH = 'test'
+local BRANCH = 'main'
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
-local SELFCOMMIT = '6bbf3eeb8cc5457b75c30b0431cacc37fc790603'
+local SELFCOMMIT = '3e9eef507a503f02304974e327b9d01aebe379ef'
 
 local function fetchCommit()
 	local ok, res = pcall(function()

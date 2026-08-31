@@ -4222,6 +4222,7 @@ run(function()
 			if callback then
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
+					local ok, result = pcall(function()
 					local self, projmeta, worldmeta, origin, shootpos = ...
 					local plr = entitylib.EntityMouse({
 						Part = 'RootPart',
@@ -4351,6 +4352,9 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 						end
 					end
 
+					return old(...)
+					end)
+					if ok then return result end
 					return old(...)
 				end
 else
@@ -4523,6 +4527,9 @@ run(function()
 	end
 
 	local function buildDir(origin, point, speed)
+		if (point - origin).Magnitude < 1e-4 then
+			return CFrame.lookAt(origin, origin + Vector3.new(0, 0, -1)).LookVector * speed
+		end
 		return CFrame.new(origin, point).LookVector * speed
 	end
 
@@ -4585,7 +4592,7 @@ run(function()
 			future = Vector3.new(targetPos.X + targetVel.X * total, fy, targetPos.Z + targetVel.Z * total)
 			local time = staticSolve(origin, speed, gravity, future, minimumTime)
 			if not time then
-				return nil
+				break
 			end
 			if math.abs(time - tt) <= 0.0015 then
 				tt = time
@@ -4644,6 +4651,7 @@ run(function()
 			if callback then
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
+					local ok, result = pcall(function()
 					local self, projmeta, worldmeta, origin, shootpos = ...
 					local plr = entitylib.EntityMouse({
 						Part = 'RootPart',
@@ -4769,6 +4777,9 @@ run(function()
 						end
 					end
 
+					return old(...)
+					end)
+					if ok then return result end
 					return old(...)
 				end
 				hitConn = larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)

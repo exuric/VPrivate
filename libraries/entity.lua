@@ -5,6 +5,7 @@ local entitylib = {
 	List = {},
 	Connections = {},
 	PlayerConnections = {},
+	NpcConnections = {},
 	EntityThreads = {},
 	Running = false,
 	Events = setmetatable({}, {
@@ -242,6 +243,27 @@ entitylib.getEntity = function(char)
 	end
 end
 
+local function isNpcCandidate(char)
+	if typeof(char) ~= 'Instance' or not char:IsA('Model') then return false end
+	if not char:FindFirstChildOfClass('Humanoid') or not char:FindFirstChild('HumanoidRootPart') then return false end
+	if playersService:GetPlayerFromCharacter(char) then return false end
+	if lplr and lplr.Character and (char == lplr.Character or char:IsDescendantOf(lplr.Character)) then return false end
+	if char.Name:lower():find('viewmodel') then return false end
+	return true
+end
+
+local function addNpc(char)
+	if not isNpcCandidate(char) or entitylib.getEntity(char) then return end
+	entitylib.addEntity(char, nil, nil, os.clock())
+	local conn = char.AncestryChanged:Connect(function()
+		if not char.Parent then
+			entitylib.removeEntity(char)
+			conn:Disconnect()
+		end
+	end)
+	entitylib.NpcConnections[char] = conn
+end
+
 entitylib.addEntity = function(char, plr, teamfunc, spawntime)
 	if not char then
 		return
@@ -410,11 +432,22 @@ entitylib.start = function()
 		end),
 		workspace:GetPropertyChangedSignal('CurrentCamera'):Connect(function()
 			gameCamera = workspace.CurrentCamera or workspace:FindFirstChildWhichIsA('Camera')
+		end),
+		workspace.DescendantAdded:Connect(function(inst)
+			if inst:IsA('Model') then
+				task.spawn(addNpc, inst)
+			end
 		end)
 	}
 
 	for _, player in playersService:GetPlayers() do
 		entitylib.addPlayer(player)
+	end
+
+	for _, char in workspace:GetDescendants() do
+		if char:IsA('Model') then
+			addNpc(char)
+		end
 	end
 
 	entitylib.Running = true
@@ -442,6 +475,11 @@ entitylib.stop = function()
 		task.cancel(thread)
 	end
 
+	for char, conn in entitylib.NpcConnections do
+		conn:Disconnect()
+		entitylib.removeEntity(char)
+	end
+	table.clear(entitylib.NpcConnections)
 	table.clear(entitylib.PlayerConnections)
 	table.clear(entitylib.EntityThreads)
 	table.clear(entitylib.Connections)

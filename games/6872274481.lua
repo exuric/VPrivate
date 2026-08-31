@@ -51,6 +51,7 @@ local projectileShotTimes = {}
 local projectileShotCounter = 0
 local store = {
 	attackReach = 0,
+	killauraAttacking = false,
 	lastHit = 0,
 	attackReachUpdate = tick(),
 	damageBlockFail = tick(),
@@ -1063,7 +1064,7 @@ run(function()
 					store.attackReach = ((selfpos - targetpos).Magnitude * 100) // 1 / 100
 					store.attackReachUpdate = tick() + 1
 
-					if Reach.Enabled or HitBoxes.Enabled then
+					if Reach.Enabled or HitBoxes.Enabled or store.killauraAttacking then
 						attackTable.validate.raycast = attackTable.validate.raycast or {}
 						attackTable.validate.selfPosition.value += CFrame.lookAt(selfpos, targetpos).LookVector * math.max((selfpos - targetpos).Magnitude - 14.399, 0)
 					end
@@ -3433,6 +3434,7 @@ run(function()
 	local AttackRange
 	local MaxAngle
 	local MultiTarget
+	local HitReg
 
 	local realSwingInRegion, realCanSee, SwordController, EntityUtil = nil, nil, nil, nil
 
@@ -3454,17 +3456,9 @@ run(function()
 	local function getAttackInterval()
 		local _, sword = getHandSword()
 		local speed = sword and sword.attackSpeed
-		return math.max((speed and speed > 0 and speed) or 0.3, 0.05)
-	end
-
-	local function getReach()
-		local _, sword = getHandSword()
-		local range = sword and sword.attackRange
-		if range and range > 0 then
-			return range + 2
-		end
-		local constant = bedwars.CombatConstant and bedwars.CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE
-		return (constant or 14.4) + 2
+		local weapon = math.max((speed and speed > 0 and speed) or 0.3, 0.05)
+		local hitReg = 10 / HitReg.Value - 0.004
+		return math.min(weapon, math.max(hitReg, 0.05))
 	end
 
 	local function toGameEntity(ent)
@@ -3501,7 +3495,7 @@ run(function()
 		local selfpos = character.HumanoidRootPart.Position
 		local localfacing = character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
 		local halfangle = MaxAngle.Value >= 360 and math.pi * 2 or math.rad(MaxAngle.Value) / 2
-		local reach = math.min(AttackRange.Value, getReach())
+		local reach = AttackRange.Value
 		local targets = {}
 		for _, ent in entitylib.List do
 			if isValidTarget(ent, selfpos, localfacing, halfangle, reach) then
@@ -3516,9 +3510,11 @@ run(function()
 		if not SwordController then return false end
 		local e = toGameEntity(ent)
 		if not e then return false end
+		store.killauraAttacking = true
 		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, {
 			swingStartTime = swingStartTime or workspace:GetServerTimeNow()
 		})
+		store.killauraAttacking = false
 		if ok then
 			store.lastHit = os.clock()
 		end
@@ -3573,7 +3569,10 @@ run(function()
 						local target = getTargets()[1]
 						if target and target[1] and target[1].RootPart and target[1].RootPart.Parent and canAttack() then
 							store.KillauraTarget = target[1]
-							return realSwingInRegion(self, ...)
+							store.killauraAttacking = true
+							local ok = pcall(realSwingInRegion, self, ...)
+							store.killauraAttacking = false
+							return ok
 						end
 					end
 					return realSwingInRegion(self, ...)
@@ -3644,12 +3643,22 @@ run(function()
 		Name = 'Attack range',
 		Min = 1,
 		Max = 26,
-		Default = 20,
+		Default = 26,
 		Decimal = 10,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
-		Tooltip = 'Range where attacks land, capped at the absolute sword reach (16.4 default, 26 max)'
+		Tooltip = 'Range where attacks land. Full 26 studs register because the hit position is spoofed server-side'
+	})
+	HitReg = Killaura:CreateSlider({
+		Name = 'Hit reg',
+		Min = 33,
+		Max = 40,
+		Default = 34,
+		Suffix = function(val)
+			return val .. ' hits/10s'
+		end,
+		Tooltip = 'Swing rate in hits per 10 seconds: 34 is consistent, 35+ pushes past the server tolerance so some swings get rejected'
 	})
 	MultiTarget = Killaura:CreateToggle({
 		Name = 'Multi target',

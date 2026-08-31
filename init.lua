@@ -56,17 +56,21 @@ shared.LarpOwner = ISOWNER
 local function downloadFile(path, func)
 	local outdated = not isfile(path)
 	if not outdated and path:find('.lua') then
-		outdated = readfile(path):sub(1, #LARPWATER) ~= LARPWATER
+		local cached = readfile(path)
+		outdated = #cached < 100 or cached:sub(1, #LARPWATER) ~= LARPWATER
 	end
 	if outdated then
 		if not license.Closet then
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end
 		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..COMMIT..'/'..select(1, path:gsub('LarpV4/', '')), true)
+			return game:HttpGet(ROOT..BRANCH..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
+		end
+		if #res < 100 and path:find('.lua') then
+			error('LarpV4: empty download for '..path)
 		end
 		if path:find('.lua') then
 			res = LARPWATER..res
@@ -93,7 +97,7 @@ local MANIFEST = {}
 local function fetchManifest()
 	table.clear(MANIFEST)
 	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..COMMIT..'/profiles/manifest.txt', true)
+		return game:HttpGet(ROOT..BRANCH..'/profiles/manifest.txt', true)
 	end)
 	if ok and res then
 		for line in (res..'\n'):gmatch('(.-)\r?\n') do

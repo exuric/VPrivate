@@ -63,14 +63,14 @@ local function downloadFile(path, func)
 	if isfile(path) then
 		content = readfile(path)
 	end
-	if not content or (not (shared.LarpDeveloper and shared.LarpOwner) and content:sub(1, #LARPWATER) ~= LARPWATER) then
+	if not content or #content < 100 or (not (shared.LarpDeveloper and shared.LarpOwner) and content:sub(1, #LARPWATER) ~= LARPWATER) then
 		_dstats.misses += 1
 		if _pending[path] then
 			repeat task.wait(0.1) until not _pending[path]
 			content = isfile(path) and readfile(path) or nil
 		else
 			_pending[path] = true
-			local url = ROOT..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', ''))
+			local url = ROOT..'main/'..select(1, path:gsub('LarpV4/', ''))
 			local suc, res
 			for i = 1, 3 do
 				suc, res = pcall(function() return game:HttpGet(url, true) end)
@@ -79,7 +79,7 @@ local function downloadFile(path, func)
 				if i < 3 then task.wait(0.5 * i) end
 			end
 			_pending[path] = nil
-			if not suc or res == '404: Not Found' then
+			if not suc or res == '404: Not Found' or (#res < 100 and path:find('.lua')) then
 				error(res or 'Download failed')
 			end
 			if path:find('.lua') then
@@ -137,7 +137,7 @@ end
 		local ok, res
 		for attempt = 1, 3 do
 			ok, res = pcall(function()
-				return game:HttpGet(ROOT..LARPCOMMIT..'/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
+				return game:HttpGet(ROOT..'main/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
 			end)
 			if ok and typeof(res) == 'string' and res ~= '404: Not Found' then break end
 			_dstats.retries += 1
@@ -167,7 +167,7 @@ local function finishLoading()
 				if shared.LarpDeveloper and shared.LarpOwner then
 					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet(']]..ROOT..LARPCOMMIT..[['/init.lua', true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet(']]..ROOT..'main'..[['/init.lua', true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)
@@ -234,7 +234,7 @@ task.spawn(function()
 			else
 				if not (shared.LarpDeveloper and shared.LarpOwner) then
 					local suc, res = pcall(function()
-						return game:HttpGet(ROOT..LARPCOMMIT..'/games/'..game.PlaceId..'.lua', true)
+						return game:HttpGet(ROOT..'main/games/'..game.PlaceId..'.lua', true)
 					end)
 					if suc and res ~= '404: Not Found' then
 						loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)

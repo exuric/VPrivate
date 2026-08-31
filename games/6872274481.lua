@@ -3433,8 +3433,10 @@ run(function()
 	local SwingRange
 	local AttackRange
 	local MaxAngle
-	local MultiTarget
 	local HitReg
+	local SwingAnim
+	local clickConn
+	local swingRequested = false
 
 	local realSwingInRegion, realCanSee, SwordController, EntityUtil = nil, nil, nil, nil
 
@@ -3457,8 +3459,23 @@ run(function()
 		local _, sword = getHandSword()
 		local speed = sword and sword.attackSpeed
 		local weapon = math.max((speed and speed > 0 and speed) or 0.3, 0.05)
-		local hitReg = 10 / HitReg.Value - 0.004
+		local hits = HitReg.Value
+		local margin = 0.004 + (hits >= 35 and 0.004 or 0)
+		local hitReg = 10 / hits - margin
 		return math.min(weapon, math.max(hitReg, 0.05))
+	end
+
+	local lastSwing = 0
+
+	local function playSwingAnim()
+		local hand = getHandItem()
+		if not hand or not hand.itemType then return end
+		local meta = bedwars.ItemMeta and bedwars.ItemMeta[hand.itemType]
+		if not meta or not SwordController then return end
+		pcall(SwordController.playSwordEffect, SwordController, meta, false, {
+			playAnimation = true,
+			playSound = true
+		})
 	end
 
 	local function toGameEntity(ent)
@@ -3510,6 +3527,9 @@ run(function()
 		if not SwordController then return false end
 		local e = toGameEntity(ent)
 		if not e then return false end
+		if SwingAnim.Enabled then
+			playSwingAnim()
+		end
 		store.killauraAttacking = true
 		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, {
 			swingStartTime = swingStartTime or workspace:GetServerTimeNow()
@@ -3526,14 +3546,7 @@ run(function()
 		local targets = getTargets()
 		if #targets == 0 then return end
 		store.KillauraTarget = targets[1][1]
-		local swingStartTime = workspace:GetServerTimeNow()
-		for i, t in ipairs(targets) do
-			attack(t[1], swingStartTime)
-			if not MultiTarget.Enabled then break end
-			if i > 1 then
-				task.wait(0.1)
-			end
-		end
+		attack(targets[1][1], workspace:GetServerTimeNow())
 	end
 
 	local function canAttack()
@@ -3567,16 +3580,20 @@ run(function()
 				SwordController.swingSwordInRegion = function(self, ...)
 					if SwingOnly.Enabled then
 						local target = getTargets()[1]
-						if target and target[1] and target[1].RootPart and target[1].RootPart.Parent and canAttack() then
+						if target and target[1] then
 							store.KillauraTarget = target[1]
-							store.killauraAttacking = true
-							local ok = pcall(realSwingInRegion, self, ...)
-							store.killauraAttacking = false
-							return ok
+							return true
 						end
 					end
 					return realSwingInRegion(self, ...)
 				end
+				swingRequested = false
+				clickConn = inputService.InputBegan:Connect(function(input, gpe)
+					if gpe then return end
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						swingRequested = true
+					end
+				end)
 				SwordController.canSee = function(self, ent)
 					if ent then
 						return true
@@ -3592,6 +3609,12 @@ run(function()
 							store.KillauraTarget = target[1]
 							if not SwingOnly.Enabled then
 								swingMulti()
+							elseif swingRequested or inputService:IsMouseButtonPressed(0) then
+								swingRequested = false
+								if os.clock() - lastSwing >= getAttackInterval() then
+									lastSwing = os.clock()
+									attack(target[1], workspace:GetServerTimeNow())
+								end
 							end
 						end
 					end
@@ -3609,6 +3632,11 @@ run(function()
 				if realCanSee then
 					SwordController.canSee = realCanSee
 				end
+				if clickConn then
+					clickConn:Disconnect()
+					clickConn = nil
+				end
+				swingRequested = false
 				realSwingInRegion = nil
 				realCanSee = nil
 				SwordController = nil
@@ -3653,17 +3681,17 @@ run(function()
 	HitReg = Killaura:CreateSlider({
 		Name = 'Hit reg',
 		Min = 33,
-		Max = 40,
+		Max = 35,
 		Default = 34,
 		Suffix = function(val)
-			return val .. ' hits/10s'
+			return val .. ' hits'
 		end,
-		Tooltip = 'Swing rate in hits per 10 seconds: 34 is consistent, 35+ pushes past the server tolerance so some swings get rejected'
+		Tooltip = 'Swing rate in hits per 10 seconds: 34 is consistent, 35 lands more but some swings get rejected'
 	})
-	MultiTarget = Killaura:CreateToggle({
-		Name = 'Multi target',
+	SwingAnim = Killaura:CreateToggle({
+		Name = 'Swing animation',
 		Default = true,
-		Tooltip = 'Hits every enemy in range with each swing'
+		Tooltip = 'Plays the sword swing animation when attacking'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',
@@ -4209,6 +4237,29 @@ run(function()
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
 	local velHistory = {}
+	local aimHistory = {}
+
+	local function blendAim(origin, point, root)
+		local now = tick()
+		local prev = aimHistory[root]
+		if prev and now - prev.at < 0.2 then
+			local a = (prev.point - origin).Unit
+			local b = (point - origin).Unit
+			local angle = math.clamp(math.acos(math.clamp(a:Dot(b), -1, 1)) / math.rad(60), 0, 1)
+			point = prev.point:Lerp(point, 1 - angle * 0.6)
+		end
+		aimHistory[root] = { point = point, at = now }
+		if next(aimHistory) then
+			local count = 0
+			for _ in aimHistory do count += 1 end
+			if count > 48 then
+				for key, entry in aimHistory do
+					if now - entry.at > 0.5 then aimHistory[key] = nil end
+				end
+			end
+		end
+		return point
+	end
 
 	local function getLanding(origin, vel, gravity, maxTime)
 		local pos = origin
@@ -4306,6 +4357,9 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
 						local projSpeedTotal = projSpeed * (Mode.Value == 'Adaptive' and math.clamp(Prediction.Value, 0.9, 1.1) or Prediction.Value) * charge
 						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+						if calc then
+							calc = blendAim(newlook.p, calc, plr.RootPart)
+						end
 						local dir
 						if calc and travelTime and travelTime <= lifetime then
 							dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeed * charge)
@@ -4369,12 +4423,14 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 else
 			bedwars.ProjectileController.calculateImportantLaunchValues = old
 			table.clear(velHistory)
+			table.clear(aimHistory)
 		end
 	end,
 	Tooltip = 'Silently adjusts your aim towards the enemy'
 	})
 	Targets = ProjectileAimbot:CreateTargets({
 		Players = true,
+		NPCs = true,
 		Walls = true
 	})
 	local methods = {'Distance', 'Damage'}
@@ -4820,6 +4876,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 	})
 	Targets = ProjectileAimbotTest:CreateTargets({
 		Players = true,
+		NPCs = true,
 		Walls = true
 	})
 	local methods = {'Distance', 'Damage'}

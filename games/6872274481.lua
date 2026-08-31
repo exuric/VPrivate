@@ -1066,7 +1066,15 @@ run(function()
 
 					if Reach.Enabled or HitBoxes.Enabled or store.killauraAttacking then
 						attackTable.validate.raycast = attackTable.validate.raycast or {}
-						attackTable.validate.selfPosition.value += CFrame.lookAt(selfpos, targetpos).LookVector * math.max((selfpos - targetpos).Magnitude - 14.399, 0)
+						local reachCap = 14.4
+						pcall(function()
+							local hand = bedwars.SwordController and bedwars.SwordController:getHandItem()
+							local sword = hand and hand.itemType and bedwars.ItemMeta and bedwars.ItemMeta[hand.itemType] and bedwars.ItemMeta[hand.itemType].sword
+							if sword and sword.attackRange and sword.attackRange > 0 then
+								reachCap = sword.attackRange
+							end
+						end)
+						attackTable.validate.selfPosition.value += CFrame.lookAt(selfpos, targetpos).LookVector * math.max((selfpos - targetpos).Magnitude - (reachCap - 0.001), 0)
 					end
 
 					return call:SendToServer(attackTable, ...)
@@ -3670,13 +3678,13 @@ run(function()
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
 		Min = 1,
-		Max = 26,
+		Max = 30,
 		Default = 26,
 		Decimal = 10,
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end,
-		Tooltip = 'Range where attacks land. Full 26 studs register because the hit position is spoofed server-side'
+		Tooltip = 'Range where attacks land. Full range registers because the hit position is spoofed to the weapon max (14.4 default, up to 17.3 on long-range weapons)'
 	})
 	HitReg = Killaura:CreateSlider({
 		Name = 'Hit reg',

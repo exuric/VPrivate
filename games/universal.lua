@@ -16,9 +16,9 @@ local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
 
 local function downloadFile(path, func)
-	if not isfile(path) then
+	if not isfile(path) or (path:find('.lua') and #readfile(path) < 100) then
 		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
+			return game:HttpGet(ROOT..'main/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)

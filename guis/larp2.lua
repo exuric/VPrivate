@@ -324,18 +324,22 @@ local _pending = {}
 local _dstats = {hits = 0, misses = 0, retries = 0}
 
 local function downloadFile(path, func)
-	if not isfile(path) then
+	local cached
+	if isfile(path) then
+		cached = readfile(path)
+	end
+	if not cached or (path:find('.lua') and #cached < 100) then
 		_dstats.misses += 1
 		if _pending[path] then
 			repeat task.wait(0.1) until not _pending[path]
 		else
 			_pending[path] = true
 			createDownloader(path)
-			local url = 'https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))
+			local url = 'https://raw.githubusercontent.com/exuric/VPrivate/main/'..select(1, path:gsub('LarpV4/', ''))
 			local suc, res
 			for i = 1, 3 do
 				suc, res = pcall(function() return game:HttpGet(url, true) end)
-				if suc and res ~= '404: Not Found' then break end
+				if suc and res ~= '404: Not Found' and not (path:find('.lua') and #res < 100) then break end
 				_dstats.retries += 1
 				if i < 3 then task.wait(0.5 * i) end
 			end
@@ -6767,7 +6771,7 @@ Profiles:CreateButton({
 		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')(license)
 		else
-			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true))(license)
+			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/init.lua?v='..tick(), true))(license)
 		end
 	end,
 	Tooltip = 'Resets the current profile back to default settings'
@@ -7088,7 +7092,7 @@ general:CreateButton({
 		if shared.LarpDeveloper then
 			loadstring(readfile('LarpV4/init.lua'), 'init')()
 		else
-			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true))()
+			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/init.lua?v='..tick(), true))()
 		end
 	end,
 	Tooltip = 'Reloads larp for debugging purposes'
@@ -7196,7 +7200,7 @@ guipane:CreateDropdown({
 			if shared.LarpDeveloper then
 				loadstring(readfile('LarpV4/init.lua'), 'loader')()
 			else
-				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/'..readfile('LarpV4/profiles/commit.txt')..'/init.lua?v='..tick(), true))()
+				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/init.lua?v='..tick(), true))()
 			end
 		end
 	end,

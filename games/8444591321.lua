@@ -15,9 +15,9 @@ local isfile = isfile or function(file)
 end
 local LARPWATER = '--LARP:'..(pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')..'\n'
 local function downloadFile(path, func)
-	if not isfile(path) or readfile(path):sub(1, #LARPWATER) ~= LARPWATER then
+	if not isfile(path) or (path:find('.lua') and #readfile(path) < 100) or readfile(path):sub(1, #LARPWATER) ~= LARPWATER then
 		local suc, res = pcall(function()
-			return game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/'..select(1, path:gsub('LarpV4/', ''))..'?v=117', true)
+			return game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/'..select(1, path:gsub('LarpV4/', ''))..'?v=117', true)
 		end)
 		if not suc or res == '404: Not Found' then
 			error(res)
@@ -36,7 +36,7 @@ if isfile('LarpV4/games/'..larp.Place..'.lua') then
 else
 	if not shared.LarpDeveloper then
 		local suc, res = pcall(function()
-			return game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..readfile('LarpV4/profiles/commit.txt')..'/games/'..larp.Place..'.lua?v=117', true)
+			return game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/games/'..larp.Place..'.lua?v=117', true)
 		end)
 		if suc and res ~= '404: Not Found' then
 			loadstring(downloadFile('LarpV4/games/'..larp.Place..'.lua'), 'bedwars')()

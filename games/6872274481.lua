@@ -4230,8 +4230,8 @@ run(function()
 		Function = function(callback)
 			if callback then
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
-				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
-					local ok, result = pcall(function()
+bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
+					local ok, result = pcall(function(...)
 					local self, projmeta, worldmeta, origin, shootpos = ...
 					local plr = entitylib.EntityMouse({
 						Part = 'RootPart',
@@ -4659,8 +4659,8 @@ run(function()
 		Function = function(callback)
 			if callback then
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
-				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
-					local ok, result = pcall(function()
+bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
+					local ok, result = pcall(function(...)
 					local self, projmeta, worldmeta, origin, shootpos = ...
 					local plr = entitylib.EntityMouse({
 						Part = 'RootPart',

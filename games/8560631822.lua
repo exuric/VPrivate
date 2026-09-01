@@ -798,7 +798,16 @@ run(function()
 		if ent.NPC then
 			local char = ent.Character
 			if char then
+				local parent = char.Parent
+				local parentName = parent and parent.Name or ''
+				if parentName:find('_item_shop') or parentName:find('_upgrade_shop') or parentName:find('shop') then
+					return false
+				end
 				if collectionService:HasTag(char, 'BedwarsItemShop') or collectionService:HasTag(char, 'TeamUpgradeShopkeeper') or collectionService:HasTag(char, 'ShopComponent') then
+					return false
+				end
+				local npcTeam = char:GetAttribute('Team')
+				if npcTeam and lplr:GetAttribute('Team') and npcTeam == lplr:GetAttribute('Team') then
 					return false
 				end
 			end
@@ -4681,12 +4690,15 @@ run(function()
 	local function blendAim(origin, point, root)
 		local now = tick()
 		local prev = aimHistory[root]
-		if prev and now - prev.at < 0.2 then
+		if prev and now - prev.at < 0.1 then
 			local a = (prev.point - origin).Unit
 			local b = (point - origin).Unit
-			local angle = math.clamp(math.acos(math.clamp(a:Dot(b), -1, 1)) / math.rad(30), 0, 1)
-			local factor = 0.35 + 0.65 * (1 - angle)
-			point = prev.point:Lerp(point, factor)
+			local angle = math.acos(math.clamp(a:Dot(b), -1, 1))
+			local maxStep = math.rad(1.5)
+			if angle > maxStep then
+				local t = maxStep / angle
+				point = prev.point:Lerp(point, t)
+			end
 		end
 		aimHistory[root] = { point = point, at = now }
 		if next(aimHistory) then
@@ -4759,7 +4771,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					end
 					lockedTarget, lockedTime = plr, tick()
 					local now = tick()
-					if aimCache.result and now - aimCache.at < 0.1 and aimCache.target == plr and aimCache.origin == shootpos and aimCache.proj == projmeta then
+					if aimCache.result and now - aimCache.at < 0.02 and aimCache.target == plr and aimCache.origin == shootpos and aimCache.proj == projmeta then
 						return aimCache.result
 					end
 					if plr then
@@ -13306,7 +13318,7 @@ run(function()
 			if callback then
 				repeat
 					if entitylib.isAlive and store.equippedKit == 'ice_queen' then
-						local okCan, canUse = pcall(bedwars.AbilityController.canUseAbility, bedwars.AbilityController, 'ICE_QUEEN')
+						local okCan, canUse = pcall(bedwars.AbilityController.canUseAbility, bedwars.AbilityController, 'ice_queen')
 						if okCan and canUse then
 							local selfpos = entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position
 							if selfpos then
@@ -13326,7 +13338,7 @@ run(function()
 									end
 								end
 								if use then
-									pcall(bedwars.AbilityController.useAbility, bedwars.AbilityController, 'ICE_QUEEN')
+									pcall(bedwars.AbilityController.useAbility, bedwars.AbilityController, 'ice_queen')
 								end
 							end
 						end

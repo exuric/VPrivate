@@ -3450,12 +3450,9 @@ run(function()
 	local FastBow
 	local FastDelay
 	local FastShoot
-	local FastHitsCount
 	local EnhancedAura
 	local clickConn
 	local swingRequested = false
-	local comboHits = 0
-	local comboResetAt = 0
 	local comboRunning = false
 	local cycleIndex = 0
 	local switchLockedTarget
@@ -3633,10 +3630,6 @@ run(function()
 		store.killauraAttacking = false
 		if ok then
 			if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
-			comboHits = comboHits + 1
-			if FastHitsCount and comboHits >= FastHitsCount.Value then
-				comboResetAt = os.clock() + 0.6
-			end
 			store.lastHit = os.clock()
 		end
 		return ok
@@ -3700,40 +3693,28 @@ run(function()
 				end
 			end
 		end
-		if #bows == 0 then
-			comboRunning = false
-			return
-		end
+		if #bows == 0 or not projectileHandler then comboRunning = false return end
 		local item, ammo, projectile, itemMeta = unpack(bows[1])
 		local switchDelay = math.max(FastDelay.Value, 0.03)
-		local comboLimit = FastHitsCount and math.floor(FastHitsCount.Value) or 41
-		local safety = 0
-		while entitylib.isAlive and ent.RootPart and comboHits < comboLimit do
+		local ping = math.max(store.ping.total or 0, 0.03)
+		local meta = bedwars.ProjectileMeta and bedwars.ProjectileMeta[projectile]
+		if not meta then comboRunning = false return end
+		local projSpeed = meta.launchVelocity or 100
+		local gravity = meta.gravitationalAcceleration or 196.2
+		local charRoot = entitylib.character.RootPart
+		while entitylib.isAlive and ent.RootPart and FastHits.Enabled do
 			attack(ent, workspace:GetServerTimeNow())
 			task.wait(switchDelay)
 			if not hotbarSwitch(getHotbar(item.tool)) then break end
-			task.wait(math.max(store.ping.total, 0.03))
-			local meta = bedwars.ProjectileMeta and bedwars.ProjectileMeta[projectile]
-			if meta then
-				local projSpeed = meta.launchVelocity or 100
-				local gravity = meta.gravitationalAcceleration or 196.2
-				local calc = prediction.SolveTrajectory(entitylib.character.RootPart.Position, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
-				if calc and projectileHandler then
-					local handler = projectileHandler.new(1, 1, projectile, nil, calc, Vector3.new(0, 0, 0))
-					local okFire = pcall(bedwars.ProjectileController.launchProjectile, bedwars.ProjectileController, item.itemType, ammo, handler, item.tool, itemMeta)
-					if okFire then
-						if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
-						comboHits = comboHits + 1
-						if comboHits >= comboLimit then
-							comboResetAt = os.clock() + 0.6
-						end
-					end
-				end
+			task.wait(ping)
+			local calc = prediction.SolveTrajectory(charRoot.Position, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
+			if calc then
+				local handler = projectileHandler.new(1, 1, projectile, nil, calc, Vector3.new(0, 0, 0))
+				local okFire = pcall(bedwars.ProjectileController.launchProjectile, bedwars.ProjectileController, item.itemType, ammo, handler, item.tool, itemMeta)
+				if okFire and targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 			end
 			hotbarSwitch(oldHotbar)
-			task.wait(FastShoot.Value)
-			safety = safety + 1
-			if safety >= comboLimit then break end
+			task.wait(math.max(FastShoot.Value, 0.02))
 		end
 		hotbarSwitch(oldHotbar)
 		comboRunning = false
@@ -3813,10 +3794,6 @@ run(function()
 				end
 
 				repeat
-					if comboResetAt ~= 0 and os.clock() > comboResetAt then
-						comboHits = 0
-						comboResetAt = 0
-					end
 					local target
 					if canAttack() and not comboRunning then
 						target = selectTargets()[1]
@@ -3928,9 +3905,6 @@ run(function()
 			if FastShoot then
 				FastShoot.Object.Visible = callback
 			end
-			if FastHitsCount then
-				FastHitsCount.Object.Visible = callback
-			end
 		end,
 		Tooltip = 'After a sword hit, switches to your bow and shoots the same target. OP combo: sword then arrow'
 	})
@@ -3944,31 +3918,21 @@ run(function()
 		Name = 'CB Switch Delay',
 		Min = 0.03,
 		Max = 1,
-		Default = 0.08,
+		Default = 0.1,
 		Decimal = 100,
 		Suffix = 'seconds',
 		Visible = true,
-		Tooltip = 'Delay between the sword hit and the crossbow shot. 0 would make the shot ghost, so a minimum is enforced'
+		Tooltip = 'Delay between the sword hit and the crossbow shot. Big enough that the shot never ghosts, small enough to stay fast'
 	})
 	FastShoot = Killaura:CreateSlider({
 		Name = 'Fast Hits Hold',
-		Min = 0,
+		Min = 0.05,
 		Max = 1,
-		Default = 0.05,
+		Default = 0.1,
 		Decimal = 100,
 		Suffix = 'seconds',
 		Visible = true,
-		Tooltip = 'How long to hold the bow after shooting before switching back'
-	})
-	FastHitsCount = Killaura:CreateSlider({
-		Name = 'Combo Hits',
-		Min = 1,
-		Max = 100,
-		Default = 41,
-		Decimal = 0,
-		Suffix = 'hits',
-		Visible = true,
-		Tooltip = 'Total combo hits to land (sword + bow combined) before stopping the chain. 41 = swing/shoot 41 times'
+		Tooltip = 'How long to stay on the crossbow after shooting before switching back to the sword'
 	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
@@ -4619,6 +4583,38 @@ run(function()
 	local FOVCircle
 	local FOVCircleColor
 	local fovCircle = nil
+	local function updateFOVCircle()
+		if FOVCircle and FOVCircle.Enabled then
+			if not fovCircle then
+				fovCircle = Drawing.new('Circle')
+				fovCircle.Filled = false
+				fovCircle.Color = Color3.fromHSV(FOVCircleColor.Hue, FOVCircleColor.Sat, FOVCircleColor.Value)
+				fovCircle.NumSides = 100
+				fovCircle.Thickness = 1.5
+				fovCircle.Transparency = 1
+				ProjectileAimbot:Clean(runService.RenderStepped:Connect(function()
+					if fovCircle then
+						local res = guiService:GetScreenResolution()
+						fovCircle.Position = Vector2.new(math.floor(res.X / 2), math.floor(res.Y / 2))
+						fovCircle.Radius = FOV.Value
+					end
+				end))
+			end
+			fovCircle.Visible = true
+			FOVCircleColor.Object.Visible = true
+		else
+			if fovCircle then
+				pcall(function()
+					fovCircle.Visible = false
+					fovCircle:Remove()
+				end)
+				fovCircle = nil
+			end
+			if FOVCircleColor then
+				FOVCircleColor.Object.Visible = false
+			end
+		end
+	end
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
@@ -4671,6 +4667,7 @@ run(function()
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
 			if callback then
+				updateFOVCircle()
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
 bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local ok, result = pcall(function(...)
@@ -4861,13 +4858,7 @@ else
 			bedwars.ProjectileController.calculateImportantLaunchValues = old
 			table.clear(velHistory)
 			table.clear(aimHistory)
-			if fovCircle then
-				pcall(function()
-					fovCircle.Visible = false
-					fovCircle:Remove()
-				end)
-				fovCircle = nil
-			end
+			updateFOVCircle()
 		end
 	end,
 	Tooltip = 'Silently adjusts your aim towards the enemy'
@@ -4971,33 +4962,7 @@ else
 		Name = 'FOV Circle',
 		Default = false,
 		Function = function(callback)
-			if not callback then
-				if fovCircle then
-					pcall(function()
-						fovCircle.Visible = false
-						fovCircle:Remove()
-					end)
-					fovCircle = nil
-				end
-				return
-			end
-			if not fovCircle then
-				fovCircle = Drawing.new('Circle')
-				fovCircle.Filled = false
-				fovCircle.Color = Color3.fromHSV(FOVCircleColor.Hue, FOVCircleColor.Sat, FOVCircleColor.Value)
-				fovCircle.NumSides = 100
-				fovCircle.Thickness = 1.5
-				fovCircle.Transparency = 1
-				ProjectileAimbot:Clean(runService.RenderStepped:Connect(function()
-					if fovCircle then
-						local res = guiService:GetScreenResolution()
-						fovCircle.Position = Vector2.new(math.floor(res.X / 2), math.floor(res.Y / 2))
-						fovCircle.Radius = FOV.Value
-					end
-				end))
-			end
-			fovCircle.Visible = callback
-			FOVCircleColor.Object.Visible = callback
+			updateFOVCircle()
 		end
 	})
 	FOVCircleColor = ProjectileAimbot:CreateColorSlider({

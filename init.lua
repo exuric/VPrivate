@@ -90,6 +90,7 @@ local VERIFY_FILES = {
 	'games/universal.lua',
 	'games/6872274481.lua',
 	'games/8444591321.lua',
+	'games/100702124803290.lua',
 }
 
 local MANIFEST = {}
@@ -353,7 +354,7 @@ if not (shared.LarpDeveloper and ISOWNER) then
 		pcall(delfile, 'LarpV4/main.lua')
 		pcall(delfile, 'LarpV4/guis/larp.lua')
 		pcall(delfile, 'LarpV4/guis/larp2.lua')
-		for _, file in {'LarpV4/6872274481.lua', 'LarpV4/8444591321.lua', 'LarpV4/universal.lua', 'LarpV4/entity.lua', 'LarpV4/prediction.lua', 'LarpV4/hash.lua', 'LarpV4/larp2.lua', 'LarpV4/larp.lua'} do
+		for _, file in {'LarpV4/6872274481.lua', 'LarpV4/8444591321.lua', 'LarpV4/100702124803290.lua', 'LarpV4/universal.lua', 'LarpV4/entity.lua', 'LarpV4/prediction.lua', 'LarpV4/hash.lua', 'LarpV4/larp2.lua', 'LarpV4/larp.lua'} do
 			if isfile(file) then
 				pcall(delfile, file)
 			end

@@ -268,10 +268,17 @@ end
 local function addNpc(char)
 	if not isNpcCandidate(char) or entitylib.getEntity(char) then return end
 	entitylib.addEntity(char, nil, nil, os.clock())
-	local conn = char.AncestryChanged:Connect(function()
+	local conn
+	conn = char.AncestryChanged:Connect(function()
 		if not char.Parent then
+			if conn then
+				conn:Disconnect()
+			end
+			conn = nil
 			entitylib.removeEntity(char)
-			conn:Disconnect()
+			if entitylib.NpcConnections then
+				entitylib.NpcConnections[char] = nil
+			end
 		end
 	end)
 	entitylib.NpcConnections[char] = conn

@@ -3450,8 +3450,6 @@ run(function()
 	local FastBow
 	local FastDelay
 	local FastShoot
-	local FastPreset
-	local CBDelay
 	local EnhancedAura
 	local clickConn
 	local swingRequested = false
@@ -3667,14 +3665,29 @@ run(function()
 		local projectileHandler = getProjectileHandler()
 		local bows = getProjectiles(FastBow.ListEnabled)
 		if #bows == 0 then
-			bows = getProjectiles()
-			if #bows > 1 then
-				local handItem = getHandItem()
-				local handProj = handItem and (bedwars.ItemMeta[handItem.itemType] or {}).projectileSource
-				if handProj then
-					local held = getProjectiles({handItem.itemType})
-					if #held > 0 then
-						bows = held
+			local all = getProjectiles()
+			if #all > 0 then
+				local crossbows = {}
+				for _, d in all do
+					local projName = d[3]
+					if projName and projName:find('crossbow') then
+						table.insert(crossbows, d)
+					end
+				end
+				if #crossbows > 0 then
+					bows = crossbows
+				else
+					local handItem = getHandItem()
+					local handProj = handItem and handItem.itemType and (bedwars.ItemMeta[handItem.itemType] or {}).projectileSource
+					if handProj then
+						local held = getProjectiles({handItem.itemType})
+						if #held > 0 then
+							bows = held
+						else
+							bows = all
+						end
+					else
+						bows = all
 					end
 				end
 			end
@@ -3682,10 +3695,8 @@ run(function()
 		for _, data in bows do
 			if fired then break end
 			local item, ammo, projectile, itemMeta = unpack(data)
-			local isCrossbow = (projectile:find('crossbow') or projectile:find('cross_bow') or projectile:find('crossbow_blessed')) ~= nil
-			local switchDelay = isCrossbow and CBDelay.Value or store.ping.total
 			if hotbarSwitch(getHotbar(item.tool)) then
-				task.wait(switchDelay)
+				task.wait(math.max(store.ping.total, 0.03))
 				local meta = bedwars.ProjectileMeta and bedwars.ProjectileMeta[projectile]
 				if meta then
 					local projSpeed = meta.launchVelocity or 100
@@ -3883,14 +3894,8 @@ run(function()
 			if FastBow then
 				FastBow.Object.Visible = callback
 			end
-			if FastPreset then
-				FastPreset.Object.Visible = callback
-			end
 			if FastDelay then
 				FastDelay.Object.Visible = callback
-			end
-			if CBDelay then
-				CBDelay.Object.Visible = callback
 			end
 			if FastShoot then
 				FastShoot.Object.Visible = callback
@@ -3900,50 +3905,19 @@ run(function()
 	})
 	FastBow = Killaura:CreateTextList({
 		Name = 'Fast Hits Bow',
-		Default = {'wood_crossbow', 'tactical_crossbow', 'flower_crossbow', 'life_crossbow'},
+		Default = {},
 		Visible = true,
-		Tooltip = 'Bows to use for Fast Hits (any projectile weapon name). Leave empty to auto-detect the bow in your hand/hotbar'
-	})
-	FastPreset = Killaura:CreateDropdown({
-		Name = 'Bow Preset',
-		List = {'Custom', 'Crossbows', 'Best Crossbow', 'Any Bow'},
-		Default = 'Crossbows',
-		Visible = true,
-		Function = function(value)
-			local preset
-			if value == 'Custom' then
-				preset = {'wood_crossbow', 'tactical_crossbow', 'flower_crossbow', 'life_crossbow'}
-			elseif value == 'Crossbows' then
-				preset = {'wood_crossbow', 'tactical_crossbow', 'flower_crossbow', 'life_crossbow', 'og_wood_crossbow', 'sheriff_crossbow', 'falconer_crossbow', 'glitch_tactical_crossbow'}
-			elseif value == 'Best Crossbow' then
-				preset = {'tactical_crossbow', 'life_crossbow', 'flower_crossbow'}
-			elseif value == 'Any Bow' then
-				preset = {}
-			end
-			FastBow.List = preset
-			FastBow.ListEnabled = preset
-		end,
-		Tooltip = 'Quickly fills the Fast Hits Bow list with the real BedWars crossbow names'
+		Tooltip = 'Bows to use for Fast Hits. Leave empty to auto-detect the crossbow in your hotbar'
 	})
 	FastDelay = Killaura:CreateSlider({
-		Name = 'Fast Hits Delay',
+		Name = 'CB Switch Delay',
 		Min = 0.03,
 		Max = 1,
 		Default = 0.08,
 		Decimal = 100,
 		Suffix = 'seconds',
 		Visible = true,
-		Tooltip = 'Delay between the sword hit and the bow shot. 0 would make the shot ghost, so a minimum is enforced'
-	})
-	CBDelay = Killaura:CreateSlider({
-		Name = 'CB Switch Delay',
-		Min = 0.05,
-		Max = 1,
-		Default = 0.15,
-		Decimal = 100,
-		Suffix = 'seconds',
-		Visible = true,
-		Tooltip = 'Extra delay when switching to a crossbow so the shot always registers instead of ghosting'
+		Tooltip = 'Delay between the sword hit and the crossbow shot. 0 would make the shot ghost, so a minimum is enforced'
 	})
 	FastShoot = Killaura:CreateSlider({
 		Name = 'Fast Hits Hold',
@@ -4969,7 +4943,7 @@ else
 			if not fovCircle then
 				fovCircle = Drawing.new('Circle')
 				fovCircle.Filled = false
-				fovCircle.Color = FOVCircleColor.Value
+				fovCircle.Color = Color3.fromHSV(FOVCircleColor.Hue, FOVCircleColor.Sat, FOVCircleColor.Value)
 				fovCircle.NumSides = 100
 				fovCircle.Thickness = 1.5
 				fovCircle.Transparency = 1

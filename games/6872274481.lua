@@ -5099,7 +5099,7 @@ else
 		Name = 'Mode',
 		List = {'Adaptive', 'Simple'},
 		Default = 'Adaptive',
-		Tooltip = 'Adaptive self-corrects lead and knockback using landed-shot feedback; Simple uses the raw prediction slider with no feedback.'
+		Tooltip = 'Adaptive adds landed-shot feedback on top of the advanced solver; Simple uses pure iterative ballistic prediction.'
 	})
 	Prediction = ProjectileAimbot:CreateSlider({
 		Name = 'Prediction',
@@ -5107,7 +5107,7 @@ else
 		Max = 2,
 		Default = 1,
 		Decimal = 10,
-		Tooltip = 'Scales the lead applied to the target velocity. 1.0 = exact, higher = more lead for lag/strafe'
+		Tooltip = 'Scales the lead applied to the target velocity. 1.0 = exact, higher = more lead for lag/strafe. The solver converges on the true impact time.'
 	})
 	VelocityLerp = ProjectileAimbot:CreateSlider({
 		Name = 'Velocity Lerp',

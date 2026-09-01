@@ -3633,11 +3633,35 @@ run(function()
 		return ok
 	end
 
+	local projectileHandler = nil
+
+	local function getProjectileHandler()
+		if projectileHandler then return projectileHandler end
+		local ok, mod = pcall(function()
+			return require(replicatedStorage.TS.controllers.global.combat.projectile['projectile-handler'])
+		end)
+		if ok and mod and mod.ProjectileHandler then
+			projectileHandler = mod.ProjectileHandler
+			return projectileHandler
+		end
+		for _, v in getgc(true) do
+			if type(v) == 'table' and rawget(v, 'new') and type(rawget(v, 'new')) == 'function' then
+				local proto = rawget(v, '__index')
+				if type(proto) == 'table' and type(rawget(proto, 'constructor')) == 'function' and rawget(proto, 'getProjectileMeta') then
+					projectileHandler = v
+					return projectileHandler
+				end
+			end
+		end
+		return nil
+	end
+
 	local function fastHitShoot(ent)
 		if not entitylib.isAlive or not ent or not ent.RootPart then return end
 		local oldHotbar = store.hand.tool and getHotbar(store.hand.tool) or nil
 		task.wait(FastDelay.Value)
 		local fired = false
+		local projectileHandler = getProjectileHandler()
 		for _, data in getProjectiles(FastBow.ListEnabled) do
 			if fired then break end
 			local item, ammo, projectile, itemMeta = unpack(data)
@@ -3648,28 +3672,9 @@ run(function()
 					local projSpeed = meta.launchVelocity or 100
 					local gravity = meta.gravitationalAcceleration or 196.2
 					local calc = prediction.SolveTrajectory(entitylib.character.RootPart.Position, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
-					if calc then
-						local shootPosition = (CFrame.new(entitylib.character.RootPart.Position, calc) * CFrame.new(Vector3.new(-bedwars.BowConstantsTable.RelX, -bedwars.BowConstantsTable.RelY, -bedwars.BowConstantsTable.RelZ))).Position
-						local dir, id = CFrame.lookAt(shootPosition, calc).LookVector, httpService:GenerateGUID(true)
-						pcall(bedwars.ProjectileController.createLocalProjectile, bedwars.ProjectileController, meta, ammo, projectile, shootPosition, id, dir * projSpeed, {drawDurationSeconds = 1})
-						pcall(function()
-							bedwars.Handler:Get('ProjectileFire'):Fire('CallServerAsync',
-								item.tool,
-								ammo,
-								projectile,
-								shootPosition,
-								entitylib.character.RootPart.Position,
-								dir * projSpeed,
-								id,
-								{
-									drawDurationSeconds = 1,
-									shotId = httpService:GenerateGUID(false),
-								},
-								workspace:GetServerTimeNow() - 0.045
-							):andThen(function(res)
-								if res then res.Parent = replicatedStorage end
-							end)
-						end)
+					if calc and projectileHandler then
+						local handler = projectileHandler.new(1, 1, projectile, nil, calc, Vector3.new(0, 0, 0))
+						pcall(bedwars.ProjectileController.launchProjectile, bedwars.ProjectileController, item.itemType, ammo, handler, item.tool, itemMeta)
 						fired = true
 					end
 				end
@@ -3689,9 +3694,6 @@ run(function()
 		local startTime = workspace:GetServerTimeNow()
 		for i, t in ipairs(targets) do
 			attack(t[1], startTime)
-			if i < #targets then
-				task.wait(0.05)
-			end
 		end
 		if FastHits.Enabled then
 			task.spawn(fastHitShoot, targets[1][1])
@@ -3769,7 +3771,7 @@ run(function()
 								swingRequested = false
 								if os.clock() - lastSwing >= getAttackInterval() then
 									lastSwing = os.clock()
-									attack(target[1], workspace:GetServerTimeNow(), fresh)
+									attack(target[1], workspace:GetServerTimeNow(), false)
 									if FastHits.Enabled then
 										task.spawn(fastHitShoot, target[1])
 									end
@@ -3846,11 +3848,23 @@ run(function()
 	FastHits = Killaura:CreateToggle({
 		Name = 'Fast Hits',
 		Default = true,
+		Function = function(callback)
+			if FastBow then
+				FastBow.Object.Visible = callback
+			end
+			if FastDelay then
+				FastDelay.Object.Visible = callback
+			end
+			if FastShoot then
+				FastShoot.Object.Visible = callback
+			end
+		end,
 		Tooltip = 'After a sword hit, switches to your bow and shoots the same target. OP combo: sword then arrow'
 	})
 	FastBow = Killaura:CreateTextList({
 		Name = 'Fast Hits Bow',
 		Default = {'wood_crossbow', 'crossbow'},
+		Visible = true,
 		Tooltip = 'Bows to use for Fast Hits (any projectile weapon name)'
 	})
 	FastDelay = Killaura:CreateSlider({
@@ -3860,6 +3874,7 @@ run(function()
 		Default = 0.08,
 		Decimal = 100,
 		Suffix = 'seconds',
+		Visible = true,
 		Tooltip = 'Delay between the sword hit and the bow shot'
 	})
 	FastShoot = Killaura:CreateSlider({
@@ -3869,6 +3884,7 @@ run(function()
 		Default = 0.05,
 		Decimal = 100,
 		Suffix = 'seconds',
+		Visible = true,
 		Tooltip = 'How long to hold the bow after shooting before switching back'
 	})
 	LimitItems = Killaura:CreateToggle({
@@ -3921,6 +3937,73 @@ run(function()
 		Max = 360,
 		Default = 360,
 		Tooltip = 'Maximum angle between your view and the target'
+	})
+end)
+
+run(function()
+	local StreamerMode
+	local StreamerName
+	local oldDisplayName
+	local oldTag
+
+	local function apply()
+		local name = StreamerName.Value ~= '' and StreamerName.Value or 'LarpV4'
+		if not oldDisplayName then
+			oldDisplayName = lplr.DisplayName
+		end
+		pcall(function()
+			lplr.DisplayName = name
+		end)
+		if whitelist and not oldTag then
+			oldTag = whitelist.tag
+			whitelist.tag = function(self, plr, text, rich)
+				if plr == lplr then
+					return text and '' or {}
+				end
+				return oldTag(self, plr, text, rich)
+			end
+		end
+	end
+
+	local function restore()
+		if oldDisplayName then
+			pcall(function()
+				lplr.DisplayName = oldDisplayName
+			end)
+		end
+		oldDisplayName = nil
+		if whitelist and oldTag then
+			whitelist.tag = oldTag
+		end
+		oldTag = nil
+	end
+
+	StreamerMode = larp.Categories.Utility:CreateModule({
+		Name = 'Streamer Mode',
+		Function = function(callback)
+			if callback then
+				apply()
+				StreamerMode:Clean(lplr:GetPropertyChangedSignal('DisplayName'):Connect(function()
+					if StreamerMode.Enabled then
+						apply()
+					end
+				end))
+			else
+				restore()
+			end
+		end,
+		Tooltip = 'Hides your name everywhere. Your Roblox nametag and every UI show the custom name instead'
+	})
+	StreamerName = StreamerMode:CreateTextBox({
+		Name = 'Streamer name',
+		Default = 'LarpV4',
+		Placeholder = 'LarpV4',
+		Function = function()
+			if StreamerMode.Enabled then
+				apply()
+			end
+		end,
+		Tooltip = 'Name shown in place of your real name'
 	})
 end)
 
@@ -4516,13 +4599,28 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero,
 						Sort = sortmethods[Sort.Value]
 					})
-					if not plr then
-						if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.35 then
+					--[[ Lock-on: keep the current target until it dies or breaks line of
+						sight, so aim doesn't flicker between players every frame. ]]
+					if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.6 then
+						local keep = true
+						if not entitylib.isVulnerable(lockedTarget) then
+							keep = false
+						elseif lockedTarget.RootPart and plr and plr.RootPart then
+							local ldist = (lockedTarget.RootPart.Position - entitylib.character.RootPart.Position).Magnitude
+							local pdist = (plr.RootPart.Position - entitylib.character.RootPart.Position).Magnitude
+							if ldist > AttackRange.Value or pdist + 3 < ldist then
+								keep = false
+							end
+						end
+						if keep then
 							plr = lockedTarget
 						else
 							lockedTarget = nil
 							lockedTime = nil
 						end
+					else
+						lockedTarget = nil
+						lockedTime = nil
 					end
 					lockedTarget, lockedTime = plr, tick()
 					local now = tick()
@@ -4958,7 +5056,7 @@ run(function()
 bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local ok, result = pcall(function(...)
 					local self, projmeta, worldmeta, origin, shootpos = ...
-					local plr = entitylib.EntityMouse({
+local plr = entitylib.EntityMouse({
 						Part = 'RootPart',
 						Range = FOV.Value,
 						Players = Targets.Players.Enabled,
@@ -4967,13 +5065,28 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero,
 						Sort = sortmethods[Sort.Value]
 					})
-					if not plr then
-						if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.35 then
+					--[[ Lock-on: keep the current target until it dies or breaks line of
+						sight, so aim doesn't flicker between players every frame. ]]
+					if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.6 then
+						local keep = true
+						if not entitylib.isVulnerable(lockedTarget) then
+							keep = false
+						elseif lockedTarget.RootPart and plr and plr.RootPart then
+							local ldist = (lockedTarget.RootPart.Position - entitylib.character.RootPart.Position).Magnitude
+							local pdist = (plr.RootPart.Position - entitylib.character.RootPart.Position).Magnitude
+							if ldist > AttackRange.Value or pdist + 3 < ldist then
+								keep = false
+							end
+						end
+						if keep then
 							plr = lockedTarget
 						else
 							lockedTarget = nil
 							lockedTime = nil
 						end
+					else
+						lockedTarget = nil
+						lockedTime = nil
 					end
 					lockedTarget, lockedTime = plr, tick()
 					local now = tick()

@@ -63,9 +63,20 @@ local function downloadFile(path, func)
 		if not license.Closet then
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end
-		local suc, res = pcall(function()
-			return game:HttpGet(ROOT..BRANCH..'/'..select(1, path:gsub('LarpV4/', '')), true)
-		end)
+		local relative = select(1, path:gsub('LarpV4/', ''))
+		local urls = {
+			ROOT..BRANCH..'/'..relative,
+			'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..BRANCH..'/'..relative
+		}
+		local suc, res
+		for i = 1, 8 do
+			local url = urls[(i - 1) % 2 + 1]
+			suc, res = pcall(function()
+				return game:HttpGet(url, true)
+			end)
+			if suc and res ~= '404: Not Found' and not (#res < 100 and path:find('.lua')) then break end
+			task.wait(math.min(0.4 * i, 2))
+		end
 		if not suc or res == '404: Not Found' then
 			error(res)
 		end

@@ -3900,32 +3900,30 @@ run(function()
 	})
 	FastBow = Killaura:CreateTextList({
 		Name = 'Fast Hits Bow',
-		Default = {'wood_crossbow', 'crossbow'},
+		Default = {'wood_crossbow', 'tactical_crossbow', 'flower_crossbow', 'life_crossbow'},
 		Visible = true,
 		Tooltip = 'Bows to use for Fast Hits (any projectile weapon name). Leave empty to auto-detect the bow in your hand/hotbar'
 	})
 	FastPreset = Killaura:CreateDropdown({
 		Name = 'Bow Preset',
-		List = {'Custom', 'Crossbow', 'Wood Crossbow', 'Full Auto', 'Any Bow'},
-		Default = 'Custom',
+		List = {'Custom', 'Crossbows', 'Best Crossbow', 'Any Bow'},
+		Default = 'Crossbows',
 		Visible = true,
 		Function = function(value)
 			local preset
 			if value == 'Custom' then
-				preset = {'wood_crossbow', 'crossbow'}
-			elseif value == 'Crossbow' then
-				preset = {'crossbow'}
-			elseif value == 'Wood Crossbow' then
-				preset = {'wood_crossbow'}
-			elseif value == 'Full Auto' then
-				preset = {'wood_crossbow', 'crossbow', 'crossbow_blessed'}
+				preset = {'wood_crossbow', 'tactical_crossbow', 'flower_crossbow', 'life_crossbow'}
+			elseif value == 'Crossbows' then
+				preset = {'wood_crossbow', 'tactical_crossbow', 'flower_crossbow', 'life_crossbow', 'og_wood_crossbow', 'sheriff_crossbow', 'falconer_crossbow', 'glitch_tactical_crossbow'}
+			elseif value == 'Best Crossbow' then
+				preset = {'tactical_crossbow', 'life_crossbow', 'flower_crossbow'}
 			elseif value == 'Any Bow' then
 				preset = {}
 			end
 			FastBow.List = preset
 			FastBow.ListEnabled = preset
 		end,
-		Tooltip = 'Quickly fills the Fast Hits Bow list with a common setup'
+		Tooltip = 'Quickly fills the Fast Hits Bow list with the real BedWars crossbow names'
 	})
 	FastDelay = Killaura:CreateSlider({
 		Name = 'Fast Hits Delay',
@@ -4975,10 +4973,15 @@ else
 				fovCircle.NumSides = 100
 				fovCircle.Thickness = 1.5
 				fovCircle.Transparency = 1
+				ProjectileAimbot:Clean(runService.RenderStepped:Connect(function()
+					if fovCircle then
+						local res = guiService:GetScreenResolution()
+						fovCircle.Position = Vector2.new(math.floor(res.X / 2), math.floor(res.Y / 2))
+						fovCircle.Radius = FOV.Value
+					end
+				end))
 			end
-			fovCircle.Position = larp.gui.AbsoluteSize / 2
-			fovCircle.Radius = FOV.Value
-			fovCircle.Visible = ProjectileAimbot.Enabled
+			fovCircle.Visible = callback
 			FOVCircleColor.Object.Visible = callback
 		end
 	})

@@ -1857,9 +1857,8 @@ run(function()
 	CameraUnlock = larp.Categories.Blatant:CreateModule({
 		Name = 'Camera Unlock',
 		Function = function(callback)
-			local originalType
 			if callback then
-				originalType = gameCamera and gameCamera.CameraType or nil
+				CameraUnlock._originalType = workspace.CurrentCamera and workspace.CurrentCamera.CameraType or nil
 				repeat
 					runService.RenderStepped:Wait()
 					local cam = workspace.CurrentCamera or gameCamera
@@ -1870,8 +1869,9 @@ run(function()
 			else
 				local cam = workspace.CurrentCamera or gameCamera
 				if cam then
-					cam.CameraType = originalType or Enum.CameraType.Custom
+					cam.CameraType = CameraUnlock._originalType or Enum.CameraType.Custom
 				end
+				CameraUnlock._originalType = nil
 			end
 		end,
 		Tooltip = 'Unlocks the camera'
@@ -2039,9 +2039,8 @@ ShaderPresets = larp.Categories.Utility:CreateModule({
 	FOVChanger = larp.Categories.Utility:CreateModule({
 		Name = 'FOV Changer',
 		Function = function(callback)
-			local originalFov
 			if callback then
-				originalFov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or nil
+				FOVChanger._originalFov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or nil
 				repeat
 					task.wait(0.1)
 					local cam = workspace.CurrentCamera
@@ -2052,8 +2051,9 @@ ShaderPresets = larp.Categories.Utility:CreateModule({
 			else
 				local cam = workspace.CurrentCamera
 				if cam then
-					cam.FieldOfView = originalFov or 70
+					cam.FieldOfView = FOVChanger._originalFov or 70
 				end
+				FOVChanger._originalFov = nil
 			end
 		end,
 		Tooltip = 'Change camera FOV'
@@ -2110,18 +2110,21 @@ ShaderPresets = larp.Categories.Utility:CreateModule({
 TinyCharacter = larp.Categories.Utility:CreateModule({
 		Name = 'Tiny Character',
 		Function = function(callback)
-			local saved = {}
 			if callback then
+				TinyCharacter._saved = TinyCharacter._saved or {}
 				local char = entitylib.isAlive and entitylib.character.Character
 				if char and char:FindFirstChild('HumanoidRootPart') then
-					saved[char.HumanoidRootPart] = char.HumanoidRootPart.Size
+					TinyCharacter._saved[char.HumanoidRootPart] = char.HumanoidRootPart.Size
 					char.HumanoidRootPart.Size = char.HumanoidRootPart.Size * TinyScale.Value
 				end
 			else
-				for part, size in saved do
-					if part and part.Parent then
-						part.Size = size
+				if TinyCharacter._saved then
+					for part, size in TinyCharacter._saved do
+						if part and part.Parent then
+							part.Size = size
+						end
 					end
+					table.clear(TinyCharacter._saved)
 				end
 			end
 		end,
@@ -2132,18 +2135,21 @@ TinyCharacter = larp.Categories.Utility:CreateModule({
 	BigHead = larp.Categories.Utility:CreateModule({
 		Name = 'Big Head',
 		Function = function(callback)
-			local saved = {}
 			if callback then
+				BigHead._saved = BigHead._saved or {}
 				local char = entitylib.isAlive and entitylib.character.Character
 				if char and char:FindFirstChild('Head') then
-					saved[char.Head] = char.Head.Size
+					BigHead._saved[char.Head] = char.Head.Size
 					char.Head.Size = char.Head.Size * HeadScale.Value
 				end
 			else
-				for part, size in saved do
-					if part and part.Parent then
-						part.Size = size
+				if BigHead._saved then
+					for part, size in BigHead._saved do
+						if part and part.Parent then
+							part.Size = size
+						end
 					end
+					table.clear(BigHead._saved)
 				end
 			end
 		end,
@@ -2154,12 +2160,10 @@ TinyCharacter = larp.Categories.Utility:CreateModule({
 	CharacterTrails = larp.Categories.Utility:CreateModule({
 		Name = 'Character Trails',
 		Function = function(callback)
-			local trail = nil
-			local attachments = {}
 			if callback then
 				local char = entitylib.isAlive and entitylib.character.Character
 				if char and char:FindFirstChild('HumanoidRootPart') then
-					trail = Instance.new('Trail')
+					local trail = Instance.new('Trail')
 					trail.Name = 'LarpTrail'
 					trail.Transparency = NumberSequence.new(0.5)
 					trail.WidthScale = NumberSequence.new(0.5)
@@ -2177,17 +2181,21 @@ TinyCharacter = larp.Categories.Utility:CreateModule({
 					a2.Parent = second
 					trail.Attachment0 = a1
 					trail.Attachment1 = a2
-					attachments = {a1, a2}
+					CharacterTrails._trail = trail
+					CharacterTrails._attachments = {a1, a2}
 				end
 			else
+				local trail = CharacterTrails._trail
 				if trail and trail.Parent then
 					pcall(function() trail:Destroy() end)
 				end
-				for _, a in attachments do
+				CharacterTrails._trail = nil
+				for _, a in CharacterTrails._attachments or {} do
 					if a and a.Parent then
 						pcall(function() a:Destroy() end)
 					end
 				end
+				CharacterTrails._attachments = nil
 			end
 		end,
 		Tooltip = 'Add a trail to your character'
@@ -2196,11 +2204,10 @@ TinyCharacter = larp.Categories.Utility:CreateModule({
 ParticleAura = larp.Categories.Utility:CreateModule({
 		Name = 'Particle Aura',
 		Function = function(callback)
-			local emitter = nil
 			if callback then
 				local char = entitylib.isAlive and entitylib.character.Character
 				if char and char:FindFirstChild('HumanoidRootPart') then
-					emitter = Instance.new('ParticleEmitter')
+					local emitter = Instance.new('ParticleEmitter')
 					emitter.Name = 'LarpAura'
 					emitter.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
 					emitter.Rate = 20
@@ -2209,11 +2216,14 @@ ParticleAura = larp.Categories.Utility:CreateModule({
 					emitter.Size = NumberSequence.new(0.4)
 					emitter.LightEmission = 0.5
 					emitter.Parent = char.HumanoidRootPart
+					ParticleAura._emitter = emitter
 				end
 			else
+				local emitter = ParticleAura._emitter
 				if emitter and emitter.Parent then
 					pcall(function() emitter:Destroy() end)
 				end
+				ParticleAura._emitter = nil
 			end
 		end,
 		Tooltip = 'Particle aura around you'
@@ -2222,14 +2232,14 @@ ParticleAura = larp.Categories.Utility:CreateModule({
 	RainbowCharacter = larp.Categories.Utility:CreateModule({
 		Name = 'Rainbow Character',
 		Function = function(callback)
-			local saved = {}
 			if callback then
+				RainbowCharacter._saved = RainbowCharacter._saved or {}
 				local hue = 0
 				local char = entitylib.isAlive and entitylib.character.Character
 				if char then
 					for _, part in char:GetDescendants() do
-						if part:IsA('BasePart') and part.Name ~= 'HumanoidRootPart' then
-							saved[part] = part.Color
+						if part:IsA('BasePart') and part.Name ~= 'HumanoidRootPart' and not RainbowCharacter._saved[part] then
+							RainbowCharacter._saved[part] = part.Color
 						end
 					end
 				end
@@ -2247,10 +2257,13 @@ ParticleAura = larp.Categories.Utility:CreateModule({
 					end
 				until not RainbowCharacter.Enabled
 			else
-				for part, color in saved do
-					if part and part.Parent and part:IsA('BasePart') then
-						part.Color = color
+				if RainbowCharacter._saved then
+					for part, color in RainbowCharacter._saved do
+						if part and part.Parent and part:IsA('BasePart') then
+							part.Color = color
+						end
 					end
+					table.clear(RainbowCharacter._saved)
 				end
 			end
 		end,
@@ -2276,10 +2289,9 @@ ParticleAura = larp.Categories.Utility:CreateModule({
 	MoonJump = larp.Categories.Utility:CreateModule({
 		Name = 'Moon Jump',
 		Function = function(callback)
-			local originalJump
 			if callback then
 				saveLightState()
-				originalJump = getLocalHumanoid() and getLocalHumanoid().JumpPower or nil
+				MoonJump._originalJump = getLocalHumanoid() and getLocalHumanoid().JumpPower or nil
 				repeat
 					task.wait()
 					workspace.Gravity = 5
@@ -2289,7 +2301,8 @@ ParticleAura = larp.Categories.Utility:CreateModule({
 			else
 				workspace.Gravity = lightState.Gravity or 196.2
 				local hum = getLocalHumanoid()
-				if hum and originalJump then hum.JumpPower = originalJump end
+				if hum and MoonJump._originalJump then hum.JumpPower = MoonJump._originalJump end
+				MoonJump._originalJump = nil
 			end
 		end,
 		Tooltip = 'Moon gravity + high jump'

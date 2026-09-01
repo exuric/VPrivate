@@ -171,11 +171,11 @@ local entitylib = {
 	})
 }
 
-local function waitForChildOfType(obj, name, timeout)
+local function waitForChildOfType(obj, name, timeout, prop)
 	local checktick = tick() + timeout
 	local returned
 	repeat
-		returned = obj:FindFirstChildOfClass(name)
+		returned = prop and obj[name] or obj:FindFirstChildOfClass(name)
 		if returned or checktick < tick() then break end
 		task.wait()
 	until false
@@ -978,10 +978,40 @@ run(function()
 	local freecamObj
 	local spinConn
 
-	local function setVelocity(v)
+local function setVelocity(v)
 		local root = getLocalRoot()
 		if root then
 			pcall(function() root.Velocity = v end)
+			pcall(function() root.AssemblyLinearVelocity = v end)
+		end
+	end
+
+	local function getBodyVel(root)
+		local bv = root:FindFirstChildOfClass('BodyVelocity') or root:FindFirstChildOfClass('LinearVelocity')
+		if not bv then
+			bv = Instance.new('BodyVelocity')
+			bv.Name = 'LarpVel'
+			bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+			bv.Parent = root
+		end
+		return bv
+	end
+
+	local function setGameVelocity(v)
+		local root = getLocalRoot()
+		if root then
+			local bv = getBodyVel(root)
+			bv.Velocity = v
+		end
+	end
+
+	local function clearGameVelocity()
+		local root = getLocalRoot()
+		if root then
+			local bv = root:FindFirstChild('LarpVel')
+			if bv then
+				pcall(function() bv:Destroy() end)
+			end
 		end
 	end
 
@@ -994,34 +1024,59 @@ run(function()
 		game.workspace.Gravity = g
 	end
 
-	Fly = larp.Categories.Blatant:CreateModule({
+Fly = larp.Categories.Blatant:CreateModule({
 		Name = 'Fly',
 		Function = function(callback)
 			if callback then
+				local root = getLocalRoot()
+				local hum = getLocalHumanoid()
+				local bv = nil
+				if root then
+					bv = Instance.new('BodyVelocity')
+					bv.Name = 'LarpFly'
+					bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+					bv.Parent = root
+				end
+				local flightSpeed = 0
 				repeat
 					local dt = runService.RenderStepped:Wait()
-					local root = getLocalRoot()
-					if not root then continue end
-					local hum = getLocalHumanoid()
-					if hum then
-						hum:SetStateEnabled(Enum.HumanoidStateType.FallingNoCollision, true)
-						hum:ChangeState(Enum.HumanoidStateType.Flying)
-						hum:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
+					root = getLocalRoot()
+					hum = getLocalHumanoid()
+					if not root or not hum then continue end
+					if not bv or not bv.Parent then
+						bv = Instance.new('BodyVelocity')
+						bv.Name = 'LarpFly'
+						bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+						bv.Parent = root
 					end
+					hum:SetStateEnabled(Enum.HumanoidStateType.FallingNoCollision, true)
+					hum:SetStateEnabled(Enum.HumanoidStateType.Flying, true)
+					pcall(function()
+						hum:ChangeState(Enum.HumanoidStateType.Flying)
+					end)
 					local vel = Vector3.zero
-					if inputService:IsKeyDown(Enum.KeyCode.W) then vel = vel + gameCamera.CFrame.LookVector end
-					if inputService:IsKeyDown(Enum.KeyCode.S) then vel = vel - gameCamera.CFrame.LookVector end
-					if inputService:IsKeyDown(Enum.KeyCode.A) then vel = vel - gameCamera.CFrame.RightVector end
-					if inputService:IsKeyDown(Enum.KeyCode.D) then vel = vel + gameCamera.CFrame.RightVector end
-					local speed = FlySpeed.Value
-					if inputService:IsKeyDown(Enum.KeyCode.LeftShift) then speed = speed * 2 end
+					local forward = gameCamera.CFrame.LookVector * Vector3.new(1, 0, 1)
+					local right = gameCamera.CFrame.RightVector * Vector3.new(1, 0, 1)
+					if inputService:IsKeyDown(Enum.KeyCode.W) then vel = vel + forward end
+					if inputService:IsKeyDown(Enum.KeyCode.S) then vel = vel - forward end
+					if inputService:IsKeyDown(Enum.KeyCode.A) then vel = vel - right end
+					if inputService:IsKeyDown(Enum.KeyCode.D) then vel = vel + right end
 					if inputService:IsKeyDown(Enum.KeyCode.Space) then vel = vel + Vector3.new(0, 1, 0) end
 					if inputService:IsKeyDown(Enum.KeyCode.LeftControl) then vel = vel - Vector3.new(0, 1, 0) end
-					if vel.Magnitude > 0 then
-						vel = vel.Unit * speed
-					end
-					setVelocity(vel)
+					local target = vel.Magnitude > 0 and vel.Unit * FlySpeed.Value or Vector3.new(0, -2, 0)
+					local desired = Vector3.new(target.X, target.Y, target.Z)
+					bv.Velocity = bv.Velocity:Lerp(desired, math.min(dt * 12, 1))
+					bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
 				until not Fly.Enabled
+				if bv then
+					pcall(function() bv:Destroy() end)
+				end
+				if hum then
+					pcall(function()
+						hum:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
+						hum:SetStateEnabled(Enum.HumanoidStateType.FallingNoCollision, true)
+					end)
+				end
 			end
 		end,
 		Tooltip = 'Fly around the map'
@@ -1168,7 +1223,7 @@ run(function()
 					runService.Heartbeat:Wait()
 					local root = getLocalRoot()
 					if root then
-						root.Velocity = root.Velocity * VelocityValue.Value
+						setGameVelocity(root.Velocity * VelocityValue.Value)
 					end
 				until not VelocityMod.Enabled
 			end
@@ -1216,7 +1271,7 @@ run(function()
 						if root and hum then
 							local forward = gameCamera.CFrame.LookVector * Vector3.new(1, 0, 1)
 							pcall(function() hum:ChangeState(Enum.HumanoidStateType.Jumping) end)
-							root.Velocity = root.Velocity + forward * LongJumpPower.Value
+							setGameVelocity(root.Velocity + forward * LongJumpPower.Value)
 						end
 					end
 				until not LongJump.Enabled
@@ -1394,7 +1449,7 @@ run(function()
 						local be = getBodyEffects(entitylib.character.Character)
 						local attacking = be and be:FindFirstChild('Attacking') and be.Attacking.Value
 						if attacking and root then
-							root.Velocity = Vector3.new(math.random(-50, 50), 0, math.random(-50, 50))
+							setGameVelocity(Vector3.new(math.random(-50, 50), 0, math.random(-50, 50)))
 						end
 					end
 				until not AutoDodge.Enabled
@@ -1529,7 +1584,7 @@ run(function()
 					task.wait(0.05)
 					if entitylib.isAlive then
 						local root = entitylib.character.RootPart
-						root.Velocity = Vector3.new(0, 80, 0)
+						setGameVelocity(Vector3.new(0, 80, 0))
 						pcall(function()
 							entitylib.character.Humanoid.Health = entitylib.character.Humanoid.MaxHealth
 						end)
@@ -1813,7 +1868,7 @@ run(function()
 					task.wait(0.1)
 					local root = getLocalRoot()
 					if root then
-						root.AssemblyLinearVelocity = root.AssemblyLinearVelocity * MovementSpeed.Value
+						setGameVelocity(root.AssemblyLinearVelocity * MovementSpeed.Value)
 					end
 				until not MovementModifier.Enabled
 			end
@@ -2614,87 +2669,118 @@ run(function()
 	local HealthHUD
 	local ArmorHUD
 	local hudGui
-	local healthFill
+local healthFill
 	local armorFill
 	local healthLabel
 	local armorLabel
+	local hudGui
+	local originalFill
+	local hudElements = {}
+
+	local function getGameBar()
+		local pg = lplr:FindFirstChild('PlayerGui')
+		if not pg then return nil end
+		local ms = pg:FindFirstChild('MainScreenGui')
+		if not ms then return nil end
+		local stats = ms:FindFirstChild('StatsInformation')
+		if not stats then return nil end
+		local boxing = stats:FindFirstChild('Boxing')
+		if not boxing then return nil end
+		return boxing:FindFirstChild('Bar')
+	end
+
+	local function ensureHud()
+		local bar = getGameBar()
+		if not bar then return nil end
+		if not hudElements.bar then
+			hudElements.bar = bar
+			hudElements.originalFill = bar:FindFirstChildOfClass('Frame')
+			-- rounded bg
+			local bg = Instance.new('UICorner')
+			bg.CornerRadius = UDim.new(0, 6)
+			bg.Parent = bar
+			-- health label
+			healthLabel = Instance.new('TextLabel')
+			healthLabel.Name = 'LarpHP'
+			healthLabel.Size = UDim2.fromScale(1, 0.5)
+			healthLabel.Position = UDim2.fromScale(0, -0.55)
+			healthLabel.BackgroundTransparency = 1
+			healthLabel.Font = Enum.Font.GothamBold
+			healthLabel.TextScaled = true
+			healthLabel.TextColor3 = Color3.new(1, 1, 1)
+			healthLabel.TextStrokeTransparency = 0.5
+			healthLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+			healthLabel.Parent = bar
+			-- armor bar (small, on top of the main bar)
+			local armorBg = Instance.new('Frame')
+			armorBg.Name = 'LarpArmorBG'
+			armorBg.Size = UDim2.fromScale(1, 0.25)
+			armorBg.Position = UDim2.fromScale(0, -0.3)
+			armorBg.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+			armorBg.BackgroundTransparency = 0.4
+			armorBg.BorderSizePixel = 0
+			armorBg.Parent = bar
+			local corner = Instance.new('UICorner')
+			corner.CornerRadius = UDim.new(0, 3)
+			corner.Parent = armorBg
+			armorFill = Instance.new('Frame')
+			armorFill.Name = 'LarpArmor'
+			armorFill.Size = UDim2.fromScale(0, 1)
+			armorFill.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
+			armorFill.BorderSizePixel = 0
+			armorFill.Parent = armorBg
+			local corner2 = Instance.new('UICorner')
+			corner2.CornerRadius = UDim.new(0, 3)
+			corner2.Parent = armorFill
+			hudElements.armorBg = armorBg
+			hudElements.corner = corner
+		end
+		return bar
+	end
+
+	local function cleanupHud()
+		for _, el in hudElements do
+			if el and el.Parent then
+				pcall(function() el:Destroy() end)
+			end
+		end
+		table.clear(hudElements)
+		healthFill = nil
+		armorFill = nil
+	end
 
 	HealthHUD = larp.Categories.Inventory:CreateModule({
 		Name = 'Better Health Bar',
 		Function = function(callback)
 			if callback then
-				if not hudGui then
-					hudGui = Instance.new('ScreenGui')
-					hudGui.Name = 'DaHoodHUD'
-					hudGui.ResetOnSpawn = false
-					hudGui.IgnoreGuiInset = true
-					hudGui.Parent = lplr:WaitForChild('PlayerGui')
-					local holder = Instance.new('Frame')
-					holder.Size = UDim2.fromOffset(160, 50)
-					holder.Position = UDim2.new(0, 10, 1, -60)
-					holder.AnchorPoint = Vector2.new(0, 1)
-					holder.BackgroundTransparency = 0.4
-					holder.BackgroundColor3 = Color3.new(0, 0, 0)
-					holder.BorderSizePixel = 0
-					holder.Parent = hudGui
-					local hbg = Instance.new('Frame')
-					hbg.Size = UDim2.fromScale(1, 0.35)
-					hbg.Position = UDim2.fromScale(0, 0.1)
-					hbg.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-					hbg.BorderSizePixel = 0
-					hbg.Parent = holder
-					healthFill = Instance.new('Frame')
-					healthFill.Size = UDim2.fromScale(1, 1)
-					healthFill.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-					healthFill.BorderSizePixel = 0
-					healthFill.Parent = hbg
-					healthLabel = Instance.new('TextLabel')
-					healthLabel.Size = UDim2.fromScale(1, 0.35)
-					healthLabel.Position = UDim2.fromScale(0, -0.4)
-					healthLabel.BackgroundTransparency = 1
-					healthLabel.Font = Enum.Font.GothamBold
-					healthLabel.TextScaled = true
-					healthLabel.TextColor3 = Color3.new(1, 1, 1)
-					healthLabel.Parent = holder
-					local abg = Instance.new('Frame')
-					abg.Size = UDim2.fromScale(1, 0.35)
-					abg.Position = UDim2.fromScale(0, 0.55)
-					abg.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-					abg.BorderSizePixel = 0
-					abg.Parent = holder
-					armorFill = Instance.new('Frame')
-					armorFill.Size = UDim2.fromScale(1, 1)
-					armorFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-					armorFill.BorderSizePixel = 0
-					armorFill.Parent = abg
-					armorLabel = Instance.new('TextLabel')
-					armorLabel.Size = UDim2.fromScale(1, 0.35)
-					armorLabel.Position = UDim2.fromScale(0, 0.6)
-					armorLabel.BackgroundTransparency = 1
-					armorLabel.Font = Enum.Font.GothamBold
-					armorLabel.TextScaled = true
-					armorLabel.TextColor3 = Color3.new(1, 1, 1)
-					armorLabel.Parent = holder
-				end
 				repeat
 					task.wait(0.05)
-					if entitylib.isAlive then
+					local bar = ensureHud()
+					if bar and entitylib.isAlive then
 						local hum = entitylib.character.Humanoid
 						local be = getBodyEffects(entitylib.character.Character)
 						local armor = be and be:FindFirstChild('Armor') and be.Armor.Value or 0
 						local maxArmor = replicatedStorage:FindFirstChild('MaxArmor') and replicatedStorage.MaxArmor.Value or 100
-						local hp = hum.Health / hum.MaxHealth
+						local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
 						local ap = math.clamp(armor / maxArmor, 0, 1)
-						healthFill.Size = UDim2.fromScale(math.clamp(hp, 0, 1), 1)
-						armorFill.Size = UDim2.fromScale(ap, 1)
-						healthLabel.Text = 'HP '..math.floor(hum.Health)..'/'..math.floor(hum.MaxHealth)
-						armorLabel.Text = 'ARMOR '..math.floor(armor)
-						healthFill.BackgroundColor3 = hp > 0.5 and Color3.fromRGB(0, 200, 0) or (hp > 0.25 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 0, 0))
+						-- update the game's own fill so it stays in sync
+						local fill = hudElements.originalFill
+						if fill and fill.Parent then
+							fill.Size = UDim2.fromScale(hp, 1)
+							fill.BackgroundColor3 = hp > 0.5 and Color3.fromRGB(0, 200, 0) or (hp > 0.25 and Color3.fromRGB(255, 200, 0) or Color3.fromRGB(255, 0, 0))
+						end
+						if armorFill then
+							armorFill.Size = UDim2.fromScale(ap, 1)
+						end
+						if healthLabel then
+							healthLabel.Text = math.floor(hum.Health)..' HP'
+						end
 					end
 				until not HealthHUD.Enabled
+				cleanupHud()
 			end
 		end,
-		Tooltip = 'Clean health bar HUD'
+		Tooltip = 'Enhances the game\'s health bar with labels, rounding and smooth colors'
 	})
 
 	ArmorHUD = larp.Categories.Inventory:CreateModule({
@@ -2702,17 +2788,25 @@ run(function()
 		Function = function(callback)
 			if callback then
 				repeat
-					task.wait(0.1)
-					if entitylib.isAlive and hudGui then
-						hudGui.Visible = true
+					task.wait(0.05)
+					local bar = ensureHud()
+					if bar and entitylib.isAlive then
+						local be = getBodyEffects(entitylib.character.Character)
+						local armor = be and be:FindFirstChild('Armor') and be.Armor.Value or 0
+						local maxArmor = replicatedStorage:FindFirstChild('MaxArmor') and replicatedStorage.MaxArmor.Value or 100
+						local ap = math.clamp(armor / maxArmor, 0, 1)
+						if armorFill then
+							armorFill.Size = UDim2.fromScale(ap, 1)
+						end
+						if healthLabel then
+							healthLabel.Text = math.floor(armor)..' ARMOR'
+						end
 					end
 				until not ArmorHUD.Enabled
-				if hudGui and not HealthHUD.Enabled then
-					hudGui.Visible = false
-				end
+				cleanupHud()
 			end
 		end,
-		Tooltip = 'Shows the armor bar (requires Better Health Bar)'
+		Tooltip = 'Adds an armor bar to the game\'s own HUD'
 	})
 end)
 local weather = {}

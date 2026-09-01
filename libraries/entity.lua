@@ -130,8 +130,18 @@ entitylib.Wallcheck = function(origin, position, ignoreobject)
 	return entitylib.Raycast(origin, position - origin, ignoreobject)
 end
 
+local entityMouseCache = { at = 0, result = nil, origin = Vector3.zero }
+
 entitylib.EntityMouse = function(entitysettings)
 	if entitylib.isAlive then
+		local now = os.clock()
+		local origin = entitysettings.Origin or entitylib.character.HumanoidRootPart.Position
+		if entityMouseCache.result and now - entityMouseCache.at < 0.05 and (entityMouseCache.origin - origin).Magnitude < 1 then
+			local cached = entityMouseCache.result
+			if cached and cached.Character and cached.Character.Parent then
+				return cached
+			end
+		end
 		local mouseLocation, sortingTable = entitysettings.MouseOrigin or getMousePosition(), {}
 		for _, entity in entitylib.List do
 			if not entitysettings.Players and entity.Player then continue end
@@ -155,8 +165,11 @@ entitylib.EntityMouse = function(entitysettings)
 
 		for _, v in sortingTable do
 			if entitysettings.Wallcheck then
-				if entitylib.Wallcheck(entitysettings.Origin, v.Entity[entitysettings.Part].Position, entitysettings.Wallcheck) then continue end
+				if entitylib.Wallcheck(origin, v.Entity[entitysettings.Part].Position, entitysettings.Wallcheck) then continue end
 			end
+			entityMouseCache.result = v.Entity
+			entityMouseCache.at = now
+			entityMouseCache.origin = origin
 			table.clear(entitysettings)
 			table.clear(sortingTable)
 			return v.Entity

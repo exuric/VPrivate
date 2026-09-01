@@ -3436,6 +3436,9 @@ end)
 run(function()
 	local Killaura
 	local Targets
+	local TargetPriority
+	local TargetMode
+	local MultiCount
 	local LimitItems
 	local SwingOnly
 	local SwingRange
@@ -3443,10 +3446,18 @@ run(function()
 	local MaxAngle
 	local HitReg
 	local SwingAnim
+	local FastHits
+	local FastBow
+	local FastDelay
+	local FastShoot
+	local EnhancedAura
 	local clickConn
 	local swingRequested = false
+	local cycleIndex = 0
+	local switchLockedTarget
 
 	local realSwingInRegion, realCanSee, SwordController, EntityUtil = nil, nil, nil, nil
+	local enhPrevReach, enhPrevHitbox = nil, nil
 
 	local function getHandItem()
 		if not SwordController or not SwordController.getHandItem then
@@ -3531,6 +3542,79 @@ run(function()
 		return targets
 	end
 
+	local function getThreatScore(ent)
+		local score = 0
+		if ent.Character then
+			for _, t in ent.Character:GetChildren() do
+				if t:IsA('Tool') then
+					local itemType = t.itemType or t.Name
+					local m = bedwars.ItemMeta and bedwars.ItemMeta[itemType]
+					if m and m.sword and m.sword.damage then
+						score = score + m.sword.damage
+					end
+				end
+			end
+		end
+		if ent.Player then
+			local ok, inv = pcall(bedwars.getInventory, ent.Player)
+			if ok and inv and inv.items then
+				for _, item in inv.items do
+					local m = item.itemType and bedwars.ItemMeta and bedwars.ItemMeta[item.itemType]
+					if m and m.armor and m.armor.damageReductionMultiplier then
+						score = score + m.armor.damageReductionMultiplier * 100
+					end
+				end
+			end
+		end
+		return score
+	end
+
+	local function sortTargets(targets)
+		local prio = TargetPriority.Value
+		if prio == 'Health' then
+			table.sort(targets, function(a, b) return a[1].Health < b[1].Health end)
+		elseif prio == 'Threat' then
+			table.sort(targets, function(a, b) return getThreatScore(a[1]) > getThreatScore(b[1]) end)
+		else
+			table.sort(targets, function(a, b) return a[2] < b[2] end)
+		end
+		return targets
+	end
+
+	local function selectTargets()
+		local targets = sortTargets(getTargets())
+		if #targets == 0 then return {} end
+		local mode = TargetMode.Value
+		local chosen = {}
+		if mode == 'All' then
+			chosen = targets
+		elseif mode == 'Multi' then
+			for i = 1, math.min(MultiCount.Value, #targets) do
+				table.insert(chosen, targets[i])
+			end
+		elseif mode == 'Cycle' then
+			cycleIndex = cycleIndex % #targets + 1
+			table.insert(chosen, targets[cycleIndex])
+		elseif mode == 'Switch' then
+			if not switchLockedTarget or not entitylib.isVulnerable(switchLockedTarget) then
+				switchLockedTarget = targets[1][1]
+			end
+			for _, t in targets do
+				if t[1] == switchLockedTarget then
+					table.insert(chosen, t)
+					break
+				end
+			end
+			if #chosen == 0 then
+				switchLockedTarget = targets[1][1]
+				table.insert(chosen, targets[1])
+			end
+		else
+			table.insert(chosen, targets[1])
+		end
+		return chosen
+	end
+
 	local function attack(ent, swingStartTime, animate)
 		if not SwordController then return false end
 		local e = toGameEntity(ent)
@@ -3549,12 +3633,69 @@ run(function()
 		return ok
 	end
 
+	local function fastHitShoot(ent)
+		if not entitylib.isAlive or not ent or not ent.RootPart then return end
+		local oldHotbar = store.hand.tool and getHotbar(store.hand.tool) or nil
+		task.wait(FastDelay.Value)
+		local fired = false
+		for _, data in getProjectiles(FastBow.ListEnabled) do
+			if fired then break end
+			local item, ammo, projectile, itemMeta = unpack(data)
+			if hotbarSwitch(getHotbar(item.tool)) then
+				task.wait(store.ping.total)
+				local meta = bedwars.ProjectileMeta and bedwars.ProjectileMeta[projectile]
+				if meta then
+					local projSpeed = meta.launchVelocity or 100
+					local gravity = meta.gravitationalAcceleration or 196.2
+					local calc = prediction.SolveTrajectory(entitylib.character.RootPart.Position, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
+					if calc then
+						local shootPosition = (CFrame.new(entitylib.character.RootPart.Position, calc) * CFrame.new(Vector3.new(-bedwars.BowConstantsTable.RelX, -bedwars.BowConstantsTable.RelY, -bedwars.BowConstantsTable.RelZ))).Position
+						local dir, id = CFrame.lookAt(shootPosition, calc).LookVector, httpService:GenerateGUID(true)
+						pcall(bedwars.ProjectileController.createLocalProjectile, bedwars.ProjectileController, meta, ammo, projectile, shootPosition, id, dir * projSpeed, {drawDurationSeconds = 1})
+						pcall(function()
+							bedwars.Handler:Get('ProjectileFire'):Fire('CallServerAsync',
+								item.tool,
+								ammo,
+								projectile,
+								shootPosition,
+								entitylib.character.RootPart.Position,
+								dir * projSpeed,
+								id,
+								{
+									drawDurationSeconds = 1,
+									shotId = httpService:GenerateGUID(false),
+								},
+								workspace:GetServerTimeNow() - 0.045
+							):andThen(function(res)
+								if res then res.Parent = replicatedStorage end
+							end)
+						end)
+						fired = true
+					end
+				end
+				if fired then
+					task.wait(FastShoot.Value)
+				end
+				hotbarSwitch(oldHotbar)
+			end
+		end
+	end
+
 	local function swingMulti()
 		if not SwordController then return end
-		local targets = getTargets()
+		local targets = selectTargets()
 		if #targets == 0 then return end
 		store.KillauraTarget = targets[1][1]
-		attack(targets[1][1], workspace:GetServerTimeNow())
+		local startTime = workspace:GetServerTimeNow()
+		for i, t in ipairs(targets) do
+			attack(t[1], startTime)
+			if i < #targets then
+				task.wait(0.05)
+			end
+		end
+		if FastHits.Enabled then
+			task.spawn(fastHitShoot, targets[1][1])
+		end
 	end
 
 	local function canAttack()
@@ -3587,7 +3728,7 @@ run(function()
 				realCanSee = SwordController.canSee
 				SwordController.swingSwordInRegion = function(self, ...)
 					if SwingOnly.Enabled then
-						local target = getTargets()[1]
+						local target = selectTargets()[1]
 						if target and target[1] then
 							store.KillauraTarget = target[1]
 							return true
@@ -3602,6 +3743,12 @@ run(function()
 						swingRequested = true
 					end
 				end)
+				if EnhancedAura.Enabled then
+					enhPrevReach = Reach.Enabled
+					enhPrevHitbox = HitBoxes.Enabled
+					if not Reach.Enabled then Reach:Toggle() end
+					if not HitBoxes.Enabled then HitBoxes:Toggle() end
+				end
 				SwordController.canSee = function(self, ent)
 					if ent then
 						return true
@@ -3612,7 +3759,7 @@ run(function()
 				repeat
 					local target
 					if canAttack() then
-						target = getTargets()[1]
+						target = selectTargets()[1]
 						if target then
 							store.KillauraTarget = target[1]
 							if not SwingOnly.Enabled then
@@ -3623,6 +3770,9 @@ run(function()
 								if os.clock() - lastSwing >= getAttackInterval() then
 									lastSwing = os.clock()
 									attack(target[1], workspace:GetServerTimeNow(), fresh)
+									if FastHits.Enabled then
+										task.spawn(fastHitShoot, target[1])
+									end
 								end
 							end
 						end
@@ -3635,6 +3785,14 @@ run(function()
 				until not Killaura.Enabled
 			else
 				store.KillauraTarget = nil
+				switchLockedTarget = nil
+				if enhPrevReach ~= nil and Reach.Enabled ~= enhPrevReach then
+					Reach:Toggle()
+				end
+				if enhPrevHitbox ~= nil and HitBoxes.Enabled ~= enhPrevHitbox then
+					HitBoxes:Toggle()
+				end
+				enhPrevReach, enhPrevHitbox = nil, nil
 				if realSwingInRegion then
 					SwordController.swingSwordInRegion = realSwingInRegion
 				end
@@ -3657,6 +3815,61 @@ run(function()
 	Targets = Killaura:CreateTargets({
 		Players = true,
 		NPCs = true
+	})
+	TargetPriority = Killaura:CreateDropdown({
+		Name = 'Target priority',
+		List = {'Distance', 'Health', 'Threat'},
+		Default = 'Distance',
+		Tooltip = 'How targets are ranked:\nDistance - nearest first\nHealth - lowest health first\nThreat - most geared up first'
+	})
+	TargetMode = Killaura:CreateDropdown({
+		Name = 'Target mode',
+		List = {'Single', 'Multi', 'Switch', 'Cycle', 'Closest', 'Priority', 'All'},
+		Default = 'Single',
+		Tooltip = 'Single - one target at a time\nMulti - up to the Multi target count\nSwitch - locks one target, switches after it dies\nCycle - cycles through targets\nClosest - always nearest\nPriority - highest priority player\nAll - everyone in range'
+	})
+	MultiCount = Killaura:CreateSlider({
+		Name = 'Multi target',
+		Min = 1,
+		Max = 10,
+		Default = 1,
+		Suffix = function(val)
+			return val == 1 and 'player' or 'players'
+		end,
+		Tooltip = 'How many players to hit at once (used by Multi and All modes)'
+	})
+	EnhancedAura = Killaura:CreateToggle({
+		Name = 'Enhanced Aura',
+		Default = true,
+		Tooltip = 'Turns on Reach and HitBoxes while killaura is active, and restores them to their previous state when you turn it off'
+	})
+	FastHits = Killaura:CreateToggle({
+		Name = 'Fast Hits',
+		Default = true,
+		Tooltip = 'After a sword hit, switches to your bow and shoots the same target. OP combo: sword then arrow'
+	})
+	FastBow = Killaura:CreateTextList({
+		Name = 'Fast Hits Bow',
+		Default = {'wood_crossbow', 'crossbow'},
+		Tooltip = 'Bows to use for Fast Hits (any projectile weapon name)'
+	})
+	FastDelay = Killaura:CreateSlider({
+		Name = 'Fast Hits Delay',
+		Min = 0,
+		Max = 1,
+		Default = 0.08,
+		Decimal = 100,
+		Suffix = 'seconds',
+		Tooltip = 'Delay between the sword hit and the bow shot'
+	})
+	FastShoot = Killaura:CreateSlider({
+		Name = 'Fast Hits Hold',
+		Min = 0,
+		Max = 1,
+		Default = 0.05,
+		Decimal = 100,
+		Suffix = 'seconds',
+		Tooltip = 'How long to hold the bow after shooting before switching back'
 	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
@@ -4247,6 +4460,7 @@ run(function()
 	local old
 	local velHistory = {}
 	local aimHistory = {}
+	local aimCache = { at = 0, target = nil, result = nil }
 
 	local function blendAim(origin, point, root)
 		local now = tick()
@@ -4311,6 +4525,10 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						end
 					end
 					lockedTarget, lockedTime = plr, tick()
+					local now = tick()
+					if aimCache.result and now - aimCache.at < 0.1 and aimCache.target == plr and aimCache.origin == shootpos and aimCache.proj == projmeta then
+						return aimCache.result
+					end
 					if plr then
 						local pos = shootpos or self:getLaunchPosition(origin)
 						if not pos then
@@ -4400,26 +4618,38 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 									end
 									prediction.trackShot(plr.RootPart)
 								end
-								return {
+								local res = {
 									initialVelocity = dir,
 									positionFrom = offsetpos,
 									deltaT = lifetime,
 									gravitationalAcceleration = gravity,
 									drawDurationSeconds = projmeta.drawDurationSeconds
 								}
+								aimCache.result = res
+								aimCache.at = tick()
+								aimCache.target = plr
+								aimCache.origin = shootpos
+								aimCache.proj = projmeta
+								return res
 							end
 						elseif isFireball and FireballSplash.Enabled then
 							local dist = (targetPos - newlook.p).Magnitude
 							local tt = math.clamp(dist / (projSpeed * charge), 0.1, 3)
 							if tt <= lifetime + 0.5 then
 								local aimPoint = targetPos + targetVel * tt + Vector3.new(0, 0.5 * gravity * tt * tt, 0)
-								return {
+								local res = {
 									initialVelocity = CFrame.lookAt(newlook.p, aimPoint).LookVector * (projSpeed * charge),
 									positionFrom = offsetpos,
 									deltaT = lifetime,
 									gravitationalAcceleration = gravity,
 									drawDurationSeconds = projmeta.drawDurationSeconds
 								}
+								aimCache.result = res
+								aimCache.at = tick()
+								aimCache.target = plr
+								aimCache.origin = shootpos
+								aimCache.proj = projmeta
+								return res
 							end
 						end
 					end
@@ -4573,6 +4803,7 @@ run(function()
 	local AimSmooth
 	local velHistory = {}
 	local aimHistory = {}
+	local aimCache = { at = 0, target = nil, result = nil }
 
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
@@ -4745,6 +4976,10 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						end
 					end
 					lockedTarget, lockedTime = plr, tick()
+					local now = tick()
+					if aimCache.result and now - aimCache.at < 0.1 and aimCache.target == plr and aimCache.origin == shootpos and aimCache.proj == projmeta then
+						return aimCache.result
+					end
 					if plr then
 						local pos = shootpos or self:getLaunchPosition(origin)
 						if not pos then
@@ -4823,13 +5058,19 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 								prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, aerial, plr.RootPart.Position, plr.RootPart, nil, true)
 							end
 							prediction.trackShot(plr.RootPart)
-							return {
+							local res = {
 								initialVelocity = dir,
 								positionFrom = offsetpos,
 								deltaT = lifetime,
 								gravitationalAcceleration = gravity,
 								drawDurationSeconds = projmeta.drawDurationSeconds
 							}
+							aimCache.result = res
+							aimCache.at = tick()
+							aimCache.target = plr
+							aimCache.origin = shootpos
+							aimCache.proj = projmeta
+							return res
 						end
 
 						if isFireball and FireballSplash.Enabled then
@@ -4839,13 +5080,19 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 								local ldir = buildDir(newlook.p, lpoint, projSpeedTotal)
 								if prediction.IsTrajectoryClear(newlook.p, ldir, gravity, ltime, rayCheck) then
 									if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
-									return {
+									local res = {
 										initialVelocity = ldir,
 										positionFrom = offsetpos,
 										deltaT = lifetime,
 										gravitationalAcceleration = gravity,
 										drawDurationSeconds = projmeta.drawDurationSeconds
 									}
+									aimCache.result = res
+									aimCache.at = tick()
+									aimCache.target = plr
+									aimCache.origin = shootpos
+									aimCache.proj = projmeta
+									return res
 								end
 							end
 						end
@@ -4879,6 +5126,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 				lockedTime = nil
 				table.clear(velHistory)
 				table.clear(aimHistory)
+				table.clear(aimCache)
 			end
 		end,
 		Tooltip = 'ProjectileAimbot test build. Simple mode uses iterative prediction â€” estimate travel, predict where the target will be, re-solve until converged â€” and self-grades ping so latency lead corrects on any connection; Adaptive feeds the full prediction library and grades every shot so knockback and strafe self-correct too. Both modes smooth target velocity over time and blend aim on hops. No other module required.'

@@ -158,6 +158,7 @@ local entitylib = {
 	character = nil,
 	List = {},
 	Connections = {},
+	EntityThreads = {},
 	Events = setmetatable({}, {
 		__index = function(self, ind)
 			self[ind] = {Connections = {}, Connect = function(rself, func) table.insert(rself.Connections, func) return {Disconnect = function() local i = table.find(rself.Connections, func) if i then table.remove(rself.Connections, i) end end} end, Fire = function(rself, ...) for _, v in rself.Connections do task.spawn(v, ...) end end, Destroy = function(rself) table.clear(rself.Connections) table.clear(rself) end}

@@ -1236,7 +1236,29 @@ run(function()
 								reachCap = sword.attackRange
 							end
 						end)
-						attackTable.validate.selfPosition.value += CFrame.lookAt(selfpos, targetpos).LookVector * math.max((selfpos - targetpos).Magnitude - (reachCap - 0.001), 0)
+						-- do not spoof the position through walls: only extend reach
+						-- when the target is visible from the real position
+						local wallBlocked = false
+						pcall(function()
+							local origin = attackTable.validate.selfPosition.value
+							local params = RaycastParams.new()
+							params.FilterType = Enum.RaycastFilterType.Exclude
+							local ignoreList = {lplr.Character}
+							for _, e in entitylib.List do
+								if e and e.Character then
+									ignoreList[#ignoreList + 1] = e.Character
+								end
+							end
+							params.FilterDescendantsInstances = ignoreList
+							local dist = (targetpos - origin).Magnitude
+							local ray = workspace:Raycast(origin + (targetpos - origin).Unit * 1.5, (targetpos - origin).Unit * math.max(dist - 1.5, 0.5), params)
+							if ray then
+								wallBlocked = true
+							end
+						end)
+						if not wallBlocked then
+							attackTable.validate.selfPosition.value += CFrame.lookAt(selfpos, targetpos).LookVector * math.max((selfpos - targetpos).Magnitude - (reachCap - 0.001), 0)
+						end
 					end
 
 					return call:SendToServer(attackTable, ...)
@@ -3969,7 +3991,18 @@ run(function()
 					if not HitBoxes.Enabled then HitBoxes:Toggle() end
 				end
 				SwordController.canSee = function(self, ent)
-					if ent then
+					if ent and Targets and Targets.Walls and not Targets.Walls.Enabled then
+						return true
+					end
+					if ent and entitylib and entitylib.isAlive and entitylib.character and entitylib.character.RootPart then
+						local origin = entitylib.character.RootPart.Position
+						local target = ent.RootPart or (ent.Character and ent.Character:FindFirstChild('HumanoidRootPart'))
+						if target then
+							local wallBlocked = entitylib.Wallcheck(origin, target.Position)
+							if wallBlocked then
+								return false
+							end
+						end
 						return true
 					end
 					return realCanSee(self, ent)

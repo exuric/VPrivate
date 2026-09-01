@@ -32,6 +32,10 @@ end
 
 larp.Place = 100702124803290
 
+local run = function(func)
+	func()
+end
+
 local cloneref = cloneref or function(ref) return ref end
 local playersService = cloneref(game:GetService('Players'))
 local runService = cloneref(game:GetService('RunService'))

@@ -70,13 +70,18 @@ local function downloadFile(path, func)
 			content = isfile(path) and readfile(path) or nil
 		else
 			_pending[path] = true
-			local url = ROOT..'main/'..select(1, path:gsub('LarpV4/', ''))
+			local relative = select(1, path:gsub('LarpV4/', ''))
+			local urls = {
+				ROOT..'main/'..relative,
+				'https://cdn.jsdelivr.net/gh/exuric/VPrivate@main/'..relative
+			}
 			local suc, res
-			for i = 1, 3 do
+			for i = 1, 8 do
+				local url = urls[(i - 1) % 2 + 1]
 				suc, res = pcall(function() return game:HttpGet(url, true) end)
-				if suc and res ~= '404: Not Found' then break end
+				if suc and res ~= '404: Not Found' and not (#res < 100 and path:find('.lua')) then break end
 				_dstats.retries += 1
-				if i < 3 then task.wait(0.5 * i) end
+				task.wait(math.min(0.4 * i, 2))
 			end
 			_pending[path] = nil
 			if not suc or res == '404: Not Found' or (#res < 100 and path:find('.lua')) then
@@ -233,11 +238,16 @@ task.spawn(function()
 				loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
 			else
 				if not (shared.LarpDeveloper and shared.LarpOwner) then
-					local suc, res = pcall(function()
-						return game:HttpGet(ROOT..'main/games/'..game.PlaceId..'.lua', true)
-					end)
-					if suc and res ~= '404: Not Found' then
+					local ok, err = pcall(function()
 						loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
+					end)
+					if not ok then
+						local msg = tostring(err or '')
+						if msg:find('404') or msg:find('Not Found') then
+							pcall(function()
+								larp:CreateNotification('LarpV4', 'No script for this game (PlaceId '..game.PlaceId..')', 6, 'alert')
+							end)
+						end
 					end
 				end
 			end

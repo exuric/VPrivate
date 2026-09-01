@@ -4605,7 +4605,7 @@ run(function()
 	local Aim = {}
 	local FOVCircle
 	local FOVCircleColor
-	local fovFrame = nil
+	local fovCircle = nil
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
@@ -4848,8 +4848,12 @@ else
 			bedwars.ProjectileController.calculateImportantLaunchValues = old
 			table.clear(velHistory)
 			table.clear(aimHistory)
-			if fovFrame then
-				fovFrame.Parent = nil
+			if fovCircle then
+				pcall(function()
+					fovCircle.Visible = false
+					fovCircle:Remove()
+				end)
+				fovCircle = nil
 			end
 		end
 	end,
@@ -4944,38 +4948,50 @@ else
 		Max = 1000,
 		Default = 1000,
 		Function = function(value)
-			if fovFrame then
-				fovFrame.Size = UDim2.fromScale(math.clamp(value / 1000, 0.02, 1), math.clamp(value / 1000, 0.02, 1))
+			if fovCircle then
+				fovCircle.Radius = value
 			end
-		end
+		end,
+		Tooltip = 'Maximum screen distance (in pixels) from your cursor a target can be before it is ignored'
 	})
 	FOVCircle = ProjectileAimbot:CreateToggle({
 		Name = 'FOV Circle',
 		Default = false,
 		Function = function(callback)
 			if not callback then
-				if fovFrame then fovFrame.Parent = nil end
+				if fovCircle then
+					pcall(function()
+						fovCircle.Visible = false
+						fovCircle:Remove()
+					end)
+					fovCircle = nil
+				end
 				return
 			end
-			if not fovFrame then
-				fovFrame = Instance.new('Frame')
-				fovFrame.BackgroundColor3 = FOVCircleColor.Value
-				fovFrame.BackgroundTransparency = 0.7
-				fovFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-				fovFrame.Position = UDim2.fromScale(0.5, 0.5)
-				fovFrame.ZIndex = 10
-				local corner = Instance.new('UICorner')
-				corner.CornerRadius = UDim.new(1, 0)
-				corner.Parent = fovFrame
+			if not fovCircle then
+				fovCircle = Drawing.new('Circle')
+				fovCircle.Filled = false
+				fovCircle.Color = FOVCircleColor.Value
+				fovCircle.NumSides = 100
+				fovCircle.Thickness = 1.5
+				fovCircle.Transparency = 1
 			end
-			fovFrame.Parent = larp.gui
-			fovFrame.Visible = true
-			fovFrame.Size = UDim2.fromScale(math.clamp(FOV.Value / 1000, 0.02, 1), math.clamp(FOV.Value / 1000, 0.02, 1))
+			fovCircle.Position = larp.gui.AbsoluteSize / 2
+			fovCircle.Radius = FOV.Value
+			fovCircle.Visible = ProjectileAimbot.Enabled
+			FOVCircleColor.Object.Visible = callback
 		end
 	})
 	FOVCircleColor = ProjectileAimbot:CreateColorSlider({
 		Name = 'FOV Circle Color',
-		Default = Color3.fromRGB(255, 255, 255)
+		Default = Color3.fromRGB(255, 255, 255),
+		Visible = false,
+		Function = function(hue, sat, val)
+			if fovCircle then
+				fovCircle.Color = Color3.fromHSV(hue, sat, val)
+			end
+		end,
+		Darker = true
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',

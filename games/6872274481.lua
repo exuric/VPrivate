@@ -13280,6 +13280,96 @@ run(function()
 end)
 
 run(function()
+	local AutoFreiya
+	local HP
+	local DetonateHP
+	local DetonateMaxStacks
+	local DetonateLeave
+	local DetonateRange
+	local Delay
+
+	AutoFreiya = larp.Categories.Minigames:CreateModule({
+		Name = 'AutoFreiya',
+		Function = function(callback)
+			if callback then
+				repeat
+					if entitylib.isAlive and store.equippedKit == 'ice_queen' then
+						if bedwars.AbilityController:canUseAbility('ICE_QUEEN') then
+							local selfpos = entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position
+							if selfpos then
+								local use = false
+								for _, ent in entitylib.List do
+									if ent and ent.Character and ent.RootPart and entitylib.isVulnerable(ent) then
+										local stacks = ent.Character:GetAttribute('IceQueenStacks') or 0
+										local dist = (ent.RootPart.Position - selfpos).Magnitude
+										if DetonateHP.Enabled and dist <= DetonateRange.Value and ent.Health > 0 and ent.Health <= HP.Value then
+											use = true
+										elseif DetonateMaxStacks.Enabled and dist <= DetonateRange.Value and stacks >= 4 then
+											use = true
+										elseif DetonateLeave.Enabled and stacks > 0 and ent.Health > 0 and ent.Health <= HP.Value and dist > DetonateRange.Value then
+											use = true
+										end
+										if use then break end
+									end
+								end
+								if use then
+									bedwars.AbilityController:useAbility('ICE_QUEEN')
+								end
+							end
+						end
+					end
+					task.wait(Delay.Value)
+				until not AutoFreiya.Enabled
+			end
+		end,
+		Tooltip = 'Auto-detonates Freiya ice stacks.\nDetonates frozen enemies at the chosen\nHP, at max stacks, or when they escape\nrange. Respects the ability cooldown.'
+	})
+	HP = AutoFreiya:CreateSlider({
+		Name = 'Detonate HP',
+		Min = 1,
+		Max = 100,
+		Default = 20,
+		Suffix = function(val)
+			return val == 1 and 'hp' or 'hp'
+		end,
+		Tooltip = 'Detonate ice stacks on a frozen enemy when their health is at or below this value'
+	})
+	DetonateHP = AutoFreiya:CreateToggle({
+		Name = 'Detonate at HP',
+		Default = true,
+		Tooltip = 'Detonates when any frozen enemy in range drops to the chosen HP. Picks up new frozen targets automatically'
+	})
+	DetonateMaxStacks = AutoFreiya:CreateToggle({
+		Name = 'Detonate at max stacks',
+		Tooltip = 'Detonates the instant a frozen enemy reaches 4 ice stacks for a strong burst, even at full HP'
+	})
+	DetonateLeave = AutoFreiya:CreateToggle({
+		Name = 'Detonate on leave range',
+		Tooltip = 'Detonates when a frozen, low-HP enemy moves outside the detonation range so they cannot escape the kill'
+	})
+	DetonateRange = AutoFreiya:CreateSlider({
+		Name = 'Detonate range',
+		Min = 5,
+		Max = 60,
+		Default = 30,
+		Decimal = 10,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Radius (studs) around you where frozen enemies are considered for detonation'
+	})
+	Delay = AutoFreiya:CreateSlider({
+		Name = 'Check delay',
+		Min = 0.05,
+		Max = 1,
+		Default = 0.1,
+		Decimal = 100,
+		Suffix = 'seconds',
+		Tooltip = 'How often to check for detonation conditions'
+	})
+end)
+
+run(function()
 	local AutoMarina
 	local Range
 	

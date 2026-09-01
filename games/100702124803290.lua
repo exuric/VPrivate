@@ -128,6 +128,54 @@ local function getMousePosition()
 	return inputService:GetMouseLocation()
 end
 
+local lightState = {}
+local function saveLightState()
+	if lightState.saved then return end
+	lightState.saved = true
+	lightState.ClockTime = lighting.ClockTime
+	lightState.Brightness = lighting.Brightness
+	lightState.FogEnd = lighting.FogEnd
+	lightState.FogStart = lighting.FogStart
+	lightState.FogColor = lighting.FogColor
+	lightState.Ambient = lighting.Ambient
+	lightState.Gravity = workspace.Gravity
+	lightState.Sky = lighting:FindFirstChildOfClass('Sky')
+end
+
+local function restoreLightState()
+	if not lightState.saved then return end
+	pcall(function()
+		lighting.ClockTime = lightState.ClockTime
+		lighting.Brightness = lightState.Brightness
+		lighting.FogEnd = lightState.FogEnd
+		lighting.FogStart = lightState.FogStart
+		lighting.FogColor = lightState.FogColor
+		lighting.Ambient = lightState.Ambient
+		workspace.Gravity = lightState.Gravity
+	end)
+	lightState.saved = false
+end
+
+local function setClockTime(t)
+	lighting.ClockTime = t
+end
+
+local function setBrightness(b)
+	lighting.Brightness = b
+end
+
+local function setAmbient(c)
+	lighting.Ambient = c
+end
+
+local function setFog(start, ending, color)
+	lighting.FogStart = start
+	lighting.FogEnd = ending
+	if color then
+		lighting.FogColor = color
+	end
+end
+
 local function raycast(origin, direction, ignore)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
@@ -1809,16 +1857,20 @@ run(function()
 	CameraUnlock = larp.Categories.Blatant:CreateModule({
 		Name = 'Camera Unlock',
 		Function = function(callback)
+			local originalType
 			if callback then
+				originalType = gameCamera and gameCamera.CameraType or nil
 				repeat
 					runService.RenderStepped:Wait()
-					if gameCamera then
-						gameCamera.CameraType = Enum.CameraType.Scriptable
+					local cam = workspace.CurrentCamera or gameCamera
+					if cam then
+						cam.CameraType = Enum.CameraType.Scriptable
 					end
 				until not CameraUnlock.Enabled
 			else
-				if gameCamera then
-					gameCamera.CameraType = Enum.CameraType.Custom
+				local cam = workspace.CurrentCamera or gameCamera
+				if cam then
+					cam.CameraType = originalType or Enum.CameraType.Custom
 				end
 			end
 		end,
@@ -1829,15 +1881,15 @@ run(function()
 		Name = 'Fullbright',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
 					lighting.Brightness = 2
 					lighting.ClockTime = 14
-					lighting.FogEnd = 99999
+					setFog(0, 99999)
 				until not Fullbright.Enabled
 			else
-				lighting.Brightness = 1
-				lighting.FogEnd = 500
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Brighten the whole map'
@@ -1914,10 +1966,11 @@ run(function()
 		sky.SkyboxFront = 'rbxassetid://0'
 	end
 
-	ShaderPresets = larp.Categories.Utility:CreateModule({
+ShaderPresets = larp.Categories.Utility:CreateModule({
 		Name = 'Shader Presets',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait(0.2)
 					if ShaderPreset.Value == 'Vibrant' then
@@ -1934,6 +1987,8 @@ run(function()
 						lighting.Saturation = 0.6
 					end
 				until not ShaderPresets.Enabled
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Apply a visual shader preset'
@@ -1944,10 +1999,20 @@ run(function()
 		Name = 'Custom Sky',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
-					setSkyColor(SkyColor)
+					local sky = lighting:FindFirstChildOfClass('Sky') or Instance.new('Sky')
+					sky.Parent = lighting
+					local c = SkyColor.Value
+					local pure = Color3.new(c.R, c.G, c.B)
+					sky.SkyboxBk = 'rbxasset://textures/sky/skybox_fancy_1.dds'
+					sky.Studio = true
+					sky.Stars = true
+					sky.MoonAngles = Vector2.new(0, 90)
 				until not CustomSky.Enabled
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Custom sky color'
@@ -1958,10 +2023,13 @@ run(function()
 		Name = 'Time Changer',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
 					lighting.ClockTime = TimeValue.Value
 				until not TimeChanger.Enabled
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Change the time of day'
@@ -1971,16 +2039,20 @@ run(function()
 	FOVChanger = larp.Categories.Utility:CreateModule({
 		Name = 'FOV Changer',
 		Function = function(callback)
+			local originalFov
 			if callback then
+				originalFov = workspace.CurrentCamera and workspace.CurrentCamera.FieldOfView or nil
 				repeat
 					task.wait(0.1)
-					if gameCamera then
-						gameCamera.FieldOfView = FOVValue.Value
+					local cam = workspace.CurrentCamera
+					if cam then
+						cam.FieldOfView = FOVValue.Value
 					end
 				until not FOVChanger.Enabled
 			else
-				if gameCamera then
-					gameCamera.FieldOfView = 70
+				local cam = workspace.CurrentCamera
+				if cam then
+					cam.FieldOfView = originalFov or 70
 				end
 			end
 		end,
@@ -2035,18 +2107,22 @@ run(function()
 		Tooltip = 'Fake ragdoll (anchored for a moment)'
 	})
 
-	TinyCharacter = larp.Categories.Utility:CreateModule({
+TinyCharacter = larp.Categories.Utility:CreateModule({
 		Name = 'Tiny Character',
 		Function = function(callback)
+			local saved = {}
 			if callback then
-				repeat
-					task.wait(0.1)
-					local char = entitylib.isAlive and entitylib.character.Character or nil
-					if char then
-						local scale = char:FindFirstChild('HumanoidRootPart') and char.HumanoidRootPart.Size.Y * TinyScale.Value or 1
-						char.HumanoidRootPart.Size = char.HumanoidRootPart.Size * TinyScale.Value
+				local char = entitylib.isAlive and entitylib.character.Character
+				if char and char:FindFirstChild('HumanoidRootPart') then
+					saved[char.HumanoidRootPart] = char.HumanoidRootPart.Size
+					char.HumanoidRootPart.Size = char.HumanoidRootPart.Size * TinyScale.Value
+				end
+			else
+				for part, size in saved do
+					if part and part.Parent then
+						part.Size = size
 					end
-				until not TinyCharacter.Enabled
+				end
 			end
 		end,
 		Tooltip = 'Make your character tiny'
@@ -2056,14 +2132,19 @@ run(function()
 	BigHead = larp.Categories.Utility:CreateModule({
 		Name = 'Big Head',
 		Function = function(callback)
+			local saved = {}
 			if callback then
-				repeat
-					task.wait(0.1)
-					local char = entitylib.isAlive and entitylib.character.Character or nil
-					if char and char:FindFirstChild('Head') then
-						char.Head.Size = char.Head.Size * HeadScale.Value
+				local char = entitylib.isAlive and entitylib.character.Character
+				if char and char:FindFirstChild('Head') then
+					saved[char.Head] = char.Head.Size
+					char.Head.Size = char.Head.Size * HeadScale.Value
+				end
+			else
+				for part, size in saved do
+					if part and part.Parent then
+						part.Size = size
 					end
-				until not BigHead.Enabled
+				end
 			end
 		end,
 		Tooltip = 'Make your head big'
@@ -2073,34 +2154,66 @@ run(function()
 	CharacterTrails = larp.Categories.Utility:CreateModule({
 		Name = 'Character Trails',
 		Function = function(callback)
+			local trail = nil
+			local attachments = {}
 			if callback then
-				repeat
-					task.wait(0.2)
-					local char = entitylib.isAlive and entitylib.character.Character or nil
-					if char and char:FindFirstChild('HumanoidRootPart') then
-						local trail = char:FindFirstChild('Trail') or Instance.new('Trail')
-						trail.Parent = char
+				local char = entitylib.isAlive and entitylib.character.Character
+				if char and char:FindFirstChild('HumanoidRootPart') then
+					trail = Instance.new('Trail')
+					trail.Name = 'LarpTrail'
+					trail.Transparency = NumberSequence.new(0.5)
+					trail.WidthScale = NumberSequence.new(0.5)
+					trail.Lifetime = 0.5
+					trail.Parent = char
+					local first = char:FindFirstChild('HumanoidRootPart')
+					local second = char:FindFirstChild('Head') or char:FindFirstChild('UpperTorso') or first
+					local a1 = Instance.new('Attachment')
+					a1.Name = 'LarpT1'
+					a1.Position = Vector3.new(0, 1, 0)
+					a1.Parent = first
+					local a2 = Instance.new('Attachment')
+					a2.Name = 'LarpT2'
+					a2.Position = Vector3.new(0, -1, 0)
+					a2.Parent = second
+					trail.Attachment0 = a1
+					trail.Attachment1 = a2
+					attachments = {a1, a2}
+				end
+			else
+				if trail and trail.Parent then
+					pcall(function() trail:Destroy() end)
+				end
+				for _, a in attachments do
+					if a and a.Parent then
+						pcall(function() a:Destroy() end)
 					end
-				until not CharacterTrails.Enabled
+				end
 			end
 		end,
 		Tooltip = 'Add a trail to your character'
 	})
 
-	ParticleAura = larp.Categories.Utility:CreateModule({
+ParticleAura = larp.Categories.Utility:CreateModule({
 		Name = 'Particle Aura',
 		Function = function(callback)
+			local emitter = nil
 			if callback then
-				repeat
-					task.wait(0.2)
-					local char = entitylib.isAlive and entitylib.character.Character or nil
-					if char and char:FindFirstChild('HumanoidRootPart') and not char.HumanoidRootPart:FindFirstChild('Aura') then
-						local p = Instance.new('ParticleEmitter')
-						p.Name = 'Aura'
-						p.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
-						p.Parent = char.HumanoidRootPart
-					end
-				until not ParticleAura.Enabled
+				local char = entitylib.isAlive and entitylib.character.Character
+				if char and char:FindFirstChild('HumanoidRootPart') then
+					emitter = Instance.new('ParticleEmitter')
+					emitter.Name = 'LarpAura'
+					emitter.Texture = 'rbxasset://textures/particles/sparkles_main.dds'
+					emitter.Rate = 20
+					emitter.Lifetime = NumberSequence.new(1)
+					emitter.Speed = NumberSequence.new(2)
+					emitter.Size = NumberSequence.new(0.4)
+					emitter.LightEmission = 0.5
+					emitter.Parent = char.HumanoidRootPart
+				end
+			else
+				if emitter and emitter.Parent then
+					pcall(function() emitter:Destroy() end)
+				end
 			end
 		end,
 		Tooltip = 'Particle aura around you'
@@ -2109,21 +2222,36 @@ run(function()
 	RainbowCharacter = larp.Categories.Utility:CreateModule({
 		Name = 'Rainbow Character',
 		Function = function(callback)
+			local saved = {}
 			if callback then
 				local hue = 0
+				local char = entitylib.isAlive and entitylib.character.Character
+				if char then
+					for _, part in char:GetDescendants() do
+						if part:IsA('BasePart') and part.Name ~= 'HumanoidRootPart' then
+							saved[part] = part.Color
+						end
+					end
+				end
 				repeat
 					runService.RenderStepped:Wait()
 					hue = (hue + 0.01) % 1
 					local color = Color3.fromHSV(hue, 1, 1)
-					local char = entitylib.isAlive and entitylib.character.Character or nil
+					char = entitylib.isAlive and entitylib.character.Character
 					if char then
 						for _, part in char:GetDescendants() do
-							if part:IsA('BasePart') then
+							if part:IsA('BasePart') and part.Name ~= 'HumanoidRootPart' then
 								part.Color = color
 							end
 						end
 					end
 				until not RainbowCharacter.Enabled
+			else
+				for part, color in saved do
+					if part and part.Parent and part:IsA('BasePart') then
+						part.Color = color
+					end
+				end
 			end
 		end,
 		Tooltip = 'Rainbow colored character'
@@ -2133,12 +2261,13 @@ run(function()
 		Name = 'Low Gravity',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
 					workspace.Gravity = 30
 				until not LowGravity.Enabled
 			else
-				workspace.Gravity = 196.2
+				workspace.Gravity = lightState.Gravity or 196.2
 			end
 		end,
 		Tooltip = 'Low gravity'
@@ -2147,7 +2276,10 @@ run(function()
 	MoonJump = larp.Categories.Utility:CreateModule({
 		Name = 'Moon Jump',
 		Function = function(callback)
+			local originalJump
 			if callback then
+				saveLightState()
+				originalJump = getLocalHumanoid() and getLocalHumanoid().JumpPower or nil
 				repeat
 					task.wait()
 					workspace.Gravity = 5
@@ -2155,7 +2287,9 @@ run(function()
 					if hum then hum.JumpPower = 100 end
 				until not MoonJump.Enabled
 			else
-				workspace.Gravity = 196.2
+				workspace.Gravity = lightState.Gravity or 196.2
+				local hum = getLocalHumanoid()
+				if hum and originalJump then hum.JumpPower = originalJump end
 			end
 		end,
 		Tooltip = 'Moon gravity + high jump'
@@ -2165,12 +2299,13 @@ run(function()
 		Name = 'No Fog',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
 					lighting.FogEnd = 99999
 				until not NoFog.Enabled
 			else
-				lighting.FogEnd = 500
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Remove fog'
@@ -2180,10 +2315,13 @@ run(function()
 		Name = 'Custom Lighting',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
 					lighting.Brightness = LightBrightness.Value
 				until not CustomLighting.Enabled
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Custom lighting brightness'
@@ -2817,9 +2955,17 @@ function weather.makeParticle(color, texture, size, rate, speed, spread, lifetim
 	p.Color = ColorSequence.new(color)
 	p.Size = NumberSequence.new(size)
 	p.Rate = rate
-	p.Speed = NumberSequence.new(speed)
+	if type(speed) == 'table' then
+		p.Speed = NumberSequence.new(speed[1], speed[2])
+	else
+		p.Speed = NumberSequence.new(speed)
+	end
 	p.SpreadAngle = Vector2.new(spread, spread)
-	p.Lifetime = NumberSequence.new(lifetime)
+	if type(lifetime) == 'table' then
+		p.Lifetime = NumberSequence.new(lifetime[1], lifetime[2])
+	else
+		p.Lifetime = NumberSequence.new(lifetime)
+	end
 	p.Parent = parent
 	return p
 end
@@ -2866,46 +3012,26 @@ run(function()
 
 	local function makeRain()
 		if not entitylib.isAlive then return end
-		local char = entitylib.character.Character
-		local root = char:FindFirstChild('HumanoidRootPart') or char:FindFirstChildOfClass('BasePart')
+		local root = entitylib.character.RootPart
 		if not root then return end
-		local parent = workspace.Terrain
-		local p = weather.makeParticle(RainColor.Value, 'rbxasset://textures/particles/falling_star.dds', 0.3, RainAmount.Value, {40, 50}, 5, {2, 3}, parent)
+		local parent = root
+		local p = weather.makeParticle(RainColor.Value, 'rbxasset://textures/particles/falling_star.dds', 1, RainAmount.Value, {60, 70}, 30, {2.5, 3.5}, parent)
 		p.LightEmission = 0.2
 		p.LightInfluence = 0
 		p.Rotation = NumberSequence.new(0)
 		p.RotSpeed = NumberSequence.new(0)
-		p.Parent = parent
+		p.EmissionDirection = Enum.NormalId.Default
+		p.Enabled = true
 		table.insert(rainParts, p)
-		-- local rain aura that follows player
-		local aura = Instance.new('ParticleEmitter')
-		aura.Texture = 'rbxasset://textures/particles/falling_star.dds'
-		aura.Color = ColorSequence.new(RainColor.Value)
-		aura.Size = NumberSequence.new(0.3)
-		aura.Rate = RainAmount.Value * 0.4
-		aura.Speed = NumberSequence.new(35)
-		aura.Lifetime = NumberSequence.new(1.5)
-		aura.SpreadAngle = Vector2.new(15, 15)
-		aura.Parent = root
-		table.insert(rainParts, aura)
 	end
 
 	local function makeSnow()
 		if not entitylib.isAlive then return end
 		local root = entitylib.character.RootPart
-		local p = weather.makeParticle(Color3.fromRGB(255, 255, 255), 'rbxasset://textures/particles/snow.dds', 0.6, SnowAmount.Value, {2, 4}, 10, {4, 6}, workspace.Terrain)
+		if not root then return end
+		local p = weather.makeParticle(Color3.fromRGB(255, 255, 255), 'rbxasset://textures/particles/snow.dds', 1, SnowAmount.Value, {2, 4}, 30, {4, 6}, root)
 		p.Rotation = NumberSequence.new(0)
 		table.insert(rainParts, p)
-		local aura = Instance.new('ParticleEmitter')
-		aura.Texture = 'rbxasset://textures/particles/snow.dds'
-		aura.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255))
-		aura.Size = NumberSequence.new(0.6)
-		aura.Rate = SnowAmount.Value * 0.3
-		aura.Speed = NumberSequence.new(3)
-		aura.Lifetime = NumberSequence.new(4)
-		aura.SpreadAngle = Vector2.new(20, 20)
-		aura.Parent = root
-		table.insert(rainParts, aura)
 	end
 
 	local function makeAurora()
@@ -2946,12 +3072,14 @@ run(function()
 		floodPart.Name = 'Flood'
 		floodPart.Anchored = true
 		floodPart.CanCollide = true
-		floodPart.CanQuery = false
+		floodPart.CanQuery = true
 		floodPart.CanTouch = true
-		floodPart.Transparency = 0.4
+		floodPart.Transparency = 0.35
 		floodPart.Material = Enum.Material.Water
-		floodPart.Size = Vector3.new(500, 1, 500)
-		floodPart.Position = Vector3.new(0, 0, 0)
+		floodPart.Color = Color3.fromRGB(50, 130, 255)
+		floodPart.Size = Vector3.new(600, 1, 600)
+		local startY = entitylib.isAlive and entitylib.character.RootPart.Position.Y or 0
+		floodPart.Position = Vector3.new(0, startY - 2, 0)
 		floodPart.Parent = workspace
 	end
 
@@ -2961,9 +3089,20 @@ run(function()
 			if callback then
 				makeRain()
 				repeat
-					task.wait(0.5)
-					if #rainParts < 4 then
-						makeRain()
+					task.wait(0.4)
+					local root = entitylib.isAlive and entitylib.character.RootPart or nil
+					if root then
+						local alive = #rainParts > 0
+						if not alive then
+							makeRain()
+						else
+							local char = entitylib.character.Character
+							for _, p in ipairs(rainParts) do
+								if p and (not p.Parent or char and not char:IsAncestorOf(p.Parent)) then
+									pcall(function() p.Parent = root end)
+								end
+							end
+						end
 					end
 				until not Rain.Enabled
 				clearParticles()
@@ -2980,8 +3119,9 @@ run(function()
 			if callback then
 				makeSnow()
 				repeat
-					task.wait(0.5)
-					if #rainParts < 4 then
+					task.wait(0.4)
+					local root = entitylib.isAlive and entitylib.character.RootPart or nil
+					if root and #rainParts == 0 then
 						makeSnow()
 					end
 				until not Snow.Enabled
@@ -2995,7 +3135,8 @@ run(function()
 	Thunderstorm = larp.Categories.World:CreateModule({
 		Name = 'Thunderstorm',
 		Function = function(callback)
-if callback then
+			if callback then
+				saveLightState()
 				makeRain()
 				repeat
 					task.wait()
@@ -3004,7 +3145,8 @@ if callback then
 					lightningFlash.Color = Color3.new(1, 1, 1)
 					lightningFlash.Brightness = 0
 					lightningFlash.Range = 200
-					lightningFlash.Parent = gameCamera
+					local cam = workspace.CurrentCamera or gameCamera
+					lightningFlash.Parent = cam
 					local t = tweenService:Create(lightningFlash, TweenInfo.new(0.1), {Brightness = 5})
 					t:Play()
 					task.wait(0.15)
@@ -3013,7 +3155,7 @@ if callback then
 					task.wait(math.random(2, 6))
 					pcall(function() lightningFlash:Destroy() end)
 				until not Thunderstorm.Enabled
-				lighting.Brightness = 1
+				restoreLightState()
 				clearParticles()
 			end
 		end,
@@ -3024,14 +3166,13 @@ if callback then
 		Name = 'Fog',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
-					lighting.FogStart = 10
-					lighting.FogEnd = FogAmount.Value
-					lighting.FogColor = Color3.fromRGB(180, 180, 180)
+					setFog(10, FogAmount.Value, Color3.fromRGB(180, 180, 180))
 				until not FogMod.Enabled
-				lighting.FogStart = 0
-				lighting.FogEnd = 500
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Fog effect'
@@ -3042,13 +3183,13 @@ if callback then
 		Name = 'Heavy Fog',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
-					lighting.FogStart = 0
-					lighting.FogEnd = 30
-					lighting.FogColor = Color3.fromRGB(140, 140, 140)
+					setFog(0, 30, Color3.fromRGB(140, 140, 140))
 				until not HeavyFog.Enabled
-				lighting.FogEnd = 500
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Dense fog'
@@ -3116,12 +3257,15 @@ if callback then
 		Name = 'Sunset',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
 					lighting.ClockTime = 18
 					lighting.Brightness = 0.8
-					lighting.Ambient = Color3.fromRGB(255, 160, 80)
+					setAmbient(Color3.fromRGB(255, 160, 80))
 				until not Sunset.Enabled
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Sunset time + warm light'
@@ -3131,11 +3275,14 @@ if callback then
 		Name = 'Night',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
 					lighting.ClockTime = 0
 					lighting.Brightness = 0.1
 				until not Night.Enabled
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Night time'
@@ -3145,11 +3292,14 @@ if callback then
 		Name = 'Day',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
 					lighting.ClockTime = 14
 					lighting.Brightness = 1
 				until not Day.Enabled
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Day time'
@@ -3159,12 +3309,15 @@ if callback then
 		Name = 'Moonlight',
 		Function = function(callback)
 			if callback then
+				saveLightState()
 				repeat
 					task.wait()
 					lighting.ClockTime = 0
 					lighting.Brightness = 0.3
-					lighting.Ambient = Color3.fromRGB(60, 80, 160)
+					setAmbient(Color3.fromRGB(60, 80, 160))
 				until not Moonlight.Enabled
+			else
+				restoreLightState()
 			end
 		end,
 		Tooltip = 'Blue moonlight'
@@ -3314,13 +3467,18 @@ if callback then
 		Function = function(callback)
 			if callback then
 				makeFlood()
-				local startY = floodPart.Position.Y
+				local startY = floodPart and floodPart.Position.Y or 0
 				repeat
 					task.wait(0.1)
 					if floodPart then
 						local target = math.min(floodPart.Position.Y + FloodSpeed.Value, FloodHeight.Value)
-						floodPart.Position = Vector3.new(0, target, 0)
-						floodPart.Transparency = 0.3
+						local root = entitylib.isAlive and entitylib.character.RootPart or nil
+						if root then
+							floodPart.Position = Vector3.new(root.Position.X, target, root.Position.Z)
+						else
+							floodPart.Position = Vector3.new(0, target, 0)
+						end
+						floodPart.Transparency = 0.35
 					end
 				until not Flood.Enabled
 				if floodPart then

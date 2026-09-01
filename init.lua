@@ -282,9 +282,26 @@ local function verifyFiles()
 			task.wait()
 		end
 	end
-	for _, path in VERIFY_FILES do
+	--[[ Only hash files that were actually (re)downloaded this load. A file whose
+		watermark matches the current commit is already the right version, so hashing
+		every file on every inject just burns CPU on ~1.5MB of SHA-512. ]]
+	local fresh = {}
+	for _, path in todo do
 		local full = 'LarpV4/'..path
 		local expected = MANIFEST[path]
+		if expected and pcall(function()
+			return fileDigest(full) == expected
+		end) then
+			fresh[path] = true
+		end
+	end
+	for _, path in VERIFY_FILES do
+		if fresh[path] then continue end
+		local full = 'LarpV4/'..path
+		local expected = MANIFEST[path]
+		if expected and isfile(full) and readfile(full):sub(1, #LARPWATER) == LARPWATER then
+			continue
+		end
 		if expected and (not isfile(full) or not pcall(function()
 			return fileDigest(full) == expected
 		end)) then

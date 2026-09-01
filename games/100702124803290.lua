@@ -2896,9 +2896,8 @@ run(function()
 	Thunderstorm = larp.Categories.World:CreateModule({
 		Name = 'Thunderstorm',
 		Function = function(callback)
-			if callback then
+if callback then
 				makeRain()
-				lighting:FindFirstChildOfClass('Atmosphere') and nil
 				repeat
 					task.wait()
 					lighting.Brightness = 0.4

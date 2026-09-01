@@ -3450,6 +3450,8 @@ run(function()
 	local FastBow
 	local FastDelay
 	local FastShoot
+	local FastPreset
+	local CBDelay
 	local EnhancedAura
 	local clickConn
 	local swingRequested = false
@@ -3478,7 +3480,7 @@ run(function()
 		local _, sword = getHandSword()
 		local speed = sword and sword.attackSpeed
 		local weapon = math.max((speed and speed > 0 and speed) or 0.3, 0.05)
-		local hits = HitReg.Value
+		local hits = tonumber(HitReg.Value) or 34
 		local margin = 0.004 + (hits >= 35 and 0.004 or 0)
 		local hitReg = 10 / hits - margin
 		return math.min(weapon, math.max(hitReg, 0.05))
@@ -3659,14 +3661,31 @@ run(function()
 	local function fastHitShoot(ent)
 		if not entitylib.isAlive or not ent or not ent.RootPart then return end
 		local oldHotbar = store.hand.tool and getHotbar(store.hand.tool) or nil
-		task.wait(FastDelay.Value)
+		local delay = math.max(FastDelay.Value, 0.03)
+		task.wait(delay)
 		local fired = false
 		local projectileHandler = getProjectileHandler()
-		for _, data in getProjectiles(FastBow.ListEnabled) do
+		local bows = getProjectiles(FastBow.ListEnabled)
+		if #bows == 0 then
+			bows = getProjectiles()
+			if #bows > 1 then
+				local handItem = getHandItem()
+				local handProj = handItem and (bedwars.ItemMeta[handItem.itemType] or {}).projectileSource
+				if handProj then
+					local held = getProjectiles({handItem.itemType})
+					if #held > 0 then
+						bows = held
+					end
+				end
+			end
+		end
+		for _, data in bows do
 			if fired then break end
 			local item, ammo, projectile, itemMeta = unpack(data)
+			local isCrossbow = (projectile:find('crossbow') or projectile:find('cross_bow') or projectile:find('crossbow_blessed')) ~= nil
+			local switchDelay = isCrossbow and CBDelay.Value or store.ping.total
 			if hotbarSwitch(getHotbar(item.tool)) then
-				task.wait(store.ping.total)
+				task.wait(switchDelay)
 				local meta = bedwars.ProjectileMeta and bedwars.ProjectileMeta[projectile]
 				if meta then
 					local projSpeed = meta.launchVelocity or 100
@@ -3771,9 +3790,16 @@ run(function()
 								swingRequested = false
 								if os.clock() - lastSwing >= getAttackInterval() then
 									lastSwing = os.clock()
-									attack(target[1], workspace:GetServerTimeNow(), false)
-									if FastHits.Enabled then
-										task.spawn(fastHitShoot, target[1])
+									local targets = selectTargets()
+									local startTime = workspace:GetServerTimeNow()
+									for _, t in ipairs(targets) do
+										attack(t[1], startTime, true)
+									end
+									if #targets > 0 then
+										store.KillauraTarget = targets[1][1]
+										if FastHits.Enabled then
+											task.spawn(fastHitShoot, targets[1][1])
+										end
 									end
 								end
 							end
@@ -3828,6 +3854,11 @@ run(function()
 		Name = 'Target mode',
 		List = {'Single', 'Multi', 'Switch', 'Cycle', 'Closest', 'Priority', 'All'},
 		Default = 'Single',
+		Function = function(value)
+			if MultiCount then
+				MultiCount.Object.Visible = (value == 'Multi' or value == 'All')
+			end
+		end,
 		Tooltip = 'Single - one target at a time\nMulti - up to the Multi target count\nSwitch - locks one target, switches after it dies\nCycle - cycles through targets\nClosest - always nearest\nPriority - highest priority player\nAll - everyone in range'
 	})
 	MultiCount = Killaura:CreateSlider({
@@ -3852,8 +3883,14 @@ run(function()
 			if FastBow then
 				FastBow.Object.Visible = callback
 			end
+			if FastPreset then
+				FastPreset.Object.Visible = callback
+			end
 			if FastDelay then
 				FastDelay.Object.Visible = callback
+			end
+			if CBDelay then
+				CBDelay.Object.Visible = callback
 			end
 			if FastShoot then
 				FastShoot.Object.Visible = callback
@@ -3865,17 +3902,50 @@ run(function()
 		Name = 'Fast Hits Bow',
 		Default = {'wood_crossbow', 'crossbow'},
 		Visible = true,
-		Tooltip = 'Bows to use for Fast Hits (any projectile weapon name)'
+		Tooltip = 'Bows to use for Fast Hits (any projectile weapon name). Leave empty to auto-detect the bow in your hand/hotbar'
+	})
+	FastPreset = Killaura:CreateDropdown({
+		Name = 'Bow Preset',
+		List = {'Custom', 'Crossbow', 'Wood Crossbow', 'Full Auto', 'Any Bow'},
+		Default = 'Custom',
+		Visible = true,
+		Function = function(value)
+			local preset
+			if value == 'Custom' then
+				preset = {'wood_crossbow', 'crossbow'}
+			elseif value == 'Crossbow' then
+				preset = {'crossbow'}
+			elseif value == 'Wood Crossbow' then
+				preset = {'wood_crossbow'}
+			elseif value == 'Full Auto' then
+				preset = {'wood_crossbow', 'crossbow', 'crossbow_blessed'}
+			elseif value == 'Any Bow' then
+				preset = {}
+			end
+			FastBow.List = preset
+			FastBow.ListEnabled = preset
+		end,
+		Tooltip = 'Quickly fills the Fast Hits Bow list with a common setup'
 	})
 	FastDelay = Killaura:CreateSlider({
 		Name = 'Fast Hits Delay',
-		Min = 0,
+		Min = 0.03,
 		Max = 1,
 		Default = 0.08,
 		Decimal = 100,
 		Suffix = 'seconds',
 		Visible = true,
-		Tooltip = 'Delay between the sword hit and the bow shot'
+		Tooltip = 'Delay between the sword hit and the bow shot. 0 would make the shot ghost, so a minimum is enforced'
+	})
+	CBDelay = Killaura:CreateSlider({
+		Name = 'CB Switch Delay',
+		Min = 0.05,
+		Max = 1,
+		Default = 0.15,
+		Decimal = 100,
+		Suffix = 'seconds',
+		Visible = true,
+		Tooltip = 'Extra delay when switching to a crossbow so the shot always registers instead of ghosting'
 	})
 	FastShoot = Killaura:CreateSlider({
 		Name = 'Fast Hits Hold',
@@ -3916,14 +3986,10 @@ run(function()
 		end,
 		Tooltip = 'Range where attacks land. Full range registers because the hit position is spoofed to the weapon max (14.4 default, up to 17.3 on long-range weapons)'
 	})
-	HitReg = Killaura:CreateSlider({
+	HitReg = Killaura:CreateDropdown({
 		Name = 'Hit reg',
-		Min = 33,
-		Max = 35,
-		Default = 34,
-		Suffix = function(val)
-			return val .. ' hits'
-		end,
+		List = {'33', '34', '35'},
+		Default = '34',
 		Tooltip = 'Swing rate in hits per 10 seconds: 34 is consistent, 35 lands more but some swings get rejected'
 	})
 	SwingAnim = Killaura:CreateToggle({

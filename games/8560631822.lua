@@ -49,6 +49,151 @@ local getcustomasset = larp.Libraries.getcustomasset
 local rankCache = {}
 local projectileShotTimes = {}
 local projectileShotCounter = 0
+
+-- ============================================================
+-- ADVANCED BALLISTIC PREDICTION ENGINE
+-- From-scratch iterative time-of-flight solver replacing the
+-- obfuscated library. Models target ballistic motion (jumps,
+-- falls, strafe), gravity differences (balloons/owl), and
+-- converges with relaxation damping. All modules (Aimbot,
+-- FastHits, SilentAim, AutoShoot) route through these.
+-- ============================================================
+local ballistic = {}
+local bsin = math.sin
+local bcos = math.cos
+local bsqrt = math.sqrt
+local bclamp = math.clamp
+local babs = math.abs
+
+ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVel, targetGravity, hipHeight, jumpSpeed, rayCheck, targetAirborne, targetRootPos, targetRoot, extraA, extraB)
+	origin = origin or Vector3.zero
+	targetPos = targetPos or origin
+	targetVel = targetVel or Vector3.zero
+	speed = speed or 100
+	gravity = gravity or 196.2
+	targetGravity = targetGravity or workspace.Gravity or 196.2
+
+	local function targetAt(t)
+		if targetAirborne and targetGravity > 0 then
+			-- target's own ballistic motion under its gravity
+			return targetPos + targetVel * t - Vector3.new(0, 0.5 * targetGravity * t * t, 0)
+		end
+		return targetPos + targetVel * t
+	end
+
+	local function closedForm(target)
+		local dx = target.X - origin.X
+		local dy = target.Y - origin.Y
+		local dz = target.Z - origin.Z
+		local horiz = bsqrt(dx * dx + dz * dz)
+		if horiz < 0.001 then
+			local m = bsqrt(dx * dx + dy * dy + dz * dz)
+			if m < 0.001 then return nil, nil end
+			return Vector3.new(dx / m * speed, dy / m * speed, dz / m * speed), nil
+		end
+		local A = gravity * horiz * horiz / (2 * speed * speed)
+		local C = dy + A
+		local disc = horiz * horiz - 4 * A * C
+		if disc < 0 then
+			return nil, nil
+		end
+		local sqrtDisc = bsqrt(disc)
+		local u = (horiz - sqrtDisc) / (2 * A)
+		if u ~= u or u < -2 or u > 2 then
+			u = (horiz + sqrtDisc) / (2 * A)
+			if u ~= u or u < -2 or u > 2 then
+				return nil, nil
+			end
+		end
+		local cosT = 1 / bsqrt(1 + u * u)
+		local sinT = u * cosT
+		local vx = dx / horiz * cosT * speed
+		local arcTof
+		if babs(vx) > 0.001 then
+			arcTof = dx / vx
+		end
+		return Vector3.new(vx, sinT * speed, dz / horiz * cosT * speed), arcTof
+	end
+
+	local dist0 = (targetPos - origin).Magnitude
+	if dist0 < 0.001 then
+		return origin + Vector3.new(0, 1, 0) * speed, 0, 0.05
+	end
+	local tof = bclamp(dist0 / speed, 0.02, 6)
+
+	local bestGood
+	local vel
+	for iter = 1, 14 do
+		local tp = targetAt(tof)
+		local arcTof
+		vel, arcTof = closedForm(tp)
+		if vel then
+			bestGood = { tof, vel }
+			local newTof
+			if arcTof and arcTof > 0.01 then
+				newTof = bclamp(arcTof, 0.02, 6)
+			else
+				local m = (tp - origin).Magnitude
+				newTof = bclamp(m / speed, 0.02, 6)
+			end
+			-- relaxation damping prevents ping-pong divergence
+			newTof = 0.55 * newTof + 0.45 * tof
+			if babs(newTof - tof) < 0.002 then
+				tof = newTof
+				break
+			end
+			tof = newTof
+		else
+			tof = tof * 0.6
+			if tof < 0.02 then
+				break
+			end
+		end
+	end
+
+	local tp = targetAt(tof)
+	vel = closedForm(tp)
+	if not vel and bestGood then
+		tof, vel = bestGood[1], bestGood[2]
+	end
+	if not vel then
+		local m = (tp - origin).Magnitude
+		if m < 0.001 then
+			return origin + Vector3.new(0, 1, 0) * speed, 0, 0.05
+		end
+		vel = (tp - origin) / m * speed
+	end
+	return origin + vel.Unit * speed, tp, tof
+end
+
+ballistic.IsTrajectoryClear = function(origin, velocity, gravity, maxTime, rayCheck)
+	origin = origin or Vector3.zero
+	velocity = velocity or Vector3.zero
+	gravity = gravity or 196.2
+	maxTime = maxTime or 1
+	local pos = origin
+	local vel = velocity
+	local step = 0.08
+	local t = 0
+	while t < maxTime do
+		local nextPos = pos + vel * step
+		local ray = workspace:Raycast(pos, nextPos - pos, rayCheck)
+		if ray then
+			return false
+		end
+		pos = nextPos
+		vel = vel - Vector3.new(0, gravity * step, 0)
+		t = t + step
+	end
+	return true
+end
+
+-- wire into the shared prediction library so every caller gets the advanced solver
+if type(prediction) == 'table' then
+	prediction.SolveTrajectory = ballistic.SolveTrajectory
+	prediction.IsTrajectoryClear = ballistic.IsTrajectoryClear
+end
+getgenv().ballistic = ballistic
 local store = {
 	attackReach = 0,
 	killauraAttacking = false,

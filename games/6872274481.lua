@@ -3450,9 +3450,13 @@ run(function()
 	local FastBow
 	local FastDelay
 	local FastShoot
+	local FastHitsCount
 	local EnhancedAura
 	local clickConn
 	local swingRequested = false
+	local comboHits = 0
+	local comboResetAt = 0
+	local comboRunning = false
 	local cycleIndex = 0
 	local switchLockedTarget
 
@@ -3628,6 +3632,11 @@ run(function()
 		})
 		store.killauraAttacking = false
 		if ok then
+			if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
+			comboHits = comboHits + 1
+			if FastHitsCount and comboHits >= FastHitsCount.Value then
+				comboResetAt = os.clock() + 0.6
+			end
 			store.lastHit = os.clock()
 		end
 		return ok
@@ -3658,10 +3667,9 @@ run(function()
 
 	local function fastHitShoot(ent)
 		if not entitylib.isAlive or not ent or not ent.RootPart then return end
+		if comboRunning then return end
+		comboRunning = true
 		local oldHotbar = store.hand.tool and getHotbar(store.hand.tool) or nil
-		local delay = math.max(FastDelay.Value, 0.03)
-		task.wait(delay)
-		local fired = false
 		local projectileHandler = getProjectileHandler()
 		local bows = getProjectiles(FastBow.ListEnabled)
 		if #bows == 0 then
@@ -3692,28 +3700,43 @@ run(function()
 				end
 			end
 		end
-		for _, data in bows do
-			if fired then break end
-			local item, ammo, projectile, itemMeta = unpack(data)
-			if hotbarSwitch(getHotbar(item.tool)) then
-				task.wait(math.max(store.ping.total, 0.03))
-				local meta = bedwars.ProjectileMeta and bedwars.ProjectileMeta[projectile]
-				if meta then
-					local projSpeed = meta.launchVelocity or 100
-					local gravity = meta.gravitationalAcceleration or 196.2
-					local calc = prediction.SolveTrajectory(entitylib.character.RootPart.Position, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
-					if calc and projectileHandler then
-						local handler = projectileHandler.new(1, 1, projectile, nil, calc, Vector3.new(0, 0, 0))
-						pcall(bedwars.ProjectileController.launchProjectile, bedwars.ProjectileController, item.itemType, ammo, handler, item.tool, itemMeta)
-						fired = true
+		if #bows == 0 then
+			comboRunning = false
+			return
+		end
+		local item, ammo, projectile, itemMeta = unpack(bows[1])
+		local switchDelay = math.max(FastDelay.Value, 0.03)
+		local comboLimit = FastHitsCount and math.floor(FastHitsCount.Value) or 41
+		local safety = 0
+		while entitylib.isAlive and ent.RootPart and comboHits < comboLimit do
+			attack(ent, workspace:GetServerTimeNow())
+			task.wait(switchDelay)
+			if not hotbarSwitch(getHotbar(item.tool)) then break end
+			task.wait(math.max(store.ping.total, 0.03))
+			local meta = bedwars.ProjectileMeta and bedwars.ProjectileMeta[projectile]
+			if meta then
+				local projSpeed = meta.launchVelocity or 100
+				local gravity = meta.gravitationalAcceleration or 196.2
+				local calc = prediction.SolveTrajectory(entitylib.character.RootPart.Position, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
+				if calc and projectileHandler then
+					local handler = projectileHandler.new(1, 1, projectile, nil, calc, Vector3.new(0, 0, 0))
+					local okFire = pcall(bedwars.ProjectileController.launchProjectile, bedwars.ProjectileController, item.itemType, ammo, handler, item.tool, itemMeta)
+					if okFire then
+						if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
+						comboHits = comboHits + 1
+						if comboHits >= comboLimit then
+							comboResetAt = os.clock() + 0.6
+						end
 					end
 				end
-				if fired then
-					task.wait(FastShoot.Value)
-				end
-				hotbarSwitch(oldHotbar)
 			end
+			hotbarSwitch(oldHotbar)
+			task.wait(FastShoot.Value)
+			safety = safety + 1
+			if safety >= comboLimit then break end
 		end
+		hotbarSwitch(oldHotbar)
+		comboRunning = false
 	end
 
 	local function swingMulti()
@@ -3721,12 +3744,13 @@ run(function()
 		local targets = selectTargets()
 		if #targets == 0 then return end
 		store.KillauraTarget = targets[1][1]
+		if FastHits.Enabled then
+			task.spawn(fastHitShoot, targets[1][1])
+			return
+		end
 		local startTime = workspace:GetServerTimeNow()
 		for i, t in ipairs(targets) do
 			attack(t[1], startTime)
-		end
-		if FastHits.Enabled then
-			task.spawn(fastHitShoot, targets[1][1])
 		end
 	end
 
@@ -3789,8 +3813,12 @@ run(function()
 				end
 
 				repeat
+					if comboResetAt ~= 0 and os.clock() > comboResetAt then
+						comboHits = 0
+						comboResetAt = 0
+					end
 					local target
-					if canAttack() then
+					if canAttack() and not comboRunning then
 						target = selectTargets()[1]
 						if target then
 							store.KillauraTarget = target[1]
@@ -3799,18 +3827,18 @@ run(function()
 							elseif swingRequested or inputService:IsMouseButtonPressed(0) then
 								local fresh = swingRequested
 								swingRequested = false
-								if os.clock() - lastSwing >= getAttackInterval() then
+								if FastHits.Enabled then
+									local targets = selectTargets()
+									if #targets > 0 then
+										store.KillauraTarget = targets[1][1]
+										task.spawn(fastHitShoot, targets[1][1])
+									end
+								elseif os.clock() - lastSwing >= getAttackInterval() then
 									lastSwing = os.clock()
 									local targets = selectTargets()
 									local startTime = workspace:GetServerTimeNow()
 									for _, t in ipairs(targets) do
 										attack(t[1], startTime, true)
-									end
-									if #targets > 0 then
-										store.KillauraTarget = targets[1][1]
-										if FastHits.Enabled then
-											task.spawn(fastHitShoot, targets[1][1])
-										end
 									end
 								end
 							end
@@ -3900,6 +3928,9 @@ run(function()
 			if FastShoot then
 				FastShoot.Object.Visible = callback
 			end
+			if FastHitsCount then
+				FastHitsCount.Object.Visible = callback
+			end
 		end,
 		Tooltip = 'After a sword hit, switches to your bow and shoots the same target. OP combo: sword then arrow'
 	})
@@ -3928,6 +3959,16 @@ run(function()
 		Suffix = 'seconds',
 		Visible = true,
 		Tooltip = 'How long to hold the bow after shooting before switching back'
+	})
+	FastHitsCount = Killaura:CreateSlider({
+		Name = 'Combo Hits',
+		Min = 1,
+		Max = 100,
+		Default = 41,
+		Decimal = 0,
+		Suffix = 'hits',
+		Visible = true,
+		Tooltip = 'Total combo hits to land (sword + bow combined) before stopping the chain. 41 = swing/shoot 41 times'
 	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',

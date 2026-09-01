@@ -1,4 +1,4 @@
---This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+﻿--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
 local run = function(func)
 	func()
 end
@@ -3531,11 +3531,11 @@ run(function()
 		return targets
 	end
 
-	local function attack(ent, swingStartTime)
+	local function attack(ent, swingStartTime, animate)
 		if not SwordController then return false end
 		local e = toGameEntity(ent)
 		if not e then return false end
-		if SwingAnim.Enabled then
+		if animate ~= false and SwingAnim.Enabled then
 			playSwingAnim()
 		end
 		store.killauraAttacking = true
@@ -3618,10 +3618,11 @@ run(function()
 							if not SwingOnly.Enabled then
 								swingMulti()
 							elseif swingRequested or inputService:IsMouseButtonPressed(0) then
+								local fresh = swingRequested
 								swingRequested = false
 								if os.clock() - lastSwing >= getAttackInterval() then
 									lastSwing = os.clock()
-									attack(target[1], workspace:GetServerTimeNow())
+									attack(target[1], workspace:GetServerTimeNow(), fresh)
 								end
 							end
 						end
@@ -4340,7 +4341,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 							playerGravity = (workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))))
 						end
 	
-						if plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
+						if plr.Character.PrimaryPart and plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
 							playerGravity = 6
 						end
 	
@@ -4352,7 +4353,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 							end
 						end
 	
-local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
+						local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
 						local targetPart = TargetPart.Value == 'Neck' and plr.RootPart or (plr[TargetPart.Value] or plr.RootPart)
 						local targetPos = isLasso and plr.RootPart.Position + Vector3.new(0, 2, 0) or targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
 						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
@@ -4364,7 +4365,7 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 						local isFireball = projmeta.projectile == 'fireball'
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
 						local projSpeedTotal = projSpeed * (Mode.Value == 'Adaptive' and math.clamp(Prediction.Value, 0.9, 1.1) or Prediction.Value) * charge
-						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 						if calc then
 							calc = blendAim(newlook.p, calc, plr.RootPart)
 						end
@@ -4404,7 +4405,7 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 									positionFrom = offsetpos,
 									deltaT = lifetime,
 									gravitationalAcceleration = gravity,
-									drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+									drawDurationSeconds = projmeta.drawDurationSeconds
 								}
 							end
 						elseif isFireball and FireballSplash.Enabled then
@@ -4417,14 +4418,14 @@ local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocit
 									positionFrom = offsetpos,
 									deltaT = lifetime,
 									gravitationalAcceleration = gravity,
-									drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+									drawDurationSeconds = projmeta.drawDurationSeconds
 								}
 							end
 						end
 					end
 
 					return old(...)
-					end)
+					end, ...)
 					if ok then return result end
 					return old(...)
 				end
@@ -4543,7 +4544,7 @@ else
 	})
 	Blacklist = ProjectileAimbot:CreateTextList({
 		Name = 'Blacklist',
-		Default = {'telepearl'}
+		Default = {'glue_trap'}
 	})
 end)
 
@@ -4827,7 +4828,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 								positionFrom = offsetpos,
 								deltaT = lifetime,
 								gravitationalAcceleration = gravity,
-								drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+								drawDurationSeconds = projmeta.drawDurationSeconds
 							}
 						end
 
@@ -4843,7 +4844,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 										positionFrom = offsetpos,
 										deltaT = lifetime,
 										gravitationalAcceleration = gravity,
-										drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+										drawDurationSeconds = projmeta.drawDurationSeconds
 									}
 								end
 							end
@@ -4851,7 +4852,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					end
 
 					return old(...)
-					end)
+					end, ...)
 					if ok then return result end
 					return old(...)
 				end
@@ -4880,7 +4881,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 				table.clear(aimHistory)
 			end
 		end,
-		Tooltip = 'ProjectileAimbot test build. Simple mode uses iterative prediction — estimate travel, predict where the target will be, re-solve until converged — and self-grades ping so latency lead corrects on any connection; Adaptive feeds the full prediction library and grades every shot so knockback and strafe self-correct too. Both modes smooth target velocity over time and blend aim on hops. No other module required.'
+		Tooltip = 'ProjectileAimbot test build. Simple mode uses iterative prediction â€” estimate travel, predict where the target will be, re-solve until converged â€” and self-grades ping so latency lead corrects on any connection; Adaptive feeds the full prediction library and grades every shot so knockback and strafe self-correct too. Both modes smooth target velocity over time and blend aim on hops. No other module required.'
 	})
 	Targets = ProjectileAimbotTest:CreateTargets({
 		Players = true,
@@ -5014,7 +5015,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 	})
 	Blacklist = ProjectileAimbotTest:CreateTextList({
 		Name = 'Blacklist',
-		Default = {'telepearl'}
+		Default = {'glue_trap'}
 	})
 end)
 
@@ -5763,14 +5764,14 @@ run(function()
 				label.Position = UDim2.new(0.5, 6, 0.5, 30)
 				label.BackgroundTransparency = 1
 				label.AnchorPoint = Vector2.new(0.5, 0)
-				label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ❤️' or ''
+				label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' â¤ï¸' or ''
 				label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				label.TextSize = 18
 				label.Font = Enum.Font.Arial
 				label.Parent = larp.gui
 				Health:Clean(label)
 				Health:Clean(larpEvents.AttributeChanged.Event:Connect(function()
-					label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' ❤️' or ''
+					label.Text = entitylib.isAlive and math.round(lplr.Character:GetAttribute('Health'))..' â¤ï¸' or ''
 					label.TextColor3 = entitylib.isAlive and Color3.fromHSV((lplr.Character:GetAttribute('Health') / lplr.Character:GetAttribute('MaxHealth')) / 2.8, 0.86, 1) or Color3.new()
 				end))
 			end

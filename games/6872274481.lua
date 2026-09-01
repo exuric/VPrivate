@@ -4527,16 +4527,19 @@ run(function()
 	local Targets
 	local Sort
 	local FOV
+	local Distance
 	local Prediction
 	local VelocityLerp
 	local Profile
-	local FireballSplash
-	local SplashRadius
+	local FireballPrediction
+	local FireballWall
 	local AutoCharge
 	local lockedTarget
 	local lockedTime
 	local Aim = {}
-	local OtherProjectiles
+	local FOVCircle
+	local FOVCircleColor
+	local fovFrame = nil
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
@@ -4544,6 +4547,9 @@ run(function()
 	local velHistory = {}
 	local aimHistory = {}
 	local aimCache = { at = 0, target = nil, result = nil }
+	local function fovStrength()
+		return math.clamp(0.9 + (store.ping.total or 0) * 200, 1, 1.6)
+	end
 
 	local function blendAim(origin, point, root)
 		local now = tick()
@@ -4608,7 +4614,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						elseif lockedTarget.RootPart and plr and plr.RootPart then
 							local ldist = (lockedTarget.RootPart.Position - entitylib.character.RootPart.Position).Magnitude
 							local pdist = (plr.RootPart.Position - entitylib.character.RootPart.Position).Magnitude
-							if ldist > AttackRange.Value or pdist + 3 < ldist then
+							if ldist > Distance.Value or pdist + 3 < ldist then
 								keep = false
 							end
 						end
@@ -4633,7 +4639,8 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 							return old(...)
 						end
 	
-						if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') then
+						local originDist = entitylib.isAlive and entitylib.character.RootPart and (pos - entitylib.character.RootPart.Position).Magnitude or 0
+						if originDist > Distance.Value then
 							return old(...)
 						end
 	
@@ -4680,16 +4687,30 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						end
 						local isFireball = projmeta.projectile == 'fireball'
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local projSpeedTotal = projSpeed * (Mode.Value == 'Adaptive' and math.clamp(Prediction.Value, 0.9, 1.1) or Prediction.Value) * charge
-						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+						local baseMult = Mode.Value == 'Adaptive' and math.clamp(Prediction.Value, 0.9, 1.1) or Prediction.Value
+						if isFireball and FireballPrediction.Enabled then
+							baseMult = baseMult * fovStrength()
+						end
+						local projSpeedTotal = projSpeed * baseMult * charge
+						local calc, _, travelTime
+						if isFireball and FireballPrediction.Enabled then
+							calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos + targetVel * VelocityLerp.Value * 0.02, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, true, plr.RootPart.Position, plr.RootPart, nil, false)
+						else
+							calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+						end
 						if calc then
 							calc = blendAim(newlook.p, calc, plr.RootPart)
 						end
 						local dir
 						if calc and travelTime and travelTime <= lifetime then
 							dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeed * charge)
-							local clear = prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck)
-							if not clear and isFireball and FireballSplash.Enabled then
+							local clear
+							if isFireball and FireballWall.Enabled then
+								clear = true
+							else
+								clear = prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck)
+							end
+							if not clear and isFireball then
 								local feetCalc, _, feetTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos - Vector3.new(0, 2.8, 0), targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 								if feetCalc and feetTime and feetTime <= lifetime then
 									local feetDir = CFrame.new(newlook.Position, feetCalc).LookVector * (projSpeed * charge)
@@ -4698,7 +4719,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 										clear = true
 									end
 								end
-								if not clear and (getLanding(newlook.Position, dir, gravity, travelTime) - (targetPos + targetVel * travelTime)).Magnitude <= SplashRadius.Value then
+								if not clear and (getLanding(newlook.Position, dir, gravity, travelTime) - (targetPos + targetVel * travelTime)).Magnitude <= 4.5 then
 									clear = true
 								end
 							end
@@ -4730,7 +4751,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 								aimCache.proj = projmeta
 								return res
 							end
-						elseif isFireball and FireballSplash.Enabled then
+						elseif isFireball then
 							local dist = (targetPos - newlook.p).Magnitude
 							local tt = math.clamp(dist / (projSpeed * charge), 0.1, 3)
 							if tt <= lifetime + 0.5 then
@@ -4761,6 +4782,9 @@ else
 			bedwars.ProjectileController.calculateImportantLaunchValues = old
 			table.clear(velHistory)
 			table.clear(aimHistory)
+			if fovFrame then
+				fovFrame.Parent = nil
+			end
 		end
 	end,
 	Tooltip = 'Silently adjusts your aim towards the enemy'
@@ -4808,30 +4832,84 @@ else
 	})
 	Profile = ProjectileAimbot:CreateDropdown({
 		Name = 'Profile',
-		List = {'Low Ping', 'Medium Ping', 'High Ping', 'Custom'},
-		Default = 'Custom',
-		Tooltip = 'Applies the best settings for your ping, you can still change them freely after',
+		List = {'Auto Set', 'Low Ping', 'Medium Ping', 'High Ping', 'Custom'},
+		Default = 'Auto Set',
+		Tooltip = 'Auto Set reads your current ping and picks the best prediction values for you, you can still change them freely after',
 		Function = function(value)
-			if value == 'Low Ping' then
-				Prediction:SetValue(1.05, nil, true)
-				VelocityLerp:SetValue(4, nil, true)
+			local pred = 1
+			local lerp = 8
+			if value == 'Auto Set' then
+				local ping = math.floor(math.max(store.ping.incoming or 0, store.ping.total or 0) * 1000)
+				if ping < 40 then
+					pred, lerp = 1.05, 4
+				elseif ping < 90 then
+					pred, lerp = 1.15, 6
+				elseif ping < 160 then
+					pred, lerp = 1.35, 10
+				else
+					pred, lerp = 1.6, 14
+				end
+			elseif value == 'Low Ping' then
+				pred, lerp = 1.05, 4
 			elseif value == 'Medium Ping' then
-				Prediction:SetValue(1.25, nil, true)
-				VelocityLerp:SetValue(8, nil, true)
+				pred, lerp = 1.25, 8
 			elseif value == 'High Ping' then
-				Prediction:SetValue(1.5, nil, true)
-				VelocityLerp:SetValue(14, nil, true)
+				pred, lerp = 1.5, 14
 			else
-				Prediction:SetValue(1, nil, true)
-				VelocityLerp:SetValue(8, nil, true)
+				pred, lerp = 1, 8
 			end
+			Prediction:SetValue(pred, nil, true)
+			VelocityLerp:SetValue(lerp, nil, true)
 		end
+	})
+	Distance = ProjectileAimbot:CreateSlider({
+		Name = 'Distance',
+		Min = 1,
+		Max = 1000,
+		Default = 1000,
+		Suffix = function(val)
+			return val <= 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Allows this many studs of distance. Any further players will be ignored.'
 	})
 	FOV = ProjectileAimbot:CreateSlider({
 		Name = 'FOV',
 		Min = 1,
 		Max = 1000,
-		Default = 1000
+		Default = 1000,
+		Function = function(value)
+			if fovFrame then
+				fovFrame.Size = UDim2.fromScale(math.clamp(value / 1000, 0.02, 1), math.clamp(value / 1000, 0.02, 1))
+			end
+		end
+	})
+	FOVCircle = ProjectileAimbot:CreateToggle({
+		Name = 'FOV Circle',
+		Default = false,
+		Function = function(callback)
+			if not callback then
+				if fovFrame then fovFrame.Parent = nil end
+				return
+			end
+			if not fovFrame then
+				fovFrame = Instance.new('Frame')
+				fovFrame.BackgroundColor3 = FOVCircleColor.Value
+				fovFrame.BackgroundTransparency = 0.7
+				fovFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+				fovFrame.Position = UDim2.fromScale(0.5, 0.5)
+				fovFrame.ZIndex = 10
+				local corner = Instance.new('UICorner')
+				corner.CornerRadius = UDim.new(1, 0)
+				corner.Parent = fovFrame
+			end
+			fovFrame.Parent = larp.gui
+			fovFrame.Visible = true
+			fovFrame.Size = UDim2.fromScale(math.clamp(FOV.Value / 1000, 0.02, 1), math.clamp(FOV.Value / 1000, 0.02, 1))
+		end
+	})
+	FOVCircleColor = ProjectileAimbot:CreateColorSlider({
+		Name = 'FOV Circle Color',
+		Default = Color3.fromRGB(255, 255, 255)
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',
@@ -4849,26 +4927,15 @@ else
 		Darker = true,
 		Tooltip = 'Changes your trajectory to match charge percentage.'
 	})
-	OtherProjectiles = ProjectileAimbot:CreateToggle({
-		Name = 'Other Projectiles',
-		Default = true
-	})
-	FireballSplash = ProjectileAimbot:CreateToggle({
-		Name = 'Fireball Splash',
+	FireballPrediction = ProjectileAimbot:CreateToggle({
+		Name = 'Fireball Prediction',
 		Default = true,
-		Function = function(callback)
-			if SplashRadius then
-				SplashRadius.Object.Visible = callback
-			end
-		end,
-		Tooltip = 'Aims fireballs so the explosion always lands on the enemy, even when the arc is blocked'
+		Tooltip = 'Enables velocity, jump and adaptive prediction for fireballs. The lead strength scales automatically with your ping for maximum accuracy.'
 	})
-	SplashRadius = ProjectileAimbot:CreateSlider({
-		Name = 'Splash Radius',
-		Min = 1,
-		Max = 10,
-		Default = 4.5,
-		Decimal = 1
+	FireballWall = ProjectileAimbot:CreateToggle({
+		Name = 'Aim Behind Walls',
+		Default = true,
+		Tooltip = 'Fireballs break wool, so aim at enemies even when a wall is in the way.'
 	})
 	Blacklist = ProjectileAimbot:CreateTextList({
 		Name = 'Blacklist',

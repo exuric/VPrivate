@@ -795,7 +795,15 @@ run(function()
 		if ent.TeamCheck then
 			return ent:TeamCheck()
 		end
-		if ent.NPC then return true end
+		if ent.NPC then
+			local char = ent.Character
+			if char then
+				if collectionService:HasTag(char, 'BedwarsItemShop') or collectionService:HasTag(char, 'TeamUpgradeShopkeeper') or collectionService:HasTag(char, 'ShopComponent') then
+					return false
+				end
+			end
+			return true
+		end
 		if isFriend(ent.Player) then return false end
 		if not select(2, whitelist:get(ent.Player)) then return false end
 		return lplr:GetAttribute('Team') ~= ent.Player:GetAttribute('Team')
@@ -4626,6 +4634,7 @@ run(function()
 	local FOVCircle
 	local FOVCircleColor
 	local fovCircle = nil
+	local ProjectileAimbot
 	local function updateFOVCircle()
 		if FOVCircle and FOVCircle.Enabled then
 			if not fovCircle then
@@ -4666,7 +4675,7 @@ run(function()
 	local aimHistory = {}
 	local aimCache = { at = 0, target = nil, result = nil }
 	local function fovStrength()
-		return math.clamp(0.9 + (store.ping.total or 0) * 200, 1, 1.6)
+		return math.clamp(1 + (store.ping.total or 0) * 1.5, 1, 1.3)
 	end
 
 	local function blendAim(origin, point, root)
@@ -4675,8 +4684,9 @@ run(function()
 		if prev and now - prev.at < 0.2 then
 			local a = (prev.point - origin).Unit
 			local b = (point - origin).Unit
-			local angle = math.clamp(math.acos(math.clamp(a:Dot(b), -1, 1)) / math.rad(60), 0, 1)
-			point = prev.point:Lerp(point, 1 - angle * 0.6)
+			local angle = math.clamp(math.acos(math.clamp(a:Dot(b), -1, 1)) / math.rad(30), 0, 1)
+			local factor = 0.35 + 0.65 * (1 - angle)
+			point = prev.point:Lerp(point, factor)
 		end
 		aimHistory[root] = { point = point, at = now }
 		if next(aimHistory) then
@@ -4706,7 +4716,7 @@ run(function()
 		return pos
 	end
 	
-	local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
+	ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
 			if callback then
@@ -4726,7 +4736,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					})
 					--[[ Lock-on: keep the current target until it dies or breaks line of
 						sight, so aim doesn't flicker between players every frame. ]]
-					if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.6 then
+					if lockedTarget and lockedTarget.RootPart and tick() - lockedTime < 0.6 then
 						local keep = true
 						if not entitylib.isVulnerable(lockedTarget) then
 							keep = false
@@ -4806,23 +4816,24 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						end
 						local isFireball = projmeta.projectile == 'fireball'
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local baseMult = Mode.Value == 'Adaptive' and math.clamp(Prediction.Value, 0.9, 1.1) or Prediction.Value
+						local leadMult = math.clamp(Prediction.Value, 0.1, 3)
 						if isFireball and FireballPrediction.Enabled then
-							baseMult = baseMult * fovStrength()
+							leadMult = leadMult * fovStrength()
 						end
-						local projSpeedTotal = projSpeed * baseMult * charge
+						local launchSpeed = projSpeed * charge
+						local leadVel = targetVel * leadMult
 						local calc, _, travelTime
 						if isFireball and FireballPrediction.Enabled then
-							calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos + targetVel * VelocityLerp.Value * 0.02, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, true, plr.RootPart.Position, plr.RootPart, nil, false)
+							calc, _, travelTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPos + targetVel * VelocityLerp.Value * 0.02, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, true, plr.RootPart.Position, plr.RootPart, nil, false)
 						else
-							calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos, targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+							calc, _, travelTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPos, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 						end
 						if calc then
 							calc = blendAim(newlook.p, calc, plr.RootPart)
 						end
 						local dir
 						if calc and travelTime and travelTime <= lifetime then
-							dir = CFrame.new(newlook.Position, calc).LookVector * (projSpeed * charge)
+							dir = CFrame.new(newlook.Position, calc).LookVector * launchSpeed
 							local clear
 							if isFireball and FireballWall.Enabled then
 								clear = true
@@ -4830,9 +4841,9 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 								clear = prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck)
 							end
 							if not clear and isFireball then
-								local feetCalc, _, feetTime = prediction.SolveTrajectory(newlook.p, projSpeedTotal, gravity, targetPos - Vector3.new(0, 2.8, 0), targetVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								local feetCalc, _, feetTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPos - Vector3.new(0, 2.8, 0), leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 								if feetCalc and feetTime and feetTime <= lifetime then
-									local feetDir = CFrame.new(newlook.Position, feetCalc).LookVector * (projSpeed * charge)
+									local feetDir = CFrame.new(newlook.Position, feetCalc).LookVector * launchSpeed
 									if prediction.IsTrajectoryClear(newlook.Position, feetDir, gravity, feetTime, rayCheck) then
 										dir = feetDir
 										clear = true
@@ -4931,14 +4942,15 @@ else
 		Name = 'Mode',
 		List = {'Adaptive', 'Simple'},
 		Default = 'Adaptive',
-		Tooltip = 'Adaptive grades each landed shot and self-corrects your latency lead and knockback over time; Simple solves the arc without any feedback.'
+		Tooltip = 'Adaptive self-corrects lead and knockback using landed-shot feedback; Simple uses the raw prediction slider with no feedback.'
 	})
 	Prediction = ProjectileAimbot:CreateSlider({
 		Name = 'Prediction',
 		Min = 0.1,
 		Max = 2,
 		Default = 1,
-		Decimal = 10
+		Decimal = 10,
+		Tooltip = 'Scales the lead applied to the target velocity. 1.0 = exact, higher = more lead for lag/strafe'
 	})
 	VelocityLerp = ProjectileAimbot:CreateSlider({
 		Name = 'Velocity Lerp',
@@ -13294,7 +13306,8 @@ run(function()
 			if callback then
 				repeat
 					if entitylib.isAlive and store.equippedKit == 'ice_queen' then
-						if bedwars.AbilityController:canUseAbility('ICE_QUEEN') then
+						local okCan, canUse = pcall(bedwars.AbilityController.canUseAbility, bedwars.AbilityController, 'ICE_QUEEN')
+						if okCan and canUse then
 							local selfpos = entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position
 							if selfpos then
 								local use = false
@@ -13313,7 +13326,7 @@ run(function()
 									end
 								end
 								if use then
-									bedwars.AbilityController:useAbility('ICE_QUEEN')
+									pcall(bedwars.AbilityController.useAbility, bedwars.AbilityController, 'ICE_QUEEN')
 								end
 							end
 						end

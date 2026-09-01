@@ -3988,22 +3988,36 @@ run(function()
 	local StreamerName
 	local oldDisplayName
 	local oldTag
+	local oldGet
+
+	local function getStreamerName()
+		return (StreamerName and StreamerName.Value ~= '' and StreamerName.Value) or 'LarpV4'
+	end
 
 	local function apply()
-		local name = StreamerName.Value ~= '' and StreamerName.Value or 'LarpV4'
+		local name = getStreamerName()
 		if not oldDisplayName then
 			oldDisplayName = lplr.DisplayName
 		end
 		pcall(function()
 			lplr.DisplayName = name
 		end)
-		if whitelist and not oldTag then
+		if not oldTag and whitelist then
 			oldTag = whitelist.tag
-			whitelist.tag = function(self, plr, text, rich)
+			whitelist.tag = function(self, plr, ...)
 				if plr == lplr then
-					return text and '' or {}
+					return name
 				end
-				return oldTag(self, plr, text, rich)
+				return oldTag(self, plr, ...)
+			end
+		end
+		if not oldGet and whitelist and whitelist.get then
+			oldGet = whitelist.get
+			whitelist.get = function(self, plr, ...)
+				if plr == lplr then
+					return name
+				end
+				return oldGet(self, plr, ...)
 			end
 		end
 	end
@@ -4019,6 +4033,10 @@ run(function()
 			whitelist.tag = oldTag
 		end
 		oldTag = nil
+		if whitelist and oldGet then
+			whitelist.get = oldGet
+		end
+		oldGet = nil
 	end
 
 	StreamerMode = larp.Categories.Utility:CreateModule({
@@ -4026,6 +4044,11 @@ run(function()
 		Function = function(callback)
 			if callback then
 				apply()
+				StreamerMode:Clean(runService.Heartbeat:Connect(function()
+					if StreamerMode.Enabled and lplr.DisplayName ~= getStreamerName() then
+						apply()
+					end
+				end))
 				StreamerMode:Clean(lplr:GetPropertyChangedSignal('DisplayName'):Connect(function()
 					if StreamerMode.Enabled then
 						apply()

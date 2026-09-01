@@ -1671,7 +1671,7 @@ run(function()
 		end,
 		Tooltip = 'Saves your current position'
 	})
-	PositionLoad = larp.Categories.Blatant:CreateButton({
+PositionLoad = PositionSave:CreateButton({
 		Name = 'Position Load',
 		Function = function()
 			if savedPosition and entitylib.isAlive and entitylib.character.RootPart then

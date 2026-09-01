@@ -3459,6 +3459,8 @@ run(function()
 
 	local realSwingInRegion, realCanSee, SwordController, EntityUtil = nil, nil, nil, nil
 	local enhPrevReach, enhPrevHitbox = nil, nil
+	local rayCheck = RaycastParams.new()
+	rayCheck.RespectCanCollide = true
 
 	local function getHandItem()
 		if not SwordController or not SwordController.getHandItem then
@@ -3635,35 +3637,12 @@ run(function()
 		return ok
 	end
 
-	local projectileHandler = nil
-
-	local function getProjectileHandler()
-		if projectileHandler then return projectileHandler end
-		local ok, mod = pcall(function()
-			return require(replicatedStorage.TS.controllers.global.combat.projectile['projectile-handler'])
-		end)
-		if ok and mod and mod.ProjectileHandler then
-			projectileHandler = mod.ProjectileHandler
-			return projectileHandler
-		end
-		for _, v in getgc(true) do
-			if type(v) == 'table' and rawget(v, 'new') and type(rawget(v, 'new')) == 'function' then
-				local proto = rawget(v, '__index')
-				if type(proto) == 'table' and type(rawget(proto, 'constructor')) == 'function' and rawget(proto, 'getProjectileMeta') then
-					projectileHandler = v
-					return projectileHandler
-				end
-			end
-		end
-		return nil
-	end
-
 	local function fastHitShoot(ent)
 		if not entitylib.isAlive or not ent or not ent.RootPart then return end
 		if comboRunning then return end
 		comboRunning = true
-		local oldHotbar = store.hand.tool and getHotbar(store.hand.tool) or nil
-		local projectileHandler = getProjectileHandler()
+		local oldTool = store.hand.tool
+		local oldHotbar = oldTool and getHotbar(oldTool) or nil
 		local bows = getProjectiles(FastBow.ListEnabled)
 		if #bows == 0 then
 			local all = getProjectiles()
@@ -3693,7 +3672,7 @@ run(function()
 				end
 			end
 		end
-		if #bows == 0 or not projectileHandler then comboRunning = false return end
+		if #bows == 0 then comboRunning = false return end
 		local item, ammo, projectile, itemMeta = unpack(bows[1])
 		local switchDelay = math.max(FastDelay.Value, 0.03)
 		local ping = math.max(store.ping.total or 0, 0.03)
@@ -3701,22 +3680,63 @@ run(function()
 		if not meta then comboRunning = false return end
 		local projSpeed = meta.launchVelocity or 100
 		local gravity = meta.gravitationalAcceleration or 196.2
-		local charRoot = entitylib.character.RootPart
-		while entitylib.isAlive and ent.RootPart and FastHits.Enabled do
-			attack(ent, workspace:GetServerTimeNow())
-			task.wait(switchDelay)
-			if not hotbarSwitch(getHotbar(item.tool)) then break end
-			task.wait(ping)
-			local calc = prediction.SolveTrajectory(charRoot.Position, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
-			if calc then
-				local handler = projectileHandler.new(1, 1, projectile, nil, calc, Vector3.new(0, 0, 0))
-				local okFire = pcall(bedwars.ProjectileController.launchProjectile, bedwars.ProjectileController, item.itemType, ammo, handler, item.tool, itemMeta)
-				if okFire and targetinfo then targetinfo.Targets[ent] = tick() + 1 end
+		local fireDelay = math.max(itemMeta.fireDelaySec or 1.25, 0.2)
+		local reach = math.max(AttackRange.Value, 3)
+		local lastShot = 0
+		local lastSwing = 0
+		while entitylib.isAlive and FastHits.Enabled do
+			if not ent or not ent.RootPart or not entitylib.isVulnerable(ent) then break end
+			local charRoot = entitylib.character and entitylib.character.RootPart
+			if not charRoot then break end
+			if (ent.RootPart.Position - charRoot.Position).Magnitude > reach then break end
+			local now = tick()
+			if now - lastSwing >= math.max(getAttackInterval(), 0.05) then
+				lastSwing = now
+				attack(ent, workspace:GetServerTimeNow())
 			end
-			hotbarSwitch(oldHotbar)
+			if tick() >= lastShot + fireDelay then
+				task.wait(switchDelay)
+				local slot = getHotbar(item.tool)
+				if not slot then break end
+				if store.inventory.hotbarSlot ~= slot then
+					hotbarSwitch(slot)
+					task.wait(ping)
+				end
+				if not ent or not ent.RootPart or not entitylib.isVulnerable(ent) then break end
+				if (ent.RootPart.Position - charRoot.Position).Magnitude <= reach then
+					local calc = prediction.SolveTrajectory(charRoot.Position, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
+					if calc then
+						local shootPosition = (CFrame.new(charRoot.Position, calc) * CFrame.new(Vector3.new(-bedwars.BowConstantsTable.RelX, -bedwars.BowConstantsTable.RelY, -bedwars.BowConstantsTable.RelZ))).Position
+						local dir, id = CFrame.lookAt(shootPosition, calc).LookVector, httpService:GenerateGUID(true)
+						pcall(function()
+							bedwars.ProjectileController:createLocalProjectile(meta, ammo, projectile, shootPosition, id, dir * projSpeed, {drawDurationSeconds = 1})
+						end)
+						pcall(function()
+							bedwars.Handler:Get('ProjectileFire'):Fire('CallServerAsync',
+								item.tool,
+								ammo,
+								projectile,
+								shootPosition,
+								charRoot.Position,
+								dir * projSpeed,
+								id,
+								{
+									drawDurationSeconds = 1,
+									shotId = httpService:GenerateGUID(false),
+								},
+								workspace:GetServerTimeNow() - 0.045
+							)
+						end)
+						lastShot = tick()
+						if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
+					end
+				end
+				if oldHotbar then hotbarSwitch(oldHotbar) end
+			end
 			task.wait(math.max(FastShoot.Value, 0.02))
 		end
-		hotbarSwitch(oldHotbar)
+		if oldHotbar then hotbarSwitch(oldHotbar) end
+		if oldTool and oldTool.Parent then switchItem(oldTool, 0) end
 		comboRunning = false
 	end
 
@@ -3906,7 +3926,7 @@ run(function()
 				FastShoot.Object.Visible = callback
 			end
 		end,
-		Tooltip = 'After a sword hit, switches to your bow and shoots the same target. OP combo: sword then arrow'
+		Tooltip = 'Sword hits + crossbow shots at the server fire delay so they never ghost. Only shoots targets inside the KillAura attack range, and auto-switches to the next target after a kill'
 	})
 	FastBow = Killaura:CreateTextList({
 		Name = 'Fast Hits Bow',
@@ -3922,7 +3942,7 @@ run(function()
 		Decimal = 100,
 		Suffix = 'seconds',
 		Visible = true,
-		Tooltip = 'Delay between the sword hit and the crossbow shot. Big enough that the shot never ghosts, small enough to stay fast'
+		Tooltip = 'Delay between the sword hit and switching to the crossbow. The shot itself is already paced to the weapon fire delay so it never ghosts'
 	})
 	FastShoot = Killaura:CreateSlider({
 		Name = 'Fast Hits Hold',

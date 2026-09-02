@@ -4266,7 +4266,7 @@ function mainapi:CreateCategory(categorysettings)
 			end
 			self.Enabled = not self.Enabled
 			divider.Visible = self.Enabled
-			gradient.Enabled = self.Enabled
+			gradient.Enabled = false
 			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
 			modulebutton.BackgroundColor3 = self.Enabled and ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.07) or color.Light(uipallet.Main, 0.05)) or ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.045) or color.Light(uipallet.Main, 0.02))
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)

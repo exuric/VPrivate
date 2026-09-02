@@ -105,6 +105,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/notification.png'] = 'rbxassetid://16738721069',
 	['LarpV4/assets/larp/overlaysicon.png'] = 'rbxassetid://14368339581',
 	['LarpV4/assets/larp/overlaystab.png'] = 'rbxassetid://14397380433',
+	['LarpV4/assets/larp/perf.png'] = 'rbxassetid://14368339581',
 	['LarpV4/assets/larp/pin.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/profileicon.png'] = 'rbxassetid://14368359107',
 	['LarpV4/assets/larp/profile.png'] = 'rbxassetid://14368359107',
@@ -335,13 +336,18 @@ local function downloadFile(path, func)
 		else
 			_pending[path] = true
 			createDownloader(path)
-			local url = 'https://raw.githubusercontent.com/exuric/VPrivate/main/'..select(1, path:gsub('LarpV4/', ''))
+			local relative = select(1, path:gsub('LarpV4/', ''))
+			local urls = {
+				'https://raw.githubusercontent.com/exuric/VPrivate/main/'..relative,
+				'https://cdn.jsdelivr.net/gh/exuric/VPrivate@main/'..relative
+			}
 			local suc, res
-			for i = 1, 3 do
+			for i = 1, 8 do
+				local url = urls[(i - 1) % 2 + 1]
 				suc, res = pcall(function() return game:HttpGet(url, true) end)
 				if suc and res ~= '404: Not Found' and not (path:find('.lua') and #res < 100) then break end
 				_dstats.retries += 1
-				if i < 3 then task.wait(0.5 * i) end
+				if i < 8 then task.wait(math.min(0.4 * i, 2)) end
 			end
 			_pending[path] = nil
 			if not suc or res == '404: Not Found' then
@@ -4036,13 +4042,22 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = '            '..modulesettings.Name
+		modulebutton.Text = '                '..modulesettings.Name
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
 		modulebutton.FontFace = uipallet.Font
 		modulebutton.Parent = children
 		addCorner(modulebutton, UDim.new(0, 6))
+		local leftaccent = Instance.new('Frame')
+		leftaccent.Name = 'Accent'
+		leftaccent.Size = UDim2.fromOffset(3, 22)
+		leftaccent.Position = UDim2.fromOffset(9, 9)
+		leftaccent.AnchorPoint = Vector2.new(0, 0)
+		leftaccent.BackgroundColor3 = color.Dark(uipallet.Text, 0.35)
+		leftaccent.BorderSizePixel = 0
+		leftaccent.Parent = modulebutton
+		addCorner(leftaccent, UDim.new(1, 0))
 		local indicatorholder = Instance.new('Frame')
 		indicatorholder.Parent = modulebutton
 		indicatorholder.Size = UDim2.fromOffset(0, 21)
@@ -4274,23 +4289,17 @@ function mainapi:CreateCategory(categorysettings)
 			if self.Enabled then
 				local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
 				local hue, sat, val = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
-				modulebutton.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
-				modulebutton.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
-				modulebutton.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
-				if modulebutton.UIGradient.Enabled then
-					modulebutton.BackgroundColor3 = Color3.new(1, 1, 1)
-					modulebutton.UIGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1))),
-						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((self.Index + 1) * 0.025)) % 1)))
-					})
-				end
-				dots.ImageColor3 = modulebutton.TextColor3
-				bindicon.ImageColor3 = modulebutton.TextColor3
-				bindtext.TextColor3 = modulebutton.TextColor3
+				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+				modulebutton.TextColor3 = uipallet.Text
+				leftaccent.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+				dots.ImageColor3 = leftaccent.BackgroundColor3
+				bindicon.ImageColor3 = leftaccent.BackgroundColor3
+				bindtext.TextColor3 = leftaccent.BackgroundColor3
 				if mainapi.Loaded ~= nil then
 					mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
 				end
 			else
+				leftaccent.BackgroundColor3 = color.Dark(uipallet.Text, 0.35)
 				modulebutton.UIGradient.Enabled = false
 			end
 		end
@@ -4354,6 +4363,7 @@ function mainapi:CreateCategory(categorysettings)
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = uipallet.Text
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
+				leftaccent.BackgroundColor3 = color.Light(uipallet.Main, 0.37)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 			favicon.Visible = hovered or modulechildren.Visible or favstate
@@ -4363,6 +4373,7 @@ function mainapi:CreateCategory(categorysettings)
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+				leftaccent.BackgroundColor3 = color.Dark(uipallet.Text, 0.35)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 			favicon.Visible = hovered or modulechildren.Visible or favstate
@@ -6798,15 +6809,15 @@ mainapi:CreateSearch()
 mainapi.Categories.Main:CreateOverlayBar()
 mainapi.Categories.Main:CreateSettingsDivider()
 
-local perfIcon = getcustomasset('LarpV4/assets/larp/info.png')
+local perfIcon = getcustomasset('LarpV4/assets/larp/perf.png')
 pcall(function()
-	local p = getcustomasset('LarpV4/assets/larp/perf.svg')
+	local p = getcustomasset('LarpV4/assets/larp/perf.png')
 	if p and p ~= '' then perfIcon = p end
 end)
 local perfCategory = mainapi:CreateOverlay({
 	Name = 'Performance',
 	Icon = perfIcon,
-	Size = UDim2.fromOffset(14, 14),
+	Size = UDim2.fromOffset(16, 16),
 	Position = UDim2.fromOffset(12, 14)
 })
 perfCategory.Children.Size = UDim2.new(1, 0, 0, 300)

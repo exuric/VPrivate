@@ -4042,22 +4042,13 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = '                '..modulesettings.Name
+		modulebutton.Text = '            '..modulesettings.Name
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
 		modulebutton.FontFace = uipallet.Font
 		modulebutton.Parent = children
 		addCorner(modulebutton, UDim.new(0, 6))
-		local leftaccent = Instance.new('Frame')
-		leftaccent.Name = 'Accent'
-		leftaccent.Size = UDim2.fromOffset(3, 22)
-		leftaccent.Position = UDim2.fromOffset(9, 9)
-		leftaccent.AnchorPoint = Vector2.new(0, 0)
-		leftaccent.BackgroundColor3 = color.Dark(uipallet.Text, 0.35)
-		leftaccent.BorderSizePixel = 0
-		leftaccent.Parent = modulebutton
-		addCorner(leftaccent, UDim.new(1, 0))
 		local indicatorholder = Instance.new('Frame')
 		indicatorholder.Parent = modulebutton
 		indicatorholder.Size = UDim2.fromOffset(0, 21)
@@ -4266,7 +4257,7 @@ function mainapi:CreateCategory(categorysettings)
 			end
 			self.Enabled = not self.Enabled
 			divider.Visible = self.Enabled
-			gradient.Enabled = false
+			gradient.Enabled = self.Enabled
 			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
 			modulebutton.BackgroundColor3 = self.Enabled and ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.07) or color.Light(uipallet.Main, 0.05)) or ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.045) or color.Light(uipallet.Main, 0.02))
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
@@ -4289,17 +4280,23 @@ function mainapi:CreateCategory(categorysettings)
 			if self.Enabled then
 				local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
 				local hue, sat, val = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
-				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
-				modulebutton.TextColor3 = uipallet.Text
-				leftaccent.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
-				dots.ImageColor3 = leftaccent.BackgroundColor3
-				bindicon.ImageColor3 = leftaccent.BackgroundColor3
-				bindtext.TextColor3 = leftaccent.BackgroundColor3
+				modulebutton.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+				modulebutton.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+				modulebutton.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
+				if modulebutton.UIGradient.Enabled then
+					modulebutton.BackgroundColor3 = Color3.new(1, 1, 1)
+					modulebutton.UIGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1))),
+						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((self.Index + 1) * 0.025)) % 1)))
+					})
+				end
+				dots.ImageColor3 = modulebutton.TextColor3
+				bindicon.ImageColor3 = modulebutton.TextColor3
+				bindtext.TextColor3 = modulebutton.TextColor3
 				if mainapi.Loaded ~= nil then
 					mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
 				end
 			else
-				leftaccent.BackgroundColor3 = color.Dark(uipallet.Text, 0.35)
 				modulebutton.UIGradient.Enabled = false
 			end
 		end
@@ -4363,7 +4360,6 @@ function mainapi:CreateCategory(categorysettings)
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = uipallet.Text
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
-				leftaccent.BackgroundColor3 = color.Light(uipallet.Main, 0.37)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 			favicon.Visible = hovered or modulechildren.Visible or favstate
@@ -4373,7 +4369,6 @@ function mainapi:CreateCategory(categorysettings)
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
-				leftaccent.BackgroundColor3 = color.Dark(uipallet.Text, 0.35)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 			favicon.Visible = hovered or modulechildren.Visible or favstate
@@ -6817,7 +6812,7 @@ end)
 local perfCategory = mainapi:CreateOverlay({
 	Name = 'Performance',
 	Icon = perfIcon,
-	Size = UDim2.fromOffset(16, 16),
+	Size = UDim2.fromOffset(24, 24),
 	Position = UDim2.fromOffset(12, 14)
 })
 perfCategory.Children.Size = UDim2.new(1, 0, 0, 300)

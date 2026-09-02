@@ -27,7 +27,7 @@ downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(ga
 local RTOK = ''
 local BRANCH = 'main'
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
-local SELFCOMMIT = 'bd07ca6a1bd3a838c752863b93202d6eb2033df3'
+local SELFCOMMIT = 'bcaed202131caf59c08338d481380f1bda278af6'
 
 local function fetchCommit()
 	local ok, res = pcall(function()

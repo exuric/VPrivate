@@ -797,6 +797,11 @@ local kitorder = {
 }
 
 local sortmethods = {
+	Distance = function(a, b)
+		local selfroot = entitylib.character and entitylib.character.RootPart
+		local selfpos = selfroot and selfroot.Position or Vector3.zero
+		return (a.Entity.RootPart.Position - selfpos).Magnitude < (b.Entity.RootPart.Position - selfpos).Magnitude
+	end,
 	Damage = function(a, b)
 		return a.Entity.Character:GetAttribute('LastDamageTakenTime') < b.Entity.Character:GetAttribute('LastDamageTakenTime')
 	end,
@@ -5248,7 +5253,29 @@ run(function()
 		end
 		return pos
 	end
-	
+
+	-- Robust alive check: entity.Health can be stale (updates via humanoid
+	-- signals), so also verify the humanoid and the player's team directly.
+	-- This stops the aimbot from locking onto dead players / corpses.
+	local function isAliveTarget(ent)
+		if not ent then return false end
+		if not entitylib.isVulnerable(ent) then return false end
+		local char = ent.Character
+		if not char or not char.Parent then return false end
+		local hum = char:FindFirstChildOfClass('Humanoid')
+		if not hum or hum.Health <= 0 then return false end
+		local root = ent.RootPart or char:FindFirstChild('HumanoidRootPart')
+		if not root or not root.Parent then return false end
+		local plr = ent.Player
+		if plr then
+			if not plr.Parent then return false end
+			local team = plr.Team
+			if team and team.Name == 'Spectators' then return false end
+			if plr:GetAttribute('Dead') or plr:GetAttribute('IsDead') then return false end
+		end
+		return true
+	end
+
 	ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
@@ -5267,11 +5294,15 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero,
 						Sort = sortmethods[Sort.Value]
 					})
+					-- never target dead players / corpses
+					if plr and not isAliveTarget(plr) then
+						plr = nil
+					end
 					--[[ Lock-on: keep the current target until it dies or breaks line of
 						sight, so aim doesn't flicker between players every frame. ]]
 					if lockedTarget and lockedTarget.RootPart and tick() - lockedTime < 0.6 then
 						local keep = true
-						if not entitylib.isVulnerable(lockedTarget) then
+						if not isAliveTarget(lockedTarget) then
 							keep = false
 						elseif lockedTarget.RootPart and plr and plr.RootPart then
 							local ldist = (lockedTarget.RootPart.Position - entitylib.character.RootPart.Position).Magnitude

@@ -138,7 +138,7 @@ entitylib.EntityMouse = function(entitysettings)
 		local origin = entitysettings.Origin or entitylib.character.HumanoidRootPart.Position
 		if entityMouseCache.result and now - entityMouseCache.at < 0.05 and (entityMouseCache.origin - origin).Magnitude < 1 then
 			local cached = entityMouseCache.result
-			if cached and cached.Character and cached.Character.Parent then
+			if cached and cached.Character and cached.Character.Parent and entitylib.isVulnerable(cached) then
 				return cached
 			end
 		end

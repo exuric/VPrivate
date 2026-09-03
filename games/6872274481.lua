@@ -4087,8 +4087,10 @@ run(function()
 		if not meta then comboRunning = false return end
 		local projSpeed = meta.launchVelocity or 100
 		local gravity = meta.gravitationalAcceleration or 196.2
-		local fireDelay = math.max(itemMeta.fireDelaySec or 1.25, 0.2)
+		local minFireDelay = math.max(itemMeta.fireDelaySec or 1.25, 0.2)
+		local fireDelay = math.max(FastShoot.Value, minFireDelay)
 		local reach = math.max(AttackRange.Value, 3)
+		local swingInterval = math.max(getAttackInterval(), 0.05)
 		local lastShot = 0
 		local lastSwing = 0
 		while entitylib.isAlive and FastHits.Enabled do
@@ -4097,11 +4099,11 @@ run(function()
 			if not charRoot then break end
 			if (ent.RootPart.Position - charRoot.Position).Magnitude > reach then break end
 			local now = tick()
-			if now - lastSwing >= math.max(getAttackInterval(), 0.05) then
+			if now - lastSwing >= swingInterval then
 				lastSwing = now
 				attack(ent, workspace:GetServerTimeNow())
 			end
-			if tick() >= lastShot + fireDelay then
+			if now >= lastShot + fireDelay then
 				task.wait(switchDelay)
 				local slot = getHotbar(item.tool)
 				if not slot then break end
@@ -4134,13 +4136,16 @@ run(function()
 								workspace:GetServerTimeNow() - 0.045
 							)
 						end)
-						lastShot = tick()
+						lastShot = now
 						if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 					end
 				end
 				if oldHotbar then hotbarSwitch(oldHotbar) end
+				-- after a shot, wait for the shot interval before the next shot
+				task.wait(math.max(fireDelay - (tick() - now), 0.02))
+			else
+				task.wait(0.02)
 			end
-			task.wait(math.max(FastShoot.Value, 0.02))
 		end
 		if oldHotbar then hotbarSwitch(oldHotbar) end
 		if oldTool and oldTool.Parent then switchItem(oldTool, 0) end
@@ -4195,7 +4200,10 @@ run(function()
 						local target = selectTargets()[1]
 						if target and target[1] then
 							store.KillauraTarget = target[1]
-							return true
+							-- keep the game's own swing effect/animation: call the real
+							-- function with the target forced, so your sword looks and
+							-- swings completely normally while the hit still lands
+							return realSwingInRegion(self, ...)
 						end
 					end
 					return realSwingInRegion(self, ...)
@@ -4253,7 +4261,9 @@ run(function()
 									local targets = selectTargets()
 									local startTime = workspace:GetServerTimeNow()
 									for _, t in ipairs(targets) do
-										attack(t[1], startTime, true)
+										-- no double animation: the user's own swing already
+										-- plays it, we only add the hit registration
+										attack(t[1], startTime, false)
 									end
 								end
 							end
@@ -4344,7 +4354,7 @@ run(function()
 				FastShoot.Object.Visible = callback
 			end
 		end,
-		Tooltip = 'Sword hits + crossbow shots at the server fire delay so they never ghost. Only shoots targets inside the KillAura attack range, and auto-switches to the next target after a kill'
+		Tooltip = 'Sword hits + crossbow shots. Shot delay = when the shot fires after the swing, shot speed = interval between shots (min = weapon fire delay so it never ghosts). Only shoots in KillAura range and re-targets after a kill'
 	})
 	FastBow = Killaura:CreateTextList({
 		Name = 'Fast Hits Bow',
@@ -4353,24 +4363,24 @@ run(function()
 		Tooltip = 'Bows to use for Fast Hits. Leave empty to auto-detect the crossbow in your hotbar'
 	})
 	FastDelay = Killaura:CreateSlider({
-		Name = 'CB Switch Delay',
+		Name = 'Shot delay',
 		Min = 0.03,
 		Max = 1,
 		Default = 0.1,
 		Decimal = 100,
 		Suffix = 'seconds',
 		Visible = true,
-		Tooltip = 'Delay between the sword hit and switching to the crossbow. The shot itself is already paced to the weapon fire delay so it never ghosts'
+		Tooltip = 'Delay between the sword hit and the crossbow shot. Lower = snappier, but below ~0.05 the switch can ghost. 0.1 is the sweet spot'
 	})
 	FastShoot = Killaura:CreateSlider({
-		Name = 'Fast Hits Hold',
-		Min = 0.05,
-		Max = 1,
-		Default = 0.1,
+		Name = 'Shot speed',
+		Min = 0.2,
+		Max = 2.5,
+		Default = 1.25,
 		Decimal = 100,
 		Suffix = 'seconds',
 		Visible = true,
-		Tooltip = 'How long to stay on the crossbow after shooting before switching back to the sword'
+		Tooltip = 'Time between crossbow shots. Never go below your weapon fire delay (crossbow = 1.25s) or shots ghost. Lower = faster damage, higher = safer'
 	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
@@ -5082,6 +5092,7 @@ run(function()
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
 	local velHistory = {}
+	local velTime = {}
 	local aimHistory = {}
 	local aimCache = { at = 0, target = nil, result = nil }
 	local function fovStrength()
@@ -5095,7 +5106,9 @@ run(function()
 			local a = (prev.point - origin).Unit
 			local b = (point - origin).Unit
 			local angle = math.acos(math.clamp(a:Dot(b), -1, 1))
-			local maxStep = math.rad(1.5)
+			-- frame-rate independent: cap the rotation at ~120 deg/s so the
+			-- beam is smooth at any fps but still tracks fast movers
+			local maxStep = math.rad(120) * (now - prev.at)
 			if angle > maxStep then
 				local t = maxStep / angle
 				point = prev.point:Lerp(point, t)
@@ -5224,8 +5237,19 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
 						if VelocityLerp.Value > 1 then
 							local prev = velHistory[plr]
-							targetVel = prev and prev:Lerp(targetVel, 1 / VelocityLerp.Value) or targetVel
+							local lastT = velTime[plr]
+							local dt = lastT and math.min(tick() - lastT, 0.1) or 0.016
+							velTime[plr] = tick()
+							-- frame-rate independent exponential smoothing:
+							-- higher VelocityLerp = heavier smoothing
+							local alpha = 1 - math.exp(-dt * (20 / VelocityLerp.Value))
+							targetVel = prev and prev:Lerp(targetVel, alpha) or targetVel
 							velHistory[plr] = targetVel
+						end
+						-- damp vertical velocity noise: walking bobbing makes the Y
+						-- jitter and wobble the line, while jumping/falling is real
+						if not plr.Jumping and math.abs(targetVel.Y) < 5 then
+							targetVel = Vector3.new(targetVel.X, targetVel.Y * 0.15, targetVel.Z)
 						end
 						local isFireball = projmeta.projectile == 'fireball'
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
@@ -5324,6 +5348,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 else
 			bedwars.ProjectileController.calculateImportantLaunchValues = old
 			table.clear(velHistory)
+			table.clear(velTime)
 			table.clear(aimHistory)
 			updateFOVCircle()
 		end

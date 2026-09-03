@@ -3024,6 +3024,183 @@ run(function()
 	
 end)
 
+run(function()
+	local GodMode
+	local Amplitude
+	local BounceSpeed
+	local Range
+	local OnlyNearby
+	local antiConn
+	local floatConn
+	local godClone
+	local godOldRoot
+	local godHip
+	local godLastBob = 0
+
+	local function activate()
+		if godOldRoot and godOldRoot.Parent then return true end
+		if not entitylib.isAlive then return false end
+		local hum = entitylib.character.Humanoid
+		if not hum or hum.Health <= 0 then return false end
+		godHip = hum.HipHeight
+		godOldRoot = entitylib.character.HumanoidRootPart
+		if not godOldRoot or not lplr.Character.Parent then return false end
+		lplr.Character.Parent = replicatedStorage
+		godClone = godOldRoot:Clone()
+		godClone.Parent = lplr.Character
+		godOldRoot.Transparency = 1
+		godOldRoot.Parent = workspace
+		lplr.Character.PrimaryPart = godClone
+		lplr.Character.Parent = workspace
+		bedwars.QueryUtil:setQueryIgnored(godClone, true)
+		bedwars.QueryUtil:setQueryIgnored(godOldRoot, true)
+		godLastBob = 0
+		godOldRoot.CFrame = godClone.CFrame + Vector3.new(0, -200, 0)
+		godOldRoot.Velocity = Vector3.zero
+		godOldRoot.AssemblyLinearVelocity = Vector3.zero
+		return true
+	end
+
+	local function deactivate()
+		local char = lplr.Character
+		if godOldRoot and godOldRoot.Parent and char then
+			char.Parent = replicatedStorage
+			godOldRoot.Parent = char
+			if godClone then
+				godClone:Destroy()
+				godClone = nil
+			end
+			char.PrimaryPart = godOldRoot
+			char.Parent = workspace
+			godOldRoot.CFrame = godOldRoot.CFrame + Vector3.new(0, 200, 0)
+			godOldRoot.Velocity = Vector3.zero
+			godOldRoot.AssemblyLinearVelocity = Vector3.zero
+			local humanoid = char:FindFirstChildOfClass('Humanoid')
+			if humanoid then
+				humanoid.HipHeight = godHip or 2.6
+			end
+			godOldRoot.Transparency = 1
+			godOldRoot = nil
+			godLastBob = 0
+			return true
+		end
+		if godClone then
+			godClone:Destroy()
+			godClone = nil
+		end
+		godOldRoot = nil
+		godLastBob = 0
+		return false
+	end
+
+	GodMode = larp.Categories.Blatant:CreateModule({
+		Name = 'GodMode',
+		Function = function(callback)
+			if callback then
+				anti = nil
+				antiConn = larpEvents.EntityDamageEvent.Event:Connect(function(dmg)
+					if not GodMode.Enabled then return end
+					if not entitylib.isAlive then return end
+					local char = entitylib.character and entitylib.character.Character
+					if not char then return end
+					local hitSelf = dmg and (dmg.entityInstance == char or dmg.entityInstance == lplr.Character or dmg.entityInstance == lplr)
+					if not hitSelf then return end
+					local hum = char:FindFirstChildOfClass('Humanoid')
+					if hum and hum.Health > 0 then
+						-- ensure the hitbox is displaced whenever a hit lands on us
+						if not (godOldRoot and godOldRoot.Parent) then
+							activate()
+						end
+					end
+				end)
+				floatConn = runService.PreSimulation:Connect(function(dt)
+					if not GodMode.Enabled or not entitylib.isAlive then return end
+					local nearby = true
+					if OnlyNearby.Enabled then
+						nearby = entitylib.EntityPosition({
+							Range = Range.Value,
+							Part = 'RootPart',
+							Players = true,
+							NPCs = true
+						}) ~= nil
+					end
+					if not nearby then
+						if godOldRoot and godOldRoot.Parent then
+							deactivate()
+						end
+						return
+					end
+					if godOldRoot and godOldRoot.Parent then
+						-- real hitbox is displaced far below; float the visible body
+						if godClone and godClone.Parent then
+							-- recover the true base (remove last bob), then apply the new bob
+							local cp = godClone.CFrame.Position
+							local base = cp - Vector3.new(0, godLastBob, 0)
+							local bob = math.sin(tick() * BounceSpeed.Value) * Amplitude.Value
+							godLastBob = bob
+							godClone.CFrame = CFrame.new(base.X, base.Y + bob, base.Z) * godClone.CFrame.Rotation
+						end
+						-- keep the displaced root at a stable far offset
+						godOldRoot.CFrame = godClone.CFrame + Vector3.new(0, -200, 0)
+						godOldRoot.Velocity = Vector3.zero
+						godOldRoot.AssemblyLinearVelocity = Vector3.zero
+					else
+						activate()
+					end
+				end)
+			else
+				if antiConn then
+					antiConn:Disconnect()
+					antiConn = nil
+				end
+				if floatConn then
+					floatConn:Disconnect()
+					floatConn = nil
+				end
+				deactivate()
+			end
+		end,
+		Tooltip = 'Displaces your real hitbox out of the game and floats your visible body up and down, making you genuinely unhittable while your body bobs.'
+	})
+	Amplitude = GodMode:CreateSlider({
+		Name = 'Float height',
+		Min = 0.5,
+		Max = 8,
+		Default = 2,
+		Decimal = 10,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'How high your visible body rises and falls'
+	})
+	BounceSpeed = GodMode:CreateSlider({
+		Name = 'Float speed',
+		Min = 0.5,
+		Max = 6,
+		Default = 1.5,
+		Decimal = 10,
+		Suffix = function(val)
+			return val == 1 and 'hz' or 'hz'
+		end,
+		Tooltip = 'How fast your body bobs up and down'
+	})
+	Range = GodMode:CreateSlider({
+		Name = 'Activation range',
+		Min = 5,
+		Max = 100,
+		Default = 30,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Only activates when an enemy is within this range'
+	})
+	OnlyNearby = GodMode:CreateToggle({
+		Name = 'Only when enemy nearby',
+		Default = true,
+		Tooltip = 'Keeps you normal when nobody is around, so the anticheat never sees constant displacement'
+	})
+end)
+
 local AntiFallDirection
 run(function()
 	local AntiFall
@@ -3630,7 +3807,6 @@ run(function()
 	local MaxAngle
 	local HitReg
 	local SwingAnim
-	local Blatant
 	local FastHits
 	local FastBow
 	local FastDelay
@@ -3669,9 +3845,6 @@ run(function()
 		local hits = tonumber(HitReg.Value) or 34
 		local margin = 0.004 + (hits >= 35 and 0.004 or 0)
 		local hitReg = 10 / hits - margin
-		if Blatant and Blatant.Enabled then
-			return 0.05
-		end
 		return math.min(weapon, math.max(hitReg, 0.05))
 	end
 
@@ -3933,19 +4106,11 @@ run(function()
 		local targets = selectTargets()
 		if #targets == 0 then return end
 		store.KillauraTarget = targets[1][1]
-		if FastHits.Enabled and not (Blatant and Blatant.Enabled) then
+		if FastHits.Enabled then
 			task.spawn(fastHitShoot, targets[1][1])
 			return
 		end
 		local startTime = workspace:GetServerTimeNow()
-		if Blatant and Blatant.Enabled then
-			-- blatant: hit EVERY valid target in range every tick
-			local all = getTargets()
-			for i, t in ipairs(all) do
-				attack(t[1], startTime, false)
-			end
-			return
-		end
 		for i, t in ipairs(targets) do
 			attack(t[1], startTime)
 		end
@@ -4207,10 +4372,6 @@ run(function()
 		Max = 360,
 		Default = 360,
 		Tooltip = 'Maximum angle between your view and the target'
-	})
-	Blatant = Killaura:CreateToggle({
-		Name = 'Blatant mode',
-		Tooltip = 'Maximum hit speed: swings every tick at the server-accepted max, hits every target in range simultaneously. Very obvious.'
 	})
 end)
 
@@ -6193,156 +6354,6 @@ run(function()
 		end,
 Darker = true,
 		Visible = false
-	})
-end)
-
-run(function()
-	local Aegis
-	local Regenerate
-	local NoKnockback
-	local Blink
-	local oldApplyKnockback
-	local aegisConn
-
-	Aegis = larp.Categories.Blatant:CreateModule({
-		Name = 'Aegis',
-		Function = function(callback)
-			if callback then
-				if aegisConn then
-					aegisConn:Disconnect()
-					aegisConn = nil
-				end
-				-- cancel incoming damage: restore health instantly after a hit
-				aegisConn = larpEvents.EntityDamageEvent.Event:Connect(function(dmg)
-					if not Aegis.Enabled then return end
-					if not entitylib.isAlive then return end
-					local char = entitylib.character and entitylib.character.Character
-					if not char then return end
-					local hitSelf = dmg and (dmg.entityInstance == char or dmg.entityInstance == lplr.Character or dmg.entityInstance == lplr)
-					if not hitSelf then return end
-					local hum = char:FindFirstChildOfClass('Humanoid')
-					if not hum then return end
-					local before = hum.Health
-					if Regenerate.Enabled then
-						task.delay(0.03, function()
-							if not Aegis.Enabled or not hum or not hum.Parent then return end
-							if hum.Health < before then
-								hum.Health = math.min(hum.MaxHealth, before)
-							end
-						end)
-					end
-					if Blink.Enabled then
-						-- phase behind the attacker to break their aim
-						local attacker = dmg.fromEntity
-						local atkChar = (attacker and (attacker.Character or (attacker.Parent and attacker.Parent.Name == 'Workspace' and attacker))) or nil
-						local atkRoot = atkChar and atkChar:FindFirstChild('HumanoidRootPart')
-						local myRoot = char:FindFirstChild('HumanoidRootPart')
-						if atkRoot and myRoot then
-							local dir = (myRoot.Position - atkRoot.Position) * Vector3.new(1, 0, 1)
-							if dir.Magnitude > 1 then
-								local targetPos = myRoot.Position + dir.Unit * 3 + Vector3.new(0, 0.5, 0)
-								myRoot.CFrame = CFrame.new(targetPos, myRoot.Position + dir.Unit * 10)
-							end
-						end
-					end
-				end)
-				if NoKnockback.Enabled then
-					oldApplyKnockback = bedwars.KnockbackUtil.applyKnockback
-					bedwars.KnockbackUtil.applyKnockback = function(root, mass, dir, knockback, ...)
-						return oldApplyKnockback(root, mass, dir, {}, ...)
-					end
-				end
-			else
-				if aegisConn then
-					aegisConn:Disconnect()
-					aegisConn = nil
-				end
-				if oldApplyKnockback then
-					bedwars.KnockbackUtil.applyKnockback = oldApplyKnockback
-					oldApplyKnockback = nil
-				end
-			end
-		end,
-		Tooltip = 'Restores health instantly when hit, making you appear unhittable. Optional blink escapes the attacker.'
-	})
-	Regenerate = Aegis:CreateToggle({
-		Name = 'Regenerate',
-		Default = true,
-		Tooltip = 'Restores the health you just lost within a frame'
-	})
-	NoKnockback = Aegis:CreateToggle({
-		Name = 'No knockback',
-		Tooltip = 'Removes all knockback taken'
-	})
-	Blink = Aegis:CreateToggle({
-		Name = 'Blink on hit',
-		Tooltip = 'Teleports you behind the attacker when hit'
-	})
-end)
-
-run(function()
-	local Phase
-	local Strength
-	local Speed
-	local phasePos = Vector3.zero
-
-	Phase = larp.Categories.Blatant:CreateModule({
-		Name = 'Phase',
-		Function = function(callback)
-			if callback then
-				local lastT = 0
-				repeat
-					if entitylib.isAlive then
-						local root = entitylib.character and entitylib.character.RootPart
-						local hum = entitylib.character and entitylib.character.Humanoid
-						if root and hum and hum.Health > 0 then
-							-- only wobble when an enemy is nearby so movement is subtle
-							local now = tick()
-							if now - lastT > 1.2 then
-								lastT = now
-								phasePos = Vector3.zero
-							end
-							local hasNearby = entitylib.EntityPosition({
-								Range = 40,
-								Part = 'RootPart',
-								Players = true,
-								NPCs = true
-							}) ~= nil
-							if hasNearby then
-								local amt = Strength.Value
-								local ox = math.sin(now * Speed.Value) * amt
-								local oz = math.cos(now * Speed.Value * 1.3) * amt
-								phasePos = Vector3.new(ox, 0, oz)
-								root.CFrame = root.CFrame + phasePos
-							end
-						end
-					end
-					task.wait(0.05)
-				until not Phase.Enabled
-			end
-		end,
-		Tooltip = 'Wobbles your body in a sine pattern that makes you extremely hard to track or lock onto.'
-	})
-	Strength = Phase:CreateSlider({
-		Name = 'Strength',
-		Min = 0.1,
-		Max = 2,
-		Default = 0.4,
-		Decimal = 10,
-		Suffix = function(val)
-			return val == 1 and 'stud' or 'studs'
-		end,
-		Tooltip = 'How far your body shifts each wobble'
-	})
-	Speed = Phase:CreateSlider({
-		Name = 'Speed',
-		Min = 1,
-		Max = 30,
-		Default = 8,
-		Suffix = function(val)
-			return val == 1 and 'hz' or 'hz'
-		end,
-		Tooltip = 'Wobble frequency'
 	})
 end)
 

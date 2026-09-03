@@ -6812,8 +6812,8 @@ end)
 local perfCategory = mainapi:CreateOverlay({
 	Name = 'Performance',
 	Icon = perfIcon,
-	Size = UDim2.fromOffset(24, 24),
-	Position = UDim2.fromOffset(12, 14)
+	Size = UDim2.fromOffset(20, 20),
+	Position = UDim2.fromOffset(12, 10)
 })
 perfCategory.Children.Size = UDim2.new(1, 0, 0, 300)
 

@@ -166,6 +166,108 @@ ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVe
 	return origin + vel.Unit * speed, tp, tof
 end
 
+-- Same as SolveTrajectory but forces the STEEP (high) arc solution, useful
+-- for clearing walls with bows/crossbows where the flat arc would be blocked.
+ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targetVel, targetGravity, hipHeight, jumpSpeed, rayCheck, targetAirborne, targetRootPos, targetRoot, extraA, extraB)
+	origin = origin or Vector3.zero
+	targetPos = targetPos or origin
+	targetVel = targetVel or Vector3.zero
+	speed = speed or 100
+	gravity = gravity or 196.2
+	targetGravity = targetGravity or workspace.Gravity or 196.2
+
+	local function targetAt(t)
+		if targetAirborne and targetGravity > 0 then
+			return targetPos + targetVel * t - Vector3.new(0, 0.5 * targetGravity * t * t, 0)
+		end
+		return targetPos + targetVel * t
+	end
+
+	local function closedFormHigh(target)
+		local dx = target.X - origin.X
+		local dy = target.Y - origin.Y
+		local dz = target.Z - origin.Z
+		local horiz = bsqrt(dx * dx + dz * dz)
+		if horiz < 0.001 then
+			local m = bsqrt(dx * dx + dy * dy + dz * dz)
+			if m < 0.001 then return nil, nil end
+			return Vector3.new(dx / m * speed, dy / m * speed, dz / m * speed), nil
+		end
+		local A = gravity * horiz * horiz / (2 * speed * speed)
+		local C = dy + A
+		local disc = horiz * horiz - 4 * A * C
+		if disc < 0 then
+			return nil, nil
+		end
+		local sqrtDisc = bsqrt(disc)
+		-- steep arc: pick the LARGER u (higher launch angle)
+		local u = (horiz + sqrtDisc) / (2 * A)
+		if u ~= u or u < -2 or u > 2 then
+			u = (horiz - sqrtDisc) / (2 * A)
+			if u ~= u or u < -2 or u > 2 then
+				return nil, nil
+			end
+		end
+		local cosT = 1 / bsqrt(1 + u * u)
+		local sinT = u * cosT
+		local vx = dx / horiz * cosT * speed
+		local arcTof
+		if babs(vx) > 0.001 then
+			arcTof = dx / vx
+		end
+		return Vector3.new(vx, sinT * speed, dz / horiz * cosT * speed), arcTof
+	end
+
+	local dist0 = (targetPos - origin).Magnitude
+	if dist0 < 0.001 then
+		return origin + Vector3.new(0, 1, 0) * speed, 0, 0.05
+	end
+	local tof = bclamp(dist0 / speed, 0.02, 6)
+
+	local bestGood
+	local vel
+	for iter = 1, 14 do
+		local tp = targetAt(tof)
+		local arcTof
+		vel, arcTof = closedFormHigh(tp)
+		if vel then
+			bestGood = { tof, vel }
+			local newTof
+			if arcTof and arcTof > 0.01 then
+				newTof = bclamp(arcTof, 0.02, 6)
+			else
+				local m = (tp - origin).Magnitude
+				newTof = bclamp(m / speed, 0.02, 6)
+			end
+			newTof = 0.55 * newTof + 0.45 * tof
+			if babs(newTof - tof) < 0.002 then
+				tof = newTof
+				break
+			end
+			tof = newTof
+		else
+			tof = tof * 0.6
+			if tof < 0.02 then
+				break
+			end
+		end
+	end
+
+	local tp = targetAt(tof)
+	vel = closedFormHigh(tp)
+	if not vel and bestGood then
+		tof, vel = bestGood[1], bestGood[2]
+	end
+	if not vel then
+		local m = (tp - origin).Magnitude
+		if m < 0.001 then
+			return origin + Vector3.new(0, 1, 0) * speed, 0, 0.05
+		end
+		vel = (tp - origin) / m * speed
+	end
+	return origin + vel.Unit * speed, tp, tof
+end
+
 ballistic.IsTrajectoryClear = function(origin, velocity, gravity, maxTime, rayCheck)
 	origin = origin or Vector3.zero
 	velocity = velocity or Vector3.zero
@@ -191,6 +293,7 @@ end
 -- wire into the shared prediction library so every caller gets the advanced solver
 if type(prediction) == 'table' then
 	prediction.SolveTrajectory = ballistic.SolveTrajectory
+	prediction.SolveTrajectoryHigh = ballistic.SolveTrajectoryHigh
 	prediction.IsTrajectoryClear = ballistic.IsTrajectoryClear
 end
 getgenv().ballistic = ballistic
@@ -5258,11 +5361,20 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						local isFireball = projmeta.projectile == 'fireball'
 						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
 						local leadMult = math.clamp(Prediction.Value, 0.1, 3)
+						if Mode.Value == 'Adaptive' then
+							-- adaptive: compensate for your own latency, the target
+							-- keeps moving while the shot request is in transit
+							leadMult = leadMult * (1 + (store.ping.total or 0) * 1.2)
+							leadMult = math.clamp(leadMult, 0.1, 3)
+						end
 						if isFireball and FireballPrediction.Enabled then
 							leadMult = leadMult * fovStrength()
 						end
 						local launchSpeed = projSpeed * charge
-						local leadVel = targetVel * leadMult
+						-- horizontal-only lead: the solver already models the target's
+						-- vertical ballistic motion (jump/fall) with gravity, so scaling
+						-- Y velocity too would double-lead vertically and miss
+						local leadVel = Vector3.new(targetVel.X * leadMult, targetVel.Y, targetVel.Z * leadMult)
 						local calc, _, travelTime
 						if isFireball and FireballPrediction.Enabled then
 							calc, _, travelTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPos + targetVel * VelocityLerp.Value * 0.02, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, true, plr.RootPart.Position, plr.RootPart, nil, false)
@@ -5280,6 +5392,18 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 								clear = true
 							else
 								clear = prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck)
+							end
+							if not clear then
+								-- try a steep (high) arc to clear walls with bows/crossbows
+								local highCalc, _, highTime = prediction.SolveTrajectoryHigh(newlook.p, launchSpeed, gravity, targetPos, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								if highCalc and highTime and highTime <= lifetime then
+									local highDir = CFrame.new(newlook.Position, highCalc).LookVector * launchSpeed
+									if prediction.IsTrajectoryClear(newlook.Position, highDir, gravity, highTime, rayCheck) then
+										dir = highDir
+										travelTime = highTime
+										clear = true
+									end
+								end
 							end
 							if not clear and isFireball then
 								local feetCalc, _, feetTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPos - Vector3.new(0, 2.8, 0), leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
@@ -5378,6 +5502,7 @@ else
 	TargetPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Part',
 		List = {'RootPart', 'Head', 'Neck'},
+		Default = 'Neck',
 		Tooltip = 'Neck aims at the middle of the body for reliable splash damage'
 	})
 	Mode = ProjectileAimbot:CreateDropdown({

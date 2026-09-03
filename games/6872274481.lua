@@ -4306,16 +4306,13 @@ run(function()
 						local target = selectTargets()[1]
 						if target and target[1] then
 							store.KillauraTarget = target[1]
-							-- let the game's own swing run so the animation/sound is
-							-- 100% normal, but mark us as attacking so the position
-							-- spoof makes this exact swing hit the target. The flag
-							-- is set synchronously so the SwordHit that fires inside
-							-- the real call sees it, and cleared right after.
-							local wasAttacking = store.killauraAttacking
-							store.killauraAttacking = true
-							local ok, res = pcall(realSwingInRegion, self, ...)
-							store.killauraAttacking = wasAttacking
-							return ok and res or nil
+							-- swallow the game's own raycast hit (it only hits what
+							-- your camera points at with default range/angle) and let
+							-- the loop below send the hit to the killaura target with
+							-- killaura range + angle. The swing animation/sound from
+							-- your actual click is played by swingSwordAtMouse BEFORE
+							-- this hook, so it still looks and sounds 100% normal.
+							return true
 						end
 					end
 					return realSwingInRegion(self, ...)
@@ -4368,14 +4365,16 @@ run(function()
 										store.KillauraTarget = targets[1][1]
 										task.spawn(fastHitShoot, targets[1][1])
 									end
-								elseif fresh then
-									-- SwingOnly: YOUR swing is the hit (the hook above
-									-- marks attacking + spoofs it). Just keep the target
-									-- selected so the spoof aims at it. No extra attack
-									-- call, no double hits, no double animation.
+								elseif fresh and os.clock() - lastSwing >= getAttackInterval() then
+									-- SwingOnly: your click's swing animation already
+									-- played, we send the hit to the killaura target
+									-- with killaura range + angle. animate=false so
+									-- there is no second animation or sound.
+									lastSwing = os.clock()
 									local targets = selectTargets()
-									if #targets > 0 then
-										store.KillauraTarget = targets[1][1]
+									local startTime = workspace:GetServerTimeNow()
+									for _, t in ipairs(targets) do
+										attack(t[1], startTime, false)
 									end
 								end
 							end
@@ -6986,6 +6985,7 @@ run(function()
 	local Rank
 	local Enchant
 	local Equipment
+	local HealthBar
 	local DrawingToggle
 	local Scale
 	local FontOption
@@ -7002,19 +7002,43 @@ run(function()
 			if not Targets.Players.Enabled and ent.Player then return end
 			if not Targets.NPCs.Enabled and ent.NPC then return end
 			if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-	
+
 			local nametag = Instance.new('TextLabel')
 			Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-	
+
 			if Health.Enabled then
 				local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
 				Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(healthColor.R * 255))..','..tostring(math.floor(healthColor.G * 255))..','..tostring(math.floor(healthColor.B * 255))..')">'..math.round(ent.Health)..'</font>'
 			end
-	
+
 			if Distance.Enabled then
 				Strings[ent] = '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> '..Strings[ent]
 			end
-	
+
+			-- visual health bar under the name (Normal mode only)
+			if HealthBar.Enabled then
+				local barbg = Instance.new('Frame')
+				barbg.Name = 'HealthBar'
+				barbg.Size = UDim2.new(1, -6, 0, 4)
+				barbg.Position = UDim2.new(0, 3, 1, -6)
+				barbg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+				barbg.BackgroundTransparency = 0.25
+				barbg.BorderSizePixel = 0
+				barbg.Parent = nametag
+				local barcorner = Instance.new('UICorner')
+				barcorner.CornerRadius = UDim.new(1, 0)
+				barcorner.Parent = barbg
+				local fill = Instance.new('Frame')
+				fill.Name = 'Fill'
+				fill.Size = UDim2.fromScale(1, 1)
+				fill.Position = UDim2.fromScale(0, 0)
+				fill.BackgroundColor3 = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
+				fill.BorderSizePixel = 0
+				fill.Parent = barbg
+				local fillcorner = Instance.new('UICorner')
+				fillcorner.CornerRadius = UDim.new(1, 0)
+				fillcorner.Parent = fill
+			end
 			if Equipment.Enabled then
 				for i, v in {'Hand', 'Helmet', 'Chestplate', 'Boots', 'Kit'} do
 					local Icon = Instance.new('ImageLabel')
@@ -7139,6 +7163,17 @@ run(function()
 	
 				if Distance.Enabled then
 					Strings[ent] = '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> '..Strings[ent]
+				end
+
+				-- refresh the visual health bar
+				local barbg = nametag:FindFirstChild('HealthBar')
+				if barbg then
+					local pct = math.clamp(ent.Health / ent.MaxHealth, 0, 1)
+					local fill = barbg:FindFirstChild('Fill')
+					if fill then
+						fill.Size = UDim2.fromScale(pct, 1)
+						fill.BackgroundColor3 = Color3.fromHSV(pct / 2.5, 0.89, 0.75)
+					end
 				end
 	
 				if Equipment.Enabled and store.inventories[ent.Player] then
@@ -7369,6 +7404,17 @@ run(function()
 				NameTags:Toggle()
 			end
 		end
+	})
+	HealthBar = NameTags:CreateToggle({
+		Name = 'Health bar',
+		Default = true,
+		Function = function()
+			if NameTags.Enabled then
+				NameTags:Toggle()
+				NameTags:Toggle()
+			end
+		end,
+		Tooltip = 'Renders a colored health bar under the name (visual mode only)'
 	})
 	Distance = NameTags:CreateToggle({
 		Name = 'Distance',
@@ -7776,16 +7822,101 @@ run(function()
 		end
 		bedwars.InventoryViewmodelController:handleStore(bedwars.Store:getState())
 	end
+
+	-- third person: the character's held item is welded as an Accessory named
+	-- after the itemType. The game only re-skins the first person viewmodel,
+	-- so we swap the character's hand accessory to the skin template ourselves
+	local function reskinHand()
+		local char = lplr.Character
+		if not char then return end
+		local handItem = store.hand and store.hand.tool
+		local itemType = handItem and handItem.Name or (char:FindFirstChild('HandInvItem') and char.HandInvItem.Value and char.HandInvItem.Value.Name)
+		if not itemType then return end
+		local skin = getSkin(itemType)
+		-- find the current hand accessory for this item
+		local accessory
+		for _, v in char:GetChildren() do
+			if v:IsA('Accessory') and v.Name == itemType then
+				accessory = v
+				break
+			end
+		end
+		if not accessory then return end
+		local handle = accessory:FindFirstChild('Handle')
+		if not handle then return end
+		local grip = handle:FindFirstChild('RightGrip') or (char.RightHand and char.RightHand:FindFirstChild('RightGrip'))
+		local gripPart = grip and grip.Part1
+		if not gripPart then return end
+
+		local template
+		if skin then
+			local ok, items = pcall(function()
+				return replicatedStorage:FindFirstChild('Items')
+			end)
+			if ok and items then
+				template = items:FindFirstChild(skin)
+			end
+		end
+		if not template then
+			local ok, items = pcall(function()
+				return replicatedStorage:FindFirstChild('Items')
+			end)
+			if ok and items then
+				template = items:FindFirstChild(itemType)
+			end
+		end
+		if not template then return end
+
+		local ok, newModel = pcall(function()
+			local model = template:Clone()
+			model.Name = itemType
+			if skin then
+				model:SetAttribute('ItemSkin', skin)
+			end
+			return model
+		end)
+		if not ok or not newModel then return end
+
+		local newHandle = newModel:FindFirstChild('Handle') or newModel:FindFirstChildWhichIsA('BasePart')
+		if not newHandle then newModel:Destroy() return end
+
+		accessory:Destroy()
+		local newAccessory = Instance.new('Accessory')
+		newAccessory.Name = itemType
+		newHandle.Name = 'Handle'
+		newAccessory.Parent = char
+		newHandle.Parent = newAccessory
+		local weld = Instance.new('Weld')
+		weld.Part0 = gripPart
+		weld.Part1 = newHandle
+		weld.C0 = grip and grip.C0 or CFrame.new()
+		weld.C1 = grip and grip.C1 or CFrame.new()
+		weld.Parent = newHandle
+		bedwars.QueryUtil:setQueryIgnored(newHandle, true)
+	end
 	
 	LarpSkins = larp.Categories.Render:CreateModule({
 		Name = 'Larp Skins',
 		Function = function(callback)
 			if callback then
-				LarpSkins:Clean(larpEvents.InventoryChanged.Event:Connect(applySkins))
+				LarpSkins:Clean(larpEvents.InventoryChanged.Event:Connect(function()
+					applySkins()
+					task.defer(reskinHand)
+				end))
+				LarpSkins:Clean(lplr.CharacterAdded:Connect(function()
+					task.wait(1)
+					if LarpSkins.Enabled then
+						applySkins()
+						reskinHand()
+					end
+				end))
 			end
 			applySkins()
+			if callback then
+				task.defer(reskinHand)
+			end
 		end,
-		Tooltip = 'Reskins the items you hold with their sounds, only you can see it'
+		Tooltip = 'Reskins the items you hold - visible in first AND third person, only you can see it'
 	})
 	
 	Options.ItemType = LarpSkins:CreateDropdown({
@@ -15685,6 +15816,7 @@ run(function()
 	local AutoTool
 	local Priority
 	local customlist, parts = {}, {}
+	local OldHealthbar
 	
 	local function customHealthbar(self, blockRef, health, maxHealth, changeHealth, block)
 	    xpcall(function()
@@ -15831,6 +15963,13 @@ run(function()
 		Name = 'Nuker',
 		Function = function(callback)
 			if callback then
+				-- hide the block break progress bar: with nuker active the game's
+				-- own healthbar UI pops up on manual breaks and stacks with the
+				-- nuker's own, looking like a duplicated UI
+				if not OldHealthbar then
+					OldHealthbar = bedwars.BlockBreaker.updateHealthbar
+					bedwars.BlockBreaker.updateHealthbar = function() end
+				end
 				for _ = 1, 30 do
 					local part = Instance.new('Part')
 					part.Anchored = true
@@ -15914,6 +16053,10 @@ for i = 1, #order do
 				v:Destroy()
 			end
 			table.clear(parts)
+			if OldHealthbar then
+				bedwars.BlockBreaker.updateHealthbar = OldHealthbar
+				OldHealthbar = nil
+			end
 		end
 		end,
 		Tooltip = 'Break blocks around you automatically'

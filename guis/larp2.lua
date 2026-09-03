@@ -403,19 +403,20 @@ local function makeDraggable(gui, window)
 			(inputObj.UserInputType == Enum.UserInputType.MouseButton1 or inputObj.UserInputType == Enum.UserInputType.Touch)
 			and (inputObj.Position.Y - gui.AbsolutePosition.Y < 40 or window)
 		then
-			local dragPosition = Vector2.new(
-				gui.AbsolutePosition.X - inputObj.Position.X,
-				gui.AbsolutePosition.Y - inputObj.Position.Y + guiService:GetGuiInset().Y
-			) / scale.Scale
+			-- delta-based dragging: only apply the movement between frames, so the
+			-- window can never teleport (the old start-offset math mixed screen
+			-- space with parent space and jumped on the first drag input)
+			local startPos = inputObj.Position
+			local startGuiPos = gui.Position
 
 			local changed = inputService.InputChanged:Connect(function(input)
 				if input.UserInputType == (inputObj.UserInputType == Enum.UserInputType.MouseButton1 and Enum.UserInputType.MouseMovement or Enum.UserInputType.Touch) then
 					local position = input.Position
+					local delta = Vector2.new(position.X - startPos.X, position.Y - startPos.Y) / scale.Scale
 					if inputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-						dragPosition = (dragPosition // 3) * 3
-						position = (position // 3) * 3
+						delta = (delta // 3) * 3
 					end
-					gui.Position = UDim2.fromOffset((position.X / scale.Scale) + dragPosition.X, (position.Y / scale.Scale) + dragPosition.Y)
+					gui.Position = UDim2.fromOffset(startGuiPos.X.Offset + delta.X, startGuiPos.Y.Offset + delta.Y)
 				end
 			end)
 
@@ -3194,7 +3195,8 @@ function mainapi:CreateGUI()
 			local icon = Instance.new('ImageLabel')
 			icon.Name = 'Icon'
 			icon.Size = togglesettings.Size
-			icon.Position = togglesettings.Position
+			-- center the icon vertically in the 40px toggle row no matter its size
+			icon.Position = UDim2.fromOffset(togglesettings.Position.X.Offset, math.floor((40 - togglesettings.Size.Y.Offset) / 2))
 			icon.BackgroundTransparency = 1
 			icon.Image = togglesettings.Icon
 			icon.ImageColor3 = uipallet.Text
@@ -4569,7 +4571,8 @@ function mainapi:CreateOverlay(categorysettings)
 	local icon = Instance.new('ImageLabel')
 	icon.Name = 'Icon'
 	icon.Size = categorysettings.Size
-	icon.Position = UDim2.fromOffset(12, (icon.Size.X.Offset > 14 and 14 or 13))
+	-- center the icon vertically in the 41px header no matter its size
+	icon.Position = UDim2.fromOffset(12, math.floor((41 - icon.Size.Y.Offset) / 2))
 	icon.BackgroundTransparency = 1
 	icon.Image = categorysettings.Icon
 	icon.ImageColor3 = uipallet.Text
@@ -6812,8 +6815,8 @@ end)
 local perfCategory = mainapi:CreateOverlay({
 	Name = 'Performance',
 	Icon = perfIcon,
-	Size = UDim2.fromOffset(20, 20),
-	Position = UDim2.fromOffset(12, 10)
+	Size = UDim2.fromOffset(22, 22),
+	Position = UDim2.fromOffset(12, 9)
 })
 perfCategory.Children.Size = UDim2.new(1, 0, 0, 300)
 
@@ -8389,11 +8392,17 @@ mainapi:Clean(notifications.ChildRemoved:Connect(function()
 end))
 
 mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
-	if not inputService:GetFocusedTextBox() and inputObj.KeyCode ~= Enum.KeyCode.Unknown then
-		table.insert(mainapi.HeldKeybinds, inputObj.KeyCode.Name)
+	-- mouse side buttons (MouseButton3/4/5) report KeyCode Unknown, so they
+	-- were previously excluded from keybinds entirely
+	local isMouseButton = inputObj.UserInputType == Enum.UserInputType.MouseButton3
+		or inputObj.UserInputType == Enum.UserInputType.MouseButton4
+		or inputObj.UserInputType == Enum.UserInputType.MouseButton5
+	if not inputService:GetFocusedTextBox() and (inputObj.KeyCode ~= Enum.KeyCode.Unknown or isMouseButton) then
+		local bindName = isMouseButton and inputObj.UserInputType.Name or inputObj.KeyCode.Name
+		table.insert(mainapi.HeldKeybinds, bindName)
 		if mainapi.Binding then return end
 
-		if checkKeybinds(mainapi.HeldKeybinds, mainapi.Keybind, inputObj.KeyCode.Name) then
+		if checkKeybinds(mainapi.HeldKeybinds, mainapi.Keybind, bindName) then
 			if mainapi.ThreadFix then
 				setthreadidentity(8)
 			end
@@ -8407,7 +8416,7 @@ mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
 
 		local toggled = false
 		for i, v in mainapi.Modules do
-			if checkKeybinds(mainapi.HeldKeybinds, v.Bind, inputObj.KeyCode.Name) then
+			if checkKeybinds(mainapi.HeldKeybinds, v.Bind, bindName) then
 				toggled = true
 				if mainapi.ToggleNotifications.Enabled then
 					mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75)
@@ -8420,7 +8429,7 @@ mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
 		end
 
 		for _, v in mainapi.Profiles do
-			if checkKeybinds(mainapi.HeldKeybinds, v.Bind, inputObj.KeyCode.Name) and v.Name ~= mainapi.Profile then
+			if checkKeybinds(mainapi.HeldKeybinds, v.Bind, bindName) and v.Name ~= mainapi.Profile then
 				mainapi:Save(v.Name)
 				mainapi:Load(true)
 				break
@@ -8430,19 +8439,26 @@ mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
 end))
 
 mainapi:Clean(inputService.InputEnded:Connect(function(inputObj)
-	if not inputService:GetFocusedTextBox() and inputObj.KeyCode ~= Enum.KeyCode.Unknown then
+	local isMouseButton = inputObj.UserInputType == Enum.UserInputType.MouseButton3
+		or inputObj.UserInputType == Enum.UserInputType.MouseButton4
+		or inputObj.UserInputType == Enum.UserInputType.MouseButton5
+	if not inputService:GetFocusedTextBox() and (inputObj.KeyCode ~= Enum.KeyCode.Unknown or isMouseButton) then
 		if mainapi.Binding then
+			local bindName = isMouseButton and inputObj.UserInputType.Name or inputObj.KeyCode.Name
 			if not mainapi.MultiKeybind.Enabled then
-				mainapi.HeldKeybinds = {inputObj.KeyCode.Name}
+				mainapi.HeldKeybinds = {bindName}
 			end
-			mainapi.Binding:SetBind(checkKeybinds(mainapi.HeldKeybinds, mainapi.Binding.Bind, inputObj.KeyCode.Name) and {} or mainapi.HeldKeybinds, true)
+			mainapi.Binding:SetBind(checkKeybinds(mainapi.HeldKeybinds, mainapi.Binding.Bind, bindName) and {} or mainapi.HeldKeybinds, true)
 			mainapi.Binding = nil
 		end
 	end
 
-	local ind = table.find(mainapi.HeldKeybinds, inputObj.KeyCode.Name)
-	if ind then
-		table.remove(mainapi.HeldKeybinds, ind)
+	if isMouseButton or inputObj.KeyCode ~= Enum.KeyCode.Unknown then
+		local bindName = isMouseButton and inputObj.UserInputType.Name or inputObj.KeyCode.Name
+		local ind = table.find(mainapi.HeldKeybinds, bindName)
+		if ind then
+			table.remove(mainapi.HeldKeybinds, ind)
+		end
 	end
 
 	if clickgui.Visible then

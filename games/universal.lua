@@ -5945,9 +5945,40 @@ run(function()
 			}
 		end
 	}
-	larp.Libraries.sessioninfo:AddItem('Time Played', os.clock(), function(value)
-		return os.date('!%X', math.floor(os.clock() - value))
-	end)
+	-- track the real time in this server: os.clock() is CPU time since the
+	-- executor injected (rests on re-inject) and the old saved-transfer made
+	-- it show bogus values like 11h. tick() delta from a fixed start is exact.
+	local sessionStart = tick()
+	larp.Libraries.sessioninfo:AddItem('Time Played', sessionStart, function(value)
+		local seconds = math.max(math.floor(tick() - value), 0)
+		return string.format('%02d:%02d:%02d', math.floor(seconds / 3600), math.floor(seconds % 3600 / 60), seconds % 60)
+	end, false)
+	-- real game name from the marketplace, resolved once (UGC games return
+	-- their real name; fall back to the place id if the fetch fails)
+	local gameName
+	do
+		local ok, info = pcall(function()
+			return marketplaceService:GetProductInfo(game.PlaceId, Enum.InfoType.Product)
+		end)
+		gameName = (ok and info and info.Name and info.Name ~= '') and info.Name or ('Place '..game.PlaceId)
+	end
+	larp.Libraries.sessioninfo:AddItem('Game', 0, function()
+		return gameName
+	end, false)
+	-- server: show the Roblox client version instead of the random job id.
+	-- resolved once (some executors expose version(); playerscripts otherwise)
+	local robloxVersion
+	do
+		local ok, v = pcall(version)
+		if ok and type(v) == 'string' then
+			robloxVersion = v
+		else
+			robloxVersion = 'client'
+		end
+	end
+	larp.Libraries.sessioninfo:AddItem('Server', 0, function()
+		return 'Roblox '..robloxVersion
+	end, false)
 end)
 
 run(function()

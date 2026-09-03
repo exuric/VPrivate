@@ -4200,9 +4200,13 @@ run(function()
 						local target = selectTargets()[1]
 						if target and target[1] then
 							store.KillauraTarget = target[1]
-							-- keep the game's own swing effect/animation: call the real
-							-- function with the target forced, so your sword looks and
-							-- swings completely normally while the hit still lands
+							-- let the game's own swing run so the animation/sound is
+							-- 100% normal, but mark us as attacking so the position
+							-- spoof makes this exact swing hit the target
+							store.killauraAttacking = true
+							task.defer(function()
+								store.killauraAttacking = false
+							end)
 							return realSwingInRegion(self, ...)
 						end
 					end
@@ -4256,14 +4260,14 @@ run(function()
 										store.KillauraTarget = targets[1][1]
 										task.spawn(fastHitShoot, targets[1][1])
 									end
-								elseif os.clock() - lastSwing >= getAttackInterval() then
-									lastSwing = os.clock()
+								elseif fresh then
+									-- SwingOnly: YOUR swing is the hit (the hook above
+									-- marks attacking + spoofs it). Just keep the target
+									-- selected so the spoof aims at it. No extra attack
+									-- call, no double hits, no double animation.
 									local targets = selectTargets()
-									local startTime = workspace:GetServerTimeNow()
-									for _, t in ipairs(targets) do
-										-- no double animation: the user's own swing already
-										-- plays it, we only add the hit registration
-										attack(t[1], startTime, false)
+									if #targets > 0 then
+										store.KillauraTarget = targets[1][1]
 									end
 								end
 							end

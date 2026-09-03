@@ -5291,8 +5291,11 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						lockedTime = nil
 					end
 					lockedTarget, lockedTime = plr, tick()
+					-- the aim cache is only for the BEAM preview; the actual shot
+					-- (worldmeta==false) must always compute fresh so it is exact
+					local isBeamCall = worldmeta == true
 					local now = tick()
-					if aimCache.result and now - aimCache.at < 0.02 and aimCache.target == plr and aimCache.origin == shootpos and aimCache.proj == projmeta then
+					if isBeamCall and aimCache.result and now - aimCache.at < 0.02 and aimCache.target == plr and aimCache.origin == shootpos and aimCache.proj == projmeta then
 						return aimCache.result
 					end
 					if plr then
@@ -5358,8 +5361,12 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						if not plr.Jumping and math.abs(targetVel.Y) < 5 then
 							targetVel = Vector3.new(targetVel.X, targetVel.Y * 0.15, targetVel.Z)
 						end
+						-- clamp knockback spikes: a recently-hit target can report
+						-- 100+ studs/s velocity which would wildly over-lead the aim
+						if targetVel.Magnitude > 60 then
+							targetVel = targetVel.Unit * 60
+						end
 						local isFireball = projmeta.projectile == 'fireball'
-						local newlook = CFrame.new(offsetpos, targetPos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
 						local leadMult = math.clamp(Prediction.Value, 0.1, 3)
 						if Mode.Value == 'Adaptive' then
 							-- adaptive: compensate for your own latency, the target
@@ -5375,30 +5382,40 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 						-- vertical ballistic motion (jump/fall) with gravity, so scaling
 						-- Y velocity too would double-lead vertically and miss
 						local leadVel = Vector3.new(targetVel.X * leadMult, targetVel.Y, targetVel.Z * leadMult)
+						-- worldmeta==true means the BEAM preview (called per frame);
+						-- false means the ACTUAL shot computation. The real shot must
+						-- get the exact solver result with zero smoothing.
+						local isBeam = worldmeta == true
+						-- solve from the TRUE launch position (positionFrom). The old
+						-- code solved from newlook.p which is offset by the rotated
+						-- muzzle offset (~1 stud) while the projectile actually
+						-- launches from positionFrom - that mismatch = systematic miss
+						local solveOrigin = offsetpos
 						local calc, _, travelTime
 						if isFireball and FireballPrediction.Enabled then
-							calc, _, travelTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPos + targetVel * VelocityLerp.Value * 0.02, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, true, plr.RootPart.Position, plr.RootPart, nil, false)
+							calc, _, travelTime = prediction.SolveTrajectory(solveOrigin, launchSpeed, gravity, targetPos + targetVel * VelocityLerp.Value * 0.02, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, true, plr.RootPart.Position, plr.RootPart, nil, false)
 						else
-							calc, _, travelTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPos, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+							calc, _, travelTime = prediction.SolveTrajectory(solveOrigin, launchSpeed, gravity, targetPos, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 						end
-						if calc then
-							calc = blendAim(newlook.p, calc, plr.RootPart)
+						if calc and isBeam then
+							-- smooth only the visual beam; the real shot stays exact
+							calc = blendAim(solveOrigin, calc, plr.RootPart)
 						end
 						local dir
-						if calc and travelTime and travelTime <= lifetime then
-							dir = CFrame.new(newlook.Position, calc).LookVector * launchSpeed
+						if calc and travelTime and travelTime <= lifetime + 0.4 then
+							dir = CFrame.new(solveOrigin, calc).LookVector * launchSpeed
 							local clear
 							if isFireball and FireballWall.Enabled then
 								clear = true
 							else
-								clear = prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck)
+								clear = prediction.IsTrajectoryClear(solveOrigin, dir, gravity, travelTime, rayCheck)
 							end
 							if not clear then
 								-- try a steep (high) arc to clear walls with bows/crossbows
-								local highCalc, _, highTime = prediction.SolveTrajectoryHigh(newlook.p, launchSpeed, gravity, targetPos, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-								if highCalc and highTime and highTime <= lifetime then
-									local highDir = CFrame.new(newlook.Position, highCalc).LookVector * launchSpeed
-									if prediction.IsTrajectoryClear(newlook.Position, highDir, gravity, highTime, rayCheck) then
+								local highCalc, _, highTime = prediction.SolveTrajectoryHigh(solveOrigin, launchSpeed, gravity, targetPos, leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								if highCalc and highTime and highTime <= lifetime + 0.4 then
+									local highDir = CFrame.new(solveOrigin, highCalc).LookVector * launchSpeed
+									if prediction.IsTrajectoryClear(solveOrigin, highDir, gravity, highTime, rayCheck) then
 										dir = highDir
 										travelTime = highTime
 										clear = true
@@ -5406,15 +5423,15 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 								end
 							end
 							if not clear and isFireball then
-								local feetCalc, _, feetTime = prediction.SolveTrajectory(newlook.p, launchSpeed, gravity, targetPos - Vector3.new(0, 2.8, 0), leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+								local feetCalc, _, feetTime = prediction.SolveTrajectory(solveOrigin, launchSpeed, gravity, targetPos - Vector3.new(0, 2.8, 0), leadVel, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
 								if feetCalc and feetTime and feetTime <= lifetime then
-									local feetDir = CFrame.new(newlook.Position, feetCalc).LookVector * launchSpeed
-									if prediction.IsTrajectoryClear(newlook.Position, feetDir, gravity, feetTime, rayCheck) then
+									local feetDir = CFrame.new(solveOrigin, feetCalc).LookVector * launchSpeed
+									if prediction.IsTrajectoryClear(solveOrigin, feetDir, gravity, feetTime, rayCheck) then
 										dir = feetDir
 										clear = true
 									end
 								end
-								if not clear and (getLanding(newlook.Position, dir, gravity, travelTime) - (targetPos + targetVel * travelTime)).Magnitude <= 4.5 then
+								if not clear and (getLanding(solveOrigin, dir, gravity, travelTime) - (targetPos + targetVel * travelTime)).Magnitude <= 4.5 then
 									clear = true
 								end
 							end
@@ -5439,7 +5456,7 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 									gravitationalAcceleration = gravity,
 									drawDurationSeconds = projmeta.drawDurationSeconds
 								}
-								aimCache.result = res
+								aimCache.result = isBeam and res or nil
 								aimCache.at = tick()
 								aimCache.target = plr
 								aimCache.origin = shootpos
@@ -5447,18 +5464,18 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 								return res
 							end
 						elseif isFireball then
-							local dist = (targetPos - newlook.p).Magnitude
+							local dist = (targetPos - solveOrigin).Magnitude
 							local tt = math.clamp(dist / (projSpeed * charge), 0.1, 3)
 							if tt <= lifetime + 0.5 then
 								local aimPoint = targetPos + targetVel * tt + Vector3.new(0, 0.5 * gravity * tt * tt, 0)
 								local res = {
-									initialVelocity = CFrame.lookAt(newlook.p, aimPoint).LookVector * (projSpeed * charge),
+									initialVelocity = CFrame.lookAt(solveOrigin, aimPoint).LookVector * (projSpeed * charge),
 									positionFrom = offsetpos,
 									deltaT = lifetime,
 									gravitationalAcceleration = gravity,
 									drawDurationSeconds = projmeta.drawDurationSeconds
 								}
-								aimCache.result = res
+								aimCache.result = isBeam and res or nil
 								aimCache.at = tick()
 								aimCache.target = plr
 								aimCache.origin = shootpos

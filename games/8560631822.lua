@@ -3966,8 +3966,6 @@ run(function()
 	local FastDelay
 	local FastShoot
 	local EnhancedAura
-	local clickConn
-	local swingRequested = false
 	local comboRunning = false
 	local cycleIndex = 0
 	local switchLockedTarget
@@ -4303,27 +4301,42 @@ run(function()
 				realCanSee = SwordController.canSee
 				SwordController.swingSwordInRegion = function(self, ...)
 					if SwingOnly.Enabled then
-						local target = selectTargets()[1]
-						if target and target[1] then
-							store.KillauraTarget = target[1]
-							-- swallow the game's own raycast hit (it only hits what
-							-- your camera points at with default range/angle) and let
-							-- the loop below send the hit to the killaura target with
-							-- killaura range + angle. The swing animation/sound from
-							-- your actual click is played by swingSwordAtMouse BEFORE
-							-- this hook, so it still looks and sounds 100% normal.
-							return true
+						if canAttack() and not comboRunning then
+							local target = selectTargets()[1]
+							if target and target[1] then
+								store.KillauraTarget = target[1]
+								-- YOUR swing IS the hit (one physical swing = one
+								-- killaura hit). The game calls swingSwordAtMouse on a
+								-- click, which plays the normal swing animation + sound
+								-- and then calls swingSwordInRegion, so by the time we
+								-- get here the visible swing/sound have already played
+								-- and look 100% normal. We spoof the hit onto the
+								-- killaura target (killaura range + angle) and swallow
+								-- the game's own raycast. It keeps working while you
+								-- hold click because the game calls this per swing.
+								if os.clock() - lastSwing >= getAttackInterval() then
+									lastSwing = os.clock()
+									local startTime = workspace:GetServerTimeNow()
+									if FastHits.Enabled then
+										local targets = selectTargets()
+										if #targets > 0 then
+											task.spawn(fastHitShoot, targets[1][1])
+										end
+									else
+										local targets = selectTargets()
+										for _, t in ipairs(targets) do
+											attack(t[1], startTime, false)
+										end
+									end
+								end
+							end
 						end
+						-- swallow the game's own swing hit either way so SwingOnly
+						-- never also hits whatever the camera points at (no doubles)
+						return true
 					end
 					return realSwingInRegion(self, ...)
 				end
-				swingRequested = false
-				clickConn = inputService.InputBegan:Connect(function(input, gpe)
-					if gpe then return end
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						swingRequested = true
-					end
-				end)
 				if EnhancedAura.Enabled then
 					enhPrevReach = Reach.Enabled
 					enhPrevHitbox = HitBoxes.Enabled
@@ -4356,28 +4369,11 @@ run(function()
 							store.KillauraTarget = target[1]
 							if not SwingOnly.Enabled then
 								swingMulti()
-							elseif swingRequested or inputService:IsMouseButtonPressed(0) then
-								local fresh = swingRequested
-								swingRequested = false
-								if FastHits.Enabled then
-									local targets = selectTargets()
-									if #targets > 0 then
-										store.KillauraTarget = targets[1][1]
-										task.spawn(fastHitShoot, targets[1][1])
-									end
-								elseif fresh and os.clock() - lastSwing >= getAttackInterval() then
-									-- SwingOnly: your click's swing animation already
-									-- played, we send the hit to the killaura target
-									-- with killaura range + angle. animate=false so
-									-- there is no second animation or sound.
-									lastSwing = os.clock()
-									local targets = selectTargets()
-									local startTime = workspace:GetServerTimeNow()
-									for _, t in ipairs(targets) do
-										attack(t[1], startTime, false)
-									end
-								end
 							end
+							-- SwingOnly: the hit + animation happen in the
+							-- swingSwordInRegion hook (one real swing = one killaura
+							-- hit, normal animation). The loop only keeps the overlay
+							-- target fresh so the box/health bar renders.
 						end
 					end
 					if not target then
@@ -4402,11 +4398,6 @@ run(function()
 				if realCanSee then
 					SwordController.canSee = realCanSee
 				end
-				if clickConn then
-					clickConn:Disconnect()
-					clickConn = nil
-				end
-				swingRequested = false
 				realSwingInRegion = nil
 				realCanSee = nil
 				SwordController = nil

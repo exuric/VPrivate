@@ -1863,6 +1863,7 @@ run(function()
 	local Sort
 	local AimPart
 	local VerticalAim
+	local Advanced
 	local AimSpeed
 	local Shake
 	local Smoothness
@@ -1916,11 +1917,17 @@ local function getAim(ent)
 			end
 		end
 		base = base or ent.RootPart.Position
-		-- vertical aim: blend between the root and the head/torso height
-		local vertical = (VerticalAim and VerticalAim.Value or 50) / 100
-		local head = ent.Head and ent.Head.Position or (base + Vector3.new(0, 2.5, 0))
-		local aimY = base.Y + (head.Y - base.Y) * vertical
-		return Vector3.new(base.X, aimY, base.Z)
+		-- vertical aim: aim at feet, center or head
+		local mode = VerticalAim and VerticalAim.Value or 'Center'
+		if mode == 'Head' then
+			local head = ent.Head and ent.Head.Position or (base + Vector3.new(0, 2.5, 0))
+			return head
+		elseif mode == 'Feet' then
+			return Vector3.new(base.X, base.Y - (ent.HipHeight or 2), base.Z)
+		end
+		-- center: between root and head
+		local headY = ent.Head and ent.Head.Position.Y or (base.Y + 2.5)
+		return Vector3.new(base.X, base.Y + (headY - base.Y) * 0.5, base.Z)
 	end
 	
 	local started, lasttarget, nextsearch = 0, nil, 0
@@ -1939,7 +1946,7 @@ local function getAim(ent)
 			humanState.prevTime = tick()
 			humanState.bias = Vector3.new(0, 0, 0)
 		end
-		if Overshoot.Value > 0 then
+		if Overshoot.Value > 0 and (not Advanced or Advanced.Enabled) then
 			local prev = humanState.prevAim or rawAim
 			local deltaT = math.min(tick() - humanState.prevTime, 0.25)
 			local vel = deltaT > 0 and (rawAim - prev) / deltaT or Vector3.new(0, 0, 0)
@@ -1954,7 +1961,7 @@ local function getAim(ent)
 	end
 
 	local function smoothedLook(localcframe, targetPoint, dt, factor)
-		if not (VerticalAim and VerticalAim.Value > 0) then
+		if VerticalAim and VerticalAim.Value == 'Feet' then
 			targetPoint = Vector3.new(targetPoint.X, localcframe.Position.Y, targetPoint.Z)
 		end
 		local forward = localcframe.LookVector
@@ -2006,7 +2013,12 @@ local function getAim(ent)
 			local aimPoint = getAim(ent)
 			local dist = (aimPoint - localcframe.Position).Magnitude
 
-			-- Human-like: power up gradually from reaction, never instant.
+			-- Self-contained human model: does not rely on the advanced
+			-- (hidden) sliders. Reaction, ramping and settle are built in.
+			if tick() < humanState.reactUntil then
+				return localcframe
+			end
+
 			local prog = ease(math.min(tick() - started, 1))
 
 			-- Slow deliberate start that ramps, bleeding off near the target so it settles.
@@ -2027,7 +2039,10 @@ local function getAim(ent)
 				(rng:NextNumber() - 0.5) * shakeAmt * fps
 			)
 
-			return applyHumanAim(localcframe, ent, aimPoint + miss + jitter, fps, speed), speed
+			-- own smoothing, no max-turn cap, no overshoot bias
+			local target = getSmoothPoint(ent, aimPoint + miss + jitter, fps)
+			local factor = math.max(speed, 0.01) * 8 * (Smoothness.Value / 100)
+			return smoothedLook(localcframe, target, fps, factor), speed
 		end
 	}
 
@@ -2077,7 +2092,7 @@ local function getAim(ent)
 	
 		if ent ~= lasttarget then
 			started = tick()
-			if Reaction.Value > 0 then
+			if (not Advanced or Advanced.Enabled) and Reaction.Value > 0 then
 				humanState.reactUntil = tick() + (Reaction.Value / 1000) * Random.new():NextNumber(0.75, 1.25)
 			end
 		end
@@ -2159,30 +2174,24 @@ local function getAim(ent)
 	Mode = AimAssist:CreateDropdown({
 		Name = 'Mode',
 		List = modes,
-		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior\nLegit - Auto-tunes the settings for human-like, believable aim',
+		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior\nLegit - Self-contained human-like aim that ignores hidden advanced settings',
 		Default = modes[1],
 		Function = function(val)
 			local saved = Mode._saved
 			if val == 'Legit' then
 				if not saved and AimSpeed then
-					saved = {AimSpeed.Value, Smoothness.Value, Overshoot.Value, Shake.Value, Reaction.Value, MaxTurn.Value}
+					saved = {AimSpeed.Value, Smoothness.Value, Shake.Value}
 					Mode._saved = saved
 				end
 				if saved then
 					AimSpeed:SetValue(8)
 					Smoothness:SetValue(45)
-					Overshoot:SetValue(35)
 					Shake:SetValue(25)
-					Reaction:SetValue(160)
-					MaxTurn:SetValue(220)
 				end
 			elseif saved and AimSpeed then
 				AimSpeed:SetValue(saved[1])
 				Smoothness:SetValue(saved[2])
-				Overshoot:SetValue(saved[3])
-				Shake:SetValue(saved[4])
-				Reaction:SetValue(saved[5])
-				MaxTurn:SetValue(saved[6])
+				Shake:SetValue(saved[3])
 				Mode._saved = nil
 			end
 		end,
@@ -2239,6 +2248,7 @@ local function getAim(ent)
 		Min = 0,
 		Max = 100,
 		Default = 50,
+		Visible = false,
 		Tooltip = 'Flicks slightly past the target and settles back, like a human flick. 0 = off',
 	})
 	Reaction = AimAssist:CreateSlider({
@@ -2246,6 +2256,7 @@ local function getAim(ent)
 		Min = 0,
 		Max = 400,
 		Default = 150,
+		Visible = false,
 		Suffix = function()
 			return 'ms'
 		end,
@@ -2256,6 +2267,7 @@ local function getAim(ent)
 		Min = 0,
 		Max = 360,
 		Default = 0,
+		Visible = false,
 		Suffix = function()
 			return 'deg/s'
 		end,
@@ -2281,15 +2293,26 @@ local function getAim(ent)
 		List = {'Center', 'Closest'},
 		Default = 'Center',
 	})
-	VerticalAim = AimAssist:CreateSlider({
+	VerticalAim = AimAssist:CreateDropdown({
 		Name = 'Vertical aim',
-		Min = 0,
-		Max = 100,
-		Default = 60,
-		Suffix = function()
-			return '%'
+		List = {'Feet', 'Center', 'Head'},
+		Default = 'Center',
+		Tooltip = 'Where to aim on the target vertically:\nFeet - at the ground\nCenter - at the middle of the body\nHead - at the head'
+	})
+	Advanced = AimAssist:CreateToggle({
+		Name = 'Advanced',
+		Function = function(callback)
+			if Overshoot then
+				Overshoot.Object.Visible = callback
+			end
+			if Reaction then
+				Reaction.Object.Visible = callback
+			end
+			if MaxTurn then
+				MaxTurn.Object.Visible = callback
+			end
 		end,
-		Tooltip = 'How high you aim on the target: 0% = feet, 100% = head. 0 disables vertical aiming entirely.'
+		Tooltip = 'Shows advanced tuning: overshoot, reaction delay and max turn speed'
 	})
 end)
 

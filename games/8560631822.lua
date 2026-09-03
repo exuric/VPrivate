@@ -4141,11 +4141,9 @@ run(function()
 					end
 				end
 				if oldHotbar then hotbarSwitch(oldHotbar) end
-				-- after a shot, wait for the shot interval before the next shot
-				task.wait(math.max(fireDelay - (tick() - now), 0.02))
-			else
-				task.wait(0.02)
 			end
+			-- keep the sword swinging at full rate during the shot cooldown
+			task.wait(0.02)
 		end
 		if oldHotbar then hotbarSwitch(oldHotbar) end
 		if oldTool and oldTool.Parent then switchItem(oldTool, 0) end
@@ -4202,12 +4200,14 @@ run(function()
 							store.KillauraTarget = target[1]
 							-- let the game's own swing run so the animation/sound is
 							-- 100% normal, but mark us as attacking so the position
-							-- spoof makes this exact swing hit the target
+							-- spoof makes this exact swing hit the target. The flag
+							-- is set synchronously so the SwordHit that fires inside
+							-- the real call sees it, and cleared right after.
+							local wasAttacking = store.killauraAttacking
 							store.killauraAttacking = true
-							task.defer(function()
-								store.killauraAttacking = false
-							end)
-							return realSwingInRegion(self, ...)
+							local ok, res = pcall(realSwingInRegion, self, ...)
+							store.killauraAttacking = wasAttacking
+							return ok and res or nil
 						end
 					end
 					return realSwingInRegion(self, ...)

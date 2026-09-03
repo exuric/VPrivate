@@ -8392,11 +8392,10 @@ mainapi:Clean(notifications.ChildRemoved:Connect(function()
 end))
 
 mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
-	-- mouse side buttons (MouseButton3/4/5) report KeyCode Unknown, so they
-	-- were previously excluded from keybinds entirely
+	-- mouse side buttons (MouseButton3 = middle mouse) report KeyCode Unknown, so
+	-- they were previously excluded from keybinds entirely. Roblox only exposes
+	-- MouseButton1/2/3 in Enum.UserInputType; side buttons (X1/X2) don't exist.
 	local isMouseButton = inputObj.UserInputType == Enum.UserInputType.MouseButton3
-		or inputObj.UserInputType == Enum.UserInputType.MouseButton4
-		or inputObj.UserInputType == Enum.UserInputType.MouseButton5
 	if not inputService:GetFocusedTextBox() and (inputObj.KeyCode ~= Enum.KeyCode.Unknown or isMouseButton) then
 		local bindName = isMouseButton and inputObj.UserInputType.Name or inputObj.KeyCode.Name
 		table.insert(mainapi.HeldKeybinds, bindName)
@@ -8440,8 +8439,6 @@ end))
 
 mainapi:Clean(inputService.InputEnded:Connect(function(inputObj)
 	local isMouseButton = inputObj.UserInputType == Enum.UserInputType.MouseButton3
-		or inputObj.UserInputType == Enum.UserInputType.MouseButton4
-		or inputObj.UserInputType == Enum.UserInputType.MouseButton5
 	if not inputService:GetFocusedTextBox() and (inputObj.KeyCode ~= Enum.KeyCode.Unknown or isMouseButton) then
 		if mainapi.Binding then
 			local bindName = isMouseButton and inputObj.UserInputType.Name or inputObj.KeyCode.Name

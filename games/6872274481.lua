@@ -1862,6 +1862,7 @@ run(function()
 	local Targets
 	local Sort
 	local AimPart
+	local VerticalAim
 	local AimSpeed
 	local Shake
 	local Smoothness
@@ -1889,7 +1890,8 @@ run(function()
 		return inputService.GetMouseLocation(inputService)
 	end
 	
-	local function getAim(ent)
+local function getAim(ent)
+		local base
 		if AimPart.Value == 'Closest' then
 			if not cache[ent.Character] then
 				cache[ent.Character] = ent.Character:GetChildren()
@@ -1898,10 +1900,10 @@ run(function()
 			for _, v in cache[ent.Character] do
 				if v and v.Parent and v:IsA('BasePart') then
 					local position, vis = gameCamera.WorldToViewportPoint(gameCamera, v.Position)
-	
+
 					if vis then
 						local mag = (localPosition - Vector2.new(position.x, position.y)).Magnitude
-	
+
 						if mag < magnitude then
 							magnitude = mag
 							part = v
@@ -1910,10 +1912,15 @@ run(function()
 				end
 			end
 			if part then
-				return part.Position
+				base = part.Position
 			end
 		end
-		return ent.RootPart.Position
+		base = base or ent.RootPart.Position
+		-- vertical aim: blend between the root and the head/torso height
+		local vertical = (VerticalAim and VerticalAim.Value or 50) / 100
+		local head = ent.Head and ent.Head.Position or (base + Vector3.new(0, 2.5, 0))
+		local aimY = base.Y + (head.Y - base.Y) * vertical
+		return Vector3.new(base.X, aimY, base.Z)
 	end
 	
 	local started, lasttarget, nextsearch = 0, nil, 0
@@ -1947,7 +1954,9 @@ run(function()
 	end
 
 	local function smoothedLook(localcframe, targetPoint, dt, factor)
-		targetPoint = Vector3.new(targetPoint.X, localcframe.Position.Y, targetPoint.Z)
+		if not (VerticalAim and VerticalAim.Value > 0) then
+			targetPoint = Vector3.new(targetPoint.X, localcframe.Position.Y, targetPoint.Z)
+		end
 		local forward = localcframe.LookVector
 		local want = (targetPoint - localcframe.Position)
 		if want.Magnitude < 1e-4 then
@@ -2000,13 +2009,17 @@ run(function()
 			-- Human-like: power up gradually from reaction, never instant.
 			local prog = ease(math.min(tick() - started, 1))
 
-			-- Base speed is slow and deliberate, ramps up as we lock on.
-			local speed = 2.5 + 6 * prog
-			-- Near the target, bleed speed off so the crosshair settles (feels human).
-			speed = speed * math.clamp(dist / 24, 0.3, 1)
+			-- Slow deliberate start that ramps, bleeding off near the target so it settles.
+			local speed = (2.5 + 6 * prog) * math.clamp(dist / 24, 0.3, 1)
 
-			-- Light micro-shake that fades as the crosshair closes in, so it
-			-- locks cleanly but never tracks like a robot.
+			-- Human error: a drifting micro-bias that constantly corrects instead of
+			-- holding a perfect lock. Fades as we close in, so hits still land.
+			local miss = Vector3.new(
+				math.sin(tick() * 3.7 + ent.RootPart.Position.X) * 1.2,
+				math.sin(tick() * 2.9 + ent.RootPart.Position.Z) * 0.8,
+				math.cos(tick() * 3.1) * 0.6
+			) * (0.5 + 0.5 * math.clamp(dist / 20, 0, 1))
+
 			local shakeAmt = Shake.Value * (dist < 10 and 0.35 or 0.85)
 			local jitter = Vector3.new(
 				(rng:NextNumber() - 0.5) * shakeAmt * fps,
@@ -2014,7 +2027,7 @@ run(function()
 				(rng:NextNumber() - 0.5) * shakeAmt * fps
 			)
 
-			return applyHumanAim(localcframe, ent, aimPoint + jitter, fps, speed), speed
+			return applyHumanAim(localcframe, ent, aimPoint + miss + jitter, fps, speed), speed
 		end
 	}
 
@@ -2267,6 +2280,16 @@ run(function()
 		Name = 'Target area',
 		List = {'Center', 'Closest'},
 		Default = 'Center',
+	})
+	VerticalAim = AimAssist:CreateSlider({
+		Name = 'Vertical aim',
+		Min = 0,
+		Max = 100,
+		Default = 60,
+		Suffix = function()
+			return '%'
+		end,
+		Tooltip = 'How high you aim on the target: 0% = feet, 100% = head. 0 disables vertical aiming entirely.'
 	})
 end)
 

@@ -403,6 +403,8 @@ end
 vape.Libraries.tween = tween
 vape.Libraries.getfontsize = getfontsize
 vape.Libraries.targetinfo = {Targets = {}}
+vape.Libraries.uipallet = uipallet
+vape.Libraries.color = color
 
 local function addBlur(parent, notif, old)
 	local blur

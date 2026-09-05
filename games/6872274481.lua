@@ -5193,6 +5193,8 @@ run(function()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
+	local realOld
+	local shotLog = {}
 	local velHistory = {}
 	local velTime = {}
 	local aimCache = { at = 0, target = nil, result = nil }
@@ -5340,11 +5342,21 @@ run(function()
 			if callback then
 				updateFOVCircle()
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
+				realOld = old
+				old = function(...)
+					local stats = getgenv().projAimStats
+					if stats then stats.fallback += 1 end
+					return realOld(...)
+				end
+				getgenv().projAimStats = { calls = 0, shots = 0, fallback = 0 }
+				table.clear(shotLog)
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local ok, result = pcall(function(...)
 						local self, projmeta, worldmeta, origin, shootpos = ...
 						local isBeam = worldmeta == true
 						local now = tick()
+						local stats = getgenv().projAimStats
+						if stats then stats.calls += 1 end
 						local pos = shootpos or self:getLaunchPosition(origin)
 						if not pos then
 							return old(...)
@@ -5459,6 +5471,17 @@ run(function()
 								pcall(prediction.trackShot, root)
 							end
 							if targetinfo then targetinfo.Targets[plr] = now + 1 end
+							if #shotLog >= 12 then table.remove(shotLog, 1) end
+							local sp, sv, minp = offsetpos, v0, math.huge
+							for _ = 1, 150 do
+								sp = sp + sv * 0.02
+								sv = sv - Vector3.new(0, gravity * 0.02, 0)
+								local dd = (sp - root.Position).Magnitude
+								if dd < minp then minp = dd end
+								if minp < 0.1 then break end
+							end
+							table.insert(shotLog, { p = projName, d = (offsetpos - root.Position).Magnitude, t = travelTime, s = speed, g = gravity, m = minp, plr = plr.Player and plr.Player.Name or 'npc' })
+							if stats then stats.shots += 1 end
 						end
 						return res
 					end, ...)
@@ -5466,7 +5489,7 @@ run(function()
 					return old(...)
 				end
 			else
-				bedwars.ProjectileController.calculateImportantLaunchValues = old
+				bedwars.ProjectileController.calculateImportantLaunchValues = realOld
 				table.clear(velHistory)
 				table.clear(velTime)
 				table.clear(beamVel)

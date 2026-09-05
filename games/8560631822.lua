@@ -5349,6 +5349,7 @@ run(function()
 					return realOld(...)
 				end
 				getgenv().projAimStats = { calls = 0, shots = 0, fallback = 0 }
+				getgenv().projShotLog = shotLog
 				table.clear(shotLog)
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local ok, result = pcall(function(...)

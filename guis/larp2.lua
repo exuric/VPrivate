@@ -92,6 +92,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/favouritestar2.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/star.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/star2.png'] = 'rbxassetid://14368342301',
+	['LarpV4/assets/larp/Star.png'] = '',
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
 	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
 	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
@@ -106,6 +107,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/overlaysicon.png'] = 'rbxassetid://14368339581',
 	['LarpV4/assets/larp/overlaystab.png'] = 'rbxassetid://14397380433',
 	['LarpV4/assets/larp/perf.png'] = 'rbxassetid://14368339581',
+	['LarpV4/assets/larp/performance.png'] = '',
 	['LarpV4/assets/larp/pin.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/profileicon.png'] = 'rbxassetid://14368359107',
 	['LarpV4/assets/larp/profile.png'] = 'rbxassetid://14368359107',
@@ -3076,6 +3078,12 @@ function mainapi:CreateGUI()
 		favbutton.BackgroundTransparency = 1
 		favbutton.AutoButtonColor = false
 		local favIcon = getcustomasset('LarpV4/assets/larp/favouritestar2.png')
+		if isfile('LarpV4/assets/larp/Star.png') then
+			pcall(function()
+				local s = getcustomasset('LarpV4/assets/larp/Star.png')
+				if s and s ~= '' then favIcon = s end
+			end)
+		end
 		favbutton.Image = favIcon
 		favbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favbutton.Parent = bar
@@ -6889,6 +6897,12 @@ pcall(function()
 	local p = getcustomasset('LarpV4/assets/larp/perf.png')
 	if p and p ~= '' then perfIcon = p end
 end)
+if isfile('LarpV4/assets/larp/performance.png') then
+	pcall(function()
+		local p = getcustomasset('LarpV4/assets/larp/performance.png')
+		if p and p ~= '' then perfIcon = p end
+	end)
+end
 local perfCategory = mainapi:CreateOverlay({
 	Name = 'Performance',
 	Icon = perfIcon,

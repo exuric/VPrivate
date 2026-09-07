@@ -6799,7 +6799,7 @@ local friendscolor = {
 local friendssettings = {
 	Name = 'Friends',
 	Icon = getcustomasset('LarpV4/assets/larp/friendstab.png'),
-	Size = UDim2.fromOffset(17, 16),
+	Size = UDim2.fromOffset(22, 15),
 	Placeholder = 'Roblox username',
 	Color = Color3.fromRGB(5, 134, 105),
 	Function = function()
@@ -6883,7 +6883,7 @@ local targets
 targets = mainapi:CreateCategoryList({
 	Name = 'Targets',
 	Icon = getcustomasset('LarpV4/assets/larp/friendstab.png'),
-	Size = UDim2.fromOffset(17, 16),
+	Size = UDim2.fromOffset(22, 15),
 	Placeholder = 'Roblox username',
 	Function = function()
 		targets.Update:Fire()

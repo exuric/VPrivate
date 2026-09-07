@@ -4300,40 +4300,27 @@ run(function()
 				realSwingInRegion = SwordController.swingSwordInRegion
 				realCanSee = SwordController.canSee
 				SwordController.swingSwordInRegion = function(self, ...)
-					if SwingOnly.Enabled then
-						if canAttack() and not comboRunning then
-							local target = selectTargets()[1]
-							if target and target[1] then
-								store.KillauraTarget = target[1]
-								-- YOUR swing IS the hit (one physical swing = one
-								-- killaura hit). The game calls swingSwordAtMouse on a
-								-- click, which plays the normal swing animation + sound
-								-- and then calls swingSwordInRegion, so by the time we
-								-- get here the visible swing/sound have already played
-								-- and look 100% normal. We spoof the hit onto the
-								-- killaura target (killaura range + angle) and swallow
-								-- the game's own raycast. It keeps working while you
-								-- hold click because the game calls this per swing.
-								if os.clock() - lastSwing >= getAttackInterval() then
-									lastSwing = os.clock()
-									local startTime = workspace:GetServerTimeNow()
-									if FastHits.Enabled then
-										local targets = selectTargets()
-										if #targets > 0 then
-											task.spawn(fastHitShoot, targets[1][1])
-										end
-									else
-										local targets = selectTargets()
-										for _, t in ipairs(targets) do
-											attack(t[1], startTime, false)
-										end
+					if SwingOnly.Enabled and canAttack() and not comboRunning then
+						local target = selectTargets()[1]
+						if target and target[1] then
+							store.KillauraTarget = target[1]
+							if os.clock() - lastSwing >= getAttackInterval() then
+								lastSwing = os.clock()
+								local startTime = workspace:GetServerTimeNow()
+								if FastHits.Enabled then
+									local targets = selectTargets()
+									if #targets > 0 then
+										task.spawn(fastHitShoot, targets[1][1])
+									end
+								else
+									local targets = selectTargets()
+									for _, t in ipairs(targets) do
+										attack(t[1], startTime)
 									end
 								end
 							end
+							return true
 						end
-						-- swallow the game's own swing hit either way so SwingOnly
-						-- never also hits whatever the camera points at (no doubles)
-						return true
 					end
 					return realSwingInRegion(self, ...)
 				end
@@ -4490,7 +4477,7 @@ run(function()
 	})
 	SwingOnly = Killaura:CreateToggle({
 		Name = 'Swing only',
-		Tooltip = 'Only attacks when you swing'
+		Tooltip = 'Only attacks when you swing. Swings redirect onto targets in range, other swings stay normal'
 	})
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',

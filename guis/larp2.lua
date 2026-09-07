@@ -4475,9 +4475,23 @@ function mainapi:CreateCategory(categorysettings)
 
 	function categoryapi:Expand()
 		self.Expanded = not self.Expanded
-		children.Visible = self.Expanded
-		arrow.Rotation = self.Expanded and 0 or 180
-		window.Size = UDim2.fromOffset(220, self.Expanded and math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601) or 41)
+		local target = self.Expanded and math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601) or 41
+		if self.Expanded then
+			children.Visible = true
+		end
+		tween:Tween(arrow, TweenInfo.new(0.22, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+			Rotation = self.Expanded and 0 or 180
+		})
+		tween:Tween(window, TweenInfo.new(0.26, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+			Size = UDim2.fromOffset(220, target)
+		})
+		if not self.Expanded then
+			task.delay(0.24, function()
+				if not self.Expanded then
+					children.Visible = false
+				end
+			end)
+		end
 		divider.Visible = children.CanvasPosition.Y > 10 and children.Visible
 	end
 
@@ -6518,11 +6532,7 @@ local favouritescategory = mainapi:CreateCategory({
 	Size = UDim2.fromOffset(16, 16)
 })
 favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
-favouritescategory.Button.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
-favouritescategory.Button.Object.MouseButton1Click:Connect(function()
-	-- handled by CreateCategory button logic
-end)
-mainapi.Categories.Main:CreateDivider()
+favouritescategory.Button.Object.Visible = false
 mainapi:CreateCategory({
 	Name = 'Combat',
 	Icon = getcustomasset('LarpV4/assets/larp/combaticon.png'),

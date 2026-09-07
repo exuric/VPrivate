@@ -92,6 +92,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/favouritestar2.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/star.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/star2.png'] = 'rbxassetid://14368342301',
+	['LarpV4/assets/larp/Star.png'] = '',
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
 	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
 	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
@@ -106,6 +107,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/overlaysicon.png'] = 'rbxassetid://14368339581',
 	['LarpV4/assets/larp/overlaystab.png'] = 'rbxassetid://14397380433',
 	['LarpV4/assets/larp/perf.png'] = 'rbxassetid://14368339581',
+	['LarpV4/assets/larp/performance.png'] = '',
 	['LarpV4/assets/larp/pin.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/profileicon.png'] = 'rbxassetid://14368359107',
 	['LarpV4/assets/larp/profile.png'] = 'rbxassetid://14368359107',
@@ -3075,18 +3077,25 @@ function mainapi:CreateGUI()
 		favbutton.Position = UDim2.new(1, -55, 0, 8)
 		favbutton.BackgroundTransparency = 1
 		favbutton.AutoButtonColor = false
-		favbutton.Image = getcustomasset('LarpV4/assets/larp/favouritestar2.png')
-		favbutton.ImageColor3 = Color3.new(1, 1, 1)
+		local favIcon = getcustomasset('LarpV4/assets/larp/star2.png')
+		pcall(function()
+			local s = getcustomasset('LarpV4/assets/larp/Star.png')
+			if s and s ~= '' then favIcon = s end
+		end)
+		favbutton.Image = favIcon
+		favbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favbutton.Parent = bar
 		addCorner(favbutton, UDim.new(1, 0))
 		addTooltip(favbutton, 'Favorites')
+		local favOpen = false
 		task.delay(0.5, function()
 			pcall(function()
 				local api = shared.larp or getgenv().larp
 				local cat = api and api.Categories and api.Categories.Favorites
 				if cat and cat.Object then
 					cat.Object:GetPropertyChangedSignal('Visible'):Connect(function()
-						favbutton.ImageColor3 = cat.Object.Visible and Color3.fromRGB(255, 140, 0) or Color3.new(1, 1, 1)
+						favOpen = cat.Object.Visible
+						favbutton.ImageColor3 = favOpen and Color3.fromRGB(255, 140, 0) or color.Light(uipallet.Main, 0.37)
 					end)
 				end
 			end)
@@ -3105,6 +3114,8 @@ function mainapi:CreateGUI()
 								cat:Expand()
 							end
 						end
+						favOpen = cat.Object.Visible
+						favbutton.ImageColor3 = favOpen and Color3.fromRGB(255, 140, 0) or color.Light(uipallet.Main, 0.37)
 					end
 				end
 			end)
@@ -3117,7 +3128,7 @@ function mainapi:CreateGUI()
 		end)
 		favbutton.MouseLeave:Connect(function()
 			tween:Tween(favbutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
-				ImageColor3 = Color3.new(1, 1, 1),
+				ImageColor3 = favOpen and Color3.fromRGB(255, 140, 0) or color.Light(uipallet.Main, 0.37),
 				Rotation = 0
 			})
 		end)
@@ -4749,6 +4760,7 @@ function mainapi:CreateCategoryList(categorysettings)
 		Options = {}
 	}
 	categorysettings.Color = categorysettings.Color or Color3.fromRGB(5, 134, 105)
+	local thumbCache = {}
 
 	local window = Instance.new('TextButton')
 	window.Name = categorysettings.Name..'CategoryList'
@@ -4926,6 +4938,15 @@ function mainapi:CreateCategoryList(categorysettings)
 				object.Text = ''
 				object.Parent = children
 				addCorner(object)
+				local accent = Instance.new('Frame')
+				accent.Name = 'Accent'
+				accent.Size = UDim2.fromOffset(3, 20)
+				accent.Position = UDim2.fromOffset(6, 7)
+				accent.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+				accent.BorderSizePixel = 0
+				accent.Visible = v.Name == mainapi.Profile
+				accent.Parent = object
+				addCorner(accent, UDim.new(1, 0))
 				local objectstroke = Instance.new('UIStroke')
 				objectstroke.Color = color.Light(uipallet.Main, 0.1)
 				objectstroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -4938,7 +4959,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				objecttitle.BackgroundTransparency = 1
 				objecttitle.Text = v.Name
 				objecttitle.TextXAlignment = Enum.TextXAlignment.Left
-				objecttitle.TextColor3 = color.Dark(uipallet.Text, 0.4)
+				objecttitle.TextColor3 = v.Name == mainapi.Profile and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Dark(uipallet.Text, 0.4)
 				objecttitle.TextSize = 15
 				objecttitle.FontFace = uipallet.Font
 				objecttitle.Parent = object
@@ -5044,6 +5065,9 @@ function mainapi:CreateCategoryList(categorysettings)
 				end)
 				object.MouseEnter:Connect(function()
 					bind.Visible = true
+					tween:Tween(object, uipallet.Tween, {
+						BackgroundColor3 = color.Light(uipallet.Main, 0.06)
+					})
 					if v.Name ~= mainapi.Profile then
 						objectstroke.Enabled = true
 						objecttitle.TextColor3 = color.Dark(uipallet.Text, 0.16)
@@ -5051,6 +5075,9 @@ function mainapi:CreateCategoryList(categorysettings)
 				end)
 				object.MouseLeave:Connect(function()
 					bind.Visible = #v.Bind > 0
+					tween:Tween(object, uipallet.Tween, {
+						BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+					})
 					if v.Name ~= mainapi.Profile then
 						objectstroke.Enabled = false
 						objecttitle.TextColor3 = color.Dark(uipallet.Text, 0.4)
@@ -5123,15 +5150,61 @@ function mainapi:CreateCategoryList(categorysettings)
 				objectdotin.Parent = objectdot
 				local objecttitle = Instance.new('TextLabel')
 				objecttitle.Name = 'Title'
-				objecttitle.Size = UDim2.new(1, -30, 1, 0)
-				objecttitle.Position = UDim2.fromOffset(30, 0)
+				objecttitle.Size = UDim2.new(1, -60, 0, 16)
+				objecttitle.Position = UDim2.fromOffset(58, 1)
 				objecttitle.BackgroundTransparency = 1
 				objecttitle.Text = v
 				objecttitle.TextXAlignment = Enum.TextXAlignment.Left
 				objecttitle.TextColor3 = color.Dark(uipallet.Text, 0.16)
-				objecttitle.TextSize = 15
-				objecttitle.FontFace = uipallet.Font
+				objecttitle.TextSize = 13
+				objecttitle.FontFace = uipallet.FontSemiBold
+				objecttitle.TextTruncate = Enum.TextTruncate.AtEnd
 				objecttitle.Parent = object
+				local objectsub = Instance.new('TextLabel')
+				objectsub.Name = 'Subtitle'
+				objectsub.Size = UDim2.new(1, -60, 0, 13)
+				objectsub.Position = UDim2.fromOffset(58, 16)
+				objectsub.BackgroundTransparency = 1
+				objectsub.Text = ''
+				objectsub.TextXAlignment = Enum.TextXAlignment.Left
+				objectsub.TextColor3 = color.Dark(uipallet.Text, 0.43)
+				objectsub.TextSize = 11
+				objectsub.FontFace = uipallet.Font
+				objectsub.TextTruncate = Enum.TextTruncate.AtEnd
+				objectsub.Parent = object
+				local avatar = Instance.new('ImageLabel')
+				avatar.Name = 'Avatar'
+				avatar.Size = UDim2.fromOffset(22, 22)
+				avatar.Position = UDim2.fromOffset(30, 5)
+				avatar.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+				avatar.BorderSizePixel = 0
+				avatar.Parent = object
+				addCorner(avatar, UDim.new(1, 0))
+				task.spawn(function()
+					local uid = thumbCache[v]
+					if not uid then
+						local ok, id = pcall(playersService.GetUserIdFromNameAsync, playersService, v)
+						if ok and id then
+							uid = id
+							thumbCache[v] = id
+						end
+					end
+					if uid then
+						if not thumbCache[uid] then
+							local ok, thumb = pcall(playersService.GetUserThumbnailAsync, playersService, uid, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48, false)
+							if ok and thumb then thumbCache[uid] = thumb end
+						end
+						if not object.Parent then return end
+						local plr = playersService:GetPlayerByUserId(uid)
+						if plr and plr.DisplayName ~= v then
+							objecttitle.Text = plr.DisplayName
+							objectsub.Text = '@'..v
+						end
+						if type(thumbCache[uid]) == 'string' then
+							avatar.Image = thumbCache[uid]
+						end
+					end
+				end)
 				if mainapi.ThreadFix then
 					setthreadidentity(8)
 				end
@@ -6817,28 +6890,32 @@ mainapi:CreateSearch()
 mainapi.Categories.Main:CreateOverlayBar()
 mainapi.Categories.Main:CreateSettingsDivider()
 
-local perfIcon = getcustomasset('LarpV4/assets/larp/perf.png')
+local perfIcon = ''
 pcall(function()
 	local p = getcustomasset('LarpV4/assets/larp/perf.png')
+	if p and p ~= '' then perfIcon = p end
+end)
+pcall(function()
+	local p = getcustomasset('LarpV4/assets/larp/performance.png')
 	if p and p ~= '' then perfIcon = p end
 end)
 local perfCategory = mainapi:CreateOverlay({
 	Name = 'Performance',
 	Icon = perfIcon,
-	Size = UDim2.fromOffset(22, 22),
-	Position = UDim2.fromOffset(12, 9)
+	Size = UDim2.fromOffset(16, 16),
+	Position = UDim2.fromOffset(13, 12)
 })
 perfCategory.Children.Size = UDim2.new(1, 0, 0, 300)
 
 local perfRun = game:GetService('RunService')
 local fpsCurrent = 60
 local frameTimes = {}
-mainapi:Clean(perfRun.RenderStepped:Connect(function(_, dt)
+mainapi:Clean(perfRun.RenderStepped:Connect(function(dt)
 	if not perfCategory or not perfCategory.Button.Enabled then
 		table.clear(frameTimes)
 		return
 	end
-	local ft = math.clamp(dt, 1e-5, 0.5) * 1000
+	local ft = math.clamp(typeof(dt) == 'number' and dt or 0, 1e-5, 0.5) * 1000
 	fpsCurrent = fpsCurrent * 0.85 + (1000 / math.max(ft, 1e-5)) * 0.15
 	table.insert(frameTimes, ft)
 	if #frameTimes > 300 then table.remove(frameTimes, 1) end

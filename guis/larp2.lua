@@ -88,11 +88,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/expandright.png'] = 'rbxassetid://14368316544',
 	['LarpV4/assets/larp/expandup.png'] = 'rbxassetid://14368317595',
 	['LarpV4/assets/larp/friendstab.png'] = 'rbxassetid://14397462778',
-	['LarpV4/assets/larp/favouritestar.png'] = 'rbxassetid://14368342301',
-	['LarpV4/assets/larp/favouritestar2.png'] = 'rbxassetid://14368342301',
 	['LarpV4/assets/larp/star.png'] = 'rbxassetid://14368342301',
-	['LarpV4/assets/larp/star2.png'] = 'rbxassetid://14368342301',
-	['LarpV4/assets/larp/Star.png'] = '',
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
 	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
 	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
@@ -3077,14 +3073,8 @@ function mainapi:CreateGUI()
 		favbutton.Position = UDim2.new(1, -55, 0, 8)
 		favbutton.BackgroundTransparency = 1
 		favbutton.AutoButtonColor = false
-		local favIcon = getcustomasset('LarpV4/assets/larp/favouritestar2.png')
-		if isfile('LarpV4/assets/larp/Star.png') then
-			pcall(function()
-				local s = getcustomasset('LarpV4/assets/larp/Star.png')
-				if s and s ~= '' then favIcon = s end
-			end)
-		end
-		favbutton.Image = favIcon
+		local favStarYellow = Color3.fromRGB(255, 184, 31)
+		favbutton.Image = getcustomasset('LarpV4/assets/larp/star.png')
 		favbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favbutton.Parent = bar
 		addCorner(favbutton, UDim.new(1, 0))
@@ -3097,7 +3087,7 @@ function mainapi:CreateGUI()
 				if cat and cat.Object then
 					cat.Object:GetPropertyChangedSignal('Visible'):Connect(function()
 						favOpen = cat.Object.Visible
-						favbutton.ImageColor3 = favOpen and Color3.fromRGB(255, 140, 0) or color.Light(uipallet.Main, 0.37)
+						favbutton.ImageColor3 = favOpen and favStarYellow or color.Light(uipallet.Main, 0.37)
 					end)
 				end
 			end)
@@ -3117,20 +3107,20 @@ function mainapi:CreateGUI()
 							end
 						end
 						favOpen = cat.Object.Visible
-						favbutton.ImageColor3 = favOpen and Color3.fromRGB(255, 140, 0) or color.Light(uipallet.Main, 0.37)
+						favbutton.ImageColor3 = favOpen and favStarYellow or color.Light(uipallet.Main, 0.37)
 					end
 				end
 			end)
 		end)
 		favbutton.MouseEnter:Connect(function()
 			tween:Tween(favbutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
-				ImageColor3 = Color3.new(1, 1, 1),
+				ImageColor3 = favStarYellow,
 				Rotation = -8
 			})
 		end)
 		favbutton.MouseLeave:Connect(function()
 			tween:Tween(favbutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
-				ImageColor3 = favOpen and Color3.fromRGB(255, 140, 0) or color.Light(uipallet.Main, 0.37),
+				ImageColor3 = favOpen and favStarYellow or color.Light(uipallet.Main, 0.37),
 				Rotation = 0
 			})
 		end)
@@ -4171,7 +4161,7 @@ function mainapi:CreateCategory(categorysettings)
 		favicon.Position = UDim2.new(1, -49, 0, 12)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
-		favicon.Image = getcustomasset('LarpV4/assets/larp/star2.png')
+		favicon.Image = getcustomasset('LarpV4/assets/larp/star.png')
 		favicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favicon.Visible = false
 		favicon.Parent = modulebutton
@@ -6603,7 +6593,7 @@ end))
 mainapi:CreateGUI()
 local favouritescategory = mainapi:CreateCategory({
 	Name = 'Favorites',
-	Icon = getcustomasset('LarpV4/assets/larp/star2.png'),
+	Icon = getcustomasset('LarpV4/assets/larp/star.png'),
 	Size = UDim2.fromOffset(16, 16)
 })
 favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)

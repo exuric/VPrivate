@@ -89,6 +89,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/expandup.png'] = 'rbxassetid://14368317595',
 	['LarpV4/assets/larp/friendstab.png'] = 'rbxassetid://14397462778',
 	['LarpV4/assets/larp/star.png'] = 'rbxassetid://14368342301',
+	['LarpV4/assets/larp/favourite.png'] = '',
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
 	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
 	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
@@ -4161,20 +4162,27 @@ function mainapi:CreateCategory(categorysettings)
 		favicon.Position = UDim2.new(1, -49, 0, 12)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
-		favicon.Image = getcustomasset('LarpV4/assets/larp/star.png')
+		local favRowIcon = getcustomasset('LarpV4/assets/larp/star.png')
+		if isfile('LarpV4/assets/larp/favourite.png') then
+			pcall(function()
+				local f = getcustomasset('LarpV4/assets/larp/favourite.png')
+				if f and f ~= '' then favRowIcon = f end
+			end)
+		end
+		favicon.Image = favRowIcon
 		favicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favicon.Visible = false
 		favicon.Parent = modulebutton
 		addTooltip(favicon, 'Toggle favourite')
 		favicon.MouseEnter:Connect(function()
-			favicon.ImageColor3 = favstate and Color3.new(1, 1, 1) or uipallet.Text
+			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or uipallet.Text
 		end)
 		favicon.MouseLeave:Connect(function()
-			favicon.ImageColor3 = favstate and Color3.new(1, 1, 1) or color.Light(uipallet.Main, 0.37)
+			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
 		end)
 		local favstate = false
 		local function updateFav()
-			favicon.ImageColor3 = favstate and Color3.new(1, 1, 1) or color.Light(uipallet.Main, 0.37)
+			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
 			favicon.Visible = favstate
 		end
 		favicon.MouseButton1Click:Connect(function()
@@ -6591,9 +6599,16 @@ mainapi:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
 end))
 
 mainapi:CreateGUI()
+local favouriteIcon = getcustomasset('LarpV4/assets/larp/star.png')
+if isfile('LarpV4/assets/larp/favourite.png') then
+	pcall(function()
+		local f = getcustomasset('LarpV4/assets/larp/favourite.png')
+		if f and f ~= '' then favouriteIcon = f end
+	end)
+end
 local favouritescategory = mainapi:CreateCategory({
 	Name = 'Favorites',
-	Icon = getcustomasset('LarpV4/assets/larp/star.png'),
+	Icon = favouriteIcon,
 	Size = UDim2.fromOffset(16, 16)
 })
 favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)

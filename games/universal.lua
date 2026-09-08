@@ -8543,6 +8543,7 @@ run(function()
 	local Color
 	local keys, holder = {}
 	local ShowClicks
+	local showClicksOn = true
 	local clicks = {}
 	local cpsLabel
 	local mouseKeys = {}
@@ -8617,7 +8618,7 @@ run(function()
 	
 	local function layoutKeys()
 		local base = keys[Enum.KeyCode.Space] and 107 or 78
-		local show = ShowClicks.Enabled and Keystrokes.Enabled
+		local show = showClicksOn and Keystrokes and Keystrokes.Enabled
 		local top = keys[Enum.KeyCode.Space] and 110 or 81
 		if cpsLabel then
 			cpsLabel.Position = UDim2.new(0, 0, 0, top)
@@ -8749,6 +8750,7 @@ run(function()
 		Name = 'Show Clicks',
 		Default = true,
 		Function = function(callback)
+			showClicksOn = callback
 			if callback then
 				if Keystrokes.Enabled then
 					buildClickUI()

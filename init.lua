@@ -65,8 +65,8 @@ local function downloadFile(path, func)
 		end
 		local relative = select(1, path:gsub('LarpV4/', ''))
 		local urls = {
-			ROOT..BRANCH..'/'..relative,
-			'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..BRANCH..'/'..relative
+			ROOT..COMMIT..'/'..relative,
+			'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..COMMIT..'/'..relative
 		}
 		local suc, res
 		for i = 1, 8 do

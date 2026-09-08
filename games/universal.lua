@@ -8222,6 +8222,8 @@ run(function()
 			end
 		end,
 		Size = UDim2.fromOffset(100, 41),
+		Icon = getcustomasset('LarpV4/assets/larp/clock.png'),
+		IconSize = UDim2.fromOffset(15, 15),
 		Tooltip = 'Shows the current local time'
 	})
 	Clock:CreateFont({

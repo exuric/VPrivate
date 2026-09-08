@@ -228,7 +228,8 @@ if not isfile('LarpV4/profiles/gui.txt') then
 end
 local gui = 'larp'--readfile('LarpV4/profiles/gui.txt')
 
-do
+task.spawn(function()
+	task.wait()
 	local savedLang
 	pcall(function()
 		if isfile('LarpV4/profiles/language.txt') then
@@ -240,7 +241,6 @@ do
 	if not savedLang or not validLangs[savedLang] then savedLang = 'English' end
 	shared.LarpLanguage = savedLang
 	getgenv().LarpLanguage = savedLang
-end
 	if not isfolder('LarpV4/assets/'..gui) then
 		makefolder('LarpV4/assets/'..gui)
 	end

@@ -53,6 +53,68 @@ local tween = {
 	tweens = {},
 	tweenstwo = {}
 }
+local LarpLang = shared.LarpLanguage or getgenv().LarpLanguage or 'English'
+local LarpLangNames = {'English', 'Spanish', 'French', 'German', 'Portuguese'}
+local LarpLocales = {
+	Spanish = {
+		Combat = 'Combate', Utility = 'Utilidad', World = 'Mundo', Inventory = 'Inventario', Minigames = 'Minijuegos', Other = 'Otro',
+		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfiles', Targets = 'Objetivos', Overlays = 'Superposiciones',
+		Search = 'Buscar', Settings = 'Ajustes', General = 'General', Performance = 'Rendimiento', TextGUI = 'Texto en pantalla',
+		TargetInfo = 'Info de objetivo', ResetProfile = 'Restablecer perfil', SelfDestruct = 'Autodestruir', Reinject = 'Reinyectar',
+		MultiBind = 'Activar multi-teclas', Language = 'Idioma', EnglishDefault = 'Inglés (predeterminado)', LoadedIn = 'Cargado correctamente en ',
+		AddEntry = 'Añadir...', TypeName = 'Escribe un nombre', RobloxUser = 'Usuario de Roblox', ToggleFav = 'Alternar favorito',
+		FavTooltip = 'Muestra este módulo en Favoritos.', Mode = 'Modo', ModeTip = 'Cantidad de información mostrada.', Minimal = 'Mínimo',
+		Standard = 'Estándar', Detailed = 'Detallado', Font = 'Fuente', ColorMode = 'Modo de color', MatchGUI = 'Igualar color de interfaz',
+		CustomColor = 'Color personalizado', TextColor = 'Color de texto', Scale = 'Escala', Watermark = 'Marca de agua',
+		Gradient = 'Degradado', V4Gradient = 'Degradado V4', OpenOverlays = 'Abrir menú de superposiciones', OpenSettings = 'Abrir ajustes',
+		DiscordJoin = 'Únete a nuestro Discord', Profile = 'Perfil', HidSuffix = 'ocultos'
+	},
+	French = {
+		Combat = 'Combat', Utility = 'Utilitaire', World = 'Monde', Inventory = 'Inventaire', Minigames = 'Mini-jeux', Other = 'Autre',
+		Favorites = 'Favoris', Friends = 'Amis', Profiles = 'Profils', Targets = 'Cibles', Overlays = 'Superpositions',
+		Search = 'Rechercher', Settings = 'Paramètres', General = 'Général', Performance = 'Performances', TextGUI = 'Texte à l’écran',
+		TargetInfo = 'Infos cible', ResetProfile = 'Réinitialiser le profil', SelfDestruct = 'Autodestruction', Reinject = 'Réinjecter',
+		MultiBind = 'Activer multi-touches', Language = 'Langue', EnglishDefault = 'Anglais (par défaut)', LoadedIn = 'Chargé avec succès en ',
+		AddEntry = 'Ajouter...', TypeName = 'Tapez un nom', RobloxUser = "Nom d'utilisateur Roblox", ToggleFav = 'Basculer le favori',
+		FavTooltip = 'Affiche ce module dans Favoris.', Mode = 'Mode', ModeTip = "Quantité d'informations affichées.", Minimal = 'Minimal',
+		Standard = 'Standard', Detailed = 'Détaillé', Font = 'Police', ColorMode = 'Mode couleur', MatchGUI = "Suivre la couleur de l'interface",
+		CustomColor = 'Couleur personnalisée', TextColor = 'Couleur du texte', Scale = 'Échelle', Watermark = 'Filigrane',
+		Gradient = 'Dégradé', V4Gradient = 'Dégradé V4', OpenOverlays = 'Ouvrir le menu des superpositions', OpenSettings = 'Ouvrir les paramètres',
+		DiscordJoin = 'Rejoins notre Discord', Profile = 'Profil', HidSuffix = 'masqués'
+	},
+	German = {
+		Combat = 'Kampf', Utility = 'Dienstprogramm', World = 'Welt', Inventory = 'Inventar', Minigames = 'Minispiele', Other = 'Sonstiges',
+		Favorites = 'Favoriten', Friends = 'Freunde', Profiles = 'Profile', Targets = 'Ziele', Overlays = 'Overlays',
+		Search = 'Suchen', Settings = 'Einstellungen', General = 'Allgemein', Performance = 'Leistung', TextGUI = 'Text-GUI',
+		TargetInfo = 'Zielinfo', ResetProfile = 'Profil zurücksetzen', SelfDestruct = 'Selbstzerstörung', Reinject = 'Neu injizieren',
+		MultiBind = 'Mehrfachbelegung aktivieren', Language = 'Sprache', EnglishDefault = 'Englisch (Standard)', LoadedIn = 'Erfolgreich geladen auf ',
+		AddEntry = 'Hinzufügen...', TypeName = 'Namen eingeben', RobloxUser = 'Roblox-Benutzername', ToggleFav = 'Favorit umschalten',
+		FavTooltip = 'Zeigt dieses Modul in Favoriten.', Mode = 'Modus', ModeTip = 'Umfang der angezeigten Informationen.', Minimal = 'Minimal',
+		Standard = 'Standard', Detailed = 'Detailliert', Font = 'Schriftart', ColorMode = 'Farbmodus', MatchGUI = 'GUI-Farbe übernehmen',
+		CustomColor = 'Benutzerdefinierte Farbe', TextColor = 'Textfarbe', Scale = 'Skalierung', Watermark = 'Wasserzeichen',
+		Gradient = 'Verlauf', V4Gradient = 'V4-Verlauf', OpenOverlays = 'Overlay-Menü öffnen', OpenSettings = 'Einstellungen öffnen',
+		DiscordJoin = 'Tritt unserem Discord bei', Profile = 'Profil', HidSuffix = 'versteckt'
+	},
+	Portuguese = {
+		Combat = 'Combate', Utility = 'Utilidade', World = 'Mundo', Inventory = 'Inventário', Minigames = 'Minijogos', Other = 'Outro',
+		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfis', Targets = 'Alvos', Overlays = 'Sobreposições',
+		Search = 'Pesquisar', Settings = 'Configurações', General = 'Geral', Performance = 'Desempenho', TextGUI = 'Texto na tela',
+		TargetInfo = 'Info do alvo', ResetProfile = 'Redefinir perfil', SelfDestruct = 'Autodestruir', Reinject = 'Reinjetar',
+		MultiBind = 'Ativar múltiplas teclas', Language = 'Idioma', EnglishDefault = 'Inglês (padrão)', LoadedIn = 'Carregado com sucesso em ',
+		AddEntry = 'Adicionar...', TypeName = 'Digite um nome', RobloxUser = 'Nome de usuário Roblox', ToggleFav = 'Alternar favorito',
+		FavTooltip = 'Mostra este módulo em Favoritos.', Mode = 'Modo', ModeTip = 'Quantidade de informações exibidas.', Minimal = 'Mínimo',
+		Standard = 'Padrão', Detailed = 'Detalhado', Font = 'Fonte', ColorMode = 'Modo de cor', MatchGUI = 'Seguir cor da interface',
+		CustomColor = 'Cor personalizada', TextColor = 'Cor do texto', Scale = 'Escala', Watermark = 'Marca d’água',
+		Gradient = 'Gradiente', V4Gradient = 'Gradiente V4', OpenOverlays = 'Abrir menu de sobreposições', OpenSettings = 'Abrir configurações',
+		DiscordJoin = 'Entre no nosso Discord', Profile = 'Perfil', HidSuffix = 'ocultos'
+	}
+}
+local function T(k)
+	local tab = LarpLocales[LarpLang]
+	if tab and tab[k] ~= nil then return tab[k] end
+	return k
+end
+mainapi.Language = LarpLang
 local uipallet = {
 	Main = Color3.fromRGB(26, 25, 26),
 	Text = Color3.fromRGB(200, 200, 200),
@@ -219,11 +281,18 @@ local function addTooltip(gui, text)
 	if not text then return end
 
 	local function tooltipMoved(x, y)
-		local right = x + 16 + tooltip.Size.X.Offset > (scale.Scale * 1920)
-		tooltip.Position = UDim2.fromOffset(
-			(right and x - (tooltip.Size.X.Offset * scale.Scale) - 16 or x + 16) / scale.Scale,
-			((y + 11) - (tooltip.Size.Y.Offset / 2)) / scale.Scale
-		)
+		local vs = gameCamera and gameCamera.ViewportSize or Vector2.new(1920, 1080)
+		local w = tooltip.Size.X.Offset
+		local h = tooltip.Size.Y.Offset
+		local maxX = vs.X / scale.Scale - w - 4
+		local maxY = vs.Y / scale.Scale - h - 4
+		local px = x + 16
+		if px + w > vs.X / scale.Scale - 4 then px = x - w * scale.Scale - 16 end
+		local py = y + 11 - h / 2
+		if py > maxY then py = maxY end
+		if py < 4 then py = 4 end
+		if px < 4 then px = 4 end
+		tooltip.Position = UDim2.fromOffset(px / scale.Scale, py / scale.Scale)
 		tooltip.Visible = toolblur.Visible
 	end
 
@@ -268,7 +337,7 @@ local function createDownloader(text)
 			downloader.Parent = mainapi.gui
 			mainapi.Downloader = downloader
 		end
-		downloader.Text = 'Downloading '..(text:gsub('^LarpV4/', 'LarpV4/'))
+		downloader.Text = 'Downloading '..(text:gsub('^LarpV4/', 'LarpV4/'))..' ('..(getgenv().LarpDownloaded or 0)..')'
 	end
 end
 
@@ -349,6 +418,7 @@ local function downloadFile(path, func)
 				res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.\n'..res
 			end
 			writefile(path, res)
+			getgenv().LarpDownloaded = (getgenv().LarpDownloaded or 0) + 1
 		end
 	else
 		_dstats.hits += 1
@@ -2527,6 +2597,30 @@ end
 
 addMaid(mainapi)
 
+mainapi.UpdateNotes = {version = 1, badges = {Combat = 1}}
+mainapi.SeenBadges = {version = 0, opened = {}}
+pcall(function()
+	local saved = loadJson('LarpV4/profiles/seenbadges.txt')
+	if saved and type(saved) == 'table' then
+		mainapi.SeenBadges = saved
+	end
+end)
+function mainapi:BadgeSeen(name)
+	local notes = mainapi.UpdateNotes
+	if not (notes and notes.badges and notes.badges[name]) then return true end
+	local s = mainapi.SeenBadges
+	return s and s.version == notes.version and s.opened[name] or false
+end
+function mainapi:ClearBadge(name)
+	if not mainapi.UpdateNotes or not mainapi.UpdateNotes.badges or not mainapi.UpdateNotes.badges[name] then return end
+	mainapi.SeenBadges = mainapi.SeenBadges or {opened = {}}
+	mainapi.SeenBadges.version = mainapi.UpdateNotes.version
+	mainapi.SeenBadges.opened = mainapi.SeenBadges.opened or {}
+	mainapi.SeenBadges.opened[name] = true
+	pcall(function()
+		writefile('LarpV4/profiles/seenbadges.txt', httpService:JSONEncode(mainapi.SeenBadges))
+	end)
+end
 function mainapi:CreateGUI()
 	local categoryapi = {
 		Type = 'MainWindow',
@@ -2577,7 +2671,7 @@ function mainapi:CreateGUI()
 	settingsbutton.BackgroundTransparency = 1
 	settingsbutton.Text = ''
 	settingsbutton.Parent = window
-	addTooltip(settingsbutton, 'Open settings')
+	addTooltip(settingsbutton, T('OpenSettings'))
 	local settingsicon = Instance.new('ImageLabel')
 	settingsicon.Size = UDim2.fromOffset(14, 14)
 	settingsicon.Position = UDim2.fromOffset(15, 12)
@@ -2592,7 +2686,7 @@ function mainapi:CreateGUI()
 	discordbutton.Image = getcustomasset('LarpV4/assets/larp/discord.png')
 	discordbutton.ImageColor3 = Color3.new(1, 1, 1)
 	discordbutton.Parent = window
-	addTooltip(discordbutton, 'Join our discord')
+	addTooltip(discordbutton, T('DiscordJoin'))
 	discordbutton.MouseEnter:Connect(function()
 		discordbutton.ImageColor3 = Color3.new(1, 1, 1)
 	end)
@@ -2776,7 +2870,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = (categorysettings.Icon and '                                 ' or '             ')..categorysettings.Name
+		button.Text = (categorysettings.Icon and '                                 ' or '             ')..T(categorysettings.Name)
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2827,6 +2921,28 @@ function mainapi:CreateGUI()
 		optionapi.Name = categorysettings.Name
 		optionapi.Icon = icon
 		optionapi.Object = button
+		local badgecount = mainapi.UpdateNotes and mainapi.UpdateNotes.badges and mainapi.UpdateNotes.badges[categorysettings.Name]
+		if badgecount and badgecount > 0 and not mainapi:BadgeSeen(categorysettings.Name) then
+			local badge = Instance.new('TextLabel')
+			badge.Name = 'UpdateBadge'
+			badge.Size = UDim2.fromOffset(0, 18)
+			badge.Position = UDim2.new(1, -58, 0, 11)
+			badge.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			badge.Text = '+'..badgecount
+			badge.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			badge.TextSize = 12
+			badge.FontFace = uipallet.FontSemiBold
+			badge.BorderSizePixel = 0
+			badge.Parent = button
+			addCorner(badge, UDim.new(1, 0))
+			button.TextColor3 = badge.TextColor3
+			if icon then
+				icon.ImageColor3 = badge.TextColor3
+			end
+			tween:Tween(badge, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Size = UDim2.fromOffset(30, 18)
+			})
+		end
 
 		function optionapi:Toggle()
 			self.Enabled = not self.Enabled
@@ -2843,6 +2959,11 @@ function mainapi:CreateGUI()
 			})
 			button.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			categorysettings.Window.Visible = self.Enabled
+			if self.Enabled then
+				mainapi:ClearBadge(categorysettings.Name)
+				local badge = button:FindFirstChild('UpdateBadge')
+				if badge then badge:Destroy() end
+			end
 		end
 
 		button.MouseEnter:Connect(function()
@@ -2891,7 +3012,7 @@ function mainapi:CreateGUI()
 		button.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		button.Parent = bar
 		addCorner(button, UDim.new(1, 0))
-		addTooltip(button, 'Open overlays menu')
+		addTooltip(button, T('OpenOverlays'))
 		local favbutton = Instance.new('ImageButton')
 		favbutton.Name = 'Favorites'
 		favbutton.Size = UDim2.fromOffset(22, 22)
@@ -2903,7 +3024,7 @@ function mainapi:CreateGUI()
 		favbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favbutton.Parent = bar
 		addCorner(favbutton, UDim.new(1, 0))
-		addTooltip(favbutton, 'Favorites')
+		addTooltip(favbutton, T('Favorites'))
 		local favOpen = false
 		task.delay(0.5, function()
 			pcall(function()
@@ -2953,27 +3074,6 @@ function mainapi:CreateGUI()
 				Rotation = 0
 			})
 		end)
-		local profilebar = Instance.new('ImageButton')
-		profilebar.Name = 'Profile'
-		profilebar.Size = UDim2.fromOffset(22, 22)
-		profilebar.Position = UDim2.new(1, -83, 0, 7)
-		profilebar.BackgroundTransparency = 1
-		profilebar.AutoButtonColor = false
-		profilebar.Image = getcustomasset('LarpV4/assets/larp/profile.png')
-		profilebar.ImageColor3 = color.Light(uipallet.Main, 0.37)
-		profilebar.Parent = bar
-		addCorner(profilebar, UDim.new(1, 0))
-		addTooltip(profilebar, 'Profile')
-		profilebar.MouseEnter:Connect(function()
-			tween:Tween(profilebar, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
-				ImageColor3 = Color3.new(1, 1, 1)
-			})
-		end)
-		profilebar.MouseLeave:Connect(function()
-			tween:Tween(profilebar, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
-				ImageColor3 = color.Light(uipallet.Main, 0.37)
-			})
-		end)
 		local profilebutton = Instance.new('ImageButton')
 		profilebutton.Name = 'Profile'
 		profilebutton.Size = UDim2.fromOffset(22, 22)
@@ -2984,7 +3084,7 @@ function mainapi:CreateGUI()
 		profilebutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		profilebutton.Parent = bar
 		addCorner(profilebutton, UDim.new(1, 0))
-		addTooltip(profilebutton, 'Profile')
+		addTooltip(profilebutton, T('Profile'))
 		profilebutton.MouseEnter:Connect(function()
 			tween:Tween(profilebutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
 				ImageColor3 = Color3.new(1, 1, 1)
@@ -3025,7 +3125,7 @@ function mainapi:CreateGUI()
 		title.Size = UDim2.new(1, -36, 0, 38)
 		title.Position = UDim2.fromOffset(36, 0)
 		title.BackgroundTransparency = 1
-		title.Text = 'Overlays'
+		title.Text = T('Overlays')
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = uipallet.Text
 		title.TextSize = 15
@@ -3060,7 +3160,7 @@ function mainapi:CreateGUI()
 			toggle.Size = UDim2.new(1, 0, 0, 40)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
-			toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
+			toggle.Text = string.rep(' ', 33 * scale.Scale)..T(togglesettings.Name)
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
 			toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			toggle.TextSize = 14
@@ -3105,7 +3205,7 @@ function mainapi:CreateGUI()
 			end
 
 			scale:GetPropertyChangedSignal('Scale'):Connect(function()
-				toggle.Text = string.rep(' ', 33 * scale.Scale)..togglesettings.Name
+				toggle.Text = string.rep(' ', 33 * scale.Scale)..T(togglesettings.Name)
 			end)
 			toggle.MouseEnter:Connect(function()
 				hovered = true
@@ -3199,7 +3299,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = '          '..categorysettings.Name
+		button.Text = '          '..T(categorysettings.Name)
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -3225,7 +3325,7 @@ function mainapi:CreateGUI()
 		title.Size = UDim2.new(1, -36, 0, 20)
 		title.Position = UDim2.fromOffset(math.abs(title.Size.X.Offset), 11)
 		title.BackgroundTransparency = 1
-		title.Text = categorysettings.Name
+		title.Text = T(categorysettings.Name)
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = uipallet.Text
 		title.TextSize = 13
@@ -3864,7 +3964,7 @@ function mainapi:CreateCategory(categorysettings)
 	title.Size = UDim2.new(1, -(categorysettings.Size.X.Offset > 18 and 40 or 33), 0, 41)
 	title.Position = UDim2.fromOffset(math.abs(title.Size.X.Offset), 0)
 	title.BackgroundTransparency = 1
-	title.Text = categorysettings.Name
+	title.Text = T(categorysettings.Name)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = uipallet.Text
 	title.TextSize = 13
@@ -3973,7 +4073,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = '            '..modulesettings.Name
+		modulebutton.Text = '            '..T(modulesettings.Name)
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
@@ -4126,7 +4226,7 @@ function mainapi:CreateCategory(categorysettings)
 		favicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favicon.Visible = false
 		favicon.Parent = modulebutton
-		addTooltip(favicon, 'Toggle favourite')
+		addTooltip(favicon, T('ToggleFav'))
 		favicon.MouseEnter:Connect(function()
 			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or uipallet.Text
 		end)
@@ -4519,7 +4619,7 @@ function mainapi:CreateCategory(categorysettings)
 			end
 		end
 		if hidcount then
-			hidcount.Text = n > 0 and (n..' hid') or ''
+			hidcount.Text = n > 0 and (n..' '..T('HidSuffix')) or ''
 			hidcount.Visible = n > 0
 		end
 		if editbutton then
@@ -4638,7 +4738,7 @@ function mainapi:CreateOverlay(categorysettings)
 	title.Size = UDim2.new(1, -32, 0, 41)
 	title.Position = UDim2.fromOffset(math.abs(title.Size.X.Offset), 0)
 	title.BackgroundTransparency = 1
-	title.Text = categorysettings.Name
+	title.Text = T(categorysettings.Name)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = uipallet.Text
 	title.TextSize = 13
@@ -4818,7 +4918,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	title.Size = UDim2.new(1, -(categorysettings.Size.X.Offset > 20 and 44 or 36), 0, 20)
 	title.Position = UDim2.fromOffset(math.abs(title.Size.X.Offset), 12)
 	title.BackgroundTransparency = 1
-	title.Text = categorysettings.Name
+	title.Text = T(categorysettings.Name)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = uipallet.Text
 	title.TextSize = 13
@@ -4901,7 +5001,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	addvalue.Position = UDim2.fromOffset(10, 0)
 	addvalue.BackgroundTransparency = 1
 	addvalue.Text = ''
-	addvalue.PlaceholderText = categorysettings.Placeholder or 'Add entry...'
+	addvalue.PlaceholderText = T(categorysettings.Placeholder or 'Add entry...')
 	addvalue.TextXAlignment = Enum.TextXAlignment.Left
 	addvalue.TextColor3 = Color3.new(1, 1, 1)
 	addvalue.TextSize = 15
@@ -7248,6 +7348,100 @@ end)
 	General Settings
 ]]
 
+function mainapi:ShowLanguagePicker(onPick)
+	local langDisplay = {English = 'English (default)', Spanish = 'Español', French = 'Français', German = 'Deutsch', Portuguese = 'Português'}
+	local selected = mainapi.Language
+	if not table.find(LarpLangNames, selected) then selected = 'English' end
+	local overlay = Instance.new('TextButton')
+	overlay.Name = 'LanguagePicker'
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = Color3.new()
+	overlay.BackgroundTransparency = 0.4
+	overlay.AutoButtonColor = false
+	overlay.Text = ''
+	overlay.Parent = clickgui
+	local panel = Instance.new('Frame')
+	panel.Size = UDim2.fromOffset(300, 290)
+	panel.Position = UDim2.fromScale(0.5, 0.5)
+	panel.AnchorPoint = Vector2.new(0.5, 0.5)
+	panel.BackgroundColor3 = uipallet.Main
+	panel.BorderSizePixel = 0
+	panel.Parent = overlay
+	addCorner(panel, UDim.new(0, 6))
+	local title = Instance.new('TextLabel')
+	title.Size = UDim2.new(1, -28, 0, 24)
+	title.Position = UDim2.fromOffset(14, 12)
+	title.BackgroundTransparency = 1
+	title.Text = 'Welcome to Larp V4'
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextColor3 = uipallet.Text
+	title.TextSize = 16
+	title.FontFace = uipallet.FontSemiBold
+	title.Parent = panel
+	local sub = Instance.new('TextLabel')
+	sub.Size = UDim2.new(1, -28, 0, 16)
+	sub.Position = UDim2.fromOffset(14, 38)
+	sub.BackgroundTransparency = 1
+	sub.Text = 'Choose your preferred language'
+	sub.TextXAlignment = Enum.TextXAlignment.Left
+	sub.TextColor3 = color.Dark(uipallet.Text, 0.29)
+	sub.TextSize = 12
+	sub.FontFace = uipallet.Font
+	sub.Parent = panel
+	local rows = {}
+	local list = Instance.new('Frame')
+	list.Size = UDim2.new(1, -28, 0, 160)
+	list.Position = UDim2.fromOffset(14, 60)
+	list.BackgroundTransparency = 1
+	list.Parent = panel
+	local listlayout = Instance.new('UIListLayout')
+	listlayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listlayout.Padding = UDim.new(0, 4)
+	listlayout.Parent = list
+	local function refresh()
+		for id, btn in rows do
+			local on = id == selected
+			btn.BackgroundColor3 = on and color.Light(uipallet.Main, 0.06) or color.Light(uipallet.Main, 0.02)
+			btn.TextColor3 = on and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Dark(uipallet.Text, 0.16)
+		end
+	end
+	for i, id in LarpLangNames do
+		local btn = Instance.new('TextButton')
+		btn.Size = UDim2.new(1, 0, 0, 28)
+		btn.LayoutOrder = i
+		btn.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		btn.AutoButtonColor = false
+		btn.Text = '      '..(langDisplay[id] or id)
+		btn.TextXAlignment = Enum.TextXAlignment.Left
+		btn.TextSize = 14
+		btn.FontFace = uipallet.Font
+		btn.BorderSizePixel = 0
+		btn.Parent = list
+		addCorner(btn, UDim.new(0, 5))
+		btn.MouseButton1Click:Connect(function()
+			selected = id
+			refresh()
+		end)
+		rows[id] = btn
+	end
+	refresh()
+	local confirm = Instance.new('TextButton')
+	confirm.Size = UDim2.new(1, -28, 0, 34)
+	confirm.Position = UDim2.fromOffset(14, 232)
+	confirm.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	confirm.AutoButtonColor = false
+	confirm.Text = 'Confirm'
+	confirm.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	confirm.TextSize = 14
+	confirm.FontFace = uipallet.FontSemiBold
+	confirm.BorderSizePixel = 0
+	confirm.Parent = panel
+	addCorner(confirm, UDim.new(0, 6))
+	confirm.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+		if onPick then onPick(selected) end
+	end)
+end
 local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
 mainapi.MultiKeybind = general:CreateToggle({
 	Name = 'Enable Multi-Keybinding',
@@ -7259,6 +7453,22 @@ general:CreateButton({
 		mainapi:Uninject()
 	end,
 	Tooltip = 'Removes larp from the current game'
+})
+general:CreateButton({
+	Name = 'Language',
+	Function = function()
+		mainapi:ShowLanguagePicker(function(lang)
+			shared.LarpLanguage = lang
+			getgenv().LarpLanguage = lang
+			pcall(writefile, 'LarpV4/profiles/language.txt', lang)
+			if lang == 'English' then
+				mainapi:CreateNotification('Larp', 'Language saved, re-inject to apply', 5)
+			else
+				mainapi:CreateNotification('Larp', ((LarpLocales[lang] or {}).LoadedIn or 'Successfully loaded in ')..lang, 5)
+			end
+		end)
+	end,
+	Tooltip = 'Change the GUI language'
 })
 general:CreateButton({
 	Name = 'Reinject',

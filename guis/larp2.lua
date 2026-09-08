@@ -3110,11 +3110,12 @@ function mainapi:CreateGUI()
 		local window = Instance.new('Frame')
 		window.Size = UDim2.fromOffset(220, 42)
 		window.Position = UDim2.fromScale(0, 1)
-		window.BackgroundColor3 = uipallet.Main
-		window.Parent = shadow
-		addCorner(window)
-		local icon = Instance.new('ImageLabel')
-		icon.Name = 'Icon'
+	window.BackgroundColor3 = uipallet.Main
+	window.Parent = shadow
+	addCorner(window)
+	addBlur(window)
+	local icon = Instance.new('ImageLabel')
+	icon.Name = 'Icon'
 		icon.Size = UDim2.fromOffset(14, 12)
 		icon.Position = UDim2.fromOffset(10, 13)
 		icon.BackgroundTransparency = 1
@@ -7398,8 +7399,8 @@ function mainapi:ShowLanguagePicker(onPick)
 	title.BackgroundTransparency = 1
 	title.Text = 'Welcome to Larp V4'
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.TextColor3 = uipallet.Text
-	title.TextSize = 14
+	title.TextColor3 = Color3.new(1, 1, 1)
+	title.TextSize = 16
 	title.FontFace = uipallet.FontSemiBold
 	title.Parent = window
 	local divider = Instance.new('Frame')
@@ -7418,7 +7419,7 @@ function mainapi:ShowLanguagePicker(onPick)
 	sub.BackgroundTransparency = 1
 	sub.Text = 'Choose your preferred language'
 	sub.TextXAlignment = Enum.TextXAlignment.Left
-	sub.TextColor3 = color.Dark(uipallet.Text, 0.31)
+	sub.TextColor3 = color.Dark(uipallet.Text, 0.16)
 	sub.TextSize = 13
 	sub.FontFace = uipallet.Font
 	sub.Parent = window
@@ -7426,8 +7427,8 @@ function mainapi:ShowLanguagePicker(onPick)
 	local function refresh()
 		for id, btn in rows do
 			local on = id == selected
-			btn.BackgroundColor3 = on and color.Light(uipallet.Main, 0.06) or color.Light(uipallet.Main, 0.02)
-			btn.TextColor3 = on and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Dark(uipallet.Text, 0.16)
+			btn.BackgroundColor3 = on and color.Light(uipallet.Main, 0.08) or color.Light(uipallet.Main, 0.04)
+			btn.TextColor3 = on and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or uipallet.Text
 		end
 	end
 	for i, id in LarpLangNames do
@@ -7435,11 +7436,11 @@ function mainapi:ShowLanguagePicker(onPick)
 		btn.Size = UDim2.fromOffset(320, 26)
 		btn.Position = UDim2.fromOffset(20, 82 + (i - 1) * 30)
 		btn.ZIndex = 12
-		btn.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		btn.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
 		btn.AutoButtonColor = false
 		btn.Text = '      ' .. (langDisplay[id] or id)
 		btn.TextXAlignment = Enum.TextXAlignment.Left
-		btn.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		btn.TextColor3 = uipallet.Text
 		btn.TextSize = 13
 		btn.FontFace = uipallet.Font
 		btn.BorderSizePixel = 0

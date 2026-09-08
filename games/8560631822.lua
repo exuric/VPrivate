@@ -1970,7 +1970,6 @@ run(function()
 	local Targets
 	local Sort
 	local AimPart
-	local VerticalAim
 	local Advanced
 	local AimSpeed
 	local Shake
@@ -2024,19 +2023,10 @@ local function getAim(ent)
 				base = part.Position
 			end
 		end
-		base = base or ent.RootPart.Position
-		-- vertical aim: aim at feet, center or head
-		local mode = VerticalAim and VerticalAim.Value or 'Center'
-		if mode == 'Head' then
-			local head = ent.Head and ent.Head.Position or (base + Vector3.new(0, 2.5, 0))
-			return head
-		elseif mode == 'Feet' then
-			return Vector3.new(base.X, base.Y - (ent.HipHeight or 2), base.Z)
-		end
-		-- center: between root and head
-		local headY = ent.Head and ent.Head.Position.Y or (base.Y + 2.5)
-		return Vector3.new(base.X, base.Y + (headY - base.Y) * 0.5, base.Z)
-	end
+	base = base or ent.RootPart.Position
+	local headY = ent.Head and ent.Head.Position.Y or (base.Y + 2.5)
+	return Vector3.new(base.X, base.Y + (headY - base.Y) * 0.5, base.Z)
+end
 	
 	local started, lasttarget, nextsearch = 0, nil, 0
 	local humanState = {
@@ -2069,9 +2059,6 @@ local function getAim(ent)
 	end
 
 	local function smoothedLook(localcframe, targetPoint, dt, factor)
-		if VerticalAim and VerticalAim.Value == 'Feet' then
-			targetPoint = Vector3.new(targetPoint.X, localcframe.Position.Y, targetPoint.Z)
-		end
 		local forward = localcframe.LookVector
 		local want = (targetPoint - localcframe.Position)
 		if want.Magnitude < 1e-4 then

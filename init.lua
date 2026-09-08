@@ -14,12 +14,13 @@ local delfile = delfile or function(file)
 	writefile(file, '')
 end
 
-local downloader = Instance.new('TextLabel')
-downloader.Size = UDim2.new(1, 0, 0, 40)
-downloader.BackgroundTransparency = 1
-downloader.TextStrokeTransparency = 0
-downloader.TextSize = 20
-downloader.TextColor3 = Color3.new(1, 1, 1)
+	local downloader = Instance.new('TextLabel')
+	downloader.Size = UDim2.new(1, 0, 0, 40)
+	downloader.BackgroundTransparency = 1
+	downloader.TextStrokeTransparency = 0
+	downloader.TextSize = 20
+	downloader.TextColor3 = Color3.new(1, 1, 1)
+	downloader.RichText = true
 downloader.Font = Enum.Font.Arial
 downloader.Text = ''
 downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(game:GetService('CoreGui')))
@@ -89,7 +90,7 @@ local function downloadFile(path, func)
 writefile(path, res)
 		getgenv().LarpDownloaded = (getgenv().LarpDownloaded or 0) + 1
 		pcall(function()
-			downloader.Text = 'Downloading '..select(1, path:gsub('LarpV4/', ''))..' ('..getgenv().LarpDownloaded..')'
+			downloader.Text = 'Downloading '..select(1, path:gsub('LarpV4/', ''))..' <font color="#888888">('..getgenv().LarpDownloaded..')</font>'
 		end)
 	end
 	return (func or readfile)(path)

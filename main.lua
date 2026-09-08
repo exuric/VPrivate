@@ -228,164 +228,7 @@ if not isfile('LarpV4/profiles/gui.txt') then
 end
 local gui = 'larp'--readfile('LarpV4/profiles/gui.txt')
 
-local function onboardingParent()
-	local ok, h = pcall(function() return gethui and gethui() end)
-	if ok and h then return h end
-	local plr = playersService.LocalPlayer
-	if plr then
-		local pg = plr:FindFirstChildOfClass('PlayerGui')
-		if pg then return pg end
-	end
-	return cloneref(game:GetService('CoreGui'))
-end
-local function onboardingPanel(title, sub)
-	local done = Instance.new('BindableEvent')
-	local gui = Instance.new('ScreenGui')
-	gui.Name = 'LarpOnboarding'
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.Parent = onboardingParent()
-	local dim = Instance.new('TextButton')
-	dim.Size = UDim2.fromScale(1, 1)
-	dim.BackgroundColor3 = Color3.new()
-	dim.BackgroundTransparency = 0.4
-	dim.AutoButtonColor = false
-	dim.Text = ''
-	dim.Parent = gui
-	local panel = Instance.new('Frame')
-	panel.Size = UDim2.fromOffset(320, 200)
-	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.BackgroundColor3 = Color3.fromRGB(26, 25, 26)
-	panel.BorderSizePixel = 0
-	panel.Parent = gui
-	local corner = Instance.new('UICorner')
-	corner.CornerRadius = UDim.new(0, 6)
-	corner.Parent = panel
-	local titleLabel = Instance.new('TextLabel')
-	titleLabel.Size = UDim2.new(1, -28, 0, 26)
-	titleLabel.Position = UDim2.fromOffset(14, 14)
-	titleLabel.BackgroundTransparency = 1
-	titleLabel.Text = title
-	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	titleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-	titleLabel.TextSize = 16
-	titleLabel.Font = Enum.Font.GothamBold
-	titleLabel.Parent = panel
-	local subLabel = Instance.new('TextLabel')
-	subLabel.Size = UDim2.new(1, -28, 0, 40)
-	subLabel.Position = UDim2.fromOffset(14, 42)
-	subLabel.BackgroundTransparency = 1
-	subLabel.Text = sub
-	subLabel.TextXAlignment = Enum.TextXAlignment.Left
-	subLabel.TextYAlignment = Enum.TextYAlignment.Top
-	subLabel.TextWrapped = true
-	subLabel.TextColor3 = Color3.fromRGB(140, 140, 140)
-	subLabel.TextSize = 13
-	subLabel.Font = Enum.Font.Gotham
-	subLabel.Parent = panel
-	return gui, panel, done
-end
-local function showDiscordPopup()
-	local gui, panel, done = onboardingPanel('First time using Larp?', 'Join our Discord for updates, announcements and support.')
-	local discord = Instance.new('TextButton')
-	discord.Size = UDim2.new(1, -28, 0, 34)
-	discord.Position = UDim2.fromOffset(14, 108)
-	discord.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-	discord.AutoButtonColor = false
-	discord.Text = 'Discord'
-	discord.TextColor3 = Color3.new(1, 1, 1)
-	discord.TextSize = 14
-	discord.Font = Enum.Font.GothamBold
-	discord.BorderSizePixel = 0
-	discord.Parent = panel
-	local dc = Instance.new('UICorner')
-	dc.CornerRadius = UDim.new(0, 6)
-	dc.Parent = discord
-	local no = Instance.new('TextButton')
-	no.Size = UDim2.new(1, -28, 0, 34)
-	no.Position = UDim2.fromOffset(14, 150)
-	no.BackgroundColor3 = Color3.fromRGB(45, 44, 45)
-	no.AutoButtonColor = false
-	no.Text = 'No Thanks'
-	no.TextColor3 = Color3.fromRGB(200, 200, 200)
-	no.TextSize = 14
-	no.Font = Enum.Font.Gotham
-	no.BorderSizePixel = 0
-	no.Parent = panel
-	local nc = Instance.new('UICorner')
-	nc.CornerRadius = UDim.new(0, 6)
-	nc.Parent = no
-	discord.MouseButton1Click:Connect(function()
-		pcall(setclipboard, 'https://discord.gg/g55Vbzfeum')
-		done:Fire()
-	end)
-	no.MouseButton1Click:Connect(function()
-		done:Fire()
-	end)
-	done.Event:Wait()
-	gui:Destroy()
-end
-local langIds = {'English', 'Spanish', 'French', 'German', 'Portuguese'}
-local langDisplay = {English = 'English (default)', Spanish = 'Español', French = 'Français', German = 'Deutsch', Portuguese = 'Português'}
-local function showLanguagePopup()
-	local gui, panel, done = onboardingPanel('Welcome to Larp V4', 'Choose your preferred language')
-	panel.Size = UDim2.fromOffset(320, 320)
-	local picked = {'English'}
-	local rows = {}
-	local function refresh()
-		for id, btn in rows do
-			local on = id == picked[1]
-			btn.BackgroundColor3 = on and Color3.fromRGB(45, 44, 45) or Color3.fromRGB(26, 25, 26)
-			btn.TextColor3 = on and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 140, 140)
-		end
-	end
-	for i, id in langIds do
-		local btn = Instance.new('TextButton')
-		btn.Size = UDim2.new(1, -28, 0, 30)
-		btn.Position = UDim2.fromOffset(14, 86 + (i - 1) * 34)
-		btn.BackgroundColor3 = Color3.fromRGB(26, 25, 26)
-		btn.AutoButtonColor = false
-		btn.Text = '      '..(langDisplay[id] or id)
-		btn.TextXAlignment = Enum.TextXAlignment.Left
-		btn.TextColor3 = Color3.fromRGB(140, 140, 140)
-		btn.TextSize = 14
-		btn.Font = Enum.Font.Gotham
-		btn.BorderSizePixel = 0
-		btn.Parent = panel
-		local bc = Instance.new('UICorner')
-		bc.CornerRadius = UDim.new(0, 5)
-		bc.Parent = btn
-		btn.MouseButton1Click:Connect(function()
-			picked[1] = id
-			refresh()
-		end)
-		rows[id] = btn
-	end
-	refresh()
-	local confirm = Instance.new('TextButton')
-	confirm.Size = UDim2.new(1, -28, 0, 34)
-	confirm.Position = UDim2.fromOffset(14, 262)
-	confirm.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-	confirm.AutoButtonColor = false
-	confirm.Text = 'Confirm'
-	confirm.TextColor3 = Color3.new(0.19, 0.19, 0.19)
-	confirm.TextSize = 14
-	confirm.Font = Enum.Font.GothamBold
-	confirm.BorderSizePixel = 0
-	confirm.Parent = panel
-	local cc = Instance.new('UICorner')
-	cc.CornerRadius = UDim.new(0, 6)
-	cc.Parent = confirm
-	confirm.MouseButton1Click:Connect(function()
-		done:Fire()
-	end)
-	done.Event:Wait()
-	gui:Destroy()
-	return picked[1]
-end
-task.spawn(function()
-	task.wait()
+do
 	local savedLang
 	pcall(function()
 		if isfile('LarpV4/profiles/language.txt') then
@@ -394,13 +237,10 @@ task.spawn(function()
 	end)
 	if savedLang then savedLang = savedLang:gsub('%s+', '') end
 	local validLangs = {English = true, Spanish = true, French = true, German = true, Portuguese = true}
-	if not savedLang or not validLangs[savedLang] then
-		showDiscordPopup()
-		savedLang = showLanguagePopup()
-		pcall(writefile, 'LarpV4/profiles/language.txt', savedLang)
-	end
+	if not savedLang or not validLangs[savedLang] then savedLang = 'English' end
 	shared.LarpLanguage = savedLang
 	getgenv().LarpLanguage = savedLang
+end
 	if not isfolder('LarpV4/assets/'..gui) then
 		makefolder('LarpV4/assets/'..gui)
 	end

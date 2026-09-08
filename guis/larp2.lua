@@ -333,11 +333,12 @@ local function createDownloader(text)
 			downloader.TextStrokeTransparency = 0
 			downloader.TextSize = 20
 			downloader.TextColor3 = Color3.new(1, 1, 1)
+			downloader.RichText = true
 			downloader.FontFace = uipallet.Font
 			downloader.Parent = mainapi.gui
 			mainapi.Downloader = downloader
 		end
-		downloader.Text = 'Downloading '..(text:gsub('^LarpV4/', 'LarpV4/'))..' ('..(getgenv().LarpDownloaded or 0)..')'
+		downloader.Text = 'Downloading '..(text:gsub('^LarpV4/', 'LarpV4/'))..' <font color="#888888">('..(getgenv().LarpDownloaded or 0)..')</font>'
 	end
 end
 
@@ -7348,56 +7349,80 @@ end)
 	General Settings
 ]]
 
+local function reloadLarp()
+	shared.larpreload = true
+	if shared.LarpDeveloper then
+		loadstring(readfile('LarpV4/init.lua'), 'init')()
+	else
+		loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/init.lua?v='..tick(), true))()
+	end
+end
 function mainapi:ShowLanguagePicker(onPick)
 	local langDisplay = {English = 'English (default)', Spanish = 'Español', French = 'Français', German = 'Deutsch', Portuguese = 'Português'}
 	local selected = mainapi.Language
 	if not table.find(LarpLangNames, selected) then selected = 'English' end
-	local overlay = Instance.new('TextButton')
-	overlay.Name = 'LanguagePicker'
-	overlay.Size = UDim2.fromScale(1, 1)
-	overlay.BackgroundColor3 = Color3.new()
-	overlay.BackgroundTransparency = 0.4
-	overlay.AutoButtonColor = false
-	overlay.Text = ''
-	overlay.Parent = clickgui
-	local panel = Instance.new('Frame')
-	panel.Size = UDim2.fromOffset(300, 290)
-	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.BackgroundColor3 = uipallet.Main
-	panel.BorderSizePixel = 0
-	panel.Parent = overlay
-	addCorner(panel, UDim.new(0, 6))
+	local shadow = Instance.new('TextButton')
+	shadow.Name = 'LanguageShadow'
+	shadow.Size = UDim2.fromScale(1, 1)
+	shadow.ZIndex = 10
+	shadow.BackgroundColor3 = Color3.new()
+	shadow.BackgroundTransparency = 0.6
+	shadow.AutoButtonColor = false
+	shadow.Modal = true
+	shadow.Text = ''
+	shadow.Parent = clickgui
+	local window = Instance.new('Frame')
+	window.Name = 'LanguagePicker'
+	window.AnchorPoint = Vector2.new(0.5, 0.5)
+	window.Size = UDim2.fromOffset(360, 316)
+	window.Position = UDim2.fromScale(0.5, 0.5)
+	window.ZIndex = 11
+	window.BackgroundColor3 = uipallet.Main
+	window.Parent = shadow
+	addCorner(window)
+	addBlur(window)
+	local icon = Instance.new('ImageLabel')
+	icon.Name = 'Icon'
+	icon.Size = UDim2.fromOffset(16, 16)
+	icon.Position = UDim2.fromOffset(20, 20)
+	icon.ZIndex = 12
+	icon.BackgroundTransparency = 1
+	icon.Image = getcustomasset('LarpV4/assets/larp/discord.png')
+	icon.ImageColor3 = uipallet.Text
+	icon.Parent = window
 	local title = Instance.new('TextLabel')
-	title.Size = UDim2.new(1, -28, 0, 24)
-	title.Position = UDim2.fromOffset(14, 12)
+	title.Name = 'Title'
+	title.Size = UDim2.new(1, -60, 0, 16)
+	title.Position = UDim2.fromOffset(44, 20)
+	title.ZIndex = 12
 	title.BackgroundTransparency = 1
 	title.Text = 'Welcome to Larp V4'
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.TextColor3 = uipallet.Text
-	title.TextSize = 16
+	title.TextSize = 14
 	title.FontFace = uipallet.FontSemiBold
-	title.Parent = panel
+	title.Parent = window
+	local divider = Instance.new('Frame')
+	divider.Name = 'Divider'
+	divider.Size = UDim2.new(1, -40, 0, 1)
+	divider.Position = UDim2.fromOffset(20, 48)
+	divider.ZIndex = 12
+	divider.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+	divider.BorderSizePixel = 0
+	divider.Parent = window
 	local sub = Instance.new('TextLabel')
-	sub.Size = UDim2.new(1, -28, 0, 16)
-	sub.Position = UDim2.fromOffset(14, 38)
+	sub.Name = 'Subtitle'
+	sub.Size = UDim2.new(1, -40, 0, 18)
+	sub.Position = UDim2.fromOffset(20, 56)
+	sub.ZIndex = 12
 	sub.BackgroundTransparency = 1
 	sub.Text = 'Choose your preferred language'
 	sub.TextXAlignment = Enum.TextXAlignment.Left
-	sub.TextColor3 = color.Dark(uipallet.Text, 0.29)
-	sub.TextSize = 12
+	sub.TextColor3 = color.Dark(uipallet.Text, 0.31)
+	sub.TextSize = 13
 	sub.FontFace = uipallet.Font
-	sub.Parent = panel
+	sub.Parent = window
 	local rows = {}
-	local list = Instance.new('Frame')
-	list.Size = UDim2.new(1, -28, 0, 160)
-	list.Position = UDim2.fromOffset(14, 60)
-	list.BackgroundTransparency = 1
-	list.Parent = panel
-	local listlayout = Instance.new('UIListLayout')
-	listlayout.SortOrder = Enum.SortOrder.LayoutOrder
-	listlayout.Padding = UDim.new(0, 4)
-	listlayout.Parent = list
 	local function refresh()
 		for id, btn in rows do
 			local on = id == selected
@@ -7407,16 +7432,18 @@ function mainapi:ShowLanguagePicker(onPick)
 	end
 	for i, id in LarpLangNames do
 		local btn = Instance.new('TextButton')
-		btn.Size = UDim2.new(1, 0, 0, 28)
-		btn.LayoutOrder = i
+		btn.Size = UDim2.fromOffset(320, 26)
+		btn.Position = UDim2.fromOffset(20, 82 + (i - 1) * 30)
+		btn.ZIndex = 12
 		btn.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 		btn.AutoButtonColor = false
-		btn.Text = '      '..(langDisplay[id] or id)
+		btn.Text = '      ' .. (langDisplay[id] or id)
 		btn.TextXAlignment = Enum.TextXAlignment.Left
-		btn.TextSize = 14
+		btn.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		btn.TextSize = 13
 		btn.FontFace = uipallet.Font
 		btn.BorderSizePixel = 0
-		btn.Parent = list
+		btn.Parent = window
 		addCorner(btn, UDim.new(0, 5))
 		btn.MouseButton1Click:Connect(function()
 			selected = id
@@ -7426,19 +7453,32 @@ function mainapi:ShowLanguagePicker(onPick)
 	end
 	refresh()
 	local confirm = Instance.new('TextButton')
-	confirm.Size = UDim2.new(1, -28, 0, 34)
-	confirm.Position = UDim2.fromOffset(14, 232)
+	confirm.Name = 'Confirm'
+	confirm.Size = UDim2.fromOffset(320, 32)
+	confirm.Position = UDim2.new(0, 20, 1, -48)
+	confirm.ZIndex = 12
 	confirm.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 	confirm.AutoButtonColor = false
 	confirm.Text = 'Confirm'
-	confirm.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-	confirm.TextSize = 14
+	confirm.TextColor3 = Color3.new(1, 1, 1)
+	confirm.TextSize = 13
 	confirm.FontFace = uipallet.FontSemiBold
 	confirm.BorderSizePixel = 0
-	confirm.Parent = panel
+	confirm.Parent = window
 	addCorner(confirm, UDim.new(0, 6))
+	confirm.MouseEnter:Connect(function()
+		tween:Tween(confirm, uipallet.Tween, {
+			BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, math.clamp(mainapi.GUIColor.Value + 0.1, 0, 1))
+		})
+	end)
+	confirm.MouseLeave:Connect(function()
+		tween:Tween(confirm, uipallet.Tween, {
+			BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+		})
+	end)
 	confirm.MouseButton1Click:Connect(function()
-		overlay:Destroy()
+		shadow:ClearAllChildren()
+		shadow:Destroy()
 		if onPick then onPick(selected) end
 	end)
 end
@@ -7461,11 +7501,7 @@ general:CreateButton({
 			shared.LarpLanguage = lang
 			getgenv().LarpLanguage = lang
 			pcall(writefile, 'LarpV4/profiles/language.txt', lang)
-			if lang == 'English' then
-				mainapi:CreateNotification('Larp', 'Language saved, re-inject to apply', 5)
-			else
-				mainapi:CreateNotification('Larp', ((LarpLocales[lang] or {}).LoadedIn or 'Successfully loaded in ')..lang, 5)
-			end
+			reloadLarp()
 		end)
 	end,
 	Tooltip = 'Change the GUI language'
@@ -8854,12 +8890,27 @@ if shared.LarpPresetInstall then
 			Function = function(result)
 				local install = shared.LarpPresetInstall
 				shared.LarpPresetInstall = nil
-				if not result then return end
+				if result then
+					task.spawn(function()
+						pcall(setclipboard, 'https://discord.gg/MwEu9HNK84')
+						mainapi:CreateNotification('Discord', 'Discord Link Copied', 2)
+						if install then
+							pcall(install)
+						end
+					end)
+				end
 				task.spawn(function()
-					pcall(setclipboard, 'https://discord.gg/MwEu9HNK84')
-					mainapi:CreateNotification('Discord', 'Discord Link Copied', 2)
-					if install then
-						pcall(install)
+					local hasLang = false
+					pcall(function()
+						hasLang = isfile('LarpV4/profiles/language.txt')
+					end)
+					if not hasLang and mainapi.ShowLanguagePicker then
+						mainapi:ShowLanguagePicker(function(lang)
+							shared.LarpLanguage = lang
+							getgenv().LarpLanguage = lang
+							pcall(writefile, 'LarpV4/profiles/language.txt', lang)
+							reloadLarp()
+						end)
 					end
 				end)
 			end

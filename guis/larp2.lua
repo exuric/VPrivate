@@ -4026,18 +4026,18 @@ function mainapi:CreateCategory(categorysettings)
 			for i, tag in modulesettings.Tags do
 				tag = tag:upper()
 				modulesettings.Tags[i] = tag:lower()
-				local size = getfontsize(removeTags(tag), 12, uipallet.Font, Vector2.new(100000, 100000))
-				local indicator = Instance.new('TextLabel')
-				indicator.LayoutOrder = i - 1
-				indicator.Size = UDim2.new(0, size.X + 4, 0, 21)
-				indicator.BackgroundColor3 = Color3.new(1, 1, 1)
-				indicator.TextSize = 14
-				indicator.TextTransparency = 1
-				indicator.Text = tag
-				indicator.Name = tag
-				indicator.Position = UDim2.new()
-				indicator.TextColor3 = Color3.new(0, 0, 0)
-				indicator.FontFace = uipallet.Font
+			local size = getfontsize(removeTags(tag), 12, uipallet.FontSemiBold, Vector2.new(100000, 100000))
+			local indicator = Instance.new('TextLabel')
+			indicator.LayoutOrder = i - 1
+			indicator.Size = UDim2.new(0, size.X + 12, 0, 18)
+			indicator.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			indicator.TextSize = 12
+			indicator.TextTransparency = 1
+			indicator.Text = tag
+			indicator.Name = tag
+			indicator.Position = UDim2.new()
+			indicator.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			indicator.FontFace = uipallet.FontSemiBold
 				indicator.Parent = indicatorholder
 				addCorner(indicator, UDim.new(0, 5))
 				local text = indicator:Clone()
@@ -5410,11 +5410,11 @@ function mainapi:CreateSearch()
 	searchbkg.Parent = clickgui
 	local searchicon = Instance.new('ImageLabel')
 	searchicon.Name = 'Icon'
-	searchicon.Size = UDim2.fromOffset(18, 18)
-	searchicon.Position = UDim2.new(1, -27, 0, 9)
+	searchicon.Size = UDim2.fromOffset(22, 22)
+	searchicon.Position = UDim2.new(1, -31, 0, 8)
 	searchicon.BackgroundTransparency = 1
 	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
-	searchicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
+	searchicon.ImageColor3 = Color3.new(1, 1, 1)
 	searchicon.Parent = searchbkg
 	local legiticon = Instance.new('ImageButton')
 	legiticon.Name = 'Legit'
@@ -5672,7 +5672,7 @@ function mainapi:CreateLegit()
 			modicon.Name = 'ModuleIcon'
 			local isize = modulesettings.IconSize or UDim2.fromOffset(15, 15)
 			modicon.Size = isize
-			modicon.Position = UDim2.fromOffset(math.floor((163 - isize.X.Offset) / 2), 30)
+			modicon.Position = UDim2.fromOffset(16, 14)
 			modicon.BackgroundTransparency = 1
 			modicon.Image = modulesettings.Icon
 			modicon.ImageColor3 = uipallet.Text

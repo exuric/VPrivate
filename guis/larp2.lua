@@ -79,7 +79,6 @@ local getcustomassets = {
 	['LarpV4/assets/larp/closemini.png'] = 'rbxassetid://14368310467',
 	['LarpV4/assets/larp/colorpreview.png'] = 'rbxassetid://14368311578',
 	['LarpV4/assets/larp/combaticon.png'] = 'rbxassetid://14368312652',
-	['LarpV4/assets/larp/auraicon.png'] = '',
 	['LarpV4/assets/larp/customsettings.png'] = 'rbxassetid://14403726449',
 	['LarpV4/assets/larp/discord.png'] = '',
 	['LarpV4/assets/larp/dots.png'] = 'rbxassetid://14368314459',
@@ -93,8 +92,6 @@ local getcustomassets = {
 	['LarpV4/assets/larp/guisettings.png'] = 'rbxassetid://14368318994',
 	['LarpV4/assets/larp/guislider.png'] = 'rbxassetid://14368320020',
 	['LarpV4/assets/larp/guisliderrain.png'] = 'rbxassetid://14368321228',
-	['LarpV4/assets/larp/guiv4.png'] = 'rbxassetid://14368322199',
-	['LarpV4/assets/larp/guilarp.png'] = 'rbxassetid://14657521312',
 	['LarpV4/assets/larp/info.png'] = 'rbxassetid://14368324807',
 	['LarpV4/assets/larp/inventoryicon.png'] = 'rbxassetid://14928011633',
 	['LarpV4/assets/larp/legit.png'] = 'rbxassetid://14425650534',
@@ -103,10 +100,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/notification.png'] = 'rbxassetid://16738721069',
 	['LarpV4/assets/larp/overlaysicon.png'] = 'rbxassetid://14368339581',
 	['LarpV4/assets/larp/overlaystab.png'] = 'rbxassetid://14397380433',
-	['LarpV4/assets/larp/perf.png'] = 'rbxassetid://14368339581',
-	['LarpV4/assets/larp/performance.png'] = '',
 	['LarpV4/assets/larp/pin.png'] = 'rbxassetid://14368342301',
-	['LarpV4/assets/larp/profileicon.png'] = 'rbxassetid://14368359107',
 	['LarpV4/assets/larp/profile.png'] = 'rbxassetid://14368359107',
 	['LarpV4/assets/larp/profilesicon.png'] = 'rbxassetid://14397465323',
 	['LarpV4/assets/larp/radaricon.png'] = 'rbxassetid://14368343291',
@@ -117,7 +111,6 @@ local getcustomassets = {
 	['LarpV4/assets/larp/range.png'] = 'rbxassetid://14368347435',
 	['LarpV4/assets/larp/rangearrow.png'] = 'rbxassetid://14368348640',
 	['LarpV4/assets/larp/rendericon.png'] = 'rbxassetid://14368350193',
-	['LarpV4/assets/larp/rendertab.png'] = 'rbxassetid://14397373458',
 	['LarpV4/assets/larp/search.png'] = 'rbxassetid://14425646684',
 	['LarpV4/assets/larp/targetinfoicon.png'] = 'rbxassetid://14368354234',
 	['LarpV4/assets/larp/targetnpc1.png'] = 'rbxassetid://14497400332',
@@ -367,6 +360,18 @@ getcustomasset = not inputService.TouchEnabled and assetfunction and function(pa
 	return downloadFile(path, assetfunction)
 end or function(path)
 	return getcustomassets[path] or ''
+end
+
+local function tryAsset(path)
+	if isfile(path) then return true end
+	local ok, res = pcall(function()
+		return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/'..select(1, path:gsub('LarpV4/', '')), true)
+	end)
+	if ok and res and res ~= '404: Not Found' and #res > 100 then
+		pcall(writefile, path, res)
+		return isfile(path)
+	end
+	return false
 end
 
 local function getTableSize(tab)
@@ -2538,6 +2543,7 @@ function mainapi:CreateGUI()
 	window.Parent = clickgui
 	addBlur(window)
 	addCorner(window)
+	window.ClipsDescendants = true
 	makeDraggable(window)
 	local logo = Instance.new('ImageLabel')
 	logo.Name = 'LarpLogo'
@@ -3114,14 +3120,18 @@ function mainapi:CreateGUI()
 			end)
 		end)
 		favbutton.MouseEnter:Connect(function()
-			tween:Tween(favbutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			tween:Tween(favbutton, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 				ImageColor3 = favStarYellow,
-				Rotation = -8
+				Size = UDim2.fromOffset(26, 26),
+				Position = UDim2.new(1, -57, 0, 6),
+				Rotation = 0
 			})
 		end)
 		favbutton.MouseLeave:Connect(function()
 			tween:Tween(favbutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
 				ImageColor3 = favOpen and favStarYellow or color.Light(uipallet.Main, 0.37),
+				Size = UDim2.fromOffset(22, 22),
+				Position = UDim2.new(1, -55, 0, 8),
 				Rotation = 0
 			})
 		end)
@@ -3279,7 +3289,7 @@ function mainapi:CreateGUI()
 			tween:Tween(shadow, uipallet.Tween, {
 				BackgroundTransparency = 0.5
 			})
-			tween:Tween(window, uipallet.Tween, {
+			tween:Tween(window, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
 				Position = UDim2.new(0, 0, 1, -(window.Size.Y.Offset))
 			})
 		end)
@@ -3287,7 +3297,7 @@ function mainapi:CreateGUI()
 			tween:Tween(shadow, uipallet.Tween, {
 				BackgroundTransparency = 1
 			})
-			tween:Tween(window, uipallet.Tween, {
+			tween:Tween(window, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
 				Position = UDim2.fromScale(0, 1)
 			})
 			task.wait(0.2)
@@ -3297,7 +3307,7 @@ function mainapi:CreateGUI()
 			tween:Tween(shadow, uipallet.Tween, {
 				BackgroundTransparency = 1
 			})
-			tween:Tween(window, uipallet.Tween, {
+			tween:Tween(window, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
 				Position = UDim2.fromScale(0, 1)
 			})
 			task.wait(0.2)
@@ -3403,7 +3413,14 @@ function mainapi:CreateGUI()
 			back.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		end)
 		back.MouseButton1Click:Connect(function()
-			settingspane.Visible = false
+			tween:Tween(settingspane, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(1, 0)
+			})
+			task.delay(0.15, function()
+				if settingspane.Position.X.Scale > 0.5 then
+					settingspane.Visible = false
+				end
+			end)
 		end)
 		button.MouseEnter:Connect(function()
 			button.TextColor3 = uipallet.Text
@@ -3415,9 +3432,20 @@ function mainapi:CreateGUI()
 		end)
 		button.MouseButton1Click:Connect(function()
 			settingspane.Visible = true
+			settingspane.Position = UDim2.fromScale(1, 0)
+			tween:Tween(settingspane, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Position = UDim2.fromScale(0, 0)
+			})
 		end)
 		close.MouseButton1Click:Connect(function()
-			settingspane.Visible = false
+			tween:Tween(settingspane, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(1, 0)
+			})
+			task.delay(0.15, function()
+				if settingspane.Position.X.Scale > 0.5 then
+					settingspane.Visible = false
+				end
+			end)
 		end)
 		windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 			if mainapi.ThreadFix then
@@ -3946,7 +3974,9 @@ end
 function mainapi:CreateCategory(categorysettings)
 	local categoryapi = {
 		Type = 'Category',
-		Expanded = false
+		Expanded = false,
+		Editing = false,
+		Hidden = {}
 	}
 
 	local window = Instance.new('TextButton')
@@ -3996,6 +4026,41 @@ function mainapi:CreateCategory(categorysettings)
 	arrow.ImageColor3 = Color3.fromRGB(140, 140, 140)
 	arrow.Rotation = 180
 	arrow.Parent = arrowbutton
+	local editbutton
+	local hidcount
+	if categorysettings.Name ~= 'Favorites' then
+		editbutton = Instance.new('ImageButton')
+		editbutton.Name = 'Edit'
+		editbutton.Size = UDim2.fromOffset(18, 18)
+		editbutton.Position = UDim2.new(1, -64, 0, 11)
+		editbutton.BackgroundTransparency = 1
+		editbutton.Image = getcustomasset('LarpV4/assets/larp/edit.png')
+		editbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		editbutton.Parent = window
+		addTooltip(editbutton, 'Hide modules')
+		hidcount = Instance.new('TextLabel')
+		hidcount.Name = 'HiddenCount'
+		hidcount.Size = UDim2.fromOffset(60, 18)
+		hidcount.Position = UDim2.new(1, -128, 0, 11)
+		hidcount.BackgroundTransparency = 1
+		hidcount.Text = ''
+		hidcount.TextXAlignment = Enum.TextXAlignment.Right
+		hidcount.TextColor3 = color.Dark(uipallet.Text, 0.29)
+		hidcount.TextSize = 12
+		hidcount.FontFace = uipallet.Font
+		hidcount.Visible = false
+		hidcount.Parent = window
+		editbutton.MouseEnter:Connect(function()
+			editbutton.ImageColor3 = uipallet.Text
+		end)
+		editbutton.MouseLeave:Connect(function()
+			editbutton.ImageColor3 = categoryapi.Editing and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.37)
+		end)
+		editbutton.MouseButton1Click:Connect(function()
+			categoryapi.Editing = not categoryapi.Editing
+			categoryapi:RefreshHidden()
+		end)
+	end
 	local children = Instance.new('ScrollingFrame')
 	children.Name = 'Children'
 	children.Size = UDim2.new(1, 0, 1, -41)
@@ -4055,6 +4120,25 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.FontFace = uipallet.Font
 		modulebutton.Parent = children
 		addCorner(modulebutton, UDim.new(0, 6))
+		if modulesettings.Icon then
+			local modicon = Instance.new('ImageLabel')
+			modicon.Name = 'ModuleIcon'
+			local isize = modulesettings.IconSize or UDim2.fromOffset(15, 15)
+			modicon.Size = isize
+			modicon.Position = UDim2.fromOffset(10, math.floor((40 - isize.Y.Offset) / 2))
+			modicon.BackgroundTransparency = 1
+			modicon.Image = modulesettings.Icon
+			modicon.ImageColor3 = uipallet.Text
+			modicon.Parent = modulebutton
+		end
+		local activebar = Instance.new('Frame')
+		activebar.Name = 'ActiveBar'
+		activebar.Size = UDim2.fromOffset(0, 20)
+		activebar.Position = UDim2.fromOffset(6, 10)
+		activebar.BackgroundColor3 = modulebutton.TextColor3
+		activebar.BorderSizePixel = 0
+		activebar.Parent = modulebutton
+		addCorner(activebar, UDim.new(1, 0))
 		local indicatorholder = Instance.new('Frame')
 		indicatorholder.Parent = modulebutton
 		indicatorholder.Size = UDim2.fromOffset(0, 21)
@@ -4163,7 +4247,7 @@ function mainapi:CreateCategory(categorysettings)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
 		local favRowIcon = getcustomasset('LarpV4/assets/larp/star.png')
-		if isfile('LarpV4/assets/larp/favourite.png') then
+		if tryAsset('LarpV4/assets/larp/favourite.png') then
 			pcall(function()
 				local f = getcustomasset('LarpV4/assets/larp/favourite.png')
 				if f and f ~= '' then favRowIcon = f end
@@ -4182,14 +4266,20 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		local favstate = false
 		local function updateFav()
+			favstate = fav and fav.Enabled or false
 			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
 			favicon.Visible = favstate
 		end
 		favicon.MouseButton1Click:Connect(function()
-			local mod = (shared.larp or getgenv().larp)
-			if mod and mod.Modules and mod.Modules[modulesettings.Name] and mod.Modules[modulesettings.Name].toggleFav then
-				mod.Modules[modulesettings.Name]:toggleFav()
-			end
+			pcall(function()
+				local mod = shared.larp or getgenv().larp
+				local m = mod and mod.Modules and mod.Modules[modulesettings.Name]
+				if m and m.toggleFav then m:toggleFav() end
+			end)
+			pcall(updateFav)
+			pcall(function()
+				if mainapi.UpdateFavourites then mainapi:UpdateFavourites() end
+			end)
 		end)
 		local dotsbutton = Instance.new('TextButton')
 		dotsbutton.Name = 'Dots'
@@ -4312,6 +4402,10 @@ function mainapi:CreateCategory(categorysettings)
 			else
 				modulebutton.UIGradient.Enabled = false
 			end
+			tween:Tween(activebar, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Size = UDim2.fromOffset(self.Enabled and 3 or 0, 20)
+			})
+			activebar.BackgroundColor3 = modulebutton.TextColor3
 		end
 
 		for i, v in components do
@@ -4387,7 +4481,11 @@ function mainapi:CreateCategory(categorysettings)
 			favicon.Visible = hovered or modulechildren.Visible or favstate
 		end)
 		modulebutton.MouseButton1Click:Connect(function()
-			moduleapi:Toggle()
+			if categoryapi.Editing then
+				categoryapi:ToggleHidden(moduleapi)
+			else
+				moduleapi:Toggle()
+			end
 		end)
 		modulebutton.MouseButton2Click:Connect(function()
 			modulechildren.Visible = not modulechildren.Visible
@@ -4490,20 +4588,55 @@ function mainapi:CreateCategory(categorysettings)
 		if self.Expanded then
 			children.Visible = true
 		end
-		tween:Tween(arrow, TweenInfo.new(0.22, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+		tween:Tween(arrow, TweenInfo.new(0.18, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
 			Rotation = self.Expanded and 0 or 180
 		})
-		tween:Tween(window, TweenInfo.new(0.26, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+		tween:Tween(window, TweenInfo.new(0.2, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
 			Size = UDim2.fromOffset(220, target)
 		})
 		if not self.Expanded then
-			task.delay(0.24, function()
+			task.delay(0.18, function()
 				if not self.Expanded then
 					children.Visible = false
 				end
 			end)
 		end
 		divider.Visible = children.CanvasPosition.Y > 10 and children.Visible
+	end
+
+	function categoryapi:RefreshHidden()
+		if categorysettings.Name == 'Favorites' then return end
+		local n = 0
+		for _, m in pairs(mainapi.Modules) do
+			if m.Category == categorysettings.Name then
+				if self.Hidden[m] then
+					n += 1
+					m.Object.Visible = self.Editing
+					if m.Children then m.Children.Visible = false end
+					m.Object.BackgroundTransparency = self.Editing and 0.5 or 0
+				else
+					m.Object.Visible = true
+					m.Object.BackgroundTransparency = 0
+				end
+			end
+		end
+		if hidcount then
+			hidcount.Text = n > 0 and (n..' hid') or ''
+			hidcount.Visible = n > 0 and not self.Editing
+		end
+		if editbutton then
+			editbutton.ImageColor3 = self.Editing and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.37)
+		end
+	end
+
+	function categoryapi:ToggleHidden(moduleapi)
+		if categorysettings.Name == 'Favorites' then return end
+		if self.Hidden[moduleapi] then
+			self.Hidden[moduleapi] = nil
+		else
+			self.Hidden[moduleapi] = true
+		end
+		self:RefreshHidden()
 	end
 
 	arrowbutton.MouseButton1Click:Connect(function()
@@ -5636,6 +5769,17 @@ function mainapi:CreateLegit()
 		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = moduledotsbutton
+		if modulesettings.Icon then
+			local modicon = Instance.new('ImageLabel')
+			modicon.Name = 'ModuleIcon'
+			local isize = modulesettings.IconSize or UDim2.fromOffset(15, 15)
+			modicon.Size = isize
+			modicon.Position = UDim2.fromOffset(math.floor((163 - isize.X.Offset) / 2), 30)
+			modicon.BackgroundTransparency = 1
+			modicon.Image = modulesettings.Icon
+			modicon.ImageColor3 = uipallet.Text
+			modicon.Parent = module
+		end
 		local shadow = Instance.new('TextButton')
 		shadow.Name = 'Shadow'
 		shadow.Size = UDim2.new(1, 0, 1, -5)
@@ -6600,7 +6744,7 @@ end))
 
 mainapi:CreateGUI()
 local favouriteIcon = getcustomasset('LarpV4/assets/larp/star.png')
-if isfile('LarpV4/assets/larp/favourite.png') then
+if tryAsset('LarpV4/assets/larp/favourite.png') then
 	pcall(function()
 		local f = getcustomasset('LarpV4/assets/larp/favourite.png')
 		if f and f ~= '' then favouriteIcon = f end
@@ -6723,6 +6867,15 @@ function mainapi:UpdateFavourites()
 						dots.MouseButton2Click:Connect(openFavSettings)
 					end
 					if favicon then
+						favicon.ImageColor3 = Color3.fromRGB(255, 184, 31)
+						favicon.MouseEnter:Connect(function()
+							tween:Tween(favicon, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+								ImageColor3 = Color3.fromRGB(255, 184, 31)
+							})
+						end)
+						favicon.MouseLeave:Connect(function()
+							favicon.ImageColor3 = Color3.fromRGB(255, 184, 31)
+						end)
 						favicon.MouseButton1Click:Connect(dropfavourite)
 					end
 					if bind then
@@ -6768,7 +6921,7 @@ function mainapi:UpdateFavourites()
 				end
 				local cloneFav = clone:FindFirstChild('Favourite')
 				if cloneFav then
-					cloneFav.ImageColor3 = Color3.new(1, 1, 1)
+					cloneFav.ImageColor3 = Color3.fromRGB(255, 184, 31)
 				end
 			end
 		elseif moduleapi.FavouriteClone then
@@ -6898,11 +7051,7 @@ mainapi.Categories.Main:CreateOverlayBar()
 mainapi.Categories.Main:CreateSettingsDivider()
 
 local perfIcon = ''
-pcall(function()
-	local p = getcustomasset('LarpV4/assets/larp/perf.png')
-	if p and p ~= '' then perfIcon = p end
-end)
-if isfile('LarpV4/assets/larp/performance.png') then
+if tryAsset('LarpV4/assets/larp/performance.png') then
 	pcall(function()
 		local p = getcustomasset('LarpV4/assets/larp/performance.png')
 		if p and p ~= '' then perfIcon = p end

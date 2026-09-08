@@ -14,10 +14,11 @@ local isfile = isfile or function(file)
 	return suc and res ~= nil and res ~= ''
 end
 local LARPWATER = '--LARP:'..(pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')..'\n'
+local LARPCOMMIT = (pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main'):gsub('%s+', '')
 local function downloadFile(path, func)
 	if not isfile(path) or (path:find('.lua') and #readfile(path) < 100) or readfile(path):sub(1, #LARPWATER) ~= LARPWATER then
 		local suc, res = pcall(function()
-			return game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
+			return game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..LARPCOMMIT..'/'..select(1, path:gsub('LarpV4/', '')), true)
 		end)
 		if not suc or res == '404: Not Found' or (#res < 100 and path:find('.lua')) then
 			error(res)

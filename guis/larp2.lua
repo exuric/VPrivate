@@ -2623,188 +2623,6 @@ function mainapi:CreateGUI()
 			mainapi:CreateNotification('Discord', 'Copied Discord server invite', 5, 'discord')
 		end
 	end)
-	local profilebutton = Instance.new('ImageButton')
-	profilebutton.Name = 'Profile'
-	profilebutton.Size = UDim2.fromOffset(16, 16)
-	profilebutton.Position = UDim2.new(1, -82, 0, 11)
-	profilebutton.BackgroundTransparency = 1
-	profilebutton.Image = getcustomasset('LarpV4/assets/larp/profile.png')
-	profilebutton.ImageColor3 = Color3.new(1, 1, 1)
-	profilebutton.Parent = window
-	addTooltip(profilebutton, 'Profile')
-	profilebutton.MouseEnter:Connect(function()
-		profilebutton.ImageColor3 = Color3.new(1, 1, 1)
-	end)
-	profilebutton.MouseLeave:Connect(function()
-		profilebutton.ImageColor3 = Color3.new(1, 1, 1)
-	end)
-	local profilepanel = Instance.new('Frame')
-	profilepanel.Name = 'ProfilePanel'
-	profilepanel.Size = UDim2.fromOffset(220, 280)
-	profilepanel.Position = UDim2.new(1, 12, 0, 8)
-	profilepanel.BackgroundColor3 = uipallet.Main
-	profilepanel.BorderSizePixel = 0
-	profilepanel.Visible = false
-	profilepanel.Parent = window
-	addBlur(profilepanel)
-	addCorner(profilepanel, UDim.new(0, 6))
-	makeDraggable(profilepanel)
-	local profiletitle = Instance.new('TextLabel')
-	profiletitle.Size = UDim2.new(1, -44, 0, 20)
-	profiletitle.Position = UDim2.fromOffset(14, 11)
-	profiletitle.BackgroundTransparency = 1
-	profiletitle.Text = 'Profile'
-	profiletitle.TextXAlignment = Enum.TextXAlignment.Left
-	profiletitle.TextColor3 = uipallet.Text
-	profiletitle.TextSize = 13
-	profiletitle.FontFace = uipallet.FontSemiBold
-	profiletitle.Parent = profilepanel
-	local profileclose = addCloseButton(profilepanel, 9)
-	profileclose.MouseButton1Click:Connect(function()
-		profilepanel.Visible = false
-	end)
-	local profiledivider = Instance.new('Frame')
-	profiledivider.Size = UDim2.new(1, -20, 0, 1)
-	profiledivider.Position = UDim2.fromOffset(10, 37)
-	profiledivider.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
-	profiledivider.BorderSizePixel = 0
-	profiledivider.Parent = profilepanel
-	local profileavatar = Instance.new('Frame')
-	profileavatar.Size = UDim2.fromOffset(64, 64)
-	profileavatar.Position = UDim2.fromOffset(14, 49)
-	profileavatar.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
-	profileavatar.BorderSizePixel = 0
-	profileavatar.Parent = profilepanel
-	addCorner(profileavatar, UDim.new(1, 0))
-	local profileavatarimg = Instance.new('ImageLabel')
-	profileavatarimg.Size = UDim2.fromScale(1, 1)
-	profileavatarimg.BackgroundTransparency = 1
-	profileavatarimg.Image = ''
-	profileavatarimg.Parent = profileavatar
-	addCorner(profileavatarimg, UDim.new(1, 0))
-	local profilestroke2 = Instance.new('UIStroke')
-	profilestroke2.Color = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-	profilestroke2.Thickness = 2
-	profilestroke2.Parent = profileavatar
-	local profilename = Instance.new('TextLabel')
-	profilename.Size = UDim2.new(1, -108, 0, 18)
-	profilename.Position = UDim2.fromOffset(94, 54)
-	profilename.BackgroundTransparency = 1
-	profilename.TextXAlignment = Enum.TextXAlignment.Left
-	profilename.TextColor3 = uipallet.Text
-	profilename.TextSize = 14
-	profilename.FontFace = uipallet.FontSemiBold
-	profilename.TextTruncate = Enum.TextTruncate.AtEnd
-	profilename.Parent = profilepanel
-	local profilename2 = Instance.new('TextLabel')
-	profilename2.Size = UDim2.new(1, -108, 0, 14)
-	profilename2.Position = UDim2.fromOffset(94, 74)
-	profilename2.BackgroundTransparency = 1
-	profilename2.TextXAlignment = Enum.TextXAlignment.Left
-	profilename2.TextColor3 = color.Light(uipallet.Main, 0.55)
-	profilename2.TextSize = 12
-	profilename2.FontFace = uipallet.Font
-	profilename2.TextTruncate = Enum.TextTruncate.AtEnd
-	profilename2.Parent = profilepanel
-	local profstyle = Instance.new('TextLabel')
-	profstyle.Size = UDim2.new(1, -108, 0, 14)
-	profstyle.Position = UDim2.fromOffset(94, 92)
-	profstyle.BackgroundTransparency = 1
-	profstyle.TextXAlignment = Enum.TextXAlignment.Left
-	profstyle.TextColor3 = color.Light(uipallet.Main, 0.55)
-	profstyle.TextSize = 11
-	profstyle.FontFace = uipallet.Font
-	profstyle.Parent = profilepanel
-	local profiledivider2 = Instance.new('Frame')
-	profiledivider2.Size = UDim2.new(1, -28, 0, 1)
-	profiledivider2.Position = UDim2.fromOffset(14, 118)
-	profiledivider2.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
-	profiledivider2.BorderSizePixel = 0
-	profiledivider2.Parent = profilepanel
-	local profilerows = {}
-	local function profilerow(name, y, key)
-		local label = Instance.new('TextLabel')
-		label.Size = UDim2.new(1, -28, 0, 24)
-		label.Position = UDim2.fromOffset(14, y)
-		label.BackgroundTransparency = 1
-		label.Text = name
-		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.TextColor3 = color.Light(uipallet.Main, 0.55)
-		label.TextSize = 12
-		label.FontFace = uipallet.Font
-		label.Parent = profilepanel
-		local value = Instance.new('TextLabel')
-		value.Size = UDim2.new(1, -28, 0, 24)
-		value.Position = UDim2.fromOffset(14, y)
-		value.BackgroundTransparency = 1
-		value.Text = '-'
-		value.TextXAlignment = Enum.TextXAlignment.Right
-		value.TextColor3 = uipallet.Text
-		value.TextSize = 12
-		value.FontFace = uipallet.Font
-		value.Parent = profilepanel
-		profilerows[key] = value
-	end
-	profilerow('Time in game', 128, 'time')
-	profilerow('Game', 156, 'game')
-	profilerow('Server', 184, 'server')
-	profilerow('Roblox', 212, 'version')
-	pcall(function()
-		local player = cloneref(game:GetService('Players')).LocalPlayer
-		if player and player.UserId then
-			profileavatarimg.Image = 'rbxthumb://type=AvatarHeadShot&id='..player.UserId..'&w=150&h=150'
-			profilename.Text = player.DisplayName
-			profilename2.Text = '@'..player.Name
-		end
-	end)
-	task.spawn(function()
-		while profilepanel.Parent do
-			if profilepanel.Visible then
-				local player = cloneref(game:GetService('Players')).LocalPlayer
-				if player then
-					pcall(function()
-						profilename.Text = player.DisplayName
-						profilename2.Text = '@'..player.Name
-					end)
-				end
-			end
-			task.wait(1)
-		end
-	end)
-	local profilenow = tick()
-	local profilestart = profilenow
-	pcall(function()
-		profstyle.Text = (identifyexecutor and (select(1, identifyexecutor()) or '-')) or '-'
-	end)
-	pcall(function()
-		if isfile('LarpV4/profiles/time.txt') then
-			profilestart = tonumber(readfile('LarpV4/profiles/time.txt')) or profilenow
-		else
-			writefile('LarpV4/profiles/time.txt', tostring(profilestart))
-		end
-	end)
-	task.spawn(function()
-		repeat
-			local elapsed = math.max(tick() - profilestart, 0)
-			local minutes = math.floor(elapsed / 60)
-			if minutes >= 60 then
-				profilerows.time.Text = string.format('%dh %02dm', math.floor(minutes / 60), minutes % 60)
-			else
-				profilerows.time.Text = string.format('%dm %02ds', minutes, math.floor(elapsed % 60))
-			end
-			pcall(function()
-				profilerows.game.Text = game.Name
-				profilerows.server.Text = tostring(game.JobId):sub(1, 8)
-				profilerows.version.Text = (game:GetService('RunService'):GetRobloxVersion()):sub(1, 14)
-			end)
-			task.wait(1)
-		until not profilepanel.Parent
-	end)
-	profilebutton.MouseButton1Click:Connect(function()
-		if profilepanel then
-			profilepanel.Visible = not profilepanel.Visible
-		end
-	end)
 	local settingspane = Instance.new('TextButton')
 	settingspane.Size = UDim2.fromScale(1, 1)
 	settingspane.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -3133,6 +2951,48 @@ function mainapi:CreateGUI()
 				Size = UDim2.fromOffset(22, 22),
 				Position = UDim2.new(1, -55, 0, 8),
 				Rotation = 0
+			})
+		end)
+		local profilebar = Instance.new('ImageButton')
+		profilebar.Name = 'Profile'
+		profilebar.Size = UDim2.fromOffset(22, 22)
+		profilebar.Position = UDim2.new(1, -83, 0, 7)
+		profilebar.BackgroundTransparency = 1
+		profilebar.AutoButtonColor = false
+		profilebar.Image = getcustomasset('LarpV4/assets/larp/profile.png')
+		profilebar.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		profilebar.Parent = bar
+		addCorner(profilebar, UDim.new(1, 0))
+		addTooltip(profilebar, 'Profile')
+		profilebar.MouseEnter:Connect(function()
+			tween:Tween(profilebar, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+				ImageColor3 = Color3.new(1, 1, 1)
+			})
+		end)
+		profilebar.MouseLeave:Connect(function()
+			tween:Tween(profilebar, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+				ImageColor3 = color.Light(uipallet.Main, 0.37)
+			})
+		end)
+		local profilebutton = Instance.new('ImageButton')
+		profilebutton.Name = 'Profile'
+		profilebutton.Size = UDim2.fromOffset(22, 22)
+		profilebutton.Position = UDim2.new(1, -85, 0, 8)
+		profilebutton.BackgroundTransparency = 1
+		profilebutton.AutoButtonColor = false
+		profilebutton.Image = getcustomasset('LarpV4/assets/larp/profile.png')
+		profilebutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		profilebutton.Parent = bar
+		addCorner(profilebutton, UDim.new(1, 0))
+		addTooltip(profilebutton, 'Profile')
+		profilebutton.MouseEnter:Connect(function()
+			tween:Tween(profilebutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+				ImageColor3 = Color3.new(1, 1, 1)
+			})
+		end)
+		profilebutton.MouseLeave:Connect(function()
+			tween:Tween(profilebutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+				ImageColor3 = color.Light(uipallet.Main, 0.37)
 			})
 		end)
 		local shadow = Instance.new('TextButton')
@@ -4040,8 +3900,8 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(editbutton, 'Hide modules')
 		hidcount = Instance.new('TextLabel')
 		hidcount.Name = 'HiddenCount'
-		hidcount.Size = UDim2.fromOffset(60, 18)
-		hidcount.Position = UDim2.new(1, -128, 0, 11)
+		hidcount.Size = UDim2.fromOffset(40, 18)
+		hidcount.Position = UDim2.new(1, -108, 0, 11)
 		hidcount.BackgroundTransparency = 1
 		hidcount.Text = ''
 		hidcount.TextXAlignment = Enum.TextXAlignment.Right
@@ -4139,6 +3999,15 @@ function mainapi:CreateCategory(categorysettings)
 		activebar.BorderSizePixel = 0
 		activebar.Parent = modulebutton
 		addCorner(activebar, UDim.new(1, 0))
+		local hiddenmark = Instance.new('Frame')
+		hiddenmark.Name = 'HiddenMark'
+		hiddenmark.Size = UDim2.fromOffset(3, 20)
+		hiddenmark.Position = UDim2.fromOffset(2, 10)
+		hiddenmark.BackgroundColor3 = Color3.fromRGB(255, 184, 31)
+		hiddenmark.BorderSizePixel = 0
+		hiddenmark.Visible = false
+		hiddenmark.Parent = modulebutton
+		addCorner(hiddenmark, UDim.new(1, 0))
 		local indicatorholder = Instance.new('Frame')
 		indicatorholder.Parent = modulebutton
 		indicatorholder.Size = UDim2.fromOffset(0, 21)
@@ -4272,9 +4141,7 @@ function mainapi:CreateCategory(categorysettings)
 		end
 		favicon.MouseButton1Click:Connect(function()
 			pcall(function()
-				local mod = shared.larp or getgenv().larp
-				local m = mod and mod.Modules and mod.Modules[modulesettings.Name]
-				if m and m.toggleFav then m:toggleFav() end
+				if fav then fav:Toggle() end
 			end)
 			pcall(updateFav)
 			pcall(function()
@@ -4351,6 +4218,32 @@ function mainapi:CreateCategory(categorysettings)
 				bindicon.Visible = false
 				bindtext.Text = table.concat(tab, ' + '):upper()
 				bind.Size = UDim2.fromOffset(math.max(getfontsize(bindtext.Text, bindtext.TextSize, bindtext.Font).X + 10, 20), 21)
+			end
+			local clone = self.FavouriteClone
+			if clone and clone.Parent then
+				local ccover = clone:FindFirstChild('Cover')
+				local ccovertext = ccover and ccover:FindFirstChild('Text')
+				local cbind = clone:FindFirstChild('Bind')
+				local cbindtext = cbind and cbind:FindFirstChild('TextLabel')
+				local cbindicon = cbind and cbind:FindFirstChild('Icon')
+				if mouse and ccover and ccovertext then
+					ccovertext.Text = #tab <= 0 and 'BIND REMOVED' or 'BOUND TO'
+					ccover.Size = UDim2.fromOffset(getfontsize(ccovertext.Text, ccovertext.TextSize).X + 20, 40)
+					task.delay(1, function()
+						ccover.Visible = false
+					end)
+				end
+				if #tab <= 0 then
+					if cbindtext then cbindtext.Visible = false end
+					if cbindicon then cbindicon.Visible = true end
+					if cbind then cbind.Size = UDim2.fromOffset(20, 21) end
+				elseif cbind and cbindtext and cbindicon then
+					cbind.Visible = true
+					cbindtext.Visible = true
+					cbindicon.Visible = false
+					cbindtext.Text = table.concat(tab, ' + '):upper()
+					cbind.Size = UDim2.fromOffset(math.max(getfontsize(cbindtext.Text, cbindtext.TextSize, cbindtext.Font).X + 10, 20), 21)
+				end
 			end
 		end
 
@@ -4469,6 +4362,7 @@ function mainapi:CreateCategory(categorysettings)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			pcall(updateFav)
 			favicon.Visible = hovered or modulechildren.Visible or favstate
 		end)
 		modulebutton.MouseLeave:Connect(function()
@@ -4614,15 +4508,19 @@ function mainapi:CreateCategory(categorysettings)
 					m.Object.Visible = self.Editing
 					if m.Children then m.Children.Visible = false end
 					m.Object.BackgroundTransparency = self.Editing and 0.5 or 0
+					local mark = m.Object:FindFirstChild('HiddenMark')
+					if mark then mark.Visible = self.Editing end
 				else
 					m.Object.Visible = true
 					m.Object.BackgroundTransparency = 0
+					local mark = m.Object:FindFirstChild('HiddenMark')
+					if mark then mark.Visible = false end
 				end
 			end
 		end
 		if hidcount then
 			hidcount.Text = n > 0 and (n..' hid') or ''
-			hidcount.Visible = n > 0 and not self.Editing
+			hidcount.Visible = n > 0
 		end
 		if editbutton then
 			editbutton.ImageColor3 = self.Editing and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.37)
@@ -5512,8 +5410,8 @@ function mainapi:CreateSearch()
 	searchbkg.Parent = clickgui
 	local searchicon = Instance.new('ImageLabel')
 	searchicon.Name = 'Icon'
-	searchicon.Size = UDim2.fromOffset(14, 14)
-	searchicon.Position = UDim2.new(1, -23, 0, 11)
+	searchicon.Size = UDim2.fromOffset(18, 18)
+	searchicon.Position = UDim2.new(1, -27, 0, 9)
 	searchicon.BackgroundTransparency = 1
 	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 	searchicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
@@ -6755,7 +6653,7 @@ local favouritescategory = mainapi:CreateCategory({
 	Icon = favouriteIcon,
 	Size = UDim2.fromOffset(16, 16)
 })
-favouritescategory.Object.Icon.ImageColor3 = Color3.new(1, 1, 1)
+favouritescategory.Object.Icon.ImageColor3 = Color3.fromRGB(255, 184, 31)
 favouritescategory.Button.Object.Visible = false
 mainapi:CreateCategory({
 	Name = 'Combat',
@@ -6791,6 +6689,11 @@ mainapi:CreateCategory({
 	Name = 'Minigames',
 	Icon = getcustomasset('LarpV4/assets/larp/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
+})
+mainapi:CreateCategory({
+	Name = 'Other',
+	Icon = getcustomasset('LarpV4/assets/larp/other.png'),
+	Size = UDim2.fromOffset(16, 16)
 })
 mainapi.PerfStats = _dstats
 mainapi.PerfStats.startup = tick()
@@ -6865,6 +6768,17 @@ function mainapi:UpdateFavourites()
 					if dots then
 						dots.MouseButton1Click:Connect(openFavSettings)
 						dots.MouseButton2Click:Connect(openFavSettings)
+						local dotsimg = dots:FindFirstChild('Dots')
+						dots.MouseEnter:Connect(function()
+							if not moduleapi.Enabled and dotsimg then
+								dotsimg.ImageColor3 = uipallet.Text
+							end
+						end)
+						dots.MouseLeave:Connect(function()
+							if not moduleapi.Enabled and dotsimg then
+								dotsimg.ImageColor3 = color.Light(uipallet.Main, 0.37)
+							end
+						end)
 					end
 					if favicon then
 						favicon.ImageColor3 = Color3.fromRGB(255, 184, 31)
@@ -6900,6 +6814,13 @@ function mainapi:UpdateFavourites()
 							end
 						end)
 						bind.MouseButton1Click:Connect(function()
+							local ccover = bind.Parent and bind.Parent:FindFirstChild('Cover')
+							local ccovertext = ccover and ccover:FindFirstChild('Text')
+							if ccover and ccovertext then
+								ccovertext.Text = 'PRESS A KEY TO BIND'
+								ccover.Size = UDim2.fromOffset(getfontsize(ccovertext.Text, ccovertext.TextSize).X + 20, 40)
+								ccover.Visible = true
+							end
 							mainapi.Binding = moduleapi
 						end)
 					end
@@ -6952,7 +6873,7 @@ local friendscolor = {
 local friendssettings = {
 	Name = 'Friends',
 	Icon = getcustomasset('LarpV4/assets/larp/friendstab.png'),
-	Size = UDim2.fromOffset(22, 15),
+	Size = UDim2.fromOffset(15, 15),
 	Placeholder = 'Roblox username',
 	Color = Color3.fromRGB(5, 134, 105),
 	Function = function()
@@ -7036,7 +6957,7 @@ local targets
 targets = mainapi:CreateCategoryList({
 	Name = 'Targets',
 	Icon = getcustomasset('LarpV4/assets/larp/friendstab.png'),
-	Size = UDim2.fromOffset(22, 15),
+	Size = UDim2.fromOffset(15, 15),
 	Placeholder = 'Roblox username',
 	Function = function()
 		targets.Update:Fire()
@@ -7502,9 +7423,10 @@ guipane:CreateButton({
 			WorldCategory = 6,
 			InventoryCategory = 7,
 			MinigamesCategory = 8,
-			FavoritesCategory = 9,
-			FriendsCategory = 10,
-			ProfilesCategory = 11
+			OtherCategory = 9,
+			FavoritesCategory = 10,
+			FriendsCategory = 11,
+			ProfilesCategory = 12
 		}
 		local categories = {}
 		for _, v in mainapi.Categories do
@@ -8621,7 +8543,7 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 	end
 	if mainapi.Categories.Favorites then
 		local fc = mainapi.Categories.Favorites
-		if fc.Object and fc.Object.Icon then fc.Object.Icon.ImageColor3 = Color3.new(1, 1, 1) end
+		if fc.Object and fc.Object.Icon then fc.Object.Icon.ImageColor3 = Color3.fromRGB(255, 184, 31) end
 		if fc.Button and fc.Button.Object and fc.Button.Object.Icon then fc.Button.Object.Icon.ImageColor3 = Color3.new(1, 1, 1) end
 	end
 end

@@ -2054,7 +2054,7 @@ local function getAim(ent)
 			humanState.prevTime = tick()
 			humanState.bias = Vector3.new(0, 0, 0)
 		end
-		if Overshoot.Value > 0 and (not Advanced or Advanced.Enabled) then
+		if false then
 			local prev = humanState.prevAim or rawAim
 			local deltaT = math.min(tick() - humanState.prevTime, 0.25)
 			local vel = deltaT > 0 and (rawAim - prev) / deltaT or Vector3.new(0, 0, 0)
@@ -2083,7 +2083,7 @@ local function getAim(ent)
 			return localcframe
 		end
 		local direction = want
-		if MaxTurn.Value > 0 then
+		if false then
 			local maxStep = math.rad(MaxTurn.Value) * dt
 			if ang > maxStep then
 				direction = (forward + (want - forward) * (maxStep / ang)).Unit
@@ -2099,7 +2099,7 @@ local function getAim(ent)
 		if tick() < humanState.reactUntil then
 			return localcframe
 		end
-		local factor = math.max(speed, 0.01) * 8 * (Smoothness.Value / 100)
+		local factor = math.max(speed, 0.01) * 8 * (100 / 100)
 		return smoothedLook(localcframe, getSmoothPoint(ent, aimPoint, dt), dt, factor)
 	end
 
@@ -2107,50 +2107,14 @@ local function getAim(ent)
 		Simple = function(localcframe, ent, fps)
 			local rng = Random.new()
 			local speed = (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0))
-			local jitter = Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
+			local jitter = Vector3.new((rng:NextNumber() - 0.5) * 0 * fps, (rng:NextNumber() - 0.5) * 0 * fps, (rng:NextNumber() - 0.5) * 0 * fps)
 			return applyHumanAim(localcframe, ent, getAim(ent) + jitter, fps, speed), speed
 		end,
 		Adaptive = function(localcframe, ent, fps)
 			local prog, rng = ease(math.min(tick() - started, 1)), Random.new()
 			local speed = (AimSpeed.Value * 0.1 * prog) + (1 - prog) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 5)
-			local jitter = Vector3.new((rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps, (rng:NextNumber() - 0.5) * Shake.Value * fps)
+			local jitter = Vector3.new((rng:NextNumber() - 0.5) * 0 * fps, (rng:NextNumber() - 0.5) * 0 * fps, (rng:NextNumber() - 0.5) * 0 * fps)
 			return applyHumanAim(localcframe, ent, getAim(ent) + jitter, fps, speed), speed
-		end,
-		Legit = function(localcframe, ent, fps)
-			local rng = Random.new()
-			local aimPoint = getAim(ent)
-			local dist = (aimPoint - localcframe.Position).Magnitude
-
-			-- Self-contained human model: does not rely on the advanced
-			-- (hidden) sliders. Reaction, ramping and settle are built in.
-			if tick() < humanState.reactUntil then
-				return localcframe
-			end
-
-			local prog = ease(math.min(tick() - started, 1))
-
-			-- Slow deliberate start that ramps, bleeding off near the target so it settles.
-			local speed = (2.5 + 6 * prog) * math.clamp(dist / 24, 0.3, 1)
-
-			-- Human error: a drifting micro-bias that constantly corrects instead of
-			-- holding a perfect lock. Fades as we close in, so hits still land.
-			local miss = Vector3.new(
-				math.sin(tick() * 3.7 + ent.RootPart.Position.X) * 1.2,
-				math.sin(tick() * 2.9 + ent.RootPart.Position.Z) * 0.8,
-				math.cos(tick() * 3.1) * 0.6
-			) * (0.5 + 0.5 * math.clamp(dist / 20, 0, 1))
-
-			local shakeAmt = Shake.Value * (dist < 10 and 0.35 or 0.85)
-			local jitter = Vector3.new(
-				(rng:NextNumber() - 0.5) * shakeAmt * fps,
-				(rng:NextNumber() - 0.5) * shakeAmt * fps,
-				(rng:NextNumber() - 0.5) * shakeAmt * fps
-			)
-
-			-- own smoothing, no max-turn cap, no overshoot bias
-			local target = getSmoothPoint(ent, aimPoint + miss + jitter, fps)
-			local factor = math.max(speed, 0.01) * 8 * (Smoothness.Value / 100)
-			return smoothedLook(localcframe, target, fps, factor), speed
 		end
 	}
 
@@ -2200,7 +2164,7 @@ local function getAim(ent)
 	
 		if ent ~= lasttarget then
 			started = tick()
-			if (not Advanced or Advanced.Enabled) and Reaction.Value > 0 then
+			if false then
 				humanState.reactUntil = tick() + (Reaction.Value / 1000) * Random.new():NextNumber(0.75, 1.25)
 			end
 		end
@@ -2211,6 +2175,7 @@ local function getAim(ent)
 	
 	AimAssist = larp.Categories.Combat:CreateModule({
 		Name = 'AimAssist',
+		Tags = {'REWORK'},
 		Function = function(callback)
 			if callback then
 				local rotate = 0
@@ -2282,27 +2247,8 @@ local function getAim(ent)
 	Mode = AimAssist:CreateDropdown({
 		Name = 'Mode',
 		List = modes,
-		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior\nLegit - Self-contained human-like aim that ignores hidden advanced settings',
+		Tooltip = 'Simple - Smooth aiming\nAdaptive - Advanced tracking with adaptive behavior',
 		Default = modes[1],
-		Function = function(val)
-			local saved = Mode._saved
-			if val == 'Legit' then
-				if not saved and AimSpeed then
-					saved = {AimSpeed.Value, Smoothness.Value, Shake.Value}
-					Mode._saved = saved
-				end
-				if saved then
-					AimSpeed:SetValue(8)
-					Smoothness:SetValue(45)
-					Shake:SetValue(25)
-				end
-			elseif saved and AimSpeed then
-				AimSpeed:SetValue(saved[1])
-				Smoothness:SetValue(saved[2])
-				Shake:SetValue(saved[3])
-				Mode._saved = nil
-			end
-		end,
 	})
 	Targets = AimAssist:CreateTargets({
 		Players = true,
@@ -2337,50 +2283,6 @@ local function getAim(ent)
 			return val == 1 and 'stud' or 'studs'
 		end,
 	})
-	Shake = AimAssist:CreateSlider({
-		Name = 'Shake',
-		Min = 0,
-		Max = 100,
-		Default = 0,
-		Tooltip = 'Adds random jitter to simulate human aim',
-	})
-	Smoothness = AimAssist:CreateSlider({
-		Name = 'Smoothness',
-		Min = 1,
-		Max = 100,
-		Default = 100,
-		Tooltip = 'How gradually the crosshair eases into the target. Lower values decelerate more near the target, feeling more human',
-	})
-	Overshoot = AimAssist:CreateSlider({
-		Name = 'Overshoot',
-		Min = 0,
-		Max = 100,
-		Default = 50,
-		Visible = false,
-		Tooltip = 'Flicks slightly past the target and settles back, like a human flick. 0 = off',
-	})
-	Reaction = AimAssist:CreateSlider({
-		Name = 'Reaction delay',
-		Min = 0,
-		Max = 400,
-		Default = 150,
-		Visible = false,
-		Suffix = function()
-			return 'ms'
-		end,
-		Tooltip = 'Randomized delay before starting to aim on a new target, in ms. 0 = off',
-	})
-	MaxTurn = AimAssist:CreateSlider({
-		Name = 'Max turn speed',
-		Min = 0,
-		Max = 360,
-		Default = 0,
-		Visible = false,
-		Suffix = function()
-			return 'deg/s'
-		end,
-		Tooltip = 'Hard cap on how fast the crosshair can rotate, in degrees per second. 0 = unlimited',
-	})
 	AngleSlider = AimAssist:CreateSlider({
 		Name = 'Max angle',
 		Min = 1,
@@ -2400,27 +2302,6 @@ local function getAim(ent)
 		Name = 'Target area',
 		List = {'Center', 'Closest'},
 		Default = 'Center',
-	})
-	VerticalAim = AimAssist:CreateDropdown({
-		Name = 'Vertical aim',
-		List = {'Feet', 'Center', 'Head'},
-		Default = 'Center',
-		Tooltip = 'Where to aim on the target vertically:\nFeet - at the ground\nCenter - at the middle of the body\nHead - at the head'
-	})
-	Advanced = AimAssist:CreateToggle({
-		Name = 'Advanced',
-		Function = function(callback)
-			if Overshoot then
-				Overshoot.Object.Visible = callback
-			end
-			if Reaction then
-				Reaction.Object.Visible = callback
-			end
-			if MaxTurn then
-				MaxTurn.Object.Visible = callback
-			end
-		end,
-		Tooltip = 'Shows advanced tuning: overshoot, reaction delay and max turn speed'
 	})
 end)
 
@@ -4283,6 +4164,7 @@ run(function()
 
 	Killaura = larp.Categories.Blatant:CreateModule({
 		Name = 'KillAura',
+		Tags = {'Updated'},
 		Function = function(callback)
 			if callback then
 				SwordController = bedwars.SwordController
@@ -16706,6 +16588,8 @@ run(function()
 	
 	local Crosshair = larp.Legit:CreateModule({
 		Name = 'Crosshair',
+		Icon = getcustomasset('LarpV4/assets/larp/crosshair.png'),
+		IconSize = UDim2.fromOffset(16, 16),
 		Function = function(callback)
 			if callback then
 				old = debug.getconstant(bedwars.ViewmodelController.showCrosshair, 25)
@@ -17032,6 +16916,7 @@ run(function()
 	
 	Interface = larp.Legit:CreateModule({
 		Name = 'Interface',
+		Icon = getcustomasset('LarpV4/assets/larp/interface.png'),
 		Function = function(callback)
 			for i, v in (callback and new or old) do
 				for i2, v2 in v do
@@ -17190,6 +17075,8 @@ run(function()
 	
 	KillEffect = larp.Legit:CreateModule({
 		Name = 'Kill Effect',
+		Icon = getcustomasset('LarpV4/assets/larp/killeffect.png'),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				for i, v in killeffects do
@@ -17255,6 +17142,8 @@ run(function()
 
 	Ping = larp.Legit:CreateModule({
 		Name = 'Ping',
+		Icon = getcustomasset('LarpV4/assets/larp/connection.png'),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				repeat

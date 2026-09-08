@@ -8542,15 +8542,19 @@ run(function()
 	local Style
 	local Color
 	local keys, holder = {}
-	
-	local function createKeystroke(keybutton, pos, text)
+	local ShowClicks
+	local clicks = {}
+	local cpsLabel
+	local mouseKeys = {}
+
+	local function createKeystroke(keybutton, pos, text, size)
 		if keys[keybutton] then
 			keys[keybutton].Key:Destroy()
 			keys[keybutton] = nil
 		end
 	
 		local key = Instance.new('Frame')
-		key.Size = keybutton == Enum.KeyCode.Space and UDim2.new(0, 110, 0, 24) or UDim2.new(0, 34, 0, 36)
+		key.Size = size or (keybutton == Enum.KeyCode.Space and UDim2.new(0, 110, 0, 24) or UDim2.new(0, 34, 0, 36))
 		key.BackgroundColor3 = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 		key.BackgroundTransparency = 1 - Color.Opacity
 		key.Position = pos
@@ -8579,7 +8583,7 @@ run(function()
 	end
 	
 	local function updateKey(inputType)
-		local key = keys[inputType.KeyCode]
+		local key = keys[inputType.KeyCode] or keys[inputType.UserInputType]
 		if key then
 			if key.Tween then
 				key.Tween:Cancel()
@@ -8611,17 +8615,91 @@ run(function()
 		end
 	end
 	
+	local function layoutKeys()
+		local base = keys[Enum.KeyCode.Space] and 107 or 78
+		local show = ShowClicks.Enabled and Keystrokes.Enabled
+		local top = keys[Enum.KeyCode.Space] and 110 or 81
+		if cpsLabel then
+			cpsLabel.Position = UDim2.new(0, 0, 0, top)
+			cpsLabel.Visible = show
+		end
+		for _, k in {Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2} do
+			local e = keys[k]
+			if e then
+				e.Key.Position = UDim2.new(0, k == Enum.UserInputType.MouseButton1 and 0 or 57, 0, top + 22)
+				e.Key.Visible = show
+			end
+		end
+		Keystrokes.Children.Size = UDim2.fromOffset(110, show and (base + 58) or base)
+	end
+
+	local function buildClickUI()
+		if not cpsLabel then
+			cpsLabel = Instance.new('TextLabel')
+			cpsLabel.Size = UDim2.new(0, 110, 0, 18)
+			cpsLabel.BackgroundTransparency = 1
+			cpsLabel.Text = '0 CPS'
+			cpsLabel.TextXAlignment = Enum.TextXAlignment.Center
+			cpsLabel.TextColor3 = Color3.new(1, 1, 1)
+			cpsLabel.TextSize = 13
+			cpsLabel.Font = Enum.Font.Gotham
+			cpsLabel.Parent = holder
+		end
+		if not mouseKeys.lmb then
+			createKeystroke(Enum.UserInputType.MouseButton1, UDim2.new(0, 0, 0, 0), 'LMB', UDim2.new(0, 53, 0, 26))
+			createKeystroke(Enum.UserInputType.MouseButton2, UDim2.new(0, 57, 0, 0), 'RMB', UDim2.new(0, 53, 0, 26))
+			mouseKeys.lmb = true
+		end
+		layoutKeys()
+	end
+
+	local function clearClickUI()
+		if cpsLabel then
+			cpsLabel:Destroy()
+			cpsLabel = nil
+		end
+		for _, k in {Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2} do
+			if keys[k] then
+				keys[k].Key:Destroy()
+				keys[k] = nil
+			end
+		end
+		mouseKeys = {}
+		layoutKeys()
+	end
+
 	Keystrokes = larp.Legit:CreateModule({
 		Name = 'Keystrokes',
 		Function = function(callback)
 			if callback then
-				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), Style.Value == 'Arrow' and 'â†‘' or nil)
-				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), Style.Value == 'Arrow' and 'â†“' or nil)
-				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), Style.Value == 'Arrow' and 'â†' or nil)
-				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), Style.Value == 'Arrow' and 'â†’' or nil)
-	
+				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), Style.Value == 'Arrow' and '↑' or nil)
+				createKeystroke(Enum.KeyCode.S, UDim2.new(0, 38, 0, 42), Style.Value == 'Arrow' and '↓' or nil)
+				createKeystroke(Enum.KeyCode.A, UDim2.new(0, 0, 0, 42), Style.Value == 'Arrow' and '←' or nil)
+				createKeystroke(Enum.KeyCode.D, UDim2.new(0, 76, 0, 42), Style.Value == 'Arrow' and '→' or nil)
+
+				if ShowClicks.Enabled then
+					buildClickUI()
+				end
+				layoutKeys()
 				Keystrokes:Clean(inputService.InputBegan:Connect(updateKey))
 				Keystrokes:Clean(inputService.InputEnded:Connect(updateKey))
+				Keystrokes:Clean(inputService.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						table.insert(clicks, tick())
+					end
+				end))
+				task.spawn(function()
+					while Keystrokes.Enabled do
+						local now = tick()
+						while #clicks > 0 and now - clicks[1] > 1 do
+							table.remove(clicks, 1)
+						end
+						if cpsLabel then
+							cpsLabel.Text = #clicks..' CPS'
+						end
+						task.wait(0.25)
+					end
+				end)
 			end
 		end,
 		Size = UDim2.fromOffset(110, 176),
@@ -8657,16 +8735,29 @@ run(function()
 	Keystrokes:CreateToggle({
 		Name = 'Show Spacebar',
 		Function = function(callback)
-			Keystrokes.Children.Size = UDim2.fromOffset(110, callback and 107 or 78)
-	
 			if callback then
 				createKeystroke(Enum.KeyCode.Space, UDim2.new(0, 0, 0, 83), '______')
 			else
 				keys[Enum.KeyCode.Space].Key:Destroy()
 				keys[Enum.KeyCode.Space] = nil
 			end
+			layoutKeys()
 		end,
 		Default = true
+	})
+	ShowClicks = Keystrokes:CreateToggle({
+		Name = 'Show Clicks',
+		Default = true,
+		Function = function(callback)
+			if callback then
+				if Keystrokes.Enabled then
+					buildClickUI()
+				end
+			else
+				clearClickUI()
+			end
+			layoutKeys()
+		end
 	})
 end)
 
@@ -8723,6 +8814,8 @@ run(function()
 	
 	Ping = larp.Legit:CreateModule({
 		Name = 'Ping',
+		Icon = getcustomasset('LarpV4/assets/larp/connection.png'),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				repeat

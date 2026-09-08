@@ -87,6 +87,10 @@ local function downloadFile(path, func)
 			res = LARPWATER..res
 		end
 writefile(path, res)
+		getgenv().LarpDownloaded = (getgenv().LarpDownloaded or 0) + 1
+		pcall(function()
+			downloader.Text = 'Downloading '..select(1, path:gsub('LarpV4/', ''))..' ('..getgenv().LarpDownloaded..')'
+		end)
 	end
 	return (func or readfile)(path)
 end

@@ -8817,7 +8817,7 @@ run(function()
 	Ping = larp.Legit:CreateModule({
 		Name = 'Ping',
 		Icon = getcustomasset('LarpV4/assets/larp/connection.png'),
-		IconSize = UDim2.fromOffset(24, 24),
+		IconSize = UDim2.fromOffset(16, 16),
 		Function = function(callback)
 			if callback then
 				repeat

@@ -2735,6 +2735,18 @@ function mainapi:CreateGUI()
 			mainapi:CreateNotification('Discord', 'Copied Discord server invite', 5, 'discord')
 		end
 	end)
+	local panicbutton = Instance.new('ImageButton')
+	panicbutton.Name = 'Panic'
+	panicbutton.Size = UDim2.fromOffset(16, 16)
+	panicbutton.Position = UDim2.new(1, -78, 0, 11)
+	panicbutton.BackgroundTransparency = 1
+	panicbutton.Image = getcustomasset('LarpV4/assets/larp/hide.png')
+	panicbutton.ImageColor3 = Color3.new(1, 1, 1)
+	panicbutton.Parent = window
+	addTooltip(panicbutton, 'Panic')
+	panicbutton.MouseButton1Click:Connect(function()
+		mainapi:TriggerPanic()
+	end)
 	local settingspane = Instance.new('TextButton')
 	settingspane.Size = UDim2.fromScale(1, 1)
 	settingspane.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -4243,6 +4255,7 @@ function mainapi:CreateCategory(categorysettings)
 		bindcovertext.FontFace = uipallet.Font
 		bindcovertext.Parent = bindcover
 		bind.Parent = modulebutton
+		local fav
 		local favicon = Instance.new('ImageButton')
 		favicon.Name = 'Favourite'
 		favicon.Size = UDim2.fromOffset(16, 16)
@@ -4589,7 +4602,7 @@ function mainapi:CreateCategory(categorysettings)
 			end
 		end
 		resort()
-		local fav = moduleapi:CreateToggle({
+		fav = moduleapi:CreateToggle({
 			Name = 'Favourite',
 			Default = false,
 			Function = function(callback)
@@ -7625,12 +7638,40 @@ function mainapi:ShowLanguagePicker(onPick)
 	end)
 end
 	function mainapi:Panic()
+		for _, m in self.Modules do
+			if m.Enabled then
+				pcall(m.Toggle, m, true)
+			end
+		end
+		for _, m in self.Legit.Modules do
+			if m.Enabled then
+				pcall(m.Toggle, m)
+			end
+		end
+		self:UpdateTextGUI()
 		clickgui.Visible = false
 		self.Legit.Window.Visible = false
 		if self.TextGUIHolder then
 			self.TextGUIHolder.Visible = false
 		end
 		self.PanicRestore.Visible = true
+	end
+	function mainapi:TriggerPanic()
+		if self.PanicConfirm and self.PanicConfirm.Enabled then
+			self:CreatePrompt({
+				Title = 'Panic',
+				Text = 'Turn off all modules and hide the interface? Click the eye button to bring it back.',
+				Icon = 'hide',
+				Confirm = 'Hide',
+				Function = function(ok)
+					if ok then
+						mainapi:Panic()
+					end
+				end
+			})
+		else
+			self:Panic()
+		end
 	end
 	local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
 mainapi.MultiKeybind = general:CreateToggle({
@@ -7649,27 +7690,10 @@ mainapi.MultiKeybind = general:CreateToggle({
 		Default = true,
 		Tooltip = 'Ask for confirmation before hiding the interface'
 	})
-	general:CreateButton({
-		Name = 'Panic',
-		Icon = getcustomasset('LarpV4/assets/larp/hide.png'),
-		Function = function()
-			if panicconfirm.Enabled then
-				mainapi:CreatePrompt({
-					Title = 'Panic',
-					Text = 'Hide the interface? Click the eye button to bring it back.',
-					Icon = 'hide',
-					Confirm = 'Hide',
-					Function = function(ok)
-						if ok then
-							mainapi:Panic()
-						end
-					end
-				})
-			else
-				mainapi:Panic()
-			end
-		end,
-		Tooltip = 'Instantly hides the interface'
+	mainapi.PanicConfirm = panicconfirm
+	mainapi.AutoExecute = general:CreateToggle({
+		Name = 'Auto Execute',
+		Tooltip = 'Automatically execute the script when you teleport'
 	})
 general:CreateButton({
 	Name = 'Language',

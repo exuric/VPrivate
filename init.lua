@@ -56,7 +56,7 @@ for _, f in {'LarpV4', 'LarpV4/assets', 'LarpV4/assets/larp'} do
 		pcall(makefolder, f)
 	end
 end
-for _, png in {'Larp.png', 'Textv4.png'} do
+for _, png in {'Larp.png', 'Textv4.png', 'loadingbg.png', 'close.png'} do
 	local path = 'LarpV4/assets/larp/'..png
 	if not isfile(path) then
 		pcall(function()
@@ -77,76 +77,197 @@ pcall(function()
 		v4Img = getcustomasset('LarpV4/assets/larp/Textv4.png')
 	end
 end)
+local bgImg = ''
+pcall(function()
+	if isfile('LarpV4/assets/larp/loadingbg.png') then
+		bgImg = getcustomasset('LarpV4/assets/larp/loadingbg.png')
+	end
+end)
 local loadgui = Instance.new('ScreenGui')
 loadgui.Name = 'LarpLoader'
 loadgui.ResetOnSpawn = false
 loadgui.IgnoreGuiInset = true
 loadgui.DisplayOrder = 999
 loadgui.Parent = gethui and gethui() or cloneref(game:GetService('CoreGui'))
-local loadbg = Instance.new('Frame')
-loadbg.Size = UDim2.fromScale(1, 1)
-loadbg.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
-loadbg.BorderSizePixel = 0
-loadbg.Parent = loadgui
+local dim = Instance.new('Frame')
+dim.Size = UDim2.fromScale(1, 1)
+dim.BackgroundColor3 = Color3.new()
+dim.BackgroundTransparency = 0.45
+dim.BorderSizePixel = 0
+dim.Parent = loadgui
+local panel = Instance.new('Frame')
+panel.Name = 'Panel'
+panel.Size = UDim2.fromOffset(440, 300)
+panel.Position = UDim2.new(0.5, -220, 0.5, -150)
+panel.BackgroundColor3 = Color3.fromRGB(14, 14, 16)
+panel.BorderSizePixel = 0
+panel.ClipsDescendants = true
+panel.Parent = loadgui
+local panelcorner = Instance.new('UICorner')
+panelcorner.CornerRadius = UDim.new(0, 10)
+panelcorner.Parent = panel
+local wavebg = Instance.new('ImageLabel')
+wavebg.Size = UDim2.fromScale(1, 1)
+wavebg.BackgroundTransparency = 1
+wavebg.Image = bgImg
+wavebg.ScaleType = Enum.ScaleType.Crop
+wavebg.Parent = panel
+local minbtn = Instance.new('TextButton')
+minbtn.Size = UDim2.fromOffset(28, 28)
+minbtn.Position = UDim2.new(1, -60, 0, 8)
+minbtn.BackgroundTransparency = 1
+minbtn.AutoButtonColor = false
+minbtn.Text = ''
+minbtn.Parent = panel
+local minbar = Instance.new('Frame')
+minbar.Size = UDim2.fromOffset(12, 2)
+minbar.Position = UDim2.new(0.5, -6, 0.5, -1)
+minbar.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+minbar.BorderSizePixel = 0
+minbar.Parent = minbtn
+local closebtn = Instance.new('TextButton')
+closebtn.Size = UDim2.fromOffset(28, 28)
+closebtn.Position = UDim2.new(1, -32, 0, 8)
+closebtn.BackgroundTransparency = 1
+closebtn.AutoButtonColor = false
+closebtn.Text = ''
+closebtn.Parent = panel
+local closeimg = Instance.new('ImageLabel')
+closeimg.Size = UDim2.fromOffset(12, 12)
+closeimg.Position = UDim2.new(0.5, -6, 0.5, -6)
+closeimg.BackgroundTransparency = 1
+closeimg.ImageColor3 = Color3.fromRGB(200, 200, 200)
+closeimg.ScaleType = Enum.ScaleType.Fit
+closeimg.Parent = closebtn
+if not pcall(function()
+	assert(isfile('LarpV4/assets/larp/close.png'))
+	closeimg.Image = getcustomasset('LarpV4/assets/larp/close.png')
+end) then
+	closeimg:Destroy()
+	for _, r in {45, -45} do
+		local l = Instance.new('Frame')
+		l.Size = UDim2.fromOffset(14, 2)
+		l.AnchorPoint = Vector2.new(0.5, 0.5)
+		l.Position = UDim2.new(0.5, 0, 0.5, 0)
+		l.Rotation = r
+		l.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+		l.BorderSizePixel = 0
+		l.Parent = closebtn
+	end
+end
+local minipill = Instance.new('TextButton')
+minipill.Size = UDim2.fromOffset(120, 32)
+minipill.Position = UDim2.new(1, -132, 1, -44)
+minipill.BackgroundColor3 = Color3.fromRGB(20, 20, 22)
+minipill.BorderSizePixel = 0
+minipill.AutoButtonColor = false
+minipill.Text = 'LARP V4'
+minipill.TextColor3 = Color3.fromRGB(136, 136, 136)
+minipill.TextSize = 12
+minipill.Font = Enum.Font.Arial
+minipill.Visible = false
+minipill.Parent = loadgui
+local minipillcorner = Instance.new('UICorner')
+minipillcorner.CornerRadius = UDim.new(0, 8)
+minipillcorner.Parent = minipill
+minbtn.MouseButton1Click:Connect(function()
+	panel.Visible = false
+	minipill.Visible = true
+end)
+minipill.MouseButton1Click:Connect(function()
+	panel.Visible = true
+	minipill.Visible = false
+end)
+closebtn.MouseButton1Click:Connect(function()
+	getgenv().LarpLoadCancelled = true
+	pcall(function()
+		loadgui:Destroy()
+	end)
+end)
 local logorow = Instance.new('Frame')
-logorow.Size = UDim2.fromOffset(420, 110)
-logorow.Position = UDim2.new(0.5, -210, 0.4, -55)
+logorow.Size = UDim2.fromOffset(300, 76)
+logorow.Position = UDim2.new(0.5, -150, 0, 56)
 logorow.BackgroundTransparency = 1
-logorow.Parent = loadbg
+logorow.Parent = panel
 local logo = Instance.new('ImageLabel')
-logo.Size = UDim2.fromOffset(300, 94)
-logo.Position = UDim2.fromOffset(10, 8)
+logo.Size = UDim2.fromOffset(220, 68)
+logo.Position = UDim2.fromOffset(4, 4)
 logo.BackgroundTransparency = 1
 logo.Image = larpImg
 logo.ScaleType = Enum.ScaleType.Fit
 logo.Parent = logorow
 local logov4 = Instance.new('ImageLabel')
-logov4.Size = UDim2.fromOffset(86, 60)
-logov4.Position = UDim2.fromOffset(322, 25)
+logov4.Size = UDim2.fromOffset(64, 45)
+logov4.Position = UDim2.fromOffset(232, 15)
 logov4.BackgroundTransparency = 1
 logov4.Image = v4Img
 logov4.ScaleType = Enum.ScaleType.Fit
 logov4.Parent = logorow
 local bartrack = Instance.new('Frame')
 bartrack.Size = UDim2.fromOffset(300, 4)
-bartrack.Position = UDim2.new(0.5, -150, 0.4, 72)
+bartrack.Position = UDim2.new(0.5, -150, 0, 168)
 bartrack.BackgroundColor3 = Color3.fromRGB(43, 43, 43)
 bartrack.BorderSizePixel = 0
-bartrack.Parent = loadbg
+bartrack.Parent = panel
 local barfill = Instance.new('Frame')
 barfill.Size = UDim2.new(0, 0, 1, 0)
 barfill.BackgroundColor3 = Color3.fromRGB(0, 204, 102)
 barfill.BorderSizePixel = 0
 barfill.Parent = bartrack
 local loadstatus = Instance.new('TextLabel')
-loadstatus.Size = UDim2.fromOffset(400, 20)
-loadstatus.Position = UDim2.new(0.5, -200, 0.4, 84)
+loadstatus.Size = UDim2.fromOffset(360, 16)
+loadstatus.Position = UDim2.new(0.5, -180, 0, 182)
 loadstatus.BackgroundTransparency = 1
 loadstatus.Text = ''
 loadstatus.RichText = true
-loadstatus.TextColor3 = Color3.fromRGB(136, 136, 136)
-loadstatus.TextSize = 13
+loadstatus.TextXAlignment = Enum.TextXAlignment.Center
+loadstatus.TextTruncate = Enum.TextTruncate.AtEnd
+loadstatus.TextColor3 = Color3.fromRGB(119, 119, 119)
+loadstatus.TextSize = 11
 loadstatus.Font = Enum.Font.Arial
-loadstatus.Parent = loadbg
+loadstatus.Parent = panel
 downloader:GetPropertyChangedSignal('Text'):Connect(function()
 	loadstatus.Text = downloader.Text
 end)
 downloader.Visible = false
 getgenv().LarpDownloaded = getgenv().LarpDownloaded or 0
-task.spawn(function()
-	local shown = 0
-	while loadgui.Parent and not loadgui:GetAttribute('Done') do
-		local target = math.clamp(0.08 + 0.84 * (getgenv().LarpDownloaded / 14), 0, 0.94)
-		shown = shown + (target - shown) * 0.12
-		barfill.Size = UDim2.new(shown, 0, 1, 0)
-		task.wait(0.1)
+local runService = cloneref(game:GetService('RunService'))
+local shown = 0
+local heartbeat
+heartbeat = runService.Heartbeat:Connect(function(dt)
+	if not loadgui.Parent or loadgui:GetAttribute('Done') then
+		heartbeat:Disconnect()
+		return
 	end
+	local target = math.clamp(0.08 + 0.84 * (getgenv().LarpDownloaded / 14), 0, 0.94)
+	shown = shown + (target - shown) * math.clamp(dt * 6, 0, 1)
+	barfill.Size = UDim2.new(shown, 0, 1, 0)
 end)
+local function loaderFail()
+	loadgui:SetAttribute('Done', true)
+	barfill.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+	loadstatus.RichText = false
+	loadstatus.Text = 'Failed to download, Contact Support'
+	loadstatus.TextColor3 = Color3.fromRGB(220, 90, 90)
+end
 getgenv().LarpLoaderDone = function()
+	if not loadgui.Parent or getgenv().LarpLoadCancelled then return end
 	loadgui:SetAttribute('Done', true)
 	barfill.Size = UDim2.new(1, 0, 1, 0)
+	pcall(function()
+		local api = shared.larp or getgenv().larp
+		if api and api.GUIColor then
+			logov4.ImageColor3 = Color3.fromHSV(api.GUIColor.Hue, api.GUIColor.Sat, api.GUIColor.Value)
+		end
+	end)
+	local tweenService = cloneref(game:GetService('TweenService'))
+	barfill.AnchorPoint = Vector2.new(0.5, 0.5)
+	barfill.Position = UDim2.new(0.5, 0, 0.5, 0)
+	local tw = tweenService:Create(barfill, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 0, 1, 0)})
+	tw:Play()
+	tw.Completed:Wait()
 	loadstatus.Text = '<font color="#00CC66">LARP V4 successfully loaded</font>'
-	task.wait(1.4)
+	task.wait(1.1)
 	pcall(function()
 		loadgui:Destroy()
 	end)
@@ -177,6 +298,9 @@ local function downloadFile(path, func)
 		}
 		local suc, res
 		for i = 1, 8 do
+			if getgenv().LarpLoadCancelled then
+				error('LarpV4: load cancelled')
+			end
 			local url = urls[(i - 1) % 2 + 1]
 			suc, res = pcall(function()
 				return game:HttpGet(url, true)
@@ -356,7 +480,7 @@ local function fileDigest(path)
 	local partial = hash.sha512()
 	for j = 1, #content, 32768 do
 		partial(content:sub(j, j + 32767))
-		if j % 262144 == 0 then
+		if j % 65536 == 0 then
 			task.wait()
 		end
 	end
@@ -402,6 +526,9 @@ local function verifyFiles()
 			end)
 		end
 		while remaining > 0 do
+			if getgenv().LarpLoadCancelled then
+				error('LarpV4: load cancelled')
+			end
 			task.wait()
 		end
 	end
@@ -417,6 +544,7 @@ local function verifyFiles()
 		end) then
 			fresh[path] = true
 		end
+		task.wait()
 	end
 	for _, path in VERIFY_FILES do
 		if fresh[path] then continue end
@@ -439,7 +567,11 @@ local function verifyFiles()
 end
 
 if not (shared.LarpDeveloper and ISOWNER) then
-	verifyFiles()
+	local vok, verr = pcall(verifyFiles)
+	if not vok then
+		pcall(loaderFail)
+		error(verr)
+	end
 end
 
 downloader.Text = ''
@@ -511,13 +643,20 @@ if not (shared.LarpDeveloper and ISOWNER) then
 end
 
 downloader.Text = ''
-local _larpchunk, _larperr = loadstring(downloadFile('LarpV4/main.lua'), 'main')
+local okmain, mainres = pcall(downloadFile, 'LarpV4/main.lua')
+if not okmain then
+	pcall(loaderFail)
+	error(mainres)
+end
+local _larpchunk, _larperr = loadstring(mainres, 'main')
 if not _larpchunk then
+	pcall(loaderFail)
 	error('LarpV4/main.lua failed to compile: '..tostring(_larperr))
 end
 local _larpok, _larpres = pcall(_larpchunk, license)
 downloader.Visible = false
 if not _larpok then
+	pcall(loaderFail)
 	error('LarpV4/main.lua: '..tostring(_larpres))
 end
 

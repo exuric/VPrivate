@@ -46,6 +46,112 @@ end
 local COMMIT = fetchCommit()
 local LARPWATER = '--LARP:'..COMMIT..'\n'
 
+pcall(function()
+	local core = gethui and gethui() or cloneref(game:GetService('CoreGui'))
+	local old = core:FindFirstChild('LarpLoader')
+	if old then old:Destroy() end
+end)
+for _, f in {'LarpV4', 'LarpV4/assets', 'LarpV4/assets/larp'} do
+	if not isfolder(f) then
+		pcall(makefolder, f)
+	end
+end
+for _, png in {'Larp.png', 'Textv4.png'} do
+	local path = 'LarpV4/assets/larp/'..png
+	if not isfile(path) then
+		pcall(function()
+			local res = game:HttpGet(ROOT..COMMIT..'/assets/larp/'..png, true)
+			if res and res ~= '404: Not Found' and #res > 100 then
+				writefile(path, res)
+			end
+		end)
+	end
+end
+local larpImg = 'rbxassetid://14368358200'
+local v4Img = 'rbxassetid://14368357095'
+pcall(function()
+	if isfile('LarpV4/assets/larp/Larp.png') then
+		larpImg = getcustomasset('LarpV4/assets/larp/Larp.png')
+	end
+	if isfile('LarpV4/assets/larp/Textv4.png') then
+		v4Img = getcustomasset('LarpV4/assets/larp/Textv4.png')
+	end
+end)
+local loadgui = Instance.new('ScreenGui')
+loadgui.Name = 'LarpLoader'
+loadgui.ResetOnSpawn = false
+loadgui.IgnoreGuiInset = true
+loadgui.DisplayOrder = 999
+loadgui.Parent = gethui and gethui() or cloneref(game:GetService('CoreGui'))
+local loadbg = Instance.new('Frame')
+loadbg.Size = UDim2.fromScale(1, 1)
+loadbg.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
+loadbg.BorderSizePixel = 0
+loadbg.Parent = loadgui
+local logorow = Instance.new('Frame')
+logorow.Size = UDim2.fromOffset(420, 110)
+logorow.Position = UDim2.new(0.5, -210, 0.4, -55)
+logorow.BackgroundTransparency = 1
+logorow.Parent = loadbg
+local logo = Instance.new('ImageLabel')
+logo.Size = UDim2.fromOffset(300, 94)
+logo.Position = UDim2.fromOffset(10, 8)
+logo.BackgroundTransparency = 1
+logo.Image = larpImg
+logo.ScaleType = Enum.ScaleType.Fit
+logo.Parent = logorow
+local logov4 = Instance.new('ImageLabel')
+logov4.Size = UDim2.fromOffset(86, 60)
+logov4.Position = UDim2.fromOffset(322, 25)
+logov4.BackgroundTransparency = 1
+logov4.Image = v4Img
+logov4.ScaleType = Enum.ScaleType.Fit
+logov4.Parent = logorow
+local bartrack = Instance.new('Frame')
+bartrack.Size = UDim2.fromOffset(300, 4)
+bartrack.Position = UDim2.new(0.5, -150, 0.4, 72)
+bartrack.BackgroundColor3 = Color3.fromRGB(43, 43, 43)
+bartrack.BorderSizePixel = 0
+bartrack.Parent = loadbg
+local barfill = Instance.new('Frame')
+barfill.Size = UDim2.new(0, 0, 1, 0)
+barfill.BackgroundColor3 = Color3.fromRGB(0, 204, 102)
+barfill.BorderSizePixel = 0
+barfill.Parent = bartrack
+local loadstatus = Instance.new('TextLabel')
+loadstatus.Size = UDim2.fromOffset(400, 20)
+loadstatus.Position = UDim2.new(0.5, -200, 0.4, 84)
+loadstatus.BackgroundTransparency = 1
+loadstatus.Text = ''
+loadstatus.RichText = true
+loadstatus.TextColor3 = Color3.fromRGB(136, 136, 136)
+loadstatus.TextSize = 13
+loadstatus.Font = Enum.Font.Arial
+loadstatus.Parent = loadbg
+downloader:GetPropertyChangedSignal('Text'):Connect(function()
+	loadstatus.Text = downloader.Text
+end)
+downloader.Visible = false
+getgenv().LarpDownloaded = getgenv().LarpDownloaded or 0
+task.spawn(function()
+	local shown = 0
+	while loadgui.Parent and not loadgui:GetAttribute('Done') do
+		local target = math.clamp(0.08 + 0.84 * (getgenv().LarpDownloaded / 14), 0, 0.94)
+		shown = shown + (target - shown) * 0.12
+		barfill.Size = UDim2.new(shown, 0, 1, 0)
+		task.wait(0.1)
+	end
+end)
+getgenv().LarpLoaderDone = function()
+	loadgui:SetAttribute('Done', true)
+	barfill.Size = UDim2.new(1, 0, 1, 0)
+	loadstatus.Text = '<font color="#00CC66">LARP V4 successfully loaded</font>'
+	task.wait(1.4)
+	pcall(function()
+		loadgui:Destroy()
+	end)
+end
+
 local OID = 0x23d100184
 local ISOWNER = false
 pcall(function()
@@ -379,11 +485,6 @@ if not (shared.LarpDeveloper and ISOWNER) then
 		wipeFolder('LarpV4/guis')
 		wipeFolder('LarpV4/libraries')
 		wipeFolder('LarpV4/assets')
-		for _, file in {'LarpV4/assets/larp/Larp.png', 'LarpV4/assets/larp/Textv4.png'} do
-			if isfile(file) then
-				pcall(delfile, file)
-			end
-		end
 	end
 	writefile('LarpV4/.version', '122')
 	if #listfiles('LarpV4/profiles') < 4 then

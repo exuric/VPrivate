@@ -15420,6 +15420,7 @@ run(function()
 	local Color
 	local LayerCounter
 	local LayerColor
+	local Distance
 	local Reference = {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
@@ -15540,10 +15541,22 @@ run(function()
 		local corner = Instance.new('UICorner')
 		corner.CornerRadius = UDim.new(0, 4)
 		corner.Parent = frame
+		local dist = Instance.new('TextLabel')
+		dist.Name = 'Distance'
+		dist.Size = UDim2.new(1, 0, 0, 16)
+		dist.Position = UDim2.new(0, 0, 0, -18)
+		dist.BackgroundTransparency = 1
+		dist.Text = ''
+		dist.TextColor3 = Color3.new(1, 1, 1)
+		dist.TextSize = 14
+		dist.TextStrokeTransparency = 0.5
+		dist.Font = Enum.Font.Arial
+		dist.Visible = Distance.Enabled
+		dist.Parent = billboard
 		Reference[v] = billboard
 		refreshAdornee(billboard)
 	end
-	
+
 	local function refreshNear(data)
 		data = data.blockRef.blockPosition * 3
 		for i, v in Reference do
@@ -15552,7 +15565,7 @@ run(function()
 			end
 		end
 	end
-	
+
 	BedPlates = larp.Categories.Minigames:CreateModule({
 		Name = 'BedPlates',
 		Function = function(callback)
@@ -15560,6 +15573,21 @@ run(function()
 				for _, v in collectionService:GetTagged('bed') do
 					task.spawn(Added, v)
 				end
+				task.spawn(function()
+					repeat
+						for _, v in Reference do
+							local d = v:FindFirstChild('Distance')
+							if d and d.Visible then
+								local char = lplr.Character
+								local root = char and char:FindFirstChild('HumanoidRootPart')
+								if root and v.Adornee then
+									d.Text = tostring(math.floor((root.Position - v.Adornee.Position).Magnitude + 0.5))
+								end
+							end
+						end
+						task.wait(0.25)
+					until not BedPlates.Enabled
+				end)
 				BedPlates:Clean(larpEvents.PlaceBlockEvent.Event:Connect(refreshNear))
 				BedPlates:Clean(larpEvents.BreakBlockEvent.Event:Connect(refreshNear))
 				BedPlates:Clean(collectionService:GetInstanceAddedSignal('bed'):Connect(Added))
@@ -15619,6 +15647,18 @@ run(function()
 		end,
 		DefaultSat = 0,
 		DefaultValue = 1
+	})
+	Distance = BedPlates:CreateToggle({
+		Name = 'Distance',
+		Function = function(callback)
+			for _, v in Reference do
+				local d = v:FindFirstChild('Distance')
+				if d then
+					d.Visible = callback
+				end
+			end
+		end,
+		Default = true
 	})
 end)
 

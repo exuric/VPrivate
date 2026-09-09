@@ -3095,7 +3095,7 @@ function mainapi:CreateGUI()
 		local profilebutton = Instance.new('ImageButton')
 		profilebutton.Name = 'Profile'
 		profilebutton.Size = UDim2.fromOffset(22, 22)
-		profilebutton.Position = UDim2.new(1, -85, 0, 8)
+		profilebutton.Position = UDim2.new(0, 8, 0, 8)
 		profilebutton.BackgroundTransparency = 1
 		profilebutton.AutoButtonColor = false
 		profilebutton.Image = ''
@@ -4260,19 +4260,19 @@ function mainapi:CreateCategory(categorysettings)
 		favicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		favicon.Visible = false
 		favicon.Parent = modulebutton
-		addTooltip(favicon, T('ToggleFav'))
-		favicon.MouseEnter:Connect(function()
-			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or uipallet.Text
-		end)
-		favicon.MouseLeave:Connect(function()
-			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
-		end)
 		local favstate = false
 		local function updateFav()
 			favstate = fav and fav.Enabled or false
 			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
 			favicon.Visible = favstate
 		end
+		addTooltip(favicon, T('ToggleFav'))
+		favicon.MouseEnter:Connect(function()
+			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
+		end)
+		favicon.MouseLeave:Connect(function()
+			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
+		end)
 		favicon.MouseButton1Click:Connect(function()
 			pcall(function()
 				if fav then fav:Toggle() end

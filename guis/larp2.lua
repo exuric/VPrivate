@@ -6724,9 +6724,38 @@ cursor.BackgroundTransparency = 1
 cursor.Visible = false
 cursor.Image = 'rbxasset://textures/Cursors/KeyboardMouse/ArrowFarCursor.png'
 cursor.Parent = gui
-notifications = Instance.new('Folder')
-notifications.Name = 'Notifications'
-notifications.Parent = scaledgui
+	notifications = Instance.new('Folder')
+	notifications.Name = 'Notifications'
+	notifications.Parent = scaledgui
+	local panicrestore = Instance.new('ImageButton')
+	panicrestore.Name = 'PanicRestore'
+	panicrestore.Size = UDim2.fromOffset(30, 30)
+	panicrestore.Position = UDim2.new(1, -44, 1, -44)
+	panicrestore.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+	panicrestore.BorderSizePixel = 0
+	panicrestore.AutoButtonColor = false
+	panicrestore.Image = ''
+	panicrestore.Visible = false
+	panicrestore.Parent = gui
+	addCorner(panicrestore)
+	local panicart = Instance.new('ImageLabel')
+	panicart.Name = 'Art'
+	panicart.Size = UDim2.fromOffset(18, 18)
+	panicart.Position = UDim2.new(0.5, -9, 0.5, -9)
+	panicart.BackgroundTransparency = 1
+	panicart.Image = getcustomasset('LarpV4/assets/larp/hide.png')
+	panicart.ImageColor3 = Color3.new(1, 1, 1)
+	panicart.Parent = panicrestore
+	addTooltip(panicrestore, 'Show interface')
+	panicrestore.MouseButton1Click:Connect(function()
+		clickgui.Visible = true
+		if mainapi.TextGUIHolder then
+			mainapi.TextGUIHolder.Visible = true
+		end
+		panicrestore.Visible = false
+	end)
+	makeDraggable(panicrestore)
+	mainapi.PanicRestore = panicrestore
 tooltip = Instance.new('TextLabel')
 tooltip.Name = 'Tooltip'
 tooltip.Position = UDim2.fromScale(-1, -1)
@@ -7538,18 +7567,53 @@ function mainapi:ShowLanguagePicker(onPick)
 		if onPick then onPick(selected) end
 	end)
 end
-local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
+	function mainapi:Panic()
+		clickgui.Visible = false
+		self.Legit.Window.Visible = false
+		if self.TextGUIHolder then
+			self.TextGUIHolder.Visible = false
+		end
+		self.PanicRestore.Visible = true
+	end
+	local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
 mainapi.MultiKeybind = general:CreateToggle({
 	Name = 'Enable Multi-Keybinding',
 	Tooltip = 'Allows multiple keys to be bound to a module (eg. G + H)'
 })
-general:CreateButton({
-	Name = 'Self destruct',
-	Function = function()
-		mainapi:Uninject()
-	end,
-	Tooltip = 'Removes larp from the current game'
-})
+	general:CreateButton({
+		Name = 'Self destruct',
+		Function = function()
+			mainapi:Uninject()
+		end,
+		Tooltip = 'Removes larp from the current game'
+	})
+	local panicconfirm = general:CreateToggle({
+		Name = 'Confirm before panic',
+		Default = true,
+		Tooltip = 'Ask for confirmation before hiding the interface'
+	})
+	general:CreateButton({
+		Name = 'Panic',
+		Icon = getcustomasset('LarpV4/assets/larp/hide.png'),
+		Function = function()
+			if panicconfirm.Enabled then
+				mainapi:CreatePrompt({
+					Title = 'Panic',
+					Text = 'Hide the interface? Click the eye button to bring it back.',
+					Icon = 'hide',
+					Confirm = 'Hide',
+					Function = function(ok)
+						if ok then
+							mainapi:Panic()
+						end
+					end
+				})
+			else
+				mainapi:Panic()
+			end
+		end,
+		Tooltip = 'Instantly hides the interface'
+	})
 general:CreateButton({
 	Name = 'Language',
 	Function = function()
@@ -8603,6 +8667,7 @@ function mainapi:UpdateTextGUI(afterload)
 			LarpLabelCustom.Position = UDim2.new(right and 1 / LarpTextScale.Scale or 0, right and -size.X or 0, 0, (LarpLogo.Visible and 32 or 8))
 		end
 
+		mainapi.TextGUIHolder = LarpLabelHolder
 		local found = {}
 		local kept = {}
 		for _, v in LarpLabels do

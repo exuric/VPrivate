@@ -56,9 +56,15 @@ for _, f in {'LarpV4', 'LarpV4/assets', 'LarpV4/assets/larp'} do
 		pcall(makefolder, f)
 	end
 end
-for _, png in {'Larp.png', 'Textv4.png', 'loadingbg.png', 'close.png'} do
+local loaderAssets = {
+	['Larp.png'] = 423638,
+	['Textv4.png'] = 10107,
+	['close.png'] = 198,
+}
+for png, size in loaderAssets do
 	local path = 'LarpV4/assets/larp/'..png
-	if not isfile(path) then
+	local ok, content = pcall(readfile, path)
+	if not ok or not content or #content < 100 or #content < size * 0.9 then
 		pcall(function()
 			local res = game:HttpGet(ROOT..COMMIT..'/assets/larp/'..png, true)
 			if res and res ~= '404: Not Found' and #res > 100 then
@@ -77,48 +83,24 @@ pcall(function()
 		v4Img = getcustomasset('LarpV4/assets/larp/Textv4.png')
 	end
 end)
-local bgImg = ''
-pcall(function()
-	if isfile('LarpV4/assets/larp/loadingbg.png') then
-		bgImg = getcustomasset('LarpV4/assets/larp/loadingbg.png')
-	end
-end)
 local loadgui = Instance.new('ScreenGui')
 loadgui.Name = 'LarpLoader'
 loadgui.ResetOnSpawn = false
 loadgui.IgnoreGuiInset = true
 loadgui.DisplayOrder = 999
 loadgui.Parent = gethui and gethui() or cloneref(game:GetService('CoreGui'))
-local dim = Instance.new('Frame')
-dim.Size = UDim2.fromScale(1, 1)
-dim.BackgroundColor3 = Color3.new()
-dim.BackgroundTransparency = 0.45
-dim.BorderSizePixel = 0
-dim.Parent = loadgui
-local panel = Instance.new('Frame')
-panel.Name = 'Panel'
-panel.Size = UDim2.fromOffset(440, 300)
-panel.Position = UDim2.new(0.5, -220, 0.5, -150)
-panel.BackgroundColor3 = Color3.fromRGB(14, 14, 16)
-panel.BorderSizePixel = 0
-panel.ClipsDescendants = true
-panel.Parent = loadgui
-local panelcorner = Instance.new('UICorner')
-panelcorner.CornerRadius = UDim.new(0, 10)
-panelcorner.Parent = panel
-local wavebg = Instance.new('ImageLabel')
-wavebg.Size = UDim2.fromScale(1, 1)
-wavebg.BackgroundTransparency = 1
-wavebg.Image = bgImg
-wavebg.ScaleType = Enum.ScaleType.Crop
-wavebg.Parent = panel
+local loadbg = Instance.new('Frame')
+loadbg.Size = UDim2.fromScale(1, 1)
+loadbg.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
+loadbg.BorderSizePixel = 0
+loadbg.Parent = loadgui
 local minbtn = Instance.new('TextButton')
 minbtn.Size = UDim2.fromOffset(28, 28)
-minbtn.Position = UDim2.new(1, -60, 0, 8)
+minbtn.Position = UDim2.new(1, -64, 0, 12)
 minbtn.BackgroundTransparency = 1
 minbtn.AutoButtonColor = false
 minbtn.Text = ''
-minbtn.Parent = panel
+minbtn.Parent = loadbg
 local minbar = Instance.new('Frame')
 minbar.Size = UDim2.fromOffset(12, 2)
 minbar.Position = UDim2.new(0.5, -6, 0.5, -1)
@@ -127,11 +109,11 @@ minbar.BorderSizePixel = 0
 minbar.Parent = minbtn
 local closebtn = Instance.new('TextButton')
 closebtn.Size = UDim2.fromOffset(28, 28)
-closebtn.Position = UDim2.new(1, -32, 0, 8)
+closebtn.Position = UDim2.new(1, -32, 0, 12)
 closebtn.BackgroundTransparency = 1
 closebtn.AutoButtonColor = false
 closebtn.Text = ''
-closebtn.Parent = panel
+closebtn.Parent = loadbg
 local closeimg = Instance.new('ImageLabel')
 closeimg.Size = UDim2.fromOffset(12, 12)
 closeimg.Position = UDim2.new(0.5, -6, 0.5, -6)
@@ -155,28 +137,8 @@ end) then
 		l.Parent = closebtn
 	end
 end
-local minipill = Instance.new('TextButton')
-minipill.Size = UDim2.fromOffset(120, 32)
-minipill.Position = UDim2.new(1, -132, 1, -44)
-minipill.BackgroundColor3 = Color3.fromRGB(20, 20, 22)
-minipill.BorderSizePixel = 0
-minipill.AutoButtonColor = false
-minipill.Text = 'LARP V4'
-minipill.TextColor3 = Color3.fromRGB(136, 136, 136)
-minipill.TextSize = 12
-minipill.Font = Enum.Font.Arial
-minipill.Visible = false
-minipill.Parent = loadgui
-local minipillcorner = Instance.new('UICorner')
-minipillcorner.CornerRadius = UDim.new(0, 8)
-minipillcorner.Parent = minipill
 minbtn.MouseButton1Click:Connect(function()
-	panel.Visible = false
-	minipill.Visible = true
-end)
-minipill.MouseButton1Click:Connect(function()
-	panel.Visible = true
-	minipill.Visible = false
+	loadgui.Visible = false
 end)
 closebtn.MouseButton1Click:Connect(function()
 	getgenv().LarpLoadCancelled = true
@@ -185,38 +147,38 @@ closebtn.MouseButton1Click:Connect(function()
 	end)
 end)
 local logorow = Instance.new('Frame')
-logorow.Size = UDim2.fromOffset(300, 76)
-logorow.Position = UDim2.new(0.5, -150, 0, 56)
+logorow.Size = UDim2.fromOffset(360, 90)
+logorow.Position = UDim2.new(0.5, -180, 0.4, -45)
 logorow.BackgroundTransparency = 1
-logorow.Parent = panel
+logorow.Parent = loadbg
 local logo = Instance.new('ImageLabel')
-logo.Size = UDim2.fromOffset(220, 68)
+logo.Size = UDim2.fromOffset(260, 81)
 logo.Position = UDim2.fromOffset(4, 4)
 logo.BackgroundTransparency = 1
 logo.Image = larpImg
 logo.ScaleType = Enum.ScaleType.Fit
 logo.Parent = logorow
 local logov4 = Instance.new('ImageLabel')
-logov4.Size = UDim2.fromOffset(64, 45)
-logov4.Position = UDim2.fromOffset(232, 15)
+logov4.Size = UDim2.fromOffset(76, 53)
+logov4.Position = UDim2.fromOffset(278, 18)
 logov4.BackgroundTransparency = 1
 logov4.Image = v4Img
 logov4.ScaleType = Enum.ScaleType.Fit
 logov4.Parent = logorow
 local bartrack = Instance.new('Frame')
-bartrack.Size = UDim2.fromOffset(300, 4)
-bartrack.Position = UDim2.new(0.5, -150, 0, 168)
+bartrack.Size = UDim2.fromOffset(380, 4)
+bartrack.Position = UDim2.new(0.5, -190, 0.4, 72)
 bartrack.BackgroundColor3 = Color3.fromRGB(43, 43, 43)
 bartrack.BorderSizePixel = 0
-bartrack.Parent = panel
+bartrack.Parent = loadbg
 local barfill = Instance.new('Frame')
 barfill.Size = UDim2.new(0, 0, 1, 0)
 barfill.BackgroundColor3 = Color3.fromRGB(0, 204, 102)
 barfill.BorderSizePixel = 0
 barfill.Parent = bartrack
 local loadstatus = Instance.new('TextLabel')
-loadstatus.Size = UDim2.fromOffset(360, 16)
-loadstatus.Position = UDim2.new(0.5, -180, 0, 182)
+loadstatus.Size = UDim2.fromOffset(400, 16)
+loadstatus.Position = UDim2.new(0.5, -200, 0.4, 84)
 loadstatus.BackgroundTransparency = 1
 loadstatus.Text = ''
 loadstatus.RichText = true
@@ -225,7 +187,7 @@ loadstatus.TextTruncate = Enum.TextTruncate.AtEnd
 loadstatus.TextColor3 = Color3.fromRGB(119, 119, 119)
 loadstatus.TextSize = 11
 loadstatus.Font = Enum.Font.Arial
-loadstatus.Parent = panel
+loadstatus.Parent = loadbg
 downloader:GetPropertyChangedSignal('Text'):Connect(function()
 	loadstatus.Text = downloader.Text
 end)
@@ -245,6 +207,7 @@ heartbeat = runService.Heartbeat:Connect(function(dt)
 end)
 local function loaderFail()
 	loadgui:SetAttribute('Done', true)
+	loadgui.Visible = true
 	barfill.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
 	loadstatus.RichText = false
 	loadstatus.Text = 'Failed to download, Contact Support'

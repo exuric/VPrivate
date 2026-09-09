@@ -277,6 +277,7 @@ task.spawn(function()
 					end
 				end
 			end
+			end
 			task.wait()
 			finishLoading()
 		else

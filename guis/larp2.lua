@@ -3098,18 +3098,25 @@ function mainapi:CreateGUI()
 		profilebutton.Position = UDim2.new(1, -85, 0, 8)
 		profilebutton.BackgroundTransparency = 1
 		profilebutton.AutoButtonColor = false
-		profilebutton.Image = getcustomasset('LarpV4/assets/larp/profile.png')
-		profilebutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		profilebutton.Image = ''
 		profilebutton.Parent = bar
+		local profileart = Instance.new('ImageLabel')
+		profileart.Name = 'Art'
+		profileart.Size = UDim2.fromOffset(14, 14)
+		profileart.Position = UDim2.new(0.5, -7, 0.5, -7)
+		profileart.BackgroundTransparency = 1
+		profileart.Image = getcustomasset('LarpV4/assets/larp/profile.png')
+		profileart.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		profileart.Parent = profilebutton
 		addCorner(profilebutton, UDim.new(1, 0))
 		addTooltip(profilebutton, T('Profile'))
 		profilebutton.MouseEnter:Connect(function()
-			tween:Tween(profilebutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			tween:Tween(profileart, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
 				ImageColor3 = Color3.new(1, 1, 1)
 			})
 		end)
 		profilebutton.MouseLeave:Connect(function()
-			tween:Tween(profilebutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			tween:Tween(profileart, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
 				ImageColor3 = color.Light(uipallet.Main, 0.37)
 			})
 		end)
@@ -4013,9 +4020,17 @@ function mainapi:CreateCategory(categorysettings)
 		editbutton.Size = UDim2.fromOffset(18, 18)
 		editbutton.Position = UDim2.new(1, -64, 0, 11)
 		editbutton.BackgroundTransparency = 1
-		editbutton.Image = getcustomasset('LarpV4/assets/larp/edit.png')
-		editbutton.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		editbutton.AutoButtonColor = false
+		editbutton.Image = ''
 		editbutton.Parent = window
+		local editart = Instance.new('ImageLabel')
+		editart.Name = 'Art'
+		editart.Size = UDim2.fromOffset(14, 14)
+		editart.Position = UDim2.new(0.5, -7, 0.5, -7)
+		editart.BackgroundTransparency = 1
+		editart.Image = getcustomasset('LarpV4/assets/larp/edit.png')
+		editart.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		editart.Parent = editbutton
 		addTooltip(editbutton, 'Hide modules')
 		hidcount = Instance.new('TextLabel')
 		hidcount.Name = 'HiddenCount'
@@ -4030,10 +4045,10 @@ function mainapi:CreateCategory(categorysettings)
 		hidcount.Visible = false
 		hidcount.Parent = window
 		editbutton.MouseEnter:Connect(function()
-			editbutton.ImageColor3 = uipallet.Text
+			editart.ImageColor3 = uipallet.Text
 		end)
 		editbutton.MouseLeave:Connect(function()
-			editbutton.ImageColor3 = categoryapi.Editing and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.37)
+			editart.ImageColor3 = categoryapi.Editing and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.37)
 		end)
 		editbutton.MouseButton1Click:Connect(function()
 			categoryapi.Editing = not categoryapi.Editing
@@ -4642,7 +4657,10 @@ function mainapi:CreateCategory(categorysettings)
 			hidcount.Visible = n > 0
 		end
 		if editbutton then
-			editbutton.ImageColor3 = self.Editing and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.37)
+			local editart = editbutton:FindFirstChild('Art')
+			if editart then
+				editart.ImageColor3 = self.Editing and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.37)
+			end
 		end
 	end
 
@@ -5604,9 +5622,13 @@ function mainapi:CreateSearch()
 		if search.Text == '' then return end
 
 		for i, v in self.Modules do
-			if i:lower():find(search.Text:lower()) then
+			local s, e = i:lower():find(search.Text:lower(), 1, true)
+			if s then
 				local button = v.Object:Clone()
 				button.Bind:Destroy()
+				local accent = Color3.fromHSV(self.GUIColor.Hue, self.GUIColor.Sat, self.GUIColor.Value)
+				button.RichText = true
+				button.Text = i:sub(1, s - 1).."<font color='#"..accent:ToHex().."'>"..i:sub(s, e)..'</font>'..i:sub(e + 1)
 				button.MouseButton1Click:Connect(function()
 					v:Toggle()
 				end)
@@ -5631,7 +5653,7 @@ function mainapi:CreateSearch()
 				button.Parent = children
 				task.spawn(function()
 					repeat
-						for _, v2 in {'Text', 'TextColor3', 'BackgroundColor3'} do
+						for _, v2 in {'TextColor3', 'BackgroundColor3'} do
 							button[v2] = v.Object[v2]
 						end
 						button.UIGradient.Color = v.Object.UIGradient.Color

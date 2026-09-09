@@ -8209,7 +8209,12 @@ end)
 run(function()
 	local Clock
 	local TwentyFourHour
+	local Analog
 	local label
+	local face
+	local hourhand
+	local minhand
+	local sechand
 	
 	Clock = larp.Legit:CreateModule({
 		Name = 'Clock',
@@ -8217,13 +8222,19 @@ run(function()
 			if callback then
 				repeat
 					label.Text = DateTime.now():FormatLocalTime('LT', TwentyFourHour.Enabled and 'zh-cn' or 'en-us')
+					local t = os.date('*t')
+					hourhand.Rotation = (t.hour % 12) * 30 + t.min * 0.5
+					minhand.Rotation = t.min * 6 + t.sec * 0.1
+					sechand.Rotation = t.sec * 6
+					label.Visible = not Analog.Enabled
+					face.Visible = Analog.Enabled
 					task.wait(1)
 				until not Clock.Enabled
 			end
 		end,
-		Size = UDim2.fromOffset(100, 41),
+		Size = UDim2.fromOffset(120, 48),
 		Icon = getcustomasset('LarpV4/assets/larp/clock.png'),
-		IconSize = UDim2.fromOffset(15, 15),
+		IconSize = UDim2.fromOffset(18, 18),
 		Tooltip = 'Shows the current local time'
 	})
 	Clock:CreateFont({
@@ -8240,15 +8251,24 @@ run(function()
 		Function = function(hue, sat, val, opacity)
 			label.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
 			label.BackgroundTransparency = 1 - opacity
+			face.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+			face.BackgroundTransparency = 1 - opacity
 		end
 	})
 	TwentyFourHour = Clock:CreateToggle({
 		Name = '24 Hour Clock'
 	})
+	Analog = Clock:CreateToggle({
+		Name = 'Analog',
+		Function = function(on)
+			label.Visible = not on
+			face.Visible = on
+		end
+	})
 	label = Instance.new('TextLabel')
-	label.Size = UDim2.new(0, 100, 0, 41)
+	label.Size = UDim2.new(0, 120, 0, 48)
 	label.BackgroundTransparency = 0.5
-	label.TextSize = 15
+	label.TextSize = 17
 	label.Font = Enum.Font.Gotham
 	label.Text = '0:00 PM'
 	label.TextColor3 = Color3.new(1, 1, 1)
@@ -8257,6 +8277,41 @@ run(function()
 	local corner = Instance.new('UICorner')
 	corner.CornerRadius = UDim.new(0, 4)
 	corner.Parent = label
+	face = Instance.new('Frame')
+	face.Name = 'Face'
+	face.Size = UDim2.fromOffset(44, 44)
+	face.Position = UDim2.new(0.5, -22, 0.5, -22)
+	face.BackgroundColor3 = Color3.new()
+	face.BackgroundTransparency = 0.5
+	face.BorderSizePixel = 0
+	face.Visible = false
+	face.Parent = Clock.Children
+	local facecorner = Instance.new('UICorner')
+	facecorner.CornerRadius = UDim.new(1, 0)
+	facecorner.Parent = face
+	local function makehand(len, w, handcolor)
+		local h = Instance.new('Frame')
+		h.AnchorPoint = Vector2.new(0.5, 1)
+		h.Size = UDim2.fromOffset(w, len)
+		h.Position = UDim2.new(0.5, 0, 0.5, 0)
+		h.BackgroundColor3 = handcolor
+		h.BorderSizePixel = 0
+		h.Parent = face
+		return h
+	end
+	hourhand = makehand(11, 3, Color3.new(1, 1, 1))
+	minhand = makehand(16, 2, Color3.new(1, 1, 1))
+	sechand = makehand(18, 1, Color3.fromRGB(255, 80, 80))
+	local pin = Instance.new('Frame')
+	pin.AnchorPoint = Vector2.new(0.5, 0.5)
+	pin.Size = UDim2.fromOffset(4, 4)
+	pin.Position = UDim2.new(0.5, 0, 0.5, 0)
+	pin.BackgroundColor3 = Color3.new(1, 1, 1)
+	pin.BorderSizePixel = 0
+	pin.Parent = face
+	local pincorner = Instance.new('UICorner')
+	pincorner.CornerRadius = UDim.new(1, 0)
+	pincorner.Parent = pin
 end)
 
 run(function()

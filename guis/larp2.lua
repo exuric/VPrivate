@@ -56,6 +56,19 @@ local tween = {
 local LarpLang = shared.LarpLanguage or getgenv().LarpLanguage or 'English'
 local LarpLangNames = {'English', 'Spanish', 'French', 'German', 'Portuguese'}
 local LarpLocales = {
+	English = {
+		Combat = 'Combat', Blatant = 'Blatant', Render = 'Render', Utility = 'Utility', World = 'World', Inventory = 'Inventory',
+		Minigames = 'Minigames', Other = 'Other', Favorites = 'Favorites', Friends = 'Friends', Profiles = 'Profiles', Targets = 'Targets',
+		Overlays = 'Overlays', Search = 'Search', Settings = 'Settings', General = 'General', Performance = 'Performance', TextGUI = 'Text GUI',
+		TargetInfo = 'Target Info', ResetProfile = 'Reset Profile', SelfDestruct = 'Self destruct', Reinject = 'Reinject',
+		MultiBind = 'Enable Multi-Keybinding', Language = 'Language', EnglishDefault = 'English (default)', LoadedIn = 'Successfully loaded in ',
+		AddEntry = 'Add entry...', TypeName = 'Type name', RobloxUser = 'Roblox username', ToggleFav = 'Toggle favourite',
+		FavTooltip = 'Shows this module in the Favorites tab.', Mode = 'Mode', ModeTip = 'Amount of information shown.', Minimal = 'Minimal',
+		Standard = 'Standard', Detailed = 'Detailed', Font = 'Font', ColorMode = 'Color Mode', MatchGUI = 'Match GUI color',
+		CustomColor = 'Custom color', TextColor = 'Text color', Scale = 'Scale', Watermark = 'Watermark',
+		Gradient = 'Gradient', V4Gradient = 'V4 Gradient', OpenOverlays = 'Open overlays menu', OpenSettings = 'Open settings',
+		DiscordJoin = 'Join our discord', Profile = 'Profile', HidSuffix = 'hid'
+	},
 	Spanish = {
 		Combat = 'Combate', Utility = 'Utilidad', World = 'Mundo', Inventory = 'Inventario', Minigames = 'Minijuegos', Other = 'Otro',
 		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfiles', Targets = 'Objetivos', Overlays = 'Superposiciones',
@@ -491,7 +504,11 @@ local function makeDraggable(gui, window)
 					if inputService:IsKeyDown(Enum.KeyCode.LeftShift) then
 						delta = (delta // 3) * 3
 					end
-					gui.Position = UDim2.fromOffset(startGuiPos.X.Offset + delta.X, startGuiPos.Y.Offset + delta.Y)
+					local view = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+					local winsize = gui.AbsoluteSize
+					local x = math.clamp(startGuiPos.X.Offset + delta.X, 40 - winsize.X, view.X - 40)
+					local y = math.clamp(startGuiPos.Y.Offset + delta.Y, 0, view.Y - 40)
+					gui.Position = UDim2.fromOffset(x, y)
 				end
 			end)
 
@@ -6015,9 +6032,25 @@ function mainapi:CreateNotification(title, text, duration, type)
 		if self.ThreadFix then
 			setthreadidentity(8)
 		end
+		local kids = notifications:GetChildren()
+		if #kids >= 4 then
+			local oldest, oldestidx
+			for _, k in kids do
+				local idx = k:GetAttribute('QueueIndex') or 0
+				if not oldest or idx < oldestidx then
+					oldest, oldestidx = k, idx
+				end
+			end
+			if oldest then
+				oldest:ClearAllChildren()
+				oldest:Destroy()
+			end
+		end
+		self.NotificationIndex = (self.NotificationIndex or 0) + 1
 		local i = #notifications:GetChildren() + 1
 		local notification = Instance.new('ImageLabel')
 		notification.Name = 'Notification'
+		notification:SetAttribute('QueueIndex', self.NotificationIndex)
 		notification.Size = UDim2.fromOffset(math.max(266, math.max(getfontsize(removeTags(text), 14, uipallet.Font).X, getfontsize(removeTags(title), 14, uipallet.FontSemiBold).X) + 80), 75)
 		notification.Position = UDim2.new(1, 0, 1, -(29 + (78 * i)))
 		notification.ZIndex = 5
@@ -6352,7 +6385,7 @@ function mainapi:Load(skipgui, profile)
 				if v.Enabled ~= object.Enabled then
 					if skipgui then
 						if self.ToggleNotifications.Enabled then
-							mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75)
+							mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75, v.Enabled and 'warning' or nil)
 						end
 					end
 					object:Toggle(true)
@@ -8549,11 +8582,12 @@ function mainapi:UpdateTextGUI(afterload)
 		end
 
 		local found = {}
+		local kept = {}
 		for _, v in LarpLabels do
 			if v.Enabled then
 				table.insert(found, v.Object.Name)
 			end
-			v.Object:Destroy()
+			kept[v.Object.Name] = v
 		end
 		table.clear(LarpLabels)
 
@@ -8562,6 +8596,17 @@ function mainapi:UpdateTextGUI(afterload)
 			if textguimodules.Enabled and table.find(textguimoduleslist.ListEnabled, i) then continue end
 			if textguirender.Enabled and v.Category == 'Render' then continue end
 			if v.Enabled or table.find(found, i) then
+				local sig = i..'|'..tostring(v.Enabled)..'|'..(v.ExtraText and v.ExtraText() or '')..'|'..textguifont.Value.Family..'|'..tostring(textguibackground.Enabled)..'|'..tostring(textguibackgroundtransparency.Value)..'|'..tostring(textguishadow.Enabled)..'|'..tostring(right)
+				local reuse = kept[i]
+				kept[i] = nil
+				if reuse and reuse.Sig == sig then
+					reuse.Enabled = v.Enabled
+					table.insert(LarpLabels, reuse)
+					continue
+				end
+				if reuse then
+					reuse.Object:Destroy()
+				end
 				local holder = Instance.new('Frame')
 				holder.Name = i
 				holder.Size = UDim2.fromOffset()
@@ -8634,9 +8679,13 @@ function mainapi:UpdateTextGUI(afterload)
 					Text = holdertext,
 					Background = holderbackground,
 					Color = holdercolorline,
-					Enabled = v.Enabled
+					Enabled = v.Enabled,
+					Sig = sig
 				})
 			end
+		end
+		for _, v in kept do
+			v.Object:Destroy()
 		end
 
 		if textguisort.Value == 'Alphabetical' then
@@ -8832,7 +8881,7 @@ mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
 			if checkKeybinds(mainapi.HeldKeybinds, v.Bind, bindName) then
 				toggled = true
 				if mainapi.ToggleNotifications.Enabled then
-					mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75)
+					mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75, v.Enabled and 'warning' or nil)
 				end
 				v:Toggle(true)
 			end

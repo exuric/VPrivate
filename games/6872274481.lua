@@ -2162,7 +2162,6 @@ end
 	
 	AimAssist = larp.Categories.Combat:CreateModule({
 		Name = 'AimAssist',
-		Tags = {'REWORK'},
 		Function = function(callback)
 			if callback then
 				local rotate = 0
@@ -4151,7 +4150,6 @@ run(function()
 
 	Killaura = larp.Categories.Blatant:CreateModule({
 		Name = 'KillAura',
-		Tags = {'Updated'},
 		Function = function(callback)
 			if callback then
 				SwordController = bedwars.SwordController
@@ -5001,6 +4999,7 @@ run(function()
 	local FOV
 	local Distance
 	local Prediction
+	local AimPart
 	local VelocityLerp
 	local Profile
 	local FireballPrediction
@@ -5009,50 +5008,13 @@ run(function()
 	local lockedTarget
 	local lockedTime
 	local Aim = {}
-	local FOVCircle
-	local FOVCircleColor
-	local fovCircle = nil
 	local ProjectileAimbot
-	local function updateFOVCircle()
-		if FOVCircle and FOVCircle.Enabled then
-			if not fovCircle then
-				fovCircle = Drawing.new('Circle')
-				fovCircle.Filled = false
-				fovCircle.Color = Color3.fromHSV(FOVCircleColor.Hue, FOVCircleColor.Sat, FOVCircleColor.Value)
-				fovCircle.NumSides = 100
-				fovCircle.Thickness = 1.5
-				fovCircle.Transparency = 1
-				ProjectileAimbot:Clean(runService.RenderStepped:Connect(function()
-					if fovCircle then
-						local res = guiService:GetScreenResolution()
-						fovCircle.Position = Vector2.new(math.floor(res.X / 2), math.floor(res.Y / 2))
-						fovCircle.Radius = FOV.Value
-					end
-				end))
-			end
-			fovCircle.Visible = true
-			FOVCircleColor.Object.Visible = true
-		else
-			if fovCircle then
-				pcall(function()
-					fovCircle.Visible = false
-					fovCircle:Remove()
-				end)
-				fovCircle = nil
-			end
-			if FOVCircleColor then
-				FOVCircleColor.Object.Visible = false
-			end
-		end
-	end
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
 	local realOld
 	local shotLog = {}
-	local velHistory = {}
-	local velTime = {}
 	local aimCache = { at = 0, target = nil, result = nil }
 	local beamVel = {}
 	local function isAliveTarget(ent)
@@ -5089,17 +5051,17 @@ run(function()
 			if not ent then continue end
 			if ent.Player == playersService.LocalPlayer then continue end
 			if not isAliveTarget(ent) then continue end
-			if ent.Player and not Targets.Players.Enabled then continue end
-			if not ent.Player and not Targets.NPCs.Enabled then continue end
 			local root = ent.RootPart
 			if not root then continue end
 			local dist = (root.Position - p0).Magnitude
-			if dist > Distance.Value then continue end
+			if dist > 1000 then continue end
 			local sv = cam:WorldToViewportPoint(root.Position)
 			if sv.Z <= 0 then continue end
 			if sv.X < -40 or sv.X > vp.X + 40 or sv.Y < -40 or sv.Y > vp.Y + 40 then continue end
-			local score = (Vector2.new(sv.X, sv.Y) - vp / 2).Magnitude + dist * 0.05
-			if not isFire and Targets.Walls.Enabled and not trajLOS(p0, root.Position) then
+			local cursorDist = (Vector2.new(sv.X, sv.Y) - vp / 2).Magnitude
+			if cursorDist > FOV.Value then continue end
+			local score = cursorDist + dist * 0.05
+			if not isFire and not trajLOS(p0, root.Position) then
 				score = score + 100000
 			end
 			if not bestScore or score < bestScore then
@@ -5108,6 +5070,24 @@ run(function()
 		end
 		return best
 	end
+	local limbNames = {["Left Arm"] = "LeftUpperArm", ["Right Arm"] = "RightUpperArm", ["Left Leg"] = "LeftUpperLeg", ["Right Leg"] = "RightUpperLeg"}
+	local function getAimPart(ent)
+		local which = AimPart.Value
+		if which == 'Head' then
+			return ent.Head or ent.RootPart
+		end
+		if which == 'UpperTorso' or which == 'LowerTorso' then
+			local found = ent.Character and ent.Character:FindFirstChild(which)
+			if found then return found end
+		end
+		if which ~= 'Neck' and which ~= 'RootPart' then
+			local mapped = limbNames[which]
+			local found = mapped and ent.Character and ent.Character:FindFirstChild(mapped)
+			if found then return found end
+		end
+		return ent.RootPart
+	end
+
 	local function launchVelocity(p0, aim, speed, gravity, maxt)
 		local dx = aim.X - p0.X
 		local dy = aim.Y - p0.Y
@@ -5194,9 +5174,11 @@ run(function()
 
 	ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
+		Tags = {'REWORK'},
 		Function = function(callback)
 			if callback then
-				updateFOVCircle()
+				local pingMs = math.floor((store.ping.total or 0) * 1000)
+				Prediction:SetValue(pingMs < 40 and 1 or pingMs < 90 and 1.1 or pingMs < 160 and 1.2 or 1.35, nil, true)
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
 				realOld = old
 				old = function(...)
@@ -5230,8 +5212,7 @@ run(function()
 							lifetime = math.max(lifetime, 2.5)
 						end
 						local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
-						local charge = (AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier
-						local speed = (meta.launchVelocity or 100) * charge
+						local speed = (meta.launchVelocity or 100) * (AutoCharge.Enabled and 1 or projmeta.velocityMultiplier)
 						if speed <= 0 then
 							return old(...)
 						end
@@ -5243,48 +5224,33 @@ run(function()
 						if isBeam and aimCache.result and now - aimCache.at < 0.03 and aimCache.target == plr then
 							return aimCache.result
 						end
-						if table.find(Blacklist.ListEnabled or {}, ((projName == 'glue_trap' or projName == 'glue_projectile') and 'gloop' or projName)) then
+						if projName == 'glue_trap' or projName == 'glue_projectile' then
 							return old(...)
 						end
 						local root = plr.RootPart
 						if not root then
 							return old(...)
 						end
-						local targetPart = TargetPart.Value == 'Neck' and root or (plr[TargetPart.Value] or root)
-						local targetPos = isLasso and root.Position + Vector3.new(0, 2, 0) or targetPart.Position + (TargetPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
-						local targetVel = projName == 'telepearl' and Vector3.zero or root.AssemblyLinearVelocity
-						local rawVel = targetVel
-						if VelocityLerp.Value > 1 then
-							local prev = velHistory[plr]
-							local lastT = velTime[plr]
-							local dt = lastT and math.min(now - lastT, 0.1) or 0.016
-							velTime[plr] = now
-							if prev and prev.Magnitude > 0.5 and targetVel.Magnitude > 0.5 then
-								if prev.Unit:Dot(targetVel.Unit) < 0.75 then
-									targetVel = rawVel
-								else
-									local alpha = 1 - math.exp(-dt * (60 / math.max(VelocityLerp.Value, 1)))
-									targetVel = prev:Lerp(rawVel, alpha)
-								end
-							end
-							velHistory[plr] = targetVel
+						local part = getAimPart(plr)
+						local targetPos = isLasso and root.Position + Vector3.new(0, 2, 0) or part.Position + (AimPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
+						local rawVel = projName == 'telepearl' and Vector3.zero or root.AssemblyLinearVelocity
+						if not plr.Jumping and math.abs(rawVel.Y) < 5 then
+							rawVel = Vector3.new(rawVel.X, rawVel.Y * 0.15, rawVel.Z)
 						end
-						if not plr.Jumping and math.abs(targetVel.Y) < 5 then
-							targetVel = Vector3.new(targetVel.X, targetVel.Y * 0.15, targetVel.Z)
+						if rawVel.Magnitude > 60 then
+							rawVel = rawVel.Unit * 60
 						end
-						if targetVel.Magnitude > 60 then
-							targetVel = targetVel.Unit * 60
+						local airborne = plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(root.AssemblyLinearVelocity.Y) > 0.01) or math.abs(rawVel.Y) > 0.01
+						local targetVel = rawVel * math.clamp(Prediction.Value, 0.05, 2)
+						local okCalc, aimPoint, _, travelTime = pcall(prediction.SolveTrajectory, offsetpos, speed, gravity, targetPos, targetVel, workspace.Gravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, airborne, part.Position, root, nil, true)
+						local v0 = okCalc and aimPoint and (aimPoint - offsetpos) or nil
+						if not v0 or v0.Magnitude < 1 then
+							v0, travelTime = predictShot(offsetpos, targetPos + targetVel * (store.ping.total or 0), targetVel, speed, gravity, lifetime)
 						end
-						local leadMult = math.clamp(Prediction.Value, 0.05, 2)
-						local ping = store.ping.total or 0
-						local base = targetPos + targetVel * (ping * 0.5)
-						local velLead = targetVel * leadMult
-						local v0, travelTime = predictShot(offsetpos, base, velLead, speed, gravity, lifetime)
 						if not v0 then
 							return old(...)
 						end
-						local finalAim = base + velLead * (travelTime or 0)
-						local lobV, lobT = lobVelocity(offsetpos, finalAim, velLead, speed, gravity, lifetime)
+						local lobV, lobT = lobVelocity(offsetpos, targetPos + targetVel * (travelTime or 0), targetVel, speed, gravity, lifetime)
 						if isBeam then
 							local pv = beamVel[plr]
 							if pv then
@@ -5294,9 +5260,9 @@ run(function()
 								end
 							end
 							beamVel[plr] = { v = v0, at = now }
-						elseif not (not Targets.Walls.Enabled or (isFireball and FireballWall.Enabled) or cleared(offsetpos, v0, gravity, travelTime)) then
+						elseif not (isFireball or cleared(offsetpos, v0, gravity, travelTime)) then
 							if lobV and lobT then
-								if (not Targets.Walls.Enabled or (isFireball and FireballWall.Enabled) or cleared(offsetpos, lobV, gravity, lobT)) then
+								if isFireball or cleared(offsetpos, lobV, gravity, lobT) then
 									v0, travelTime = lobV, lobT
 								else
 									return old(...)
@@ -5317,16 +5283,7 @@ run(function()
 							aimCache.at = now
 							aimCache.target = plr
 						else
-							if Mode.Value == 'Adaptive' then
-								projectileShotTimes[root] = now
-								projectileShotCounter = projectileShotCounter + 1
-								if projectileShotCounter % 32 == 0 then
-									for k, st in projectileShotTimes do
-										if now - st >= 5 then projectileShotTimes[k] = nil end
-									end
-								end
 								pcall(prediction.trackShot, root)
-							end
 							if targetinfo then targetinfo.Targets[plr] = now + 1 end
 							if #shotLog >= 12 then table.remove(shotLog, 1) end
 							local sp, sv, minp = offsetpos, v0, math.huge
@@ -5347,161 +5304,39 @@ run(function()
 				end
 			else
 				bedwars.ProjectileController.calculateImportantLaunchValues = realOld
-				table.clear(velHistory)
-				table.clear(velTime)
 				table.clear(beamVel)
 				aimCache.at = 0
 				aimCache.result = nil
 				aimCache.target = nil
-				updateFOVCircle()
 			end
 		end,
 		Tooltip = 'Silently adjusts your aim towards the enemy'
-	})
-	Targets = ProjectileAimbot:CreateTargets({
-		Players = true,
-		NPCs = true,
-		Walls = true
-	})
-	local methods = {'Distance', 'Damage'}
-	for i in sortmethods do
-		if not table.find(methods, i) then
-			table.insert(methods, i)
-		end
-	end
-	Sort = ProjectileAimbot:CreateDropdown({
-		Name = 'Target mode',
-		List = methods,
-		Default = 'Distance'
-	})
-	TargetPart = ProjectileAimbot:CreateDropdown({
-		Name = 'Part',
-		List = {'RootPart', 'Head', 'Neck'},
-		Default = 'Neck',
-		Tooltip = 'Neck aims at the middle of the body for reliable splash damage'
-	})
-	Mode = ProjectileAimbot:CreateDropdown({
-		Name = 'Mode',
-		List = {'Adaptive', 'Simple'},
-		Default = 'Adaptive',
-		Tooltip = 'Adaptive adds landed-shot feedback on top of the advanced solver; Simple uses pure iterative ballistic prediction.'
-	})
-	Prediction = ProjectileAimbot:CreateSlider({
-		Name = 'Prediction',
-		Min = 0.1,
-		Max = 2,
-		Default = 1,
-		Decimal = 10,
-		Tooltip = 'Scales the lead applied to the target velocity. 1.0 = exact, higher = more lead for lag/strafe. The solver converges on the true impact time.'
-	})
-	VelocityLerp = ProjectileAimbot:CreateSlider({
-		Name = 'Velocity Lerp',
-		Min = 1,
-		Max = 20,
-		Default = 8,
-		Tooltip = 'Smooths the target velocity over several frames to remove strafe jitter for more accurate prediction'
-	})
-	Profile = ProjectileAimbot:CreateDropdown({
-		Name = 'Profile',
-		List = {'Auto Set', 'Low Ping', 'Medium Ping', 'High Ping', 'Custom'},
-		Default = 'Auto Set',
-		Tooltip = 'Auto Set reads your current ping and picks the best prediction values for you, you can still change them freely after',
-		Function = function(value)
-			local pred = 1
-			local lerp = 8
-			if value == 'Auto Set' then
-				local ping = math.floor(math.max(store.ping.incoming or 0, store.ping.total or 0) * 1000)
-				if ping < 40 then
-					pred, lerp = 1.05, 4
-				elseif ping < 90 then
-					pred, lerp = 1.15, 6
-				elseif ping < 160 then
-					pred, lerp = 1.35, 10
-				else
-					pred, lerp = 1.6, 14
-				end
-			elseif value == 'Low Ping' then
-				pred, lerp = 1.05, 4
-			elseif value == 'Medium Ping' then
-				pred, lerp = 1.25, 8
-			elseif value == 'High Ping' then
-				pred, lerp = 1.5, 14
-			else
-				pred, lerp = 1, 8
-			end
-			Prediction:SetValue(pred, nil, true)
-			VelocityLerp:SetValue(lerp, nil, true)
-		end
-	})
-	Distance = ProjectileAimbot:CreateSlider({
-		Name = 'Distance',
-		Min = 1,
-		Max = 1000,
-		Default = 1000,
-		Suffix = function(val)
-			return val <= 1 and 'stud' or 'studs'
-		end,
-		Tooltip = 'Allows this many studs of distance. Any further players will be ignored.'
 	})
 	FOV = ProjectileAimbot:CreateSlider({
 		Name = 'FOV',
 		Min = 1,
 		Max = 1000,
 		Default = 1000,
-		Function = function(value)
-			if fovCircle then
-				fovCircle.Radius = value
-			end
-		end,
 		Tooltip = 'Maximum screen distance (in pixels) from your cursor a target can be before it is ignored'
 	})
-	FOVCircle = ProjectileAimbot:CreateToggle({
-		Name = 'FOV Circle',
-		Default = false,
-		Function = function(callback)
-			updateFOVCircle()
-		end
+	Prediction = ProjectileAimbot:CreateSlider({
+		Name = 'Prediction',
+		Min = 0.5,
+		Max = 2,
+		Default = 1,
+		Decimal = 100,
+		Tooltip = 'Lead multiplier applied to target velocity. Automatically set from your ping when the module is toggled.'
 	})
-	FOVCircleColor = ProjectileAimbot:CreateColorSlider({
-		Name = 'FOV Circle Color',
-		Default = Color3.fromRGB(255, 255, 255),
-		Visible = false,
-		Function = function(hue, sat, val)
-			if fovCircle then
-				fovCircle.Color = Color3.fromHSV(hue, sat, val)
-			end
-		end,
-		Darker = true
+	AimPart = ProjectileAimbot:CreateDropdown({
+		Name = 'Aim Part',
+		List = {'Neck', 'Head', 'UpperTorso', 'LowerTorso', 'RootPart', 'Left Arm', 'Right Arm', 'Left Leg', 'Right Leg'},
+		Default = 'Neck',
+		Tooltip = 'Body part to aim at. Neck aims mid-body for reliable splash damage.'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',
-		Function = function(callback)
-			if Aim.Object then
-				Aim.Object.Visible = callback
-			end
-		end,
 		Default = true,
 		Tooltip = 'Fully charges your bow, Allowing your projectile to deal more damage'
-	})
-	Aim = ProjectileAimbot:CreateToggle({
-		Name = 'Aim change',
-		Default = true,
-		Darker = true,
-		Tooltip = 'Changes your trajectory to match charge percentage.'
-	})
-	FireballPrediction = ProjectileAimbot:CreateToggle({
-		Name = 'Fireball Prediction',
-		Default = true,
-		Tooltip = 'Enables velocity, jump and adaptive prediction for fireballs. The lead strength scales automatically with your ping for maximum accuracy.'
-	})
-	FireballWall = ProjectileAimbot:CreateToggle({
-		Name = 'Aim Behind Walls',
-		Default = true,
-		Tooltip = 'Fireballs break wool, so aim at enemies even when a wall is in the way.'
-	})
-	Blacklist = ProjectileAimbot:CreateTextList({
-		Name = 'Blacklist',
-		Default = {'glue_trap'}
 	})
 end)
 
@@ -15556,16 +15391,21 @@ run(function()
 		corner.Parent = frame
 		local dist = Instance.new('TextLabel')
 		dist.Name = 'Distance'
-		dist.Size = UDim2.new(1, 0, 0, 16)
-		dist.Position = UDim2.new(0, 0, 0, -18)
-		dist.BackgroundTransparency = 1
+		dist.Size = UDim2.new(1, 0, 0, 20)
+		dist.Position = UDim2.new(0, 0, 0, -22)
+		dist.BackgroundColor3 = Color3.new()
+		dist.BackgroundTransparency = 0.35
+		dist.BorderSizePixel = 0
 		dist.Text = ''
 		dist.TextColor3 = Color3.new(1, 1, 1)
-		dist.TextSize = 14
-		dist.TextStrokeTransparency = 0.5
-		dist.Font = Enum.Font.Arial
+		dist.TextSize = 16
+		dist.Font = Enum.Font.GothamBold
+		dist.TextStrokeTransparency = 0.2
 		dist.Visible = Distance.Enabled
 		dist.Parent = billboard
+		local distcorner = Instance.new('UICorner')
+		distcorner.CornerRadius = UDim.new(0, 5)
+		distcorner.Parent = dist
 		updateDistText(billboard)
 		Reference[v] = billboard
 		refreshAdornee(billboard)
@@ -18563,5 +18403,393 @@ run(function()
 				setfpscap(value)
 			end
 		end
+	})
+end)
+
+run(function()
+	local BedAlarm
+	local Range
+	local function getOwnBedPos()
+		local ok, team = pcall(bedwars.TeamController.getPlayerTeam, bedwars.TeamController, lplr)
+		local teamId = (ok and team and team.id) or lplr:GetAttribute('Team')
+		if teamId == nil then return nil end
+		local ok2, bed = pcall(bedwars.BedwarsController.getTeamBed, bedwars.BedwarsController, teamId)
+		if not ok2 or not bed then return nil end
+		local part = bed:IsA('BasePart') and bed or bed:FindFirstChildWhichIsA('BasePart', true)
+		return part and part.Position or nil
+	end
+	BedAlarm = larp.Categories.Blatant:CreateModule({
+		Name = 'BedAlarm',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				local lastAlert, acc = 0, 0
+				BedAlarm:Clean(runService.Heartbeat:Connect(function(dt)
+					acc += dt
+					if acc < 0.5 then return end
+					acc = 0
+					if tick() - lastAlert < 12 then return end
+					local bedPos = getOwnBedPos()
+					if not bedPos then return end
+					for _, ent in entitylib.List do
+						if ent and ent.Player and ent.Player ~= lplr and ent.RootPart then
+							local sameTeam = false
+							pcall(function()
+								sameTeam = ent.Player.Team ~= nil and lplr.Team ~= nil and ent.Player.Team == lplr.Team
+							end)
+							if not sameTeam and entitylib.isVulnerable(ent) and (ent.RootPart.Position - bedPos).Magnitude <= Range.Value then
+								lastAlert = tick()
+								larp:CreateNotification('Bed Alarm', 'Enemy near your bed!', 5, 'warning')
+								break
+							end
+						end
+					end
+				end))
+			end
+		end,
+		Tooltip = 'Warns you when an enemy gets close to your bed'
+	})
+	Range = BedAlarm:CreateSlider({
+		Name = 'Range',
+		Min = 10,
+		Max = 100,
+		Default = 40,
+		Tooltip = 'Alert when an enemy is within this many studs of your bed'
+	})
+end)
+
+run(function()
+	local SprintReset
+	local Delay
+	SprintReset = larp.Categories.Blatant:CreateModule({
+		Name = 'SprintReset',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				SprintReset:Clean(inputService.InputBegan:Connect(function(input, gpe)
+					if gpe or input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+					if not entitylib.isAlive then return end
+					task.spawn(function()
+						pcall(function() lplr:SetAttribute('Sprinting', false) end)
+						task.wait(Delay.Value / 1000)
+						pcall(function() lplr:SetAttribute('Sprinting', true) end)
+					end)
+				end))
+			end
+		end,
+		Tooltip = 'Resets your sprint when you click for better combos'
+	})
+	Delay = SprintReset:CreateSlider({
+		Name = 'Delay',
+		Min = 60,
+		Max = 300,
+		Default = 120,
+		Suffix = function(val) return 'ms' end,
+		Tooltip = 'How long to stay unsprinted on each click'
+	})
+end)
+
+run(function()
+	local FastFall
+	local Multiplier
+	FastFall = larp.Categories.Blatant:CreateModule({
+		Name = 'FastFall',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				FastFall:Clean(runService.Heartbeat:Connect(function(dt)
+					local char = entitylib.character
+					local root = char and char:FindFirstChild('HumanoidRootPart')
+					local hum = char and char:FindFirstChildOfClass('Humanoid')
+					if root and hum and hum.FloorMaterial == Enum.Material.Air then
+						local vel = root.AssemblyLinearVelocity
+						if vel.Y < -5 then
+							local nv = vel + Vector3.new(0, -workspace.Gravity * (Multiplier.Value - 1) * math.min(dt, 0.1), 0)
+							if nv.Y < -120 then nv = Vector3.new(nv.X, -120, nv.Z) end
+							pcall(function() root.AssemblyLinearVelocity = nv end)
+						end
+					end
+				end))
+			end
+		end,
+		Tooltip = 'Fall faster to rush down and escape quicker'
+	})
+	Multiplier = FastFall:CreateSlider({
+		Name = 'Multiplier',
+		Min = 1,
+		Max = 3,
+		Default = 1.7,
+		Decimal = 10,
+		Tooltip = 'Fall speed multiplier while airborne'
+	})
+end)
+
+run(function()
+	local AutoSword
+	local Range
+	local tiers = {wooden_sword = 1, stone_sword = 2, iron_sword = 3, diamond_sword = 4, emerald_sword = 5, rageblade = 6}
+	local function bestSword()
+		local inv = store.inventory and store.inventory.inventory and store.inventory.inventory.items
+		if not inv then return nil end
+		local best, bestTier
+		for _, item in inv do
+			local t = item and item.itemType and (tiers[item.itemType] or (item.itemType:find('sword') and 0 or nil))
+			if t and item.tool and (not bestTier or t > bestTier) then
+				best, bestTier = item.tool, t
+			end
+		end
+		return best
+	end
+	AutoSword = larp.Categories.Blatant:CreateModule({
+		Name = 'AutoSword',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				local acc, cool = 0, 0
+				AutoSword:Clean(runService.Heartbeat:Connect(function(dt)
+					acc += dt
+					if acc < 0.5 then return end
+					acc = 0
+					if not entitylib.isAlive or tick() < cool then return end
+					local pos = entitylib.character.RootPart.Position
+					local near = false
+					for _, ent in entitylib.List do
+						if ent and ent.Player and ent.Player ~= lplr and ent.RootPart and entitylib.isVulnerable(ent) and (ent.RootPart.Position - pos).Magnitude <= Range.Value then
+							near = true
+							break
+						end
+					end
+					if not near then return end
+					local sword = bestSword()
+					if not sword then return end
+					local hand = lplr.Character and lplr.Character:FindFirstChild('HandInvItem')
+					if not hand or hand.Value ~= sword then
+						if switchItem(sword, 0) then cool = tick() + 1 end
+					end
+				end))
+			end
+		end,
+		Tooltip = 'Automatically holds your best sword when an enemy is close'
+	})
+	Range = AutoSword:CreateSlider({
+		Name = 'Range',
+		Min = 6,
+		Max = 20,
+		Default = 10,
+		Tooltip = 'Switch to sword when an enemy is within this many studs'
+	})
+end)
+
+run(function()
+	local ComboCounter
+	local hits, best = 0, 0
+	ComboCounter = larp.Categories.Blatant:CreateModule({
+		Name = 'Combo Counter',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				hits = 0
+				ComboCounter:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+					if not damageTable then return end
+					if damageTable.entityInstance == lplr.Character then
+						hits = 0
+					elseif damageTable.fromEntity == lplr.Character then
+						hits += 1
+						if hits > best then best = hits end
+						if hits % 25 == 0 then
+							larp:CreateNotification('Combo', hits..' hit combo!', 3)
+						end
+					end
+				end))
+			end
+		end,
+		ExtraText = function()
+			return hits..'x'
+		end,
+		Tooltip = 'Counts your current hit combo'
+	})
+end)
+
+run(function()
+	local InventoryBlur
+	local blurObj
+	InventoryBlur = larp.Categories.Other:CreateModule({
+		Name = 'Inventory Blur',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				pcall(function()
+					local hb = playersService.LocalPlayer.PlayerGui:FindFirstChild('hotbar')
+					local target = hb and (hb:FindFirstChild('1') or hb)
+					if target then blurObj = addBlur(target) end
+				end)
+			else
+				if blurObj then pcall(function() blurObj:Destroy() end) end
+				blurObj = nil
+			end
+		end,
+		Tooltip = 'Blurs your hotbar from observers'
+	})
+end)
+
+run(function()
+	local FriendJoinNotifier
+	FriendJoinNotifier = larp.Categories.Other:CreateModule({
+		Name = 'Friend Join Notifier',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				FriendJoinNotifier:Clean(playersService.PlayerAdded:Connect(function(plr)
+					if table.find(larp.Categories.Friends.ListEnabled or {}, plr.Name) then
+						larp:CreateNotification('Friend', plr.DisplayName..' joined your game', 5)
+					end
+				end))
+				FriendJoinNotifier:Clean(playersService.PlayerRemoving:Connect(function(plr)
+					if table.find(larp.Categories.Friends.ListEnabled or {}, plr.Name) then
+						larp:CreateNotification('Friend', plr.DisplayName..' left your game', 5)
+					end
+				end))
+			end
+		end,
+		Tooltip = 'Notifies you when a friend joins or leaves'
+	})
+end)
+
+run(function()
+	local ScreenshotMode
+	ScreenshotMode = larp.Categories.Other:CreateModule({
+		Name = 'Screenshot Mode',
+		Tags = {'NEW'},
+		Function = function(callback)
+			pcall(function()
+				larp.gui.ScaledGui.Visible = not callback
+			end)
+			pcall(function()
+				larp.Legit.Window.Visible = not callback
+			end)
+		end,
+		Tooltip = 'Hides the interface for screenshots, modules keep running'
+	})
+end)
+
+run(function()
+	local SessionStats
+	local kills, deaths, streak, best = 0, 0, 0, 0
+	SessionStats = larp.Categories.Other:CreateModule({
+		Name = 'Session Stats',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				kills, deaths, streak = 0, 0, 0
+				SessionStats:Clean(larpEvents.EntityDeathEvent.Event:Connect(function(deathTable)
+					if not deathTable then return end
+					local killer = playersService:GetPlayerFromCharacter(deathTable.fromEntity)
+					local killed = playersService:GetPlayerFromCharacter(deathTable.entityInstance)
+					if killer == lplr and killed and killed ~= lplr then
+						kills += 1
+						streak += 1
+						if streak > best then best = streak end
+					end
+					if killed == lplr then
+						deaths += 1
+						streak = 0
+					end
+				end))
+			end
+		end,
+		ExtraText = function()
+			return kills..'/'..deaths..' '..streak..'KS'
+		end,
+		Tooltip = 'Tracks your kills, deaths and killstreak this session'
+	})
+end)
+
+run(function()
+	local GameInfo
+	local infoGui
+	local infoLabel
+	GameInfo = larp.Categories.Other:CreateModule({
+		Name = 'Game Info',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				local gui = Instance.new('ScreenGui')
+				gui.Name = 'LarpGameInfo'
+				gui.ResetOnSpawn = false
+				gui.Parent = playersService.LocalPlayer.PlayerGui
+				infoGui = gui
+				infoLabel = Instance.new('TextLabel')
+				infoLabel.Size = UDim2.fromOffset(220, 20)
+				infoLabel.Position = UDim2.fromOffset(10, 80)
+				infoLabel.BackgroundColor3 = Color3.new()
+				infoLabel.BackgroundTransparency = 0.4
+				infoLabel.BorderSizePixel = 0
+				infoLabel.Text = ''
+				infoLabel.TextColor3 = Color3.new(1, 1, 1)
+				infoLabel.TextSize = 13
+				infoLabel.Font = Enum.Font.Gotham
+				infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+				infoLabel.Parent = gui
+				local start, acc = tick(), 0
+				GameInfo:Clean(runService.Heartbeat:Connect(function(dt)
+					acc += dt
+					if acc < 1 or not infoLabel or not infoLabel.Parent then return end
+					acc = 0
+					local alive = 0
+					for _, ent in entitylib.List do
+						if ent and ent.Player and entitylib.isVulnerable(ent) then
+							alive += 1
+						end
+					end
+					local mode = (store.queueType or 'bedwars')
+					local el = math.floor(tick() - start)
+					infoLabel.Text = mode..' | Alive: '..alive..' | '..math.floor(el / 60)..':'..string.format('%02d', el % 60)
+				end))
+			else
+				if infoGui then pcall(function() infoGui:Destroy() end) end
+				infoGui, infoLabel = nil, nil
+			end
+		end,
+		Tooltip = 'Shows mode, players alive and match time'
+	})
+end)
+
+run(function()
+	local LowHPAlert
+	local Threshold
+	local alerted = false
+	LowHPAlert = larp.Categories.Other:CreateModule({
+		Name = 'Low HP Alert',
+		Tags = {'NEW'},
+		Function = function(callback)
+			if callback then
+				alerted = false
+				local acc = 0
+				LowHPAlert:Clean(runService.Heartbeat:Connect(function(dt)
+					acc += dt
+					if acc < 0.5 then return end
+					acc = 0
+					local char = entitylib.character
+					local hum = char and char:FindFirstChildOfClass('Humanoid')
+					if not hum then alerted = false return end
+					local pct = hum.Health / math.max(hum.MaxHealth, 1) * 100
+					if pct <= Threshold.Value and not alerted then
+						alerted = true
+						larp:CreateNotification('Low HP', 'You are at '..math.floor(pct)..'% health!', 4, 'warning')
+					elseif pct > Threshold.Value + 10 then
+						alerted = false
+					end
+				end))
+			end
+		end,
+		Tooltip = 'Warns you when your health gets low'
+	})
+	Threshold = LowHPAlert:CreateSlider({
+		Name = 'Threshold',
+		Min = 10,
+		Max = 50,
+		Default = 25,
+		Suffix = function(val) return '%' end,
+		Tooltip = 'Alert when below this health percent'
 	})
 end)

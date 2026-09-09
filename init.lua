@@ -59,7 +59,6 @@ end
 local loaderAssets = {
 	['Larp.png'] = 423638,
 	['Textv4.png'] = 10107,
-	['close.png'] = 198,
 }
 for png, size in loaderAssets do
 	local path = 'LarpV4/assets/larp/'..png
@@ -89,96 +88,73 @@ loadgui.ResetOnSpawn = false
 loadgui.IgnoreGuiInset = true
 loadgui.DisplayOrder = 999
 loadgui.Parent = gethui and gethui() or cloneref(game:GetService('CoreGui'))
-local loadbg = Instance.new('Frame')
-loadbg.Size = UDim2.fromScale(1, 1)
-loadbg.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
-loadbg.BorderSizePixel = 0
-loadbg.Parent = loadgui
-local minbtn = Instance.new('TextButton')
-minbtn.Size = UDim2.fromOffset(28, 28)
-minbtn.Position = UDim2.new(1, -64, 0, 12)
-minbtn.BackgroundTransparency = 1
-minbtn.AutoButtonColor = false
-minbtn.Text = ''
-minbtn.Parent = loadbg
-local minbar = Instance.new('Frame')
-minbar.Size = UDim2.fromOffset(12, 2)
-minbar.Position = UDim2.new(0.5, -6, 0.5, -1)
-minbar.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-minbar.BorderSizePixel = 0
-minbar.Parent = minbtn
-local closebtn = Instance.new('TextButton')
-closebtn.Size = UDim2.fromOffset(28, 28)
-closebtn.Position = UDim2.new(1, -32, 0, 12)
-closebtn.BackgroundTransparency = 1
-closebtn.AutoButtonColor = false
-closebtn.Text = ''
-closebtn.Parent = loadbg
-local closeimg = Instance.new('ImageLabel')
-closeimg.Size = UDim2.fromOffset(12, 12)
-closeimg.Position = UDim2.new(0.5, -6, 0.5, -6)
-closeimg.BackgroundTransparency = 1
-closeimg.ImageColor3 = Color3.fromRGB(200, 200, 200)
-closeimg.ScaleType = Enum.ScaleType.Fit
-closeimg.Parent = closebtn
-if not pcall(function()
-	assert(isfile('LarpV4/assets/larp/close.png'))
-	closeimg.Image = getcustomasset('LarpV4/assets/larp/close.png')
-end) then
-	closeimg:Destroy()
-	for _, r in {45, -45} do
-		local l = Instance.new('Frame')
-		l.Size = UDim2.fromOffset(14, 2)
-		l.AnchorPoint = Vector2.new(0.5, 0.5)
-		l.Position = UDim2.new(0.5, 0, 0.5, 0)
-		l.Rotation = r
-		l.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-		l.BorderSizePixel = 0
-		l.Parent = closebtn
-	end
-end
-minbtn.MouseButton1Click:Connect(function()
-	loadgui.Visible = false
-end)
-closebtn.MouseButton1Click:Connect(function()
-	getgenv().LarpLoadCancelled = true
-	pcall(function()
-		loadgui:Destroy()
-	end)
-end)
+local dim = Instance.new('Frame')
+dim.Size = UDim2.fromScale(1, 1)
+dim.BackgroundColor3 = Color3.new()
+dim.BackgroundTransparency = 0.5
+dim.BorderSizePixel = 0
+dim.Parent = loadgui
+local panel = Instance.new('Frame')
+panel.Size = UDim2.fromOffset(400, 230)
+panel.Position = UDim2.new(0.5, -200, 0.5, -115)
+panel.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
+panel.BorderSizePixel = 0
+panel.ClipsDescendants = true
+panel.Parent = loadgui
+local panelcorner = Instance.new('UICorner')
+panelcorner.CornerRadius = UDim.new(0, 10)
+panelcorner.Parent = panel
+local panelstroke = Instance.new('UIStroke')
+panelstroke.Color = Color3.fromRGB(42, 42, 48)
+panelstroke.Thickness = 1
+panelstroke.Parent = panel
 local logorow = Instance.new('Frame')
-logorow.Size = UDim2.fromOffset(360, 90)
-logorow.Position = UDim2.new(0.5, -180, 0.4, -45)
+logorow.Size = UDim2.fromOffset(340, 84)
+logorow.Position = UDim2.new(0.5, -170, 0, 38)
 logorow.BackgroundTransparency = 1
-logorow.Parent = loadbg
+logorow.Parent = panel
 local logo = Instance.new('ImageLabel')
-logo.Size = UDim2.fromOffset(260, 81)
-logo.Position = UDim2.fromOffset(4, 4)
+logo.Size = UDim2.fromOffset(240, 75)
+logo.Position = UDim2.fromOffset(10, 4)
 logo.BackgroundTransparency = 1
 logo.Image = larpImg
 logo.ScaleType = Enum.ScaleType.Fit
+logo.ZIndex = 2
 logo.Parent = logorow
+local logoshadow = logo:Clone()
+logoshadow.Position = UDim2.fromOffset(12, 6)
+logoshadow.ImageColor3 = Color3.new()
+logoshadow.ImageTransparency = 0.7
+logoshadow.ZIndex = 1
+logoshadow.Parent = logorow
 local logov4 = Instance.new('ImageLabel')
-logov4.Size = UDim2.fromOffset(76, 53)
-logov4.Position = UDim2.fromOffset(278, 18)
+logov4.Size = UDim2.fromOffset(70, 49)
+logov4.Position = UDim2.fromOffset(258, 17)
 logov4.BackgroundTransparency = 1
 logov4.Image = v4Img
 logov4.ScaleType = Enum.ScaleType.Fit
+logov4.ZIndex = 2
 logov4.Parent = logorow
 local bartrack = Instance.new('Frame')
-bartrack.Size = UDim2.fromOffset(380, 4)
-bartrack.Position = UDim2.new(0.5, -190, 0.4, 72)
-bartrack.BackgroundColor3 = Color3.fromRGB(43, 43, 43)
+bartrack.Size = UDim2.fromOffset(300, 5)
+bartrack.Position = UDim2.new(0.5, -150, 0, 150)
+bartrack.BackgroundColor3 = Color3.fromRGB(38, 38, 43)
 bartrack.BorderSizePixel = 0
-bartrack.Parent = loadbg
+bartrack.Parent = panel
+local bartrackcorner = Instance.new('UICorner')
+bartrackcorner.CornerRadius = UDim.new(1, 0)
+bartrackcorner.Parent = bartrack
 local barfill = Instance.new('Frame')
 barfill.Size = UDim2.new(0, 0, 1, 0)
 barfill.BackgroundColor3 = Color3.fromRGB(0, 204, 102)
 barfill.BorderSizePixel = 0
 barfill.Parent = bartrack
+local barfillcorner = Instance.new('UICorner')
+barfillcorner.CornerRadius = UDim.new(1, 0)
+barfillcorner.Parent = barfill
 local loadstatus = Instance.new('TextLabel')
-loadstatus.Size = UDim2.fromOffset(400, 16)
-loadstatus.Position = UDim2.new(0.5, -200, 0.4, 84)
+loadstatus.Size = UDim2.fromOffset(360, 16)
+loadstatus.Position = UDim2.new(0.5, -180, 0, 162)
 loadstatus.BackgroundTransparency = 1
 loadstatus.Text = ''
 loadstatus.RichText = true
@@ -187,7 +163,7 @@ loadstatus.TextTruncate = Enum.TextTruncate.AtEnd
 loadstatus.TextColor3 = Color3.fromRGB(119, 119, 119)
 loadstatus.TextSize = 11
 loadstatus.Font = Enum.Font.Arial
-loadstatus.Parent = loadbg
+loadstatus.Parent = panel
 downloader:GetPropertyChangedSignal('Text'):Connect(function()
 	loadstatus.Text = downloader.Text
 end)
@@ -216,21 +192,26 @@ end
 getgenv().LarpLoaderDone = function()
 	if not loadgui.Parent or getgenv().LarpLoadCancelled then return end
 	loadgui:SetAttribute('Done', true)
-	barfill.Size = UDim2.new(1, 0, 1, 0)
+	local tweenService = cloneref(game:GetService('TweenService'))
 	pcall(function()
 		local api = shared.larp or getgenv().larp
 		if api and api.GUIColor then
 			logov4.ImageColor3 = Color3.fromHSV(api.GUIColor.Hue, api.GUIColor.Sat, api.GUIColor.Value)
 		end
 	end)
-	local tweenService = cloneref(game:GetService('TweenService'))
+	local fillin = tweenService:Create(barfill, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)})
+	fillin:Play()
+	fillin.Completed:Wait()
+	task.wait(0.25)
 	barfill.AnchorPoint = Vector2.new(0.5, 0.5)
 	barfill.Position = UDim2.new(0.5, 0, 0.5, 0)
-	local tw = tweenService:Create(barfill, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 0, 1, 0)})
-	tw:Play()
-	tw.Completed:Wait()
+	local collapse = tweenService:Create(barfill, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 0, 1, 0)})
+	collapse:Play()
+	collapse.Completed:Wait()
 	loadstatus.Text = '<font color="#00CC66">LARP V4 successfully loaded</font>'
-	task.wait(1.1)
+	loadstatus.Font = Enum.Font.GothamBold
+	loadstatus.TextSize = 12
+	task.wait(1.4)
 	pcall(function()
 		loadgui:Destroy()
 	end)

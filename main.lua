@@ -168,9 +168,6 @@ end
 local function finishLoading()
 	larp.Init = nil
 	larp:Load()
-	pcall(function()
-		if getgenv().LarpLoaderDone then getgenv().LarpLoaderDone() end
-	end)
 
 	local teleportedServers
 	larp:Clean(playersService.LocalPlayer.OnTeleport:Connect(function()

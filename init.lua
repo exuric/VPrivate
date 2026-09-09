@@ -46,11 +46,6 @@ end
 local COMMIT = fetchCommit()
 local LARPWATER = '--LARP:'..COMMIT..'\n'
 
-pcall(function()
-	local core = gethui and gethui() or cloneref(game:GetService('CoreGui'))
-	local old = core:FindFirstChild('LarpLoader')
-	if old then old:Destroy() end
-end)
 for _, f in {'LarpV4', 'LarpV4/assets', 'LarpV4/assets/larp'} do
 	if not isfolder(f) then
 		pcall(makefolder, f)
@@ -71,124 +66,6 @@ for png, size in loaderAssets do
 			end
 		end)
 	end
-end
-local loadgui = Instance.new('ScreenGui')
-loadgui.Name = 'LarpLoader'
-loadgui.ResetOnSpawn = false
-loadgui.IgnoreGuiInset = true
-loadgui.DisplayOrder = 999
-loadgui.Parent = gethui and gethui() or cloneref(game:GetService('CoreGui'))
-local dim = Instance.new('Frame')
-dim.Size = UDim2.fromScale(1, 1)
-dim.BackgroundColor3 = Color3.new()
-dim.BackgroundTransparency = 0.5
-dim.BorderSizePixel = 0
-dim.Parent = loadgui
-local panel = Instance.new('Frame')
-panel.Size = UDim2.fromOffset(520, 240)
-panel.Position = UDim2.new(0.5, -260, 0.5, -120)
-panel.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
-panel.BorderSizePixel = 0
-panel.ClipsDescendants = true
-panel.Parent = loadgui
-local panelcorner = Instance.new('UICorner')
-panelcorner.CornerRadius = UDim.new(0, 10)
-panelcorner.Parent = panel
-local panelstroke = Instance.new('UIStroke')
-panelstroke.Color = Color3.fromRGB(42, 42, 48)
-panelstroke.Thickness = 1
-panelstroke.Parent = panel
-local wordmark = Instance.new('TextLabel')
-wordmark.Size = UDim2.fromOffset(440, 70)
-wordmark.Position = UDim2.new(0.5, -220, 0, 40)
-wordmark.BackgroundTransparency = 1
-wordmark.Text = 'LARP <font color="#00CC66">V4</font>'
-wordmark.RichText = true
-wordmark.TextColor3 = Color3.new(1, 1, 1)
-wordmark.TextSize = 48
-wordmark.Font = Enum.Font.GothamBlack
-wordmark.TextXAlignment = Enum.TextXAlignment.Center
-wordmark.Parent = panel
-local bartrack = Instance.new('Frame')
-bartrack.Size = UDim2.fromOffset(340, 6)
-bartrack.Position = UDim2.new(0.5, -170, 0, 148)
-bartrack.BackgroundColor3 = Color3.fromRGB(38, 38, 43)
-bartrack.BorderSizePixel = 0
-bartrack.Parent = panel
-local bartrackcorner = Instance.new('UICorner')
-bartrackcorner.CornerRadius = UDim.new(1, 0)
-bartrackcorner.Parent = bartrack
-local barfill = Instance.new('Frame')
-barfill.Size = UDim2.new(0, 0, 1, 0)
-barfill.BackgroundColor3 = Color3.fromRGB(0, 204, 102)
-barfill.BorderSizePixel = 0
-barfill.Parent = bartrack
-local barfillcorner = Instance.new('UICorner')
-barfillcorner.CornerRadius = UDim.new(1, 0)
-barfillcorner.Parent = barfill
-local loadstatus = Instance.new('TextLabel')
-loadstatus.Size = UDim2.fromOffset(400, 16)
-loadstatus.Position = UDim2.new(0.5, -200, 0, 162)
-loadstatus.BackgroundTransparency = 1
-loadstatus.Text = ''
-loadstatus.RichText = true
-loadstatus.TextXAlignment = Enum.TextXAlignment.Center
-loadstatus.TextTruncate = Enum.TextTruncate.AtEnd
-loadstatus.TextColor3 = Color3.fromRGB(119, 119, 119)
-loadstatus.TextSize = 11
-loadstatus.Font = Enum.Font.Arial
-loadstatus.Parent = panel
-downloader:GetPropertyChangedSignal('Text'):Connect(function()
-	loadstatus.Text = downloader.Text
-end)
-downloader.Visible = false
-getgenv().LarpDownloaded = getgenv().LarpDownloaded or 0
-local runService = cloneref(game:GetService('RunService'))
-local shown = 0
-local heartbeat
-heartbeat = runService.Heartbeat:Connect(function(dt)
-	if not loadgui.Parent or loadgui:GetAttribute('Done') then
-		heartbeat:Disconnect()
-		return
-	end
-	local target = math.clamp(0.08 + 0.84 * (getgenv().LarpDownloaded / 14), 0, 0.94)
-	shown = shown + (target - shown) * math.clamp(dt * 6, 0, 1)
-	barfill.Size = UDim2.new(shown, 0, 1, 0)
-end)
-local function loaderFail()
-	loadgui:SetAttribute('Done', true)
-	loadgui.Visible = true
-	barfill.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
-	loadstatus.RichText = false
-	loadstatus.Text = 'Failed to download, Contact Support'
-	loadstatus.TextColor3 = Color3.fromRGB(220, 90, 90)
-end
-getgenv().LarpLoaderDone = function()
-	if not loadgui.Parent or getgenv().LarpLoadCancelled then return end
-	loadgui:SetAttribute('Done', true)
-	local tweenService = cloneref(game:GetService('TweenService'))
-	pcall(function()
-		local api = shared.larp or getgenv().larp
-		if api and api.GUIColor then
-			wordmark.Text = 'LARP <font color="#'..Color3.fromHSV(api.GUIColor.Hue, api.GUIColor.Sat, api.GUIColor.Value):ToHex()..'">V4</font>'
-		end
-	end)
-	local fillin = tweenService:Create(barfill, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)})
-	fillin:Play()
-	fillin.Completed:Wait()
-	task.wait(0.25)
-	barfill.AnchorPoint = Vector2.new(0.5, 0.5)
-	barfill.Position = UDim2.new(0.5, 0, 0.5, 0)
-	local collapse = tweenService:Create(barfill, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 0, 1, 0)})
-	collapse:Play()
-	collapse.Completed:Wait()
-	loadstatus.Text = '<font color="#00CC66">LARP V4 successfully loaded</font>'
-	loadstatus.Font = Enum.Font.GothamBold
-	loadstatus.TextSize = 12
-	task.wait(1.4)
-	pcall(function()
-		loadgui:Destroy()
-	end)
 end
 
 local OID = 0x23d100184
@@ -216,9 +93,6 @@ local function downloadFile(path, func)
 		}
 		local suc, res
 		for i = 1, 8 do
-			if getgenv().LarpLoadCancelled then
-				error('LarpV4: load cancelled')
-			end
 			local url = urls[(i - 1) % 2 + 1]
 			suc, res = pcall(function()
 				return game:HttpGet(url, true)
@@ -444,9 +318,6 @@ local function verifyFiles()
 			end)
 		end
 		while remaining > 0 do
-			if getgenv().LarpLoadCancelled then
-				error('LarpV4: load cancelled')
-			end
 			task.wait()
 		end
 	end
@@ -485,11 +356,7 @@ local function verifyFiles()
 end
 
 if not (shared.LarpDeveloper and ISOWNER) then
-	local vok, verr = pcall(verifyFiles)
-	if not vok then
-		pcall(loaderFail)
-		error(verr)
-	end
+	verifyFiles()
 end
 
 downloader.Text = ''
@@ -561,20 +428,13 @@ if not (shared.LarpDeveloper and ISOWNER) then
 end
 
 downloader.Text = ''
-local okmain, mainres = pcall(downloadFile, 'LarpV4/main.lua')
-if not okmain then
-	pcall(loaderFail)
-	error(mainres)
-end
-local _larpchunk, _larperr = loadstring(mainres, 'main')
+local _larpchunk, _larperr = loadstring(downloadFile('LarpV4/main.lua'), 'main')
 if not _larpchunk then
-	pcall(loaderFail)
 	error('LarpV4/main.lua failed to compile: '..tostring(_larperr))
 end
 local _larpok, _larpres = pcall(_larpchunk, license)
 downloader.Visible = false
 if not _larpok then
-	pcall(loaderFail)
 	error('LarpV4/main.lua: '..tostring(_larpres))
 end
 

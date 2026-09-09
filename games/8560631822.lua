@@ -15513,6 +15513,19 @@ run(function()
 		end
 	end
 	
+	local function updateDistText(v)
+		pcall(function()
+			local d = v:FindFirstChild('Distance')
+			if not d or not d.Visible then return end
+			local char = lplr.Character
+			local root = char and char:FindFirstChild('HumanoidRootPart')
+			local adornee = v.Adornee
+			if root and adornee and adornee.Parent then
+				d.Text = tostring(math.floor((root.Position - adornee.Position).Magnitude + 0.5))
+			end
+		end)
+	end
+
 	local function Added(v)
 		local billboard = Instance.new('BillboardGui')
 		billboard.Parent = Folder
@@ -15553,6 +15566,7 @@ run(function()
 		dist.Font = Enum.Font.Arial
 		dist.Visible = Distance.Enabled
 		dist.Parent = billboard
+		updateDistText(billboard)
 		Reference[v] = billboard
 		refreshAdornee(billboard)
 	end
@@ -15576,14 +15590,7 @@ run(function()
 				task.spawn(function()
 					repeat
 						for _, v in Reference do
-							local d = v:FindFirstChild('Distance')
-							if d and d.Visible then
-								local char = lplr.Character
-								local root = char and char:FindFirstChild('HumanoidRootPart')
-								if root and v.Adornee then
-									d.Text = tostring(math.floor((root.Position - v.Adornee.Position).Magnitude + 0.5))
-								end
-							end
+							updateDistText(v)
 						end
 						task.wait(0.25)
 					until not BedPlates.Enabled

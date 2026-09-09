@@ -174,7 +174,7 @@ local function finishLoading()
 
 	local teleportedServers
 	larp:Clean(playersService.LocalPlayer.OnTeleport:Connect(function()
-		if (not teleportedServers) and (not shared.LarpIndependent) then
+		if (not teleportedServers) and (not shared.LarpIndependent) and (larp.AutoExecute == nil or larp.AutoExecute.Enabled) then
 			teleportedServers = true
 			local teleportScript = [[
 				shared.larpreload = true
@@ -260,6 +260,7 @@ task.spawn(function()
 		task.wait()
 		if not shared.LarpIndependent then
 			loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
+			task.wait()
 			if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
 				loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
 			else
@@ -272,11 +273,11 @@ task.spawn(function()
 						if msg:find('404') or msg:find('Not Found') then
 							pcall(function()
 								larp:CreateNotification('LarpV4', 'No script for this game (PlaceId '..game.PlaceId..')', 6, 'alert')
-							end)
-						end
+						end)
 					end
 				end
 			end
+			task.wait()
 			finishLoading()
 		else
 			larp.Init = finishLoading

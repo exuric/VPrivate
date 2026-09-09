@@ -72,16 +72,6 @@ for png, size in loaderAssets do
 		end)
 	end
 end
-local larpImg = 'rbxassetid://14368358200'
-local v4Img = 'rbxassetid://14368357095'
-pcall(function()
-	if isfile('LarpV4/assets/larp/Larp.png') then
-		larpImg = getcustomasset('LarpV4/assets/larp/Larp.png')
-	end
-	if isfile('LarpV4/assets/larp/Textv4.png') then
-		v4Img = getcustomasset('LarpV4/assets/larp/Textv4.png')
-	end
-end)
 local loadgui = Instance.new('ScreenGui')
 loadgui.Name = 'LarpLoader'
 loadgui.ResetOnSpawn = false
@@ -95,8 +85,8 @@ dim.BackgroundTransparency = 0.5
 dim.BorderSizePixel = 0
 dim.Parent = loadgui
 local panel = Instance.new('Frame')
-panel.Size = UDim2.fromOffset(400, 230)
-panel.Position = UDim2.new(0.5, -200, 0.5, -115)
+panel.Size = UDim2.fromOffset(520, 240)
+panel.Position = UDim2.new(0.5, -260, 0.5, -120)
 panel.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
 panel.BorderSizePixel = 0
 panel.ClipsDescendants = true
@@ -108,36 +98,20 @@ local panelstroke = Instance.new('UIStroke')
 panelstroke.Color = Color3.fromRGB(42, 42, 48)
 panelstroke.Thickness = 1
 panelstroke.Parent = panel
-local logorow = Instance.new('Frame')
-logorow.Size = UDim2.fromOffset(340, 84)
-logorow.Position = UDim2.new(0.5, -170, 0, 38)
-logorow.BackgroundTransparency = 1
-logorow.Parent = panel
-local logo = Instance.new('ImageLabel')
-logo.Size = UDim2.fromOffset(240, 75)
-logo.Position = UDim2.fromOffset(10, 4)
-logo.BackgroundTransparency = 1
-logo.Image = larpImg
-logo.ScaleType = Enum.ScaleType.Fit
-logo.ZIndex = 2
-logo.Parent = logorow
-local logoshadow = logo:Clone()
-logoshadow.Position = UDim2.fromOffset(12, 6)
-logoshadow.ImageColor3 = Color3.new()
-logoshadow.ImageTransparency = 0.7
-logoshadow.ZIndex = 1
-logoshadow.Parent = logorow
-local logov4 = Instance.new('ImageLabel')
-logov4.Size = UDim2.fromOffset(70, 49)
-logov4.Position = UDim2.fromOffset(258, 17)
-logov4.BackgroundTransparency = 1
-logov4.Image = v4Img
-logov4.ScaleType = Enum.ScaleType.Fit
-logov4.ZIndex = 2
-logov4.Parent = logorow
+local wordmark = Instance.new('TextLabel')
+wordmark.Size = UDim2.fromOffset(440, 70)
+wordmark.Position = UDim2.new(0.5, -220, 0, 40)
+wordmark.BackgroundTransparency = 1
+wordmark.Text = 'LARP <font color="#00CC66">V4</font>'
+wordmark.RichText = true
+wordmark.TextColor3 = Color3.new(1, 1, 1)
+wordmark.TextSize = 48
+wordmark.Font = Enum.Font.GothamBlack
+wordmark.TextXAlignment = Enum.TextXAlignment.Center
+wordmark.Parent = panel
 local bartrack = Instance.new('Frame')
-bartrack.Size = UDim2.fromOffset(300, 5)
-bartrack.Position = UDim2.new(0.5, -150, 0, 150)
+bartrack.Size = UDim2.fromOffset(340, 6)
+bartrack.Position = UDim2.new(0.5, -170, 0, 148)
 bartrack.BackgroundColor3 = Color3.fromRGB(38, 38, 43)
 bartrack.BorderSizePixel = 0
 bartrack.Parent = panel
@@ -153,8 +127,8 @@ local barfillcorner = Instance.new('UICorner')
 barfillcorner.CornerRadius = UDim.new(1, 0)
 barfillcorner.Parent = barfill
 local loadstatus = Instance.new('TextLabel')
-loadstatus.Size = UDim2.fromOffset(360, 16)
-loadstatus.Position = UDim2.new(0.5, -180, 0, 162)
+loadstatus.Size = UDim2.fromOffset(400, 16)
+loadstatus.Position = UDim2.new(0.5, -200, 0, 162)
 loadstatus.BackgroundTransparency = 1
 loadstatus.Text = ''
 loadstatus.RichText = true
@@ -196,7 +170,7 @@ getgenv().LarpLoaderDone = function()
 	pcall(function()
 		local api = shared.larp or getgenv().larp
 		if api and api.GUIColor then
-			logov4.ImageColor3 = Color3.fromHSV(api.GUIColor.Hue, api.GUIColor.Sat, api.GUIColor.Value)
+			wordmark.Text = 'LARP <font color="#'..Color3.fromHSV(api.GUIColor.Hue, api.GUIColor.Sat, api.GUIColor.Value):ToHex()..'">V4</font>'
 		end
 	end)
 	local fillin = tweenService:Create(barfill, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)})

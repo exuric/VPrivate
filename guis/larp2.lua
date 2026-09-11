@@ -4032,35 +4032,6 @@ function mainapi:ApplyModuleOrder(catName, order)
 	local cat = mainapi.Categories[catName]
 	if cat then cat.ModuleOrder = final end
 end
-function mainapi:DragReorder(modapi, mouseY)
-	local rows = {}
-	for _, m in pairs(mainapi.Modules) do
-		if m.Category == modapi.Category and m.Object and m.Object.Parent then
-			table.insert(rows, m)
-		end
-	end
-	if #rows < 2 then return end
-	table.sort(rows, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
-	local cur
-	for k, m in rows do
-		if m == modapi then cur = k break end
-	end
-	if not cur then return end
-	local my = modapi.Object.AbsolutePosition.Y + modapi.Object.AbsoluteSize.Y / 2
-	local target
-	if mouseY < my - 10 and cur > 1 then target = cur - 1
-	elseif mouseY > my + 10 and cur < #rows then target = cur + 1 end
-	if not target then return end
-	rows[cur], rows[target] = rows[target], rows[cur]
-	local names = {}
-	for k, m in rows do
-		m.Object.LayoutOrder = k
-		if m.Children then m.Children.LayoutOrder = k end
-		table.insert(names, m.Name)
-	end
-	local cat = mainapi.Categories[modapi.Category]
-	if cat then cat.ModuleOrder = names end
-end
 function mainapi:ApplyRowVisuals(m)
 	if not m or not m.Object then return end
 	local btn = m.Object
@@ -4093,163 +4064,6 @@ function mainapi:ApplyRowVisuals(m)
 		mark.Size = UDim2.fromOffset(3, h - 6)
 		mark.Position = UDim2.fromOffset(2, 3)
 	end
-end
-function mainapi:OpenModulePanel(moduleapi, categoryapi)
-	local rowAccents = {{'Theme', nil}, {'Red', Color3.fromRGB(250, 50, 56)}, {'Green', Color3.fromRGB(74, 222, 128)}, {'Blue', Color3.fromRGB(90, 160, 255)}, {'White', Color3.fromRGB(235, 235, 235)}}
-	if mainapi.ModulePanel then pcall(function() mainapi.ModulePanel:Destroy() end) end
-	local mouse = inputService:GetMouseLocation()
-	local win = Instance.new('Frame')
-	win.Name = 'ModulePanel'
-	win.Size = UDim2.fromOffset(210, 302)
-	win.Position = UDim2.new(0, math.clamp(mouse.X + 12, 0, math.max(gui.AbsoluteSize.X - 220, 0)), 0, math.clamp(mouse.Y - 40, 0, math.max(gui.AbsoluteSize.Y - 312, 0)))
-	win.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-	win.BorderSizePixel = 0
-	win.ZIndex = 15
-	win.Parent = clickgui
-	addCorner(win, UDim.new(0, 8))
-	addBlur(win)
-	local title = Instance.new('TextLabel')
-	title.Size = UDim2.new(1, -36, 0, 30)
-	title.Position = UDim2.fromOffset(12, 4)
-	title.BackgroundTransparency = 1
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = moduleapi.Name
-	title.TextColor3 = uipallet.Text
-	title.TextSize = 14
-	title.FontFace = uipallet.FontSemiBold
-	title.ZIndex = 16
-	title.Parent = win
-	local close = Instance.new('TextButton')
-	close.Size = UDim2.fromOffset(24, 24)
-	close.Position = UDim2.new(1, -28, 0, 6)
-	close.BackgroundTransparency = 1
-	close.AutoButtonColor = false
-	close.Text = 'x'
-	close.TextColor3 = color.Dark(uipallet.Text, 0.29)
-	close.TextSize = 14
-	close.FontFace = uipallet.Font
-	close.ZIndex = 16
-	close.Parent = win
-	close.MouseButton1Click:Connect(function()
-		if mainapi.ModulePanel == win then mainapi.ModulePanel = nil end
-		win:Destroy()
-	end)
-	local y = 38
-	local function rebuild()
-		if mainapi.ModulePanel ~= win or not win.Parent then return end
-		for _, c in win:GetChildren() do
-			if c:IsA('GuiObject') and c ~= title and c ~= close then c:Destroy() end
-		end
-		y = 38
-		local function row(label)
-			local l = Instance.new('TextLabel')
-			l.Size = UDim2.new(1, -24, 0, 14)
-			l.Position = UDim2.fromOffset(12, y)
-			l.BackgroundTransparency = 1
-			l.TextXAlignment = Enum.TextXAlignment.Left
-			l.Text = label
-			l.TextColor3 = color.Dark(uipallet.Text, 0.29)
-			l.TextSize = 11
-			l.FontFace = uipallet.Font
-			l.ZIndex = 16
-			l.Parent = win
-			y += 15
-		end
-		local function opts(list, current, pick)
-			local x = 12
-			for _, v in list do
-				local b = Instance.new('TextButton')
-				b.Size = UDim2.fromOffset(math.max(getfontsizeCached(v[1], 11, uipallet.Font).X + 16, 30), 22)
-				b.Position = UDim2.fromOffset(x, y)
-				b.BackgroundColor3 = current == v[1] and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.05)
-				b.BorderSizePixel = 0
-				b.AutoButtonColor = false
-				b.Text = v[1]
-				b.TextColor3 = current == v[1] and Color3.new(1, 1, 1) or color.Dark(uipallet.Text, 0.16)
-				b.TextSize = 11
-				b.FontFace = uipallet.Font
-				b.ZIndex = 16
-				b.Parent = win
-				addCorner(b, UDim.new(0, 5))
-				b.MouseButton1Click:Connect(function() pick(v) rebuild() end)
-				x += b.Size.X.Offset + 6
-			end
-			y += 28
-		end
-		local hidden = categoryapi.Hidden[moduleapi] and true or false
-		row('Visibility')
-		opts({{'Shown', false}, {'Hidden', true}}, hidden and 'Hidden' or 'Shown', function(v)
-			if (v[2] and true or false) ~= hidden then categoryapi:ToggleHidden(moduleapi) end
-			mainapi:QueueSave()
-		end)
-		row('Accent')
-		opts(rowAccents, (function()
-			for _, a in rowAccents do
-				if a[2] == moduleapi.RowAccent then return a[1] end
-			end
-			return 'Theme'
-		end)(), function(v)
-			moduleapi.RowAccent = v[2]
-			mainapi:ApplyRowVisuals(moduleapi)
-			mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-			mainapi:QueueSave()
-		end)
-		row('Alignment')
-		opts({{'Left'}, {'Center'}, {'Right'}}, moduleapi.RowAlign or 'Left', function(v)
-			moduleapi.RowAlign = v[1]
-			mainapi:ApplyRowVisuals(moduleapi)
-			mainapi:QueueSave()
-		end)
-		row('Size')
-		opts({{'S', 32}, {'M', 40}, {'L', 48}}, (moduleapi.RowSize == 32 and 'S' or moduleapi.RowSize == 48 and 'L' or 'M'), function(v)
-			moduleapi.RowSize = v[2]
-			mainapi:ApplyRowVisuals(moduleapi)
-			mainapi:QueueSave()
-		end)
-		row('Position')
-		opts({{'Top'}, {'Bottom'}}, '', function(v)
-			local final = {}
-			for _, m in pairs(mainapi.Modules) do
-				if m.Category == moduleapi.Category and m.Name ~= moduleapi.Name then table.insert(final, m.Name) end
-			end
-			table.sort(final, function(a, b) return mainapi.Modules[a].Object.LayoutOrder < mainapi.Modules[b].Object.LayoutOrder end)
-			if v[1] == 'Top' then table.insert(final, 1, moduleapi.Name) else table.insert(final, moduleapi.Name) end
-			mainapi:ApplyModuleOrder(moduleapi.Category, final)
-			mainapi:QueueSave()
-		end)
-		local reset = Instance.new('TextButton')
-		reset.Size = UDim2.new(1, -24, 0, 24)
-		reset.Position = UDim2.fromOffset(12, y + 4)
-		reset.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
-		reset.BorderSizePixel = 0
-		reset.AutoButtonColor = false
-		reset.Text = 'Reset Layout'
-		reset.TextColor3 = color.Dark(uipallet.Text, 0.16)
-		reset.TextSize = 12
-		reset.FontFace = uipallet.Font
-		reset.ZIndex = 16
-		reset.Parent = win
-		addCorner(reset, UDim.new(0, 5))
-		reset.MouseButton1Click:Connect(function()
-			for _, m in pairs(mainapi.Modules) do
-				if m.Category == moduleapi.Category then
-					m.RowAccent, m.RowAlign, m.RowSize = nil, nil, nil
-					mainapi:ApplyRowVisuals(m)
-				end
-			end
-			local names = {}
-			for _, m in pairs(mainapi.Modules) do
-				if m.Category == moduleapi.Category then table.insert(names, m.Name) end
-			end
-			table.sort(names)
-			mainapi:ApplyModuleOrder(moduleapi.Category, names)
-			categoryapi:RefreshHidden()
-			mainapi:QueueSave()
-			rebuild()
-		end)
-	end
-	rebuild()
-	mainapi.ModulePanel = win
 end
 function mainapi:CreateCategory(categorysettings)
 	local categoryapi = {
@@ -4423,16 +4237,16 @@ function mainapi:CreateCategory(categorysettings)
 	local windowlist = Instance.new('UIListLayout')
 	windowlist.SortOrder = Enum.SortOrder.LayoutOrder
 	windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	windowlist.Padding = UDim.new(0, 3)
-	windowlist.Parent = children
-	local padding = Instance.new('UIPadding')
-	padding.PaddingLeft = UDim.new(0, 4)
-	padding.PaddingRight = UDim.new(0, 4)
-	padding.PaddingTop = UDim.new(0, 3)
-	padding.PaddingBottom = UDim.new(0, 3)
-	padding.Parent = children
+		windowlist.Padding = UDim.new(0, 5)
+		windowlist.Parent = children
+		local padding = Instance.new('UIPadding')
+		padding.PaddingLeft = UDim.new(0, 4)
+		padding.PaddingRight = UDim.new(0, 4)
+		padding.PaddingTop = UDim.new(0, 4)
+		padding.PaddingBottom = UDim.new(0, 4)
+		padding.Parent = children
 
-	function categoryapi:CreateModule(modulesettings)
+		function categoryapi:CreateModule(modulesettings)
 		mainapi:Remove(modulesettings.Name)
 		local moduleapi = {
 			Enabled = false,
@@ -4656,11 +4470,143 @@ function mainapi:CreateCategory(categorysettings)
 		windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		windowlist.Parent = modulechildren
 		local modulepadding = Instance.new('UIPadding')
-		modulepadding.PaddingLeft = UDim.new(0, 4)
-		modulepadding.PaddingRight = UDim.new(0, 4)
+			modulepadding.PaddingLeft = UDim.new(0, 6)
+			modulepadding.PaddingRight = UDim.new(0, 6)
 		modulepadding.PaddingTop = UDim.new(0, 3)
 		modulepadding.PaddingBottom = UDim.new(0, 3)
 		modulepadding.Parent = modulechildren
+		local editsection = Instance.new('Frame')
+		editsection.Name = 'EditSection'
+		editsection.Size = UDim2.new(1, 0, 0, 184)
+		editsection.LayoutOrder = -999
+		editsection.BackgroundTransparency = 1
+		editsection.Visible = false
+		editsection.Parent = modulechildren
+		moduleapi.EditSection = editsection
+		local function buildEditSection()
+			if not editsection.Parent then return end
+			for _, c in editsection:GetChildren() do c:Destroy() end
+			local y = 0
+			local head = Instance.new('TextLabel')
+			head.Size = UDim2.new(1, -8, 0, 16)
+			head.Position = UDim2.fromOffset(4, y)
+			head.BackgroundTransparency = 1
+			head.TextXAlignment = Enum.TextXAlignment.Left
+			head.Text = 'EDIT'
+			head.TextColor3 = color.Dark(uipallet.Text, 0.29)
+			head.TextSize = 11
+			head.FontFace = uipallet.FontSemiBold
+			head.Parent = editsection
+			y += 18
+			local bar = Instance.new('Frame')
+			bar.Size = UDim2.new(1, -8, 0, 1)
+			bar.Position = UDim2.fromOffset(4, y)
+			bar.BackgroundColor3 = color.Light(uipallet.Main, 0.08)
+			bar.BorderSizePixel = 0
+			bar.Parent = editsection
+			y += 6
+			local function optrow(label, choices, current, pick)
+				local l = Instance.new('TextLabel')
+				l.Size = UDim2.new(0, 64, 0, 22)
+				l.Position = UDim2.fromOffset(4, y)
+				l.BackgroundTransparency = 1
+				l.TextXAlignment = Enum.TextXAlignment.Left
+				l.Text = label
+				l.TextColor3 = color.Dark(uipallet.Text, 0.16)
+				l.TextSize = 12
+				l.FontFace = uipallet.Font
+				l.Parent = editsection
+				local x = 72
+				for _, v in choices do
+					local b = Instance.new('TextButton')
+					b.Size = UDim2.fromOffset(math.max(getfontsizeCached(v[1], 11, uipallet.Font).X + 14, 28), 20)
+					b.Position = UDim2.fromOffset(x, y)
+					b.BackgroundColor3 = current == v[1] and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.05)
+					b.BorderSizePixel = 0
+					b.AutoButtonColor = false
+					b.Text = v[1]
+					b.TextColor3 = current == v[1] and Color3.new(1, 1, 1) or color.Dark(uipallet.Text, 0.16)
+					b.TextSize = 11
+					b.FontFace = uipallet.Font
+					b.Parent = editsection
+					addCorner(b, UDim.new(0, 5))
+					if v[3] then
+						b.BackgroundColor3 = v[3]
+						b.Text = ''
+					end
+					b.MouseButton1Click:Connect(function() pick(v) buildEditSection() end)
+					x += b.Size.X.Offset + 5
+				end
+				y += 26
+			end
+			local hidden = categoryapi.Hidden[moduleapi] and true or false
+			optrow('Visible', {{'Shown', false}, {'Hidden', true}}, hidden and 'Hidden' or 'Shown', function(v)
+				if (v[2] and true or false) ~= hidden then categoryapi:ToggleHidden(moduleapi) end
+				mainapi:QueueSave()
+			end)
+			optrow('Accent', {{'Theme', nil}, {'Red', Color3.fromRGB(250, 50, 56)}, {'Green', Color3.fromRGB(74, 222, 128)}, {'Blue', Color3.fromRGB(90, 160, 255)}, {'White', Color3.fromRGB(235, 235, 235)}}, (function()
+				local cur = 'Theme'
+				for _, a in {{'Red', Color3.fromRGB(250, 50, 56)}, {'Green', Color3.fromRGB(74, 222, 128)}, {'Blue', Color3.fromRGB(90, 160, 255)}, {'White', Color3.fromRGB(235, 235, 235)}} do
+					if a[2] == moduleapi.RowAccent then cur = a[1] end
+				end
+				return cur
+			end)(), function(v)
+				moduleapi.RowAccent = v[2]
+				mainapi:ApplyRowVisuals(moduleapi)
+				mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+				mainapi:QueueSave()
+			end)
+			optrow('Align', {{'Left'}, {'Center'}, {'Right'}}, moduleapi.RowAlign or 'Left', function(v)
+				moduleapi.RowAlign = v[1]
+				mainapi:ApplyRowVisuals(moduleapi)
+				mainapi:QueueSave()
+			end)
+			optrow('Size', {{'S', 32}, {'M', 40}, {'L', 48}}, (moduleapi.RowSize == 32 and 'S' or moduleapi.RowSize == 48 and 'L' or 'M'), function(v)
+				moduleapi.RowSize = v[2]
+				mainapi:ApplyRowVisuals(moduleapi)
+				mainapi:QueueSave()
+			end)
+			optrow('Move', {{'Top'}, {'Bottom'}}, '', function(v)
+				local final = {}
+				for _, m in pairs(mainapi.Modules) do
+					if m.Category == moduleapi.Category and m.Name ~= moduleapi.Name then table.insert(final, m.Name) end
+				end
+				table.sort(final, function(a, b) return mainapi.Modules[a].Object.LayoutOrder < mainapi.Modules[b].Object.LayoutOrder end)
+				if v[1] == 'Top' then table.insert(final, 1, moduleapi.Name) else table.insert(final, moduleapi.Name) end
+				mainapi:ApplyModuleOrder(moduleapi.Category, final)
+				mainapi:QueueSave()
+			end)
+			local reset = Instance.new('TextButton')
+			reset.Size = UDim2.new(1, -8, 0, 22)
+			reset.Position = UDim2.fromOffset(4, y)
+			reset.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+			reset.BorderSizePixel = 0
+			reset.AutoButtonColor = false
+			reset.Text = 'Reset Layout'
+			reset.TextColor3 = color.Dark(uipallet.Text, 0.16)
+			reset.TextSize = 11
+			reset.FontFace = uipallet.Font
+			reset.Parent = editsection
+			addCorner(reset, UDim.new(0, 5))
+			reset.MouseButton1Click:Connect(function()
+				for _, m in pairs(mainapi.Modules) do
+					if m.Category == moduleapi.Category then
+						m.RowAccent, m.RowAlign, m.RowSize = nil, nil, nil
+						mainapi:ApplyRowVisuals(m)
+					end
+				end
+				local names = {}
+				for _, m in pairs(mainapi.Modules) do
+					if m.Category == moduleapi.Category then table.insert(names, m.Name) end
+				end
+				table.sort(names)
+				mainapi:ApplyModuleOrder(moduleapi.Category, names)
+				categoryapi:RefreshHidden()
+				mainapi:QueueSave()
+				buildEditSection()
+			end)
+		end
+		buildEditSection()
 		local divider = Instance.new('Frame')
 		divider.Name = 'Divider'
 		divider.Size = UDim2.new(1, 0, 0, 1)
@@ -4870,28 +4816,94 @@ function mainapi:CreateCategory(categorysettings)
 			favicon.Visible = hovered or modulechildren.Visible or favstate
 		end)
 		local rowDragged = false
+		local dragGhost, dragLine
 		modulebutton.MouseButton1Down:Connect(function()
 			rowDragged = false
 			if not categoryapi.Editing then return end
-			local startY = inputService:GetMouseLocation().Y
+			local startPos = inputService:GetMouseLocation()
+			local baseX = (modulebutton.AbsolutePosition.X - clickgui.AbsolutePosition.X) / scale.Scale
+			local baseY = (modulebutton.AbsolutePosition.Y - clickgui.AbsolutePosition.Y) / scale.Scale
 			local movedConn, upConn
+			local function stopDrag(save)
+				local dropY
+				if save and rowDragged and dragLine and dragLine.Visible then
+					dropY = dragLine.AbsolutePosition.Y
+				end
+				if movedConn then movedConn:Disconnect() movedConn = nil end
+				if upConn then upConn:Disconnect() upConn = nil end
+				if dragGhost then pcall(function() dragGhost:Destroy() end) dragGhost = nil end
+				if dragLine then pcall(function() dragLine:Destroy() end) dragLine = nil end
+				modulebutton.BackgroundTransparency = categoryapi.Hidden[moduleapi] and 0.5 or 0
+				if dropY then
+					local rows = {}
+					for _, m in pairs(mainapi.Modules) do
+						if m.Category == moduleapi.Category and m ~= moduleapi and m.Object and m.Object.Parent == children and m.Object.Visible then
+							table.insert(rows, {n = m.Name, y = m.Object.AbsolutePosition.Y, h = m.Object.AbsoluteSize.Y})
+						end
+					end
+					table.sort(rows, function(a, b) return a.y < b.y end)
+					local final = {}
+					for _, r in rows do table.insert(final, r.n) end
+					local idx = #final + 1
+					for k, r in rows do
+						if dropY < r.y + r.h / 2 then idx = k break end
+					end
+					table.insert(final, idx, moduleapi.Name)
+					mainapi:ApplyModuleOrder(moduleapi.Category, final)
+					mainapi:QueueSave()
+				end
+			end
 			movedConn = inputService.InputChanged:Connect(function(input)
 				if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-				if not rowDragged and math.abs(input.Position.Y - startY) > 8 then rowDragged = true end
-				if rowDragged then mainapi:DragReorder(moduleapi, input.Position.Y) end
+				if not rowDragged and (input.Position - startPos).Magnitude > 8 then
+					rowDragged = true
+					dragGhost = modulebutton:Clone()
+					dragGhost.Name = 'DragGhost'
+					dragGhost.BackgroundTransparency = 0.35
+					dragGhost.Parent = clickgui
+					dragLine = Instance.new('Frame')
+					dragLine.Name = 'DragLine'
+					dragLine.Size = UDim2.fromOffset(212, 2)
+					dragLine.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+					dragLine.BorderSizePixel = 0
+					dragLine.Visible = false
+					dragLine.Parent = window
+					modulebutton.BackgroundTransparency = 0.75
+				end
+				if rowDragged and dragGhost then
+					local dx = (input.Position.X - startPos.X) / scale.Scale
+					local dy = (input.Position.Y - startPos.Y) / scale.Scale
+					dragGhost.Position = UDim2.fromOffset(baseX + dx, baseY + dy)
+					local rows = {}
+					for _, m in pairs(mainapi.Modules) do
+						if m.Category == moduleapi.Category and m ~= moduleapi and m.Object and m.Object.Parent == children and m.Object.Visible then
+							table.insert(rows, {y = m.Object.AbsolutePosition.Y, h = m.Object.AbsoluteSize.Y})
+						end
+					end
+					table.sort(rows, function(a, b) return a.y < b.y end)
+					local lineY
+					for _, r in rows do
+						if input.Position.Y < r.y + r.h / 2 then lineY = r.y break end
+					end
+					if not lineY and rows[#rows] then lineY = rows[#rows].y + rows[#rows].h end
+					if lineY then
+						dragLine.Position = UDim2.fromOffset(4, (lineY - window.AbsolutePosition.Y) / scale.Scale - 1)
+						dragLine.Visible = true
+					else
+						dragLine.Visible = false
+					end
+				end
 			end)
 			upConn = inputService.InputEnded:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
-					if movedConn then movedConn:Disconnect() end
-					if upConn then upConn:Disconnect() end
-					if rowDragged then mainapi:QueueSave() end
+					stopDrag(true)
 				end
 			end)
 		end)
 		modulebutton.MouseButton1Click:Connect(function()
 			if rowDragged then rowDragged = false return end
 			if categoryapi.Editing then
-				mainapi:OpenModulePanel(moduleapi, categoryapi)
+				categoryapi:ToggleHidden(moduleapi)
 			else
 				moduleapi:Toggle()
 			end
@@ -5048,6 +5060,11 @@ function mainapi:CreateCategory(categorysettings)
 				if m.Category == categorysettings.Name and m.Enabled then anyOn = true break end
 			end
 			toggledisabled.Text = anyOn and 'Disable' or 'Enable'
+		end
+		for _, m in pairs(mainapi.Modules) do
+			if m.Category == categorysettings.Name and m.EditSection then
+				m.EditSection.Visible = self.Editing
+			end
 		end
 		if editbutton then
 			local editart = editbutton:FindFirstChild('Art')
@@ -5408,7 +5425,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	local windowlist = Instance.new('UIListLayout')
 	windowlist.SortOrder = Enum.SortOrder.LayoutOrder
 	windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	windowlist.Padding = UDim.new(0, 3)
+	windowlist.Padding = UDim.new(0, 5)
 	windowlist.Parent = children
 	local windowlisttwo = Instance.new('UIListLayout')
 	windowlisttwo.SortOrder = Enum.SortOrder.LayoutOrder
@@ -7215,9 +7232,15 @@ cursor.Parent = gui
 	addTooltip(panicrestore, 'Show interface')
 	panicrestore.MouseButton1Click:Connect(function()
 		clickgui.Visible = true
+		local st = mainapi.PanicState
 		if mainapi.TextGUIHolder then
-			mainapi.TextGUIHolder.Visible = true
+			mainapi.TextGUIHolder.Visible = st and st.textgui or true
 		end
+		if st then
+			mainapi.Legit.Window.Visible = st.legit
+		end
+		mainapi.PanicState = nil
+		mainapi:BlurCheck()
 		panicrestore.Visible = false
 	end)
 	makeDraggable(panicrestore)
@@ -8139,11 +8162,19 @@ end
 			end
 		end
 		self:UpdateTextGUI()
+		self.PanicState = {
+			legit = self.Legit.Window.Visible,
+			textgui = self.TextGUIHolder and self.TextGUIHolder.Visible or false
+		}
 		clickgui.Visible = false
 		self.Legit.Window.Visible = false
 		if self.TextGUIHolder then
 			self.TextGUIHolder.Visible = false
 		end
+		pcall(function()
+			if self.ThreadFix then setthreadidentity(8) end
+			runService:SetRobloxGuiFocused(false)
+		end)
 		self.PanicRestore.Visible = true
 	end
 	function mainapi:TriggerPanic()

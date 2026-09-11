@@ -3228,6 +3228,8 @@ run(function()
 	local Mode
 	local Material
 	local Color
+	local Size
+	local Waves
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 
@@ -3334,9 +3336,9 @@ run(function()
 		end,
 	Tooltip = 'Normal - Smoothly moves you towards the nearest safe point\nVelocity - Launches you upward after touching\nCollide - Allows you to walk on the part'
 	})
-	local materials = {'ForceField'}
+	local materials = {'Water', 'ForceField'}
 	for _, v in Enum.Material:GetEnumItems() do
-		if v.Name ~= 'ForceField' then
+		if v.Name ~= 'ForceField' and v.Name ~= 'Water' then
 			table.insert(materials, v.Name)
 		end
 	end
@@ -3358,6 +3360,35 @@ run(function()
 				AntiFallPart.Transparency = 1 - o
 			end
 		end
+	})
+	Size = AntiFall:CreateSlider({
+		Name = 'Size',
+		Min = 100,
+		Max = 10000,
+		Default = 10000,
+		Function = function(val)
+			if AntiFallPart then
+				AntiFallPart.Size = Vector3.new(val, 1, val)
+			end
+		end,
+		Tooltip = 'How wide the safety platform is'
+	})
+	Waves = AntiFall:CreateToggle({
+		Name = 'Waves',
+		Default = true,
+		Function = function(callback)
+			if callback and AntiFallPart then
+				AntiFall:Clean(runService.Heartbeat:Connect(function()
+					if AntiFallPart and AntiFallPart.Parent and Waves.Enabled then
+						local base = 1 - (Color and Color.Opacity or 0.5)
+						AntiFallPart.Transparency = math.clamp(base + math.sin(tick() * 2.2) * 0.12, 0, 1)
+					end
+				end))
+			elseif AntiFallPart then
+				AntiFallPart.Transparency = 1 - (Color and Color.Opacity or 0.5)
+			end
+		end,
+		Tooltip = 'Animates the platform like rippling water'
 	})
 end)
 

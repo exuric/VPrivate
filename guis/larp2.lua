@@ -4008,8 +4008,7 @@ function mainapi:CreateGUI()
 	return categoryapi
 end
 
-local modulePanel
-local function applyModuleOrder(catName, order)
+function mainapi:ApplyModuleOrder(catName, order)
 	if not order or #order == 0 then return end
 	local have = {}
 	for _, m in pairs(mainapi.Modules) do
@@ -4033,7 +4032,7 @@ local function applyModuleOrder(catName, order)
 	local cat = mainapi.Categories[catName]
 	if cat then cat.ModuleOrder = final end
 end
-local function dragReorder(modapi, mouseY)
+function mainapi:DragReorder(modapi, mouseY)
 	local rows = {}
 	for _, m in pairs(mainapi.Modules) do
 		if m.Category == modapi.Category and m.Object and m.Object.Parent then
@@ -4062,7 +4061,7 @@ local function dragReorder(modapi, mouseY)
 	local cat = mainapi.Categories[modapi.Category]
 	if cat then cat.ModuleOrder = names end
 end
-local function applyRowVisuals(m)
+function mainapi:ApplyRowVisuals(m)
 	if not m or not m.Object then return end
 	local btn = m.Object
 	local h = tonumber(m.RowSize) or 40
@@ -4095,9 +4094,9 @@ local function applyRowVisuals(m)
 		mark.Position = UDim2.fromOffset(2, 3)
 	end
 end
-local rowAccents = {{'Theme', nil}, {'Red', Color3.fromRGB(250, 50, 56)}, {'Green', Color3.fromRGB(74, 222, 128)}, {'Blue', Color3.fromRGB(90, 160, 255)}, {'White', Color3.fromRGB(235, 235, 235)}}
-local function openModulePanel(moduleapi, categoryapi)
-	if modulePanel then pcall(function() modulePanel:Destroy() end) end
+function mainapi:OpenModulePanel(moduleapi, categoryapi)
+	local rowAccents = {{'Theme', nil}, {'Red', Color3.fromRGB(250, 50, 56)}, {'Green', Color3.fromRGB(74, 222, 128)}, {'Blue', Color3.fromRGB(90, 160, 255)}, {'White', Color3.fromRGB(235, 235, 235)}}
+	if mainapi.ModulePanel then pcall(function() mainapi.ModulePanel:Destroy() end) end
 	local mouse = inputService:GetMouseLocation()
 	local win = Instance.new('Frame')
 	win.Name = 'ModulePanel'
@@ -4132,12 +4131,12 @@ local function openModulePanel(moduleapi, categoryapi)
 	close.ZIndex = 16
 	close.Parent = win
 	close.MouseButton1Click:Connect(function()
-		if modulePanel == win then modulePanel = nil end
+		if mainapi.ModulePanel == win then mainapi.ModulePanel = nil end
 		win:Destroy()
 	end)
 	local y = 38
 	local function rebuild()
-		if modulePanel ~= win or not win.Parent then return end
+		if mainapi.ModulePanel ~= win or not win.Parent then return end
 		for _, c in win:GetChildren() do
 			if c:IsA('GuiObject') and c ~= title and c ~= close then c:Destroy() end
 		end
@@ -4155,7 +4154,6 @@ local function openModulePanel(moduleapi, categoryapi)
 			l.ZIndex = 16
 			l.Parent = win
 			y += 15
-			return y
 		end
 		local function opts(list, current, pick)
 			local x = 12
@@ -4180,7 +4178,7 @@ local function openModulePanel(moduleapi, categoryapi)
 		end
 		local hidden = categoryapi.Hidden[moduleapi] and true or false
 		row('Visibility')
-			opts({{'Shown', false}, {'Hidden', true}}, hidden and 'Hidden' or 'Shown', function(v)
+		opts({{'Shown', false}, {'Hidden', true}}, hidden and 'Hidden' or 'Shown', function(v)
 			if (v[2] and true or false) ~= hidden then categoryapi:ToggleHidden(moduleapi) end
 			mainapi:QueueSave()
 		end)
@@ -4192,32 +4190,32 @@ local function openModulePanel(moduleapi, categoryapi)
 			return 'Theme'
 		end)(), function(v)
 			moduleapi.RowAccent = v[2]
-			applyRowVisuals(moduleapi)
+			mainapi:ApplyRowVisuals(moduleapi)
 			mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 			mainapi:QueueSave()
 		end)
 		row('Alignment')
 		opts({{'Left'}, {'Center'}, {'Right'}}, moduleapi.RowAlign or 'Left', function(v)
 			moduleapi.RowAlign = v[1]
-			applyRowVisuals(moduleapi)
+			mainapi:ApplyRowVisuals(moduleapi)
 			mainapi:QueueSave()
 		end)
 		row('Size')
 		opts({{'S', 32}, {'M', 40}, {'L', 48}}, (moduleapi.RowSize == 32 and 'S' or moduleapi.RowSize == 48 and 'L' or 'M'), function(v)
 			moduleapi.RowSize = v[2]
-			applyRowVisuals(moduleapi)
+			mainapi:ApplyRowVisuals(moduleapi)
 			mainapi:QueueSave()
 		end)
 		row('Position')
-			opts({{'Top'}, {'Bottom'}}, '', function(v)
-				local final = {}
-				for _, m in pairs(mainapi.Modules) do
-					if m.Category == moduleapi.Category and m.Name ~= moduleapi.Name then table.insert(final, m.Name) end
-				end
-				table.sort(final, function(a, b) return mainapi.Modules[a].Object.LayoutOrder < mainapi.Modules[b].Object.LayoutOrder end)
-				if v[1] == 'Top' then table.insert(final, 1, moduleapi.Name) else table.insert(final, moduleapi.Name) end
-				applyModuleOrder(moduleapi.Category, final)
-				mainapi:QueueSave()
+		opts({{'Top'}, {'Bottom'}}, '', function(v)
+			local final = {}
+			for _, m in pairs(mainapi.Modules) do
+				if m.Category == moduleapi.Category and m.Name ~= moduleapi.Name then table.insert(final, m.Name) end
+			end
+			table.sort(final, function(a, b) return mainapi.Modules[a].Object.LayoutOrder < mainapi.Modules[b].Object.LayoutOrder end)
+			if v[1] == 'Top' then table.insert(final, 1, moduleapi.Name) else table.insert(final, moduleapi.Name) end
+			mainapi:ApplyModuleOrder(moduleapi.Category, final)
+			mainapi:QueueSave()
 		end)
 		local reset = Instance.new('TextButton')
 		reset.Size = UDim2.new(1, -24, 0, 24)
@@ -4236,7 +4234,7 @@ local function openModulePanel(moduleapi, categoryapi)
 			for _, m in pairs(mainapi.Modules) do
 				if m.Category == moduleapi.Category then
 					m.RowAccent, m.RowAlign, m.RowSize = nil, nil, nil
-					applyRowVisuals(m)
+					mainapi:ApplyRowVisuals(m)
 				end
 			end
 			local names = {}
@@ -4244,14 +4242,14 @@ local function openModulePanel(moduleapi, categoryapi)
 				if m.Category == moduleapi.Category then table.insert(names, m.Name) end
 			end
 			table.sort(names)
-			applyModuleOrder(moduleapi.Category, names)
+			mainapi:ApplyModuleOrder(moduleapi.Category, names)
 			categoryapi:RefreshHidden()
 			mainapi:QueueSave()
 			rebuild()
 		end)
 	end
 	rebuild()
-	modulePanel = win
+	mainapi.ModulePanel = win
 end
 function mainapi:CreateCategory(categorysettings)
 	local categoryapi = {
@@ -4880,7 +4878,7 @@ function mainapi:CreateCategory(categorysettings)
 			movedConn = inputService.InputChanged:Connect(function(input)
 				if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
 				if not rowDragged and math.abs(input.Position.Y - startY) > 8 then rowDragged = true end
-				if rowDragged then dragReorder(moduleapi, input.Position.Y) end
+				if rowDragged then mainapi:DragReorder(moduleapi, input.Position.Y) end
 			end)
 			upConn = inputService.InputEnded:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -4893,7 +4891,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.MouseButton1Click:Connect(function()
 			if rowDragged then rowDragged = false return end
 			if categoryapi.Editing then
-				openModulePanel(moduleapi, categoryapi)
+				mainapi:OpenModulePanel(moduleapi, categoryapi)
 			else
 				moduleapi:Toggle()
 			end
@@ -4970,7 +4968,7 @@ function mainapi:CreateCategory(categorysettings)
 					mainapi.Modules[v].Children.LayoutOrder = i
 				end
 			end
-			applyModuleOrder(categorysettings.Name, categoryapi.ModuleOrder)
+			mainapi:ApplyModuleOrder(categorysettings.Name, categoryapi.ModuleOrder)
 		end
 		resort()
 		fav = moduleapi:CreateToggle({
@@ -6779,7 +6777,7 @@ function mainapi:Load(skipgui, profile)
 				end
 				if v.ModuleOrder then
 					object.ModuleOrder = v.ModuleOrder
-					applyModuleOrder(i, v.ModuleOrder)
+					mainapi:ApplyModuleOrder(i, v.ModuleOrder)
 				end
 			end
 		end
@@ -6875,7 +6873,7 @@ function mainapi:Load(skipgui, profile)
 					object.RowAccent = v.RowAccent and Color3.fromRGB(unpack(v.RowAccent)) or nil
 					object.RowAlign = v.RowAlign
 					object.RowSize = v.RowSize
-					applyRowVisuals(object)
+					mainapi:ApplyRowVisuals(object)
 				end
 			end
 

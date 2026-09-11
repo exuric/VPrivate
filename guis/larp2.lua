@@ -4039,7 +4039,7 @@ function mainapi:ApplyRowVisuals(m)
 	btn.Size = UDim2.fromOffset(220, h)
 	local align = m.RowAlign == 'Center' and Enum.TextXAlignment.Center or m.RowAlign == 'Right' and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left
 	btn.TextXAlignment = align
-	btn.Text = (align == Enum.TextXAlignment.Left and '          ' or '')..T(m.Name)
+	btn.Text = (align == Enum.TextXAlignment.Left and string.rep('\226\128\138', 12) or '')..T(m.Name)
 	local dy = (h - 40) / 2
 	local dots = btn:FindFirstChild('Dots')
 	if dots then
@@ -4237,13 +4237,13 @@ function mainapi:CreateCategory(categorysettings)
 	local windowlist = Instance.new('UIListLayout')
 	windowlist.SortOrder = Enum.SortOrder.LayoutOrder
 	windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		windowlist.Padding = UDim.new(0, 5)
+		windowlist.Padding = UDim.new(0, 3)
 		windowlist.Parent = children
 		local padding = Instance.new('UIPadding')
 		padding.PaddingLeft = UDim.new(0, 4)
 		padding.PaddingRight = UDim.new(0, 4)
-		padding.PaddingTop = UDim.new(0, 4)
-		padding.PaddingBottom = UDim.new(0, 4)
+		padding.PaddingTop = UDim.new(0, 3)
+		padding.PaddingBottom = UDim.new(0, 3)
 		padding.Parent = children
 
 		function categoryapi:CreateModule(modulesettings)
@@ -4470,8 +4470,8 @@ function mainapi:CreateCategory(categorysettings)
 		windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		windowlist.Parent = modulechildren
 		local modulepadding = Instance.new('UIPadding')
-			modulepadding.PaddingLeft = UDim.new(0, 6)
-			modulepadding.PaddingRight = UDim.new(0, 6)
+			modulepadding.PaddingLeft = UDim.new(0, 4)
+			modulepadding.PaddingRight = UDim.new(0, 4)
 		modulepadding.PaddingTop = UDim.new(0, 3)
 		modulepadding.PaddingBottom = UDim.new(0, 3)
 		modulepadding.Parent = modulechildren
@@ -4855,7 +4855,7 @@ function mainapi:CreateCategory(categorysettings)
 			end
 			movedConn = inputService.InputChanged:Connect(function(input)
 				if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-				if not rowDragged and (input.Position - startPos).Magnitude > 8 then
+				if not rowDragged and math.abs(input.Position.X - startPos.X) + math.abs(input.Position.Y - startPos.Y) > 8 then
 					rowDragged = true
 					dragGhost = modulebutton:Clone()
 					dragGhost.Name = 'DragGhost'
@@ -5425,7 +5425,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	local windowlist = Instance.new('UIListLayout')
 	windowlist.SortOrder = Enum.SortOrder.LayoutOrder
 	windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	windowlist.Padding = UDim.new(0, 5)
+	windowlist.Padding = UDim.new(0, 3)
 	windowlist.Parent = children
 	local windowlisttwo = Instance.new('UIListLayout')
 	windowlisttwo.SortOrder = Enum.SortOrder.LayoutOrder

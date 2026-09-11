@@ -217,6 +217,34 @@ local getfontsize = function(text, size, font)
 	end
 	return textService:GetTextBoundsAsync(fontsize)
 end
+local fontsizeCache = {}
+local fontsizeCount = 0
+local function getfontsizeCached(text, size, font)
+	local key = text..'\0'..tostring(size)..'\0'..tostring(typeof(font) == 'Font' and font.Family or font)
+	local hit = fontsizeCache[key]
+	if hit then return hit end
+	local res = getfontsize(text, size, font)
+	if res then
+		if fontsizeCache[key] == nil then
+			fontsizeCount += 1
+			if fontsizeCount > 1500 then
+				table.clear(fontsizeCache)
+				fontsizeCount = 0
+			end
+		end
+		fontsizeCache[key] = res
+	end
+	return res
+end
+local function bindSuffix(bind, verb)
+	if type(bind) ~= 'table' or #bind == 0 then return '' end
+	local parts = {}
+	for _, k in bind do
+		if type(k) == 'string' then table.insert(parts, k) end
+	end
+	if not parts[1] then return '' end
+	return " <font color='#7A7A7A'>("..table.concat(parts, ' + '):upper()..' '..verb..')</font>'
+end
 
 local function addBlur(parent, notif)
 	local blur = Instance.new('ImageLabel')
@@ -310,7 +338,7 @@ local function addTooltip(gui, text)
 	end
 
 	gui.MouseEnter:Connect(function(x, y)
-		local tooltipSize = getfontsize(text, tooltip.TextSize, uipallet.Font)
+		local tooltipSize = getfontsizeCached(text, tooltip.TextSize, uipallet.Font)
 		tooltip.Size = UDim2.fromOffset(tooltipSize.X + 10, tooltipSize.Y + 10)
 		tooltip.Text = text
 		tooltipMoved(x, y)
@@ -2875,7 +2903,7 @@ function mainapi:CreateGUI()
 			label.Visible = true
 			icon.Visible = false
 			label.Text = table.concat(mainapi.Keybind, ' + '):upper()
-			bind.Size = UDim2.fromOffset(math.max(getfontsize(label.Text, label.TextSize, label.Font).X + 10, 20), 21)
+			bind.Size = UDim2.fromOffset(math.max(getfontsizeCached(label.Text, label.TextSize, label.Font).X + 10, 20), 21)
 		end
 
 		bind.MouseEnter:Connect(function()
@@ -3671,7 +3699,7 @@ function mainapi:CreateGUI()
 		local expandbutton = Instance.new('TextButton')
 		expandbutton.Name = 'Expand'
 		expandbutton.Size = UDim2.fromOffset(17, 13)
-		expandbutton.Position = UDim2.new(0, getfontsize(title.Text, title.TextSize, title.Font).X + 11, 0, 7)
+		expandbutton.Position = UDim2.new(0, getfontsizeCached(title.Text, title.TextSize, title.Font).X + 11, 0, 7)
 		expandbutton.BackgroundTransparency = 1
 		expandbutton.Text = ''
 		expandbutton.Parent = slider
@@ -3980,6 +4008,251 @@ function mainapi:CreateGUI()
 	return categoryapi
 end
 
+local modulePanel
+local function applyModuleOrder(catName, order)
+	if not order or #order == 0 then return end
+	local have = {}
+	for _, m in pairs(mainapi.Modules) do
+		if m.Category == catName then have[m.Name] = m end
+	end
+	local final = {}
+	for _, n in order do
+		if have[n] then table.insert(final, n) have[n] = nil end
+	end
+	local rest = {}
+	for n in pairs(have) do table.insert(rest, n) end
+	table.sort(rest)
+	for _, n in rest do table.insert(final, n) end
+	for k, n in final do
+		local m = mainapi.Modules[n]
+		if m then
+			if m.Object then m.Object.LayoutOrder = k end
+			if m.Children then m.Children.LayoutOrder = k end
+		end
+	end
+	local cat = mainapi.Categories[catName]
+	if cat then cat.ModuleOrder = final end
+end
+local function dragReorder(modapi, mouseY)
+	local rows = {}
+	for _, m in pairs(mainapi.Modules) do
+		if m.Category == modapi.Category and m.Object and m.Object.Parent then
+			table.insert(rows, m)
+		end
+	end
+	if #rows < 2 then return end
+	table.sort(rows, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+	local cur
+	for k, m in rows do
+		if m == modapi then cur = k break end
+	end
+	if not cur then return end
+	local my = modapi.Object.AbsolutePosition.Y + modapi.Object.AbsoluteSize.Y / 2
+	local target
+	if mouseY < my - 10 and cur > 1 then target = cur - 1
+	elseif mouseY > my + 10 and cur < #rows then target = cur + 1 end
+	if not target then return end
+	rows[cur], rows[target] = rows[target], rows[cur]
+	local names = {}
+	for k, m in rows do
+		m.Object.LayoutOrder = k
+		if m.Children then m.Children.LayoutOrder = k end
+		table.insert(names, m.Name)
+	end
+	local cat = mainapi.Categories[modapi.Category]
+	if cat then cat.ModuleOrder = names end
+end
+local function applyRowVisuals(m)
+	if not m or not m.Object then return end
+	local btn = m.Object
+	local h = tonumber(m.RowSize) or 40
+	btn.Size = UDim2.fromOffset(220, h)
+	local align = m.RowAlign == 'Center' and Enum.TextXAlignment.Center or m.RowAlign == 'Right' and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left
+	btn.TextXAlignment = align
+	btn.Text = (align == Enum.TextXAlignment.Left and '          ' or '')..T(m.Name)
+	local dy = (h - 40) / 2
+	local dots = btn:FindFirstChild('Dots')
+	if dots then
+		dots.Size = UDim2.fromOffset(25, h)
+		local dim = dots:FindFirstChild('Dots')
+		if dim then dim.Position = UDim2.fromOffset(4, (h - 16) / 2) end
+	end
+	local bind = btn:FindFirstChild('Bind')
+	if bind then bind.Position = bind.Position + UDim2.fromOffset(0, dy) end
+	local favb = btn:FindFirstChild('Favourite')
+	if favb then favb.Position = UDim2.new(1, -49, 0, 12 + dy) end
+	local art = btn:FindFirstChild('ModuleIcon')
+	if art then art.Position = UDim2.fromOffset(10, (h - art.Size.Y.Offset) / 2) end
+	local abar = btn:FindFirstChild('ActiveBar')
+	if abar then
+		local ah = math.min(20, h - 8)
+		abar.Size = UDim2.fromOffset(abar.Size.X.Offset, ah)
+		abar.Position = UDim2.fromOffset(6, (h - ah) / 2)
+	end
+	local mark = btn:FindFirstChild('HiddenMark')
+	if mark then
+		mark.Size = UDim2.fromOffset(3, h - 6)
+		mark.Position = UDim2.fromOffset(2, 3)
+	end
+end
+local rowAccents = {{'Theme', nil}, {'Red', Color3.fromRGB(250, 50, 56)}, {'Green', Color3.fromRGB(74, 222, 128)}, {'Blue', Color3.fromRGB(90, 160, 255)}, {'White', Color3.fromRGB(235, 235, 235)}}
+local function openModulePanel(moduleapi, categoryapi)
+	if modulePanel then pcall(function() modulePanel:Destroy() end) end
+	local mouse = inputService:GetMouseLocation()
+	local win = Instance.new('Frame')
+	win.Name = 'ModulePanel'
+	win.Size = UDim2.fromOffset(210, 302)
+	win.Position = UDim2.new(0, math.clamp(mouse.X + 12, 0, math.max(gui.AbsoluteSize.X - 220, 0)), 0, math.clamp(mouse.Y - 40, 0, math.max(gui.AbsoluteSize.Y - 312, 0)))
+	win.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+	win.BorderSizePixel = 0
+	win.ZIndex = 15
+	win.Parent = clickgui
+	addCorner(win, UDim.new(0, 8))
+	addBlur(win)
+	local title = Instance.new('TextLabel')
+	title.Size = UDim2.new(1, -36, 0, 30)
+	title.Position = UDim2.fromOffset(12, 4)
+	title.BackgroundTransparency = 1
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Text = moduleapi.Name
+	title.TextColor3 = uipallet.Text
+	title.TextSize = 14
+	title.FontFace = uipallet.FontSemiBold
+	title.ZIndex = 16
+	title.Parent = win
+	local close = Instance.new('TextButton')
+	close.Size = UDim2.fromOffset(24, 24)
+	close.Position = UDim2.new(1, -28, 0, 6)
+	close.BackgroundTransparency = 1
+	close.AutoButtonColor = false
+	close.Text = 'x'
+	close.TextColor3 = color.Dark(uipallet.Text, 0.29)
+	close.TextSize = 14
+	close.FontFace = uipallet.Font
+	close.ZIndex = 16
+	close.Parent = win
+	close.MouseButton1Click:Connect(function()
+		if modulePanel == win then modulePanel = nil end
+		win:Destroy()
+	end)
+	local y = 38
+	local function rebuild()
+		if modulePanel ~= win or not win.Parent then return end
+		for _, c in win:GetChildren() do
+			if c:IsA('GuiObject') and c ~= title and c ~= close then c:Destroy() end
+		end
+		y = 38
+		local function row(label)
+			local l = Instance.new('TextLabel')
+			l.Size = UDim2.new(1, -24, 0, 14)
+			l.Position = UDim2.fromOffset(12, y)
+			l.BackgroundTransparency = 1
+			l.TextXAlignment = Enum.TextXAlignment.Left
+			l.Text = label
+			l.TextColor3 = color.Dark(uipallet.Text, 0.29)
+			l.TextSize = 11
+			l.FontFace = uipallet.Font
+			l.ZIndex = 16
+			l.Parent = win
+			y += 15
+			return y
+		end
+		local function opts(list, current, pick)
+			local x = 12
+			for _, v in list do
+				local b = Instance.new('TextButton')
+				b.Size = UDim2.fromOffset(math.max(getfontsizeCached(v[1], 11, uipallet.Font).X + 16, 30), 22)
+				b.Position = UDim2.fromOffset(x, y)
+				b.BackgroundColor3 = current == v[1] and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.05)
+				b.BorderSizePixel = 0
+				b.AutoButtonColor = false
+				b.Text = v[1]
+				b.TextColor3 = current == v[1] and Color3.new(1, 1, 1) or color.Dark(uipallet.Text, 0.16)
+				b.TextSize = 11
+				b.FontFace = uipallet.Font
+				b.ZIndex = 16
+				b.Parent = win
+				addCorner(b, UDim.new(0, 5))
+				b.MouseButton1Click:Connect(function() pick(v) rebuild() end)
+				x += b.Size.X.Offset + 6
+			end
+			y += 28
+		end
+		local hidden = categoryapi.Hidden[moduleapi] and true or false
+		row('Visibility')
+			opts({{'Shown', false}, {'Hidden', true}}, hidden and 'Hidden' or 'Shown', function(v)
+			if (v[2] and true or false) ~= hidden then categoryapi:ToggleHidden(moduleapi) end
+			mainapi:QueueSave()
+		end)
+		row('Accent')
+		opts(rowAccents, (function()
+			for _, a in rowAccents do
+				if a[2] == moduleapi.RowAccent then return a[1] end
+			end
+			return 'Theme'
+		end)(), function(v)
+			moduleapi.RowAccent = v[2]
+			applyRowVisuals(moduleapi)
+			mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			mainapi:QueueSave()
+		end)
+		row('Alignment')
+		opts({{'Left'}, {'Center'}, {'Right'}}, moduleapi.RowAlign or 'Left', function(v)
+			moduleapi.RowAlign = v[1]
+			applyRowVisuals(moduleapi)
+			mainapi:QueueSave()
+		end)
+		row('Size')
+		opts({{'S', 32}, {'M', 40}, {'L', 48}}, (moduleapi.RowSize == 32 and 'S' or moduleapi.RowSize == 48 and 'L' or 'M'), function(v)
+			moduleapi.RowSize = v[2]
+			applyRowVisuals(moduleapi)
+			mainapi:QueueSave()
+		end)
+		row('Position')
+			opts({{'Top'}, {'Bottom'}}, '', function(v)
+				local final = {}
+				for _, m in pairs(mainapi.Modules) do
+					if m.Category == moduleapi.Category and m.Name ~= moduleapi.Name then table.insert(final, m.Name) end
+				end
+				table.sort(final, function(a, b) return mainapi.Modules[a].Object.LayoutOrder < mainapi.Modules[b].Object.LayoutOrder end)
+				if v[1] == 'Top' then table.insert(final, 1, moduleapi.Name) else table.insert(final, moduleapi.Name) end
+				applyModuleOrder(moduleapi.Category, final)
+				mainapi:QueueSave()
+		end)
+		local reset = Instance.new('TextButton')
+		reset.Size = UDim2.new(1, -24, 0, 24)
+		reset.Position = UDim2.fromOffset(12, y + 4)
+		reset.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		reset.BorderSizePixel = 0
+		reset.AutoButtonColor = false
+		reset.Text = 'Reset Layout'
+		reset.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		reset.TextSize = 12
+		reset.FontFace = uipallet.Font
+		reset.ZIndex = 16
+		reset.Parent = win
+		addCorner(reset, UDim.new(0, 5))
+		reset.MouseButton1Click:Connect(function()
+			for _, m in pairs(mainapi.Modules) do
+				if m.Category == moduleapi.Category then
+					m.RowAccent, m.RowAlign, m.RowSize = nil, nil, nil
+					applyRowVisuals(m)
+				end
+			end
+			local names = {}
+			for _, m in pairs(mainapi.Modules) do
+				if m.Category == moduleapi.Category then table.insert(names, m.Name) end
+			end
+			table.sort(names)
+			applyModuleOrder(moduleapi.Category, names)
+			categoryapi:RefreshHidden()
+			mainapi:QueueSave()
+			rebuild()
+		end)
+	end
+	rebuild()
+	modulePanel = win
+end
 function mainapi:CreateCategory(categorysettings)
 	local categoryapi = {
 		Type = 'Category',
@@ -4234,7 +4507,7 @@ function mainapi:CreateCategory(categorysettings)
 			for i, tag in modulesettings.Tags do
 				tag = tag:upper()
 				modulesettings.Tags[i] = tag:lower()
-			local size = getfontsize(removeTags(tag), 12, uipallet.FontSemiBold, Vector2.new(100000, 100000))
+			local size = getfontsizeCached(removeTags(tag), 12, uipallet.FontSemiBold, Vector2.new(100000, 100000))
 			local indicator = Instance.new('TextLabel')
 			indicator.LayoutOrder = i - 1
 			indicator.Size = UDim2.new(0, size.X + 12, 0, 18)
@@ -4425,7 +4698,7 @@ function mainapi:CreateCategory(categorysettings)
 					end
 				end
 			end
-				bindcover.Size = UDim2.fromOffset(getfontsize(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
+				bindcover.Size = UDim2.fromOffset(getfontsizeCached(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
 				task.delay(1, function()
 					bindcover.Visible = false
 				end)
@@ -4440,7 +4713,7 @@ function mainapi:CreateCategory(categorysettings)
 				bindtext.Visible = true
 				bindicon.Visible = false
 				bindtext.Text = table.concat(tab, ' + '):upper()
-				bind.Size = UDim2.fromOffset(math.max(getfontsize(bindtext.Text, bindtext.TextSize, bindtext.Font).X + 10, 20), 21)
+				bind.Size = UDim2.fromOffset(math.max(getfontsizeCached(bindtext.Text, bindtext.TextSize, bindtext.Font).X + 10, 20), 21)
 			end
 			local clone = self.FavouriteClone
 			if clone and clone.Parent then
@@ -4451,7 +4724,7 @@ function mainapi:CreateCategory(categorysettings)
 				local cbindicon = cbind and cbind:FindFirstChild('Icon')
 				if mouse and ccover and ccovertext then
 					ccovertext.Text = #tab <= 0 and 'BIND REMOVED' or 'BOUND TO'
-					ccover.Size = UDim2.fromOffset(getfontsize(ccovertext.Text, ccovertext.TextSize).X + 20, 40)
+					ccover.Size = UDim2.fromOffset(getfontsizeCached(ccovertext.Text, ccovertext.TextSize).X + 20, 40)
 					task.delay(1, function()
 						ccover.Visible = false
 					end)
@@ -4465,7 +4738,7 @@ function mainapi:CreateCategory(categorysettings)
 					cbindtext.Visible = true
 					cbindicon.Visible = false
 					cbindtext.Text = table.concat(tab, ' + '):upper()
-					cbind.Size = UDim2.fromOffset(math.max(getfontsize(cbindtext.Text, cbindtext.TextSize, cbindtext.Font).X + 10, 20), 21)
+					cbind.Size = UDim2.fromOffset(math.max(getfontsizeCached(cbindtext.Text, cbindtext.TextSize, cbindtext.Font).X + 10, 20), 21)
 				end
 			end
 		end
@@ -4500,7 +4773,7 @@ function mainapi:CreateCategory(categorysettings)
 			if self.Enabled then
 				local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
 				local hue, sat, val = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
-				modulebutton.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+				modulebutton.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1)) or self.RowAccent or Color3.fromHSV(hue, sat, val)
 				modulebutton.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
 				modulebutton.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
 				if modulebutton.UIGradient.Enabled then
@@ -4547,7 +4820,7 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		bind.MouseButton1Click:Connect(function()
 			bindcovertext.Text = 'PRESS A KEY TO BIND'
-			bindcover.Size = UDim2.fromOffset(getfontsize(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
+			bindcover.Size = UDim2.fromOffset(getfontsizeCached(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
 			bindcover.Visible = true
 			mainapi.Binding = moduleapi
 		end)
@@ -4598,9 +4871,29 @@ function mainapi:CreateCategory(categorysettings)
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 			favicon.Visible = hovered or modulechildren.Visible or favstate
 		end)
+		local rowDragged = false
+		modulebutton.MouseButton1Down:Connect(function()
+			rowDragged = false
+			if not categoryapi.Editing then return end
+			local startY = inputService:GetMouseLocation().Y
+			local movedConn, upConn
+			movedConn = inputService.InputChanged:Connect(function(input)
+				if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+				if not rowDragged and math.abs(input.Position.Y - startY) > 8 then rowDragged = true end
+				if rowDragged then dragReorder(moduleapi, input.Position.Y) end
+			end)
+			upConn = inputService.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					if movedConn then movedConn:Disconnect() end
+					if upConn then upConn:Disconnect() end
+					if rowDragged then mainapi:QueueSave() end
+				end
+			end)
+		end)
 		modulebutton.MouseButton1Click:Connect(function()
+			if rowDragged then rowDragged = false return end
 			if categoryapi.Editing then
-				categoryapi:ToggleHidden(moduleapi)
+				openModulePanel(moduleapi, categoryapi)
 			else
 				moduleapi:Toggle()
 			end
@@ -4677,6 +4970,7 @@ function mainapi:CreateCategory(categorysettings)
 					mainapi.Modules[v].Children.LayoutOrder = i
 				end
 			end
+			applyModuleOrder(categorysettings.Name, categoryapi.ModuleOrder)
 		end
 		resort()
 		fav = moduleapi:CreateToggle({
@@ -5357,7 +5651,7 @@ function mainapi:CreateCategoryList(categorysettings)
 					v.Bind = table.clone(tab)
 					if mouse then
 						bindcovertext.Text = #tab <= 0 and 'BIND REMOVED' or 'BOUND TO '..table.concat(tab, ' + '):upper()
-						bindcover.Size = UDim2.fromOffset(getfontsize(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
+						bindcover.Size = UDim2.fromOffset(getfontsizeCached(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
 						task.delay(1, function()
 							bindcover.Visible = false
 						end)
@@ -5372,14 +5666,14 @@ function mainapi:CreateCategoryList(categorysettings)
 						bindtext.Visible = true
 						bindicon.Visible = false
 						bindtext.Text = table.concat(tab, ' + '):upper()
-						bind.Size = UDim2.fromOffset(math.max(getfontsize(bindtext.Text, bindtext.TextSize, bindtext.Font).X + 10, 20), 21)
+						bind.Size = UDim2.fromOffset(math.max(getfontsizeCached(bindtext.Text, bindtext.TextSize, bindtext.Font).X + 10, 20), 21)
 					end
 				end
 
 				bindFunction({}, v.Bind)
 				bind.MouseButton1Click:Connect(function()
 					bindcovertext.Text = 'PRESS A KEY TO BIND'
-					bindcover.Size = UDim2.fromOffset(getfontsize(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
+					bindcover.Size = UDim2.fromOffset(getfontsizeCached(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
 					bindcover.Visible = true
 					mainapi.Binding = {SetBind = bindFunction, Bind = v.Bind}
 				end)
@@ -6232,7 +6526,7 @@ function mainapi:CreateNotification(title, text, duration, type)
 		local notification = Instance.new('ImageLabel')
 		notification.Name = 'Notification'
 		notification:SetAttribute('QueueIndex', self.NotificationIndex)
-		notification.Size = UDim2.fromOffset(math.max(266, math.max(getfontsize(removeTags(text), 14, uipallet.Font).X, getfontsize(removeTags(title), 14, uipallet.FontSemiBold).X) + 80), 75)
+		notification.Size = UDim2.fromOffset(math.max(266, math.max(getfontsizeCached(removeTags(text), 14, uipallet.Font).X, getfontsizeCached(removeTags(title), 14, uipallet.FontSemiBold).X) + 80), 75)
 		notification.Position = UDim2.new(1, 0, 1, -(29 + (78 * i)))
 		notification.ZIndex = 5
 		notification.BackgroundTransparency = 1
@@ -6483,6 +6777,10 @@ function mainapi:Load(skipgui, profile)
 				if v.Position then
 					object.Object.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
 				end
+				if v.ModuleOrder then
+					object.ModuleOrder = v.ModuleOrder
+					applyModuleOrder(i, v.ModuleOrder)
+				end
 			end
 		end
 	end
@@ -6494,7 +6792,7 @@ function mainapi:Load(skipgui, profile)
 	self.Categories.Profiles:ChangeValue()
 	if self.ProfileLabel then
 		self.ProfileLabel.Text = #self.Profile > 10 and self.Profile:sub(1, 10)..'...' or self.Profile
-		self.ProfileLabel.Size = UDim2.fromOffset(getfontsize(self.ProfileLabel.Text, self.ProfileLabel.TextSize, self.ProfileLabel.Font).X + 16, 24)
+		self.ProfileLabel.Size = UDim2.fromOffset(getfontsizeCached(self.ProfileLabel.Text, self.ProfileLabel.TextSize, self.ProfileLabel.Font).X + 16, 24)
 	end
 
 	local savepath = 'LarpV4/profiles/'..self.Profile..self.Place..'.txt'
@@ -6566,13 +6864,19 @@ function mainapi:Load(skipgui, profile)
 				if v.Enabled ~= object.Enabled then
 					if skipgui then
 						if self.ToggleNotifications.Enabled then
-							mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75, v.Enabled and 'warning' or nil)
+							mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>"..bindSuffix(v.Bind, 'to disable') or "<font color='#FF5A5A'>Disabled</font>"..bindSuffix(v.Bind, 'to enable')), 0.75, v.Enabled and 'warning' or nil)
 						end
 					end
 					object:Toggle(true)
 				end
 				object:SetBind(v.Bind)
 				object.Object.Bind.Visible = #v.Bind > 0
+				if v.RowAccent or v.RowAlign or v.RowSize then
+					object.RowAccent = v.RowAccent and Color3.fromRGB(unpack(v.RowAccent)) or nil
+					object.RowAlign = v.RowAlign
+					object.RowSize = v.RowSize
+					applyRowVisuals(object)
+				end
 			end
 
 			for i, v in savedata.Legit do
@@ -6739,7 +7043,8 @@ function mainapi:Save(newprofile)
 			Position = {X = v.Object.Position.X.Offset, Y = v.Object.Position.Y.Offset},
 			Options = mainapi:SaveOptions(v, v.Options),
 			List = v.List,
-			ListEnabled = v.ListEnabled
+			ListEnabled = v.ListEnabled,
+			ModuleOrder = v.ModuleOrder
 		}
 	end
 
@@ -6747,7 +7052,10 @@ function mainapi:Save(newprofile)
 		savedata.Modules[i:gsub(' ', '')] = {
 			Enabled = v.Enabled,
 			Bind = v.Bind.Button and {Mobile = true, X = v.Bind.Button.Position.X.Offset, Y = v.Bind.Button.Position.Y.Offset} or v.Bind,
-			Options = mainapi:SaveOptions(v, true)
+			Options = mainapi:SaveOptions(v, true),
+			RowAccent = v.RowAccent and {math.floor(v.RowAccent.R * 255), math.floor(v.RowAccent.G * 255), math.floor(v.RowAccent.B * 255)} or nil,
+			RowAlign = v.RowAlign,
+			RowSize = v.RowSize
 		}
 	end
 
@@ -7258,7 +7566,7 @@ function mainapi:UpdateFavourites()
 							local ccovertext = ccover and ccover:FindFirstChild('Text')
 							if ccover and ccovertext then
 								ccovertext.Text = 'PRESS A KEY TO BIND'
-								ccover.Size = UDim2.fromOffset(getfontsize(ccovertext.Text, ccovertext.TextSize).X + 20, 40)
+								ccover.Size = UDim2.fromOffset(getfontsizeCached(ccovertext.Text, ccovertext.TextSize).X + 20, 40)
 								ccover.Visible = true
 							end
 							mainapi.Binding = moduleapi
@@ -8147,6 +8455,13 @@ local textguisort = textgui:CreateDropdown({
 		mainapi:UpdateTextGUI()
 	end
 })
+textgui:CreateToggle({
+	Name = 'Most used first',
+	Tooltip = 'Sorts the text GUI by your most used modules',
+	Function = function(on)
+		textguisort:SetValue(on and 'Most Used' or 'Alphabetical')
+	end
+})
 local textguifont = textgui:CreateFont({
 	Name = 'Font',
 	Blacklist = 'Arial',
@@ -8968,7 +9283,7 @@ function mainapi:UpdateTextGUI(afterload)
 		LarpLabelHolder.Size = UDim2.fromScale(1 / LarpTextScale.Scale, 1)
 		LarpLabelHolder.Position = UDim2.fromOffset(right and 3 or 0, 11 + (LarpLogo.Visible and LarpLogo.Size.Y.Offset or 0) + (LarpLabelCustom.Visible and 28 or 0) + (textguibackground.Enabled and 3 or 0))
 		if LarpLabelCustom.Visible then
-			local size = getfontsize(removeTags(LarpLabelCustom.Text), LarpLabelCustom.TextSize, LarpLabelCustom.FontFace)
+			local size = getfontsizeCached(removeTags(LarpLabelCustom.Text), LarpLabelCustom.TextSize, LarpLabelCustom.FontFace)
 			LarpLabelCustom.Size = UDim2.fromOffset(size.X, size.Y)
 			LarpLabelCustom.Position = UDim2.new(right and 1 / LarpTextScale.Scale or 0, right and -size.X or 0, 0, (LarpLogo.Visible and 32 or 8))
 		end
@@ -9040,7 +9355,7 @@ function mainapi:UpdateTextGUI(afterload)
 				holdertext.TextSize = 15
 				holdertext.FontFace = textguifont.Value
 				holdertext.RichText = true
-				local size = getfontsize(removeTags(holdertext.Text), holdertext.TextSize, holdertext.FontFace)
+				local size = getfontsizeCached(removeTags(holdertext.Text), holdertext.TextSize, holdertext.FontFace)
 				holdertext.Size = UDim2.fromOffset(size.X, size.Y)
 				if textguishadow.Enabled then
 					local holderdrop = holdertext:Clone()
@@ -9174,7 +9489,7 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 
 	for _, button in mainapi.Modules do
 		if button.Enabled then
-			button.Object.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+			button.Object.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or button.RowAccent or Color3.fromHSV(hue, sat, val)
 			button.Object.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
 			button.Object.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
 			if button.Object.UIGradient.Enabled then
@@ -9284,7 +9599,7 @@ mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
 			if checkKeybinds(mainapi.HeldKeybinds, v.Bind, bindName) then
 				toggled = true
 				if mainapi.ToggleNotifications.Enabled then
-					mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75, v.Enabled and 'warning' or nil)
+					mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>"..bindSuffix(v.Bind, 'to disable') or "<font color='#FF5A5A'>Disabled</font>"..bindSuffix(v.Bind, 'to enable')), 0.75, v.Enabled and 'warning' or nil)
 				end
 				v:Toggle(true)
 			end

@@ -326,6 +326,13 @@ local function checkKeybinds(compare, target, key)
 		if table.find(target, key) then
 			for i, v in target do
 				if not table.find(compare, v) then
+					return false
+				end
+			end
+			return true
+		end
+	end
+
 	return false
 end
 
@@ -338,13 +345,6 @@ local function statToggle(name)
 	if useWrites % 10 == 0 then
 		pcall(writefile, 'LarpV4/profiles/stats.json', httpService:JSONEncode(moduleUses))
 	end
-end
-			end
-			return true
-		end
-	end
-
-	return false
 end
 
 local function createDownloader(text)

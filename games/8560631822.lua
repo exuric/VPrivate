@@ -5017,6 +5017,7 @@ run(function()
 	local shotLog = {}
 	local aimCache = { at = 0, target = nil, result = nil }
 	local beamVel = {}
+	local smoothVel = {}
 	local function isAliveTarget(ent)
 		if not ent then return false end
 		if not entitylib.isVulnerable(ent) then return false end
@@ -5042,6 +5043,14 @@ run(function()
 		local ray = workspace:Raycast(p0, d, rayCheck)
 		return not ray
 	end
+	local function isInvisible(ent)
+		local char = ent.Character
+		local head = ent.Head or (char and char:FindFirstChild('Head'))
+		if head and head:IsA('BasePart') then
+			return head.Transparency > 0.4
+		end
+		return false
+	end
 	local function pickTarget(p0, isFire)
 		local cam = workspace.CurrentCamera
 		if not cam then return nil end
@@ -5051,6 +5060,9 @@ run(function()
 			if not ent then continue end
 			if ent.Player == playersService.LocalPlayer then continue end
 			if not isAliveTarget(ent) then continue end
+			if ent.Player and not Targets.Players.Enabled then continue end
+			if not ent.Player and not Targets.NPCs.Enabled then continue end
+			if Targets.Invisible.Enabled and isInvisible(ent) then continue end
 			local root = ent.RootPart
 			if not root then continue end
 			local dist = (root.Position - p0).Magnitude
@@ -5060,10 +5072,8 @@ run(function()
 			if sv.X < -40 or sv.X > vp.X + 40 or sv.Y < -40 or sv.Y > vp.Y + 40 then continue end
 			local cursorDist = (Vector2.new(sv.X, sv.Y) - vp / 2).Magnitude
 			if cursorDist > FOV.Value then continue end
+			if Targets.Walls.Enabled and not isFire and not trajLOS(p0, root.Position) then continue end
 			local score = cursorDist + dist * 0.05
-			if not isFire and not trajLOS(p0, root.Position) then
-				score = score + 100000
-			end
 			if not bestScore or score < bestScore then
 				best, bestScore = ent, score
 			end
@@ -5207,6 +5217,9 @@ run(function()
 						local projName = projmeta.projectile
 						local isLasso = projName:find('lasso') or projName:find('lassy')
 						local isFireball = projName == 'fireball'
+						if projName == 'telepearl' then
+							return old(...)
+						end
 						local lifetime = worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3
 						if isLasso then
 							lifetime = math.max(lifetime, 2.5)
@@ -5224,7 +5237,7 @@ run(function()
 						if isBeam and aimCache.result and now - aimCache.at < 0.03 and aimCache.target == plr then
 							return aimCache.result
 						end
-						if projName == 'glue_trap' or projName == 'glue_projectile' then
+						if table.find(Blacklist.ListEnabled or {}, ((projName == 'glue_trap' or projName == 'glue_projectile') and 'gloop' or projName)) then
 							return old(...)
 						end
 						local root = plr.RootPart
@@ -5240,6 +5253,11 @@ run(function()
 						if rawVel.Magnitude > 60 then
 							rawVel = rawVel.Unit * 60
 						end
+						local prevVel = smoothVel[plr]
+						if prevVel and (rawVel - prevVel).Magnitude < 40 then
+							rawVel = prevVel:Lerp(rawVel, 0.35)
+						end
+						smoothVel[plr] = rawVel
 						local airborne = plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(root.AssemblyLinearVelocity.Y) > 0.01) or math.abs(rawVel.Y) > 0.01
 						local targetVel = rawVel * math.clamp(Prediction.Value, 0.05, 2)
 						local okCalc, aimPoint, _, travelTime = pcall(prediction.SolveTrajectory, offsetpos, speed, gravity, targetPos, targetVel, workspace.Gravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, airborne, part.Position, root, nil, true)
@@ -5260,9 +5278,9 @@ run(function()
 								end
 							end
 							beamVel[plr] = { v = v0, at = now }
-						elseif not (isFireball or cleared(offsetpos, v0, gravity, travelTime)) then
+						elseif Targets.Walls.Enabled and not isFireball and not cleared(offsetpos, v0, gravity, travelTime) then
 							if lobV and lobT then
-								if isFireball or cleared(offsetpos, lobV, gravity, lobT) then
+								if cleared(offsetpos, lobV, gravity, lobT) then
 									v0, travelTime = lobV, lobT
 								else
 									return old(...)
@@ -5305,12 +5323,19 @@ run(function()
 			else
 				bedwars.ProjectileController.calculateImportantLaunchValues = realOld
 				table.clear(beamVel)
+				table.clear(smoothVel)
 				aimCache.at = 0
 				aimCache.result = nil
 				aimCache.target = nil
 			end
 		end,
 		Tooltip = 'Silently adjusts your aim towards the enemy'
+	})
+	Targets = ProjectileAimbot:CreateTargets({
+		Players = true,
+		NPCs = true,
+		Invisible = true,
+		Walls = true
 	})
 	FOV = ProjectileAimbot:CreateSlider({
 		Name = 'FOV',
@@ -5337,6 +5362,10 @@ run(function()
 		Name = 'Auto Charge',
 		Default = true,
 		Tooltip = 'Fully charges your bow, Allowing your projectile to deal more damage'
+	})
+	Blacklist = ProjectileAimbot:CreateTextList({
+		Name = 'Blacklist',
+		Default = {'glue_trap'}
 	})
 end)
 
@@ -18403,393 +18432,5 @@ run(function()
 				setfpscap(value)
 			end
 		end
-	})
-end)
-
-run(function()
-	local BedAlarm
-	local Range
-	local function getOwnBedPos()
-		local ok, team = pcall(bedwars.TeamController.getPlayerTeam, bedwars.TeamController, lplr)
-		local teamId = (ok and team and team.id) or lplr:GetAttribute('Team')
-		if teamId == nil then return nil end
-		local ok2, bed = pcall(bedwars.BedwarsController.getTeamBed, bedwars.BedwarsController, teamId)
-		if not ok2 or not bed then return nil end
-		local part = bed:IsA('BasePart') and bed or bed:FindFirstChildWhichIsA('BasePart', true)
-		return part and part.Position or nil
-	end
-	BedAlarm = larp.Categories.Blatant:CreateModule({
-		Name = 'BedAlarm',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				local lastAlert, acc = 0, 0
-				BedAlarm:Clean(runService.Heartbeat:Connect(function(dt)
-					acc += dt
-					if acc < 0.5 then return end
-					acc = 0
-					if tick() - lastAlert < 12 then return end
-					local bedPos = getOwnBedPos()
-					if not bedPos then return end
-					for _, ent in entitylib.List do
-						if ent and ent.Player and ent.Player ~= lplr and ent.RootPart then
-							local sameTeam = false
-							pcall(function()
-								sameTeam = ent.Player.Team ~= nil and lplr.Team ~= nil and ent.Player.Team == lplr.Team
-							end)
-							if not sameTeam and entitylib.isVulnerable(ent) and (ent.RootPart.Position - bedPos).Magnitude <= Range.Value then
-								lastAlert = tick()
-								larp:CreateNotification('Bed Alarm', 'Enemy near your bed!', 5, 'warning')
-								break
-							end
-						end
-					end
-				end))
-			end
-		end,
-		Tooltip = 'Warns you when an enemy gets close to your bed'
-	})
-	Range = BedAlarm:CreateSlider({
-		Name = 'Range',
-		Min = 10,
-		Max = 100,
-		Default = 40,
-		Tooltip = 'Alert when an enemy is within this many studs of your bed'
-	})
-end)
-
-run(function()
-	local SprintReset
-	local Delay
-	SprintReset = larp.Categories.Blatant:CreateModule({
-		Name = 'SprintReset',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				SprintReset:Clean(inputService.InputBegan:Connect(function(input, gpe)
-					if gpe or input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-					if not entitylib.isAlive then return end
-					task.spawn(function()
-						pcall(function() lplr:SetAttribute('Sprinting', false) end)
-						task.wait(Delay.Value / 1000)
-						pcall(function() lplr:SetAttribute('Sprinting', true) end)
-					end)
-				end))
-			end
-		end,
-		Tooltip = 'Resets your sprint when you click for better combos'
-	})
-	Delay = SprintReset:CreateSlider({
-		Name = 'Delay',
-		Min = 60,
-		Max = 300,
-		Default = 120,
-		Suffix = function(val) return 'ms' end,
-		Tooltip = 'How long to stay unsprinted on each click'
-	})
-end)
-
-run(function()
-	local FastFall
-	local Multiplier
-	FastFall = larp.Categories.Blatant:CreateModule({
-		Name = 'FastFall',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				FastFall:Clean(runService.Heartbeat:Connect(function(dt)
-					local char = entitylib.character
-					local root = char and char:FindFirstChild('HumanoidRootPart')
-					local hum = char and char:FindFirstChildOfClass('Humanoid')
-					if root and hum and hum.FloorMaterial == Enum.Material.Air then
-						local vel = root.AssemblyLinearVelocity
-						if vel.Y < -5 then
-							local nv = vel + Vector3.new(0, -workspace.Gravity * (Multiplier.Value - 1) * math.min(dt, 0.1), 0)
-							if nv.Y < -120 then nv = Vector3.new(nv.X, -120, nv.Z) end
-							pcall(function() root.AssemblyLinearVelocity = nv end)
-						end
-					end
-				end))
-			end
-		end,
-		Tooltip = 'Fall faster to rush down and escape quicker'
-	})
-	Multiplier = FastFall:CreateSlider({
-		Name = 'Multiplier',
-		Min = 1,
-		Max = 3,
-		Default = 1.7,
-		Decimal = 10,
-		Tooltip = 'Fall speed multiplier while airborne'
-	})
-end)
-
-run(function()
-	local AutoSword
-	local Range
-	local tiers = {wooden_sword = 1, stone_sword = 2, iron_sword = 3, diamond_sword = 4, emerald_sword = 5, rageblade = 6}
-	local function bestSword()
-		local inv = store.inventory and store.inventory.inventory and store.inventory.inventory.items
-		if not inv then return nil end
-		local best, bestTier
-		for _, item in inv do
-			local t = item and item.itemType and (tiers[item.itemType] or (item.itemType:find('sword') and 0 or nil))
-			if t and item.tool and (not bestTier or t > bestTier) then
-				best, bestTier = item.tool, t
-			end
-		end
-		return best
-	end
-	AutoSword = larp.Categories.Blatant:CreateModule({
-		Name = 'AutoSword',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				local acc, cool = 0, 0
-				AutoSword:Clean(runService.Heartbeat:Connect(function(dt)
-					acc += dt
-					if acc < 0.5 then return end
-					acc = 0
-					if not entitylib.isAlive or tick() < cool then return end
-					local pos = entitylib.character.RootPart.Position
-					local near = false
-					for _, ent in entitylib.List do
-						if ent and ent.Player and ent.Player ~= lplr and ent.RootPart and entitylib.isVulnerable(ent) and (ent.RootPart.Position - pos).Magnitude <= Range.Value then
-							near = true
-							break
-						end
-					end
-					if not near then return end
-					local sword = bestSword()
-					if not sword then return end
-					local hand = lplr.Character and lplr.Character:FindFirstChild('HandInvItem')
-					if not hand or hand.Value ~= sword then
-						if switchItem(sword, 0) then cool = tick() + 1 end
-					end
-				end))
-			end
-		end,
-		Tooltip = 'Automatically holds your best sword when an enemy is close'
-	})
-	Range = AutoSword:CreateSlider({
-		Name = 'Range',
-		Min = 6,
-		Max = 20,
-		Default = 10,
-		Tooltip = 'Switch to sword when an enemy is within this many studs'
-	})
-end)
-
-run(function()
-	local ComboCounter
-	local hits, best = 0, 0
-	ComboCounter = larp.Categories.Blatant:CreateModule({
-		Name = 'Combo Counter',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				hits = 0
-				ComboCounter:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
-					if not damageTable then return end
-					if damageTable.entityInstance == lplr.Character then
-						hits = 0
-					elseif damageTable.fromEntity == lplr.Character then
-						hits += 1
-						if hits > best then best = hits end
-						if hits % 25 == 0 then
-							larp:CreateNotification('Combo', hits..' hit combo!', 3)
-						end
-					end
-				end))
-			end
-		end,
-		ExtraText = function()
-			return hits..'x'
-		end,
-		Tooltip = 'Counts your current hit combo'
-	})
-end)
-
-run(function()
-	local InventoryBlur
-	local blurObj
-	InventoryBlur = larp.Categories.Other:CreateModule({
-		Name = 'Inventory Blur',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				pcall(function()
-					local hb = playersService.LocalPlayer.PlayerGui:FindFirstChild('hotbar')
-					local target = hb and (hb:FindFirstChild('1') or hb)
-					if target then blurObj = addBlur(target) end
-				end)
-			else
-				if blurObj then pcall(function() blurObj:Destroy() end) end
-				blurObj = nil
-			end
-		end,
-		Tooltip = 'Blurs your hotbar from observers'
-	})
-end)
-
-run(function()
-	local FriendJoinNotifier
-	FriendJoinNotifier = larp.Categories.Other:CreateModule({
-		Name = 'Friend Join Notifier',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				FriendJoinNotifier:Clean(playersService.PlayerAdded:Connect(function(plr)
-					if table.find(larp.Categories.Friends.ListEnabled or {}, plr.Name) then
-						larp:CreateNotification('Friend', plr.DisplayName..' joined your game', 5)
-					end
-				end))
-				FriendJoinNotifier:Clean(playersService.PlayerRemoving:Connect(function(plr)
-					if table.find(larp.Categories.Friends.ListEnabled or {}, plr.Name) then
-						larp:CreateNotification('Friend', plr.DisplayName..' left your game', 5)
-					end
-				end))
-			end
-		end,
-		Tooltip = 'Notifies you when a friend joins or leaves'
-	})
-end)
-
-run(function()
-	local ScreenshotMode
-	ScreenshotMode = larp.Categories.Other:CreateModule({
-		Name = 'Screenshot Mode',
-		Tags = {'NEW'},
-		Function = function(callback)
-			pcall(function()
-				larp.gui.ScaledGui.Visible = not callback
-			end)
-			pcall(function()
-				larp.Legit.Window.Visible = not callback
-			end)
-		end,
-		Tooltip = 'Hides the interface for screenshots, modules keep running'
-	})
-end)
-
-run(function()
-	local SessionStats
-	local kills, deaths, streak, best = 0, 0, 0, 0
-	SessionStats = larp.Categories.Other:CreateModule({
-		Name = 'Session Stats',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				kills, deaths, streak = 0, 0, 0
-				SessionStats:Clean(larpEvents.EntityDeathEvent.Event:Connect(function(deathTable)
-					if not deathTable then return end
-					local killer = playersService:GetPlayerFromCharacter(deathTable.fromEntity)
-					local killed = playersService:GetPlayerFromCharacter(deathTable.entityInstance)
-					if killer == lplr and killed and killed ~= lplr then
-						kills += 1
-						streak += 1
-						if streak > best then best = streak end
-					end
-					if killed == lplr then
-						deaths += 1
-						streak = 0
-					end
-				end))
-			end
-		end,
-		ExtraText = function()
-			return kills..'/'..deaths..' '..streak..'KS'
-		end,
-		Tooltip = 'Tracks your kills, deaths and killstreak this session'
-	})
-end)
-
-run(function()
-	local GameInfo
-	local infoGui
-	local infoLabel
-	GameInfo = larp.Categories.Other:CreateModule({
-		Name = 'Game Info',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				local gui = Instance.new('ScreenGui')
-				gui.Name = 'LarpGameInfo'
-				gui.ResetOnSpawn = false
-				gui.Parent = playersService.LocalPlayer.PlayerGui
-				infoGui = gui
-				infoLabel = Instance.new('TextLabel')
-				infoLabel.Size = UDim2.fromOffset(220, 20)
-				infoLabel.Position = UDim2.fromOffset(10, 80)
-				infoLabel.BackgroundColor3 = Color3.new()
-				infoLabel.BackgroundTransparency = 0.4
-				infoLabel.BorderSizePixel = 0
-				infoLabel.Text = ''
-				infoLabel.TextColor3 = Color3.new(1, 1, 1)
-				infoLabel.TextSize = 13
-				infoLabel.Font = Enum.Font.Gotham
-				infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-				infoLabel.Parent = gui
-				local start, acc = tick(), 0
-				GameInfo:Clean(runService.Heartbeat:Connect(function(dt)
-					acc += dt
-					if acc < 1 or not infoLabel or not infoLabel.Parent then return end
-					acc = 0
-					local alive = 0
-					for _, ent in entitylib.List do
-						if ent and ent.Player and entitylib.isVulnerable(ent) then
-							alive += 1
-						end
-					end
-					local mode = (store.queueType or 'bedwars')
-					local el = math.floor(tick() - start)
-					infoLabel.Text = mode..' | Alive: '..alive..' | '..math.floor(el / 60)..':'..string.format('%02d', el % 60)
-				end))
-			else
-				if infoGui then pcall(function() infoGui:Destroy() end) end
-				infoGui, infoLabel = nil, nil
-			end
-		end,
-		Tooltip = 'Shows mode, players alive and match time'
-	})
-end)
-
-run(function()
-	local LowHPAlert
-	local Threshold
-	local alerted = false
-	LowHPAlert = larp.Categories.Other:CreateModule({
-		Name = 'Low HP Alert',
-		Tags = {'NEW'},
-		Function = function(callback)
-			if callback then
-				alerted = false
-				local acc = 0
-				LowHPAlert:Clean(runService.Heartbeat:Connect(function(dt)
-					acc += dt
-					if acc < 0.5 then return end
-					acc = 0
-					local char = entitylib.character
-					local hum = char and char:FindFirstChildOfClass('Humanoid')
-					if not hum then alerted = false return end
-					local pct = hum.Health / math.max(hum.MaxHealth, 1) * 100
-					if pct <= Threshold.Value and not alerted then
-						alerted = true
-						larp:CreateNotification('Low HP', 'You are at '..math.floor(pct)..'% health!', 4, 'warning')
-					elseif pct > Threshold.Value + 10 then
-						alerted = false
-					end
-				end))
-			end
-		end,
-		Tooltip = 'Warns you when your health gets low'
-	})
-	Threshold = LowHPAlert:CreateSlider({
-		Name = 'Threshold',
-		Min = 10,
-		Max = 50,
-		Default = 25,
-		Suffix = function(val) return '%' end,
-		Tooltip = 'Alert when below this health percent'
 	})
 end)

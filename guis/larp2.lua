@@ -326,8 +326,19 @@ local function checkKeybinds(compare, target, key)
 		if table.find(target, key) then
 			for i, v in target do
 				if not table.find(compare, v) then
-					return false
-				end
+	return false
+end
+
+local moduleUses = {}
+local useWrites = 0
+local function statToggle(name)
+	if not name or name == '' then return end
+	moduleUses[name] = (moduleUses[name] or 0) + 1
+	useWrites += 1
+	if useWrites % 10 == 0 then
+		pcall(writefile, 'LarpV4/profiles/stats.json', httpService:JSONEncode(moduleUses))
+	end
+end
 			end
 			return true
 		end
@@ -4026,6 +4037,8 @@ function mainapi:CreateCategory(categorysettings)
 	arrow.Parent = arrowbutton
 	local editbutton
 	local hidcount
+	local unhideall
+	local toggledisabled
 	if categorysettings.Name ~= 'Favorites' then
 		editbutton = Instance.new('ImageButton')
 		editbutton.Name = 'Edit'
@@ -4056,6 +4069,55 @@ function mainapi:CreateCategory(categorysettings)
 		hidcount.FontFace = uipallet.Font
 		hidcount.Visible = false
 		hidcount.Parent = window
+		unhideall = Instance.new('TextButton')
+		unhideall.Name = 'UnhideAll'
+		unhideall.Size = UDim2.fromOffset(40, 13)
+		unhideall.Position = UDim2.new(1, -152, 0, 5)
+		unhideall.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		unhideall.BorderSizePixel = 0
+		unhideall.AutoButtonColor = false
+		unhideall.Text = 'Unhide'
+		unhideall.TextColor3 = color.Dark(uipallet.Text, 0.29)
+		unhideall.TextSize = 10
+		unhideall.FontFace = uipallet.Font
+		unhideall.Visible = false
+		unhideall.Parent = window
+		addCorner(unhideall, UDim.new(0, 4))
+		addTooltip(unhideall, 'Show all hidden modules')
+		toggledisabled = Instance.new('TextButton')
+		toggledisabled.Name = 'ToggleDisabled'
+		toggledisabled.Size = UDim2.fromOffset(40, 13)
+		toggledisabled.Position = UDim2.new(1, -152, 0, 20)
+		toggledisabled.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		toggledisabled.BorderSizePixel = 0
+		toggledisabled.AutoButtonColor = false
+		toggledisabled.Text = 'Disable'
+		toggledisabled.TextColor3 = color.Dark(uipallet.Text, 0.29)
+		toggledisabled.TextSize = 10
+		toggledisabled.FontFace = uipallet.Font
+		toggledisabled.Visible = false
+		toggledisabled.Parent = window
+		addCorner(toggledisabled, UDim.new(0, 4))
+		addTooltip(toggledisabled, 'Disable or enable every module')
+		unhideall.MouseButton1Click:Connect(function()
+			table.clear(categoryapi.Hidden)
+			categoryapi:RefreshHidden()
+		end)
+		toggledisabled.MouseButton1Click:Connect(function()
+			local targets = {}
+			local anyOn = false
+			for _, m in pairs(mainapi.Modules) do
+				if m.Category == categorysettings.Name then
+					table.insert(targets, m)
+					if m.Enabled then anyOn = true end
+				end
+			end
+			for _, m in targets do
+				if m.Enabled == anyOn then m:Toggle(true) end
+			end
+			mainapi:UpdateTextGUI()
+			categoryapi:RefreshHidden()
+		end)
 		editbutton.MouseEnter:Connect(function()
 			editart.ImageColor3 = uipallet.Text
 		end)
@@ -4147,8 +4209,8 @@ function mainapi:CreateCategory(categorysettings)
 		addCorner(activebar, UDim.new(1, 0))
 		local hiddenmark = Instance.new('Frame')
 		hiddenmark.Name = 'HiddenMark'
-		hiddenmark.Size = UDim2.fromOffset(3, 20)
-		hiddenmark.Position = UDim2.fromOffset(2, 10)
+		hiddenmark.Size = UDim2.fromOffset(3, 34)
+		hiddenmark.Position = UDim2.fromOffset(2, 3)
 		hiddenmark.BackgroundColor3 = Color3.fromRGB(255, 184, 31)
 		hiddenmark.BorderSizePixel = 0
 		hiddenmark.Visible = false
@@ -4347,8 +4409,22 @@ function mainapi:CreateCategory(categorysettings)
 			end
 
 			self.Bind = table.clone(tab)
-			if mouse then
-				bindcovertext.Text = #tab <= 0 and 'BIND REMOVED' or 'BOUND TO'
+		if mouse then
+			bindcovertext.Text = #tab <= 0 and 'BIND REMOVED' or 'BOUND TO'
+			if #tab > 0 then
+				for name, m in mainapi.Modules do
+					if m ~= self and m.Bind and #m.Bind == #tab then
+						local same = true
+						for _, k in tab do
+							if not table.find(m.Bind, k) then same = false break end
+						end
+						if same then
+							mainapi:CreateNotification('Bind Conflict', '"'..table.concat(tab, ' + '):upper()..'" already bound to '..name, 4, 'warning')
+							break
+						end
+					end
+				end
+			end
 				bindcover.Size = UDim2.fromOffset(getfontsize(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
 				task.delay(1, function()
 					bindcover.Visible = false
@@ -4399,6 +4475,7 @@ function mainapi:CreateCategory(categorysettings)
 				setthreadidentity(8)
 			end
 			self.Enabled = not self.Enabled
+			statToggle(modulebutton.Name)
 			divider.Visible = self.Enabled
 			gradient.Enabled = self.Enabled
 			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
@@ -4668,6 +4745,17 @@ function mainapi:CreateCategory(categorysettings)
 		if hidcount then
 			hidcount.Text = n > 0 and (n..' '..T('HidSuffix')) or ''
 			hidcount.Visible = n > 0
+		end
+		if unhideall then
+			unhideall.Visible = self.Editing
+		end
+		if toggledisabled then
+			toggledisabled.Visible = self.Editing
+			local anyOn = false
+			for _, m in pairs(mainapi.Modules) do
+				if m.Category == categorysettings.Name and m.Enabled then anyOn = true break end
+			end
+			toggledisabled.Text = anyOn and 'Disable' or 'Enable'
 		end
 		if editbutton then
 			local editart = editbutton:FindFirstChild('Art')
@@ -5967,6 +6055,7 @@ moduleapi.Children = modulechildren
 
 		function moduleapi:Toggle()
 			moduleapi.Enabled = not moduleapi.Enabled
+			statToggle(moduleapi.Name)
 			if moduleapi.Children then
 				moduleapi.Children.Visible = moduleapi.Enabled
 			end
@@ -6706,6 +6795,7 @@ end
 
 function mainapi:Uninject()
 	mainapi:Save()
+	pcall(writefile, 'LarpV4/profiles/stats.json', httpService:JSONEncode(moduleUses))
 	mainapi.Loaded = nil
 	for _, v in self.Modules do
 		if v.Enabled then
@@ -6848,7 +6938,101 @@ toolstrokebkg.Parent = tooltip
 local toolstroke = Instance.new('UIStroke')
 toolstroke.Color = color.Light(uipallet.Main, 0.02)
 toolstroke.Parent = toolstrokebkg
-addCorner(toolstrokebkg, UDim.new(0, 4))
+	addCorner(toolstrokebkg, UDim.new(0, 4))
+	local chordPill = Instance.new('Frame')
+	chordPill.Name = 'ChordPill'
+	chordPill.Size = UDim2.fromOffset(260, 30)
+	chordPill.Position = UDim2.new(0.5, -130, 1, -70)
+	chordPill.ZIndex = 5
+	chordPill.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+	chordPill.BorderSizePixel = 0
+	chordPill.Visible = false
+	chordPill.Parent = scaledgui
+	addCorner(chordPill)
+	local chordList = Instance.new('UIListLayout')
+	chordList.SortOrder = Enum.SortOrder.LayoutOrder
+	chordList.Padding = UDim.new(0, 2)
+	chordList.Parent = chordPill
+	local chordPadding = Instance.new('UIPadding')
+	chordPadding.PaddingTop = UDim.new(0, 6)
+	chordPadding.PaddingLeft = UDim.new(0, 10)
+	chordPadding.PaddingRight = UDim.new(0, 10)
+	chordPadding.Parent = chordPill
+	local chordMods = {}
+	local chordNames = {[Enum.KeyCode.LeftShift] = 'SHIFT', [Enum.KeyCode.RightShift] = 'SHIFT', [Enum.KeyCode.LeftControl] = 'CTRL', [Enum.KeyCode.RightControl] = 'CTRL', [Enum.KeyCode.LeftAlt] = 'ALT', [Enum.KeyCode.RightAlt] = 'ALT'}
+	local function prettyBindKey(k)
+		if k == 'LeftShift' or k == 'RightShift' then return 'SHIFT' end
+		if k == 'LeftControl' or k == 'RightControl' then return 'CTRL' end
+		if k == 'LeftAlt' or k == 'RightAlt' then return 'ALT' end
+		return k
+	end
+	local function refreshChords()
+		for _, c in chordPill:GetChildren() do
+			if c:IsA('TextLabel') then c:Destroy() end
+		end
+		local held = {}
+		for k in pairs(chordMods) do table.insert(held, chordNames[k]) end
+		if #held == 0 or inputService:GetFocusedTextBox() then
+			chordPill.Visible = false
+			return
+		end
+		table.sort(held)
+		local rows = {}
+		for name, m in mainapi.Modules do
+			if m.Bind and #m.Bind > 1 then
+				local ok = true
+				for _, h in held do
+					local found = false
+					for _, b in m.Bind do
+						if prettyBindKey(b) == h then found = true break end
+					end
+					if not found then ok = false break end
+				end
+				if ok then
+					local rest = {}
+					for _, b in m.Bind do
+						if type(b) == 'string' then
+							local p = prettyBindKey(b)
+							if not table.find(held, p) then table.insert(rest, p) end
+						end
+					end
+					table.insert(rows, {text = table.concat(held, ' + ')..(rest[1] and ' + '..table.concat(rest, ' + ') or '')..'  —  '..name})
+				end
+			end
+		end
+		table.sort(rows, function(a, b) return a.text < b.text end)
+		for k, r in rows do
+			if k > 5 then break end
+			local row = Instance.new('TextLabel')
+			row.Size = UDim2.new(1, 0, 0, 16)
+			row.BackgroundTransparency = 1
+			row.TextXAlignment = Enum.TextXAlignment.Left
+			row.TextColor3 = color.Dark(uipallet.Text, 0.16)
+			row.TextSize = 12
+			row.FontFace = uipallet.Font
+			row.TextTruncate = Enum.TextTruncate.AtEnd
+			row.Text = r.text
+			row.LayoutOrder = k
+			row.Parent = chordPill
+		end
+		if #rows == 0 then chordPill.Visible = false return end
+		local n = math.min(#rows, 5)
+		chordPill.Size = UDim2.fromOffset(260, 12 + n * 18)
+		chordPill.Position = UDim2.new(0.5, -130, 1, -(16 + n * 18 + 12))
+		chordPill.Visible = true
+	end
+	mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
+		if chordNames[inputObj.KeyCode] and not chordMods[inputObj.KeyCode] then
+			chordMods[inputObj.KeyCode] = true
+			refreshChords()
+		end
+	end))
+	mainapi:Clean(inputService.InputEnded:Connect(function(inputObj)
+		if chordMods[inputObj.KeyCode] then
+			chordMods[inputObj.KeyCode] = nil
+			refreshChords()
+		end
+	end))
 scale = Instance.new('UIScale')
 scale.Scale = math.max(gui.AbsoluteSize.X / 1920, 0.6)
 scale.Parent = scaledgui
@@ -7784,6 +7968,23 @@ guipane:CreateToggle({
 	Default = true,
 	Tooltip = 'Shows the button to change to Legit Mode'
 })
+local themeSync = false
+local lightTheme = guipane:CreateToggle({
+	Name = 'Light mode',
+	Tooltip = 'Switches the interface to a light theme',
+	Function = function(on)
+		if themeSync then return end
+		local mainC = on and {240, 240, 238} or {26, 25, 26}
+		local textC = on and {40, 40, 40} or {200, 200, 200}
+		pcall(writefile, 'LarpV4/profiles/color.txt', httpService:JSONEncode({Main = mainC, Text = textC}))
+		reloadLarp()
+	end
+})
+if uipallet.Main.R + uipallet.Main.G + uipallet.Main.B > 1.5 then
+	themeSync = true
+	lightTheme:Toggle()
+	themeSync = false
+end
 local scaleslider = {Object = {}, Value = 1}
 mainapi.Scale = guipane:CreateToggle({
 	Name = 'Auto rescale',
@@ -7941,7 +8142,7 @@ local textgui = mainapi:CreateOverlay({
 })
 local textguisort = textgui:CreateDropdown({
 	Name = 'Sort',
-	List = {'Alphabetical', 'Length'},
+	List = {'Alphabetical', 'Length', 'Most Used'},
 	Function = function()
 		mainapi:UpdateTextGUI()
 	end
@@ -8181,9 +8382,32 @@ LarpLogoShadow.Logo2.ImageTransparency = 0.65
 local LarpLogoGradient = Instance.new('UIGradient')
 LarpLogoGradient.Rotation = 90
 LarpLogoGradient.Parent = LarpLogo
-local LarpLogoGradient2 = Instance.new('UIGradient')
-LarpLogoGradient2.Rotation = 90
-LarpLogoGradient2.Parent = LarpLogoV4
+	local LarpLogoGradient2 = Instance.new('UIGradient')
+	LarpLogoGradient2.Rotation = 90
+	LarpLogoGradient2.Parent = LarpLogoV4
+	local LarpSessionTime = Instance.new('TextLabel')
+	LarpSessionTime.Name = 'SessionTime'
+	LarpSessionTime.Size = UDim2.fromOffset(30, 14)
+	LarpSessionTime.BackgroundTransparency = 1
+	LarpSessionTime.Text = ''
+	LarpSessionTime.TextColor3 = color.Dark(uipallet.Text, 0.29)
+	LarpSessionTime.TextSize = 11
+	LarpSessionTime.FontFace = uipallet.Font
+	LarpSessionTime.TextXAlignment = Enum.TextXAlignment.Center
+	LarpSessionTime.Visible = false
+	LarpSessionTime.Parent = textgui.Children
+	task.spawn(function()
+		while LarpSessionTime.Parent do
+			if LarpLogo.Visible then
+				local el = math.floor(tick() - mainapi.PerfStats.startup)
+				LarpSessionTime.Text = math.floor(el / 60)..':'..string.format('%02d', el % 60)
+				LarpSessionTime.Visible = true
+			else
+				LarpSessionTime.Visible = false
+			end
+			task.wait(1)
+		end
+	end)
 local LarpLabelCustom = Instance.new('TextLabel')
 LarpLabelCustom.Position = UDim2.fromOffset(5, 2)
 LarpLabelCustom.BackgroundTransparency = 1
@@ -8734,6 +8958,7 @@ function mainapi:UpdateTextGUI(afterload)
 		local right = textgui.Children.AbsolutePosition.X > (gui.AbsoluteSize.X / 2)
 		LarpLogo.Visible = textguiwatermark.Enabled
 		LarpLogo.Position = right and UDim2.new(1 / LarpTextScale.Scale, -113, 0, 6) or UDim2.fromOffset(0, 6)
+		LarpSessionTime.Position = right and UDim2.new(1 / LarpTextScale.Scale, -30, 0, 8) or UDim2.fromOffset(88, 8)
 		LarpLogoShadow.Visible = textguishadow.Enabled
 		LarpLabelCustom.Text = textguibox.Value
 		LarpLabelCustom.FontFace = textguifontcustom.Value
@@ -8811,7 +9036,7 @@ function mainapi:UpdateTextGUI(afterload)
 				holdertext.Position = UDim2.fromOffset(right and 3 or 6, 2)
 				holdertext.BackgroundTransparency = 1
 				holdertext.BorderSizePixel = 0
-				holdertext.Text = i..(v.ExtraText and " <font color='#A8A8A8'>"..v.ExtraText()..'</font>' or '')
+				holdertext.Text = i..(v.ExtraText and " <font color='#A8A8A8'>"..v.ExtraText()..'</font>' or '')..((v.Bind and #v.Bind > 0) and " <font color='#7A7A7A'>"..table.concat(v.Bind, ' + '):upper()..'</font>' or '')
 				holdertext.TextSize = 15
 				holdertext.FontFace = textguifont.Value
 				holdertext.RichText = true
@@ -8859,6 +9084,10 @@ function mainapi:UpdateTextGUI(afterload)
 		if textguisort.Value == 'Alphabetical' then
 			table.sort(LarpLabels, function(a, b)
 				return a.Text.Text < b.Text.Text
+			end)
+		elseif textguisort.Value == 'Most Used' then
+			table.sort(LarpLabels, function(a, b)
+				return (moduleUses[a.Object.Name] or 0) > (moduleUses[b.Object.Name] or 0)
 			end)
 		else
 			table.sort(LarpLabels, function(a, b)

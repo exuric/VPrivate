@@ -4124,6 +4124,7 @@ function mainapi:CreateCategory(categorysettings)
 	local hidcount
 	local unhideall
 	local toggledisabled
+	local edittools
 	if categorysettings.Name ~= 'Favorites' then
 		editbutton = Instance.new('ImageButton')
 		editbutton.Name = 'Edit'
@@ -4154,35 +4155,46 @@ function mainapi:CreateCategory(categorysettings)
 		hidcount.FontFace = uipallet.Font
 		hidcount.Visible = false
 		hidcount.Parent = window
+		edittools = Instance.new('Frame')
+		edittools.Name = 'EditTools'
+		edittools.Size = UDim2.fromOffset(72, 48)
+		edittools.AnchorPoint = Vector2.new(1, 1)
+		edittools.Position = UDim2.new(1, -6, 1, -6)
+		edittools.BackgroundColor3 = color.Dark(uipallet.Main, 0.04)
+		edittools.BorderSizePixel = 0
+		edittools.Visible = false
+		edittools.ZIndex = 20
+		edittools.Parent = window
+		addCorner(edittools, UDim.new(0, 8))
 		unhideall = Instance.new('TextButton')
 		unhideall.Name = 'UnhideAll'
-		unhideall.Size = UDim2.fromOffset(40, 13)
-		unhideall.Position = UDim2.new(1, -152, 0, 5)
-		unhideall.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		unhideall.Size = UDim2.new(1, -8, 0, 18)
+		unhideall.Position = UDim2.fromOffset(4, 4)
+		unhideall.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
 		unhideall.BorderSizePixel = 0
 		unhideall.AutoButtonColor = false
-		unhideall.Text = 'Unhide'
-		unhideall.TextColor3 = color.Dark(uipallet.Text, 0.29)
-		unhideall.TextSize = 10
+		unhideall.Text = 'Unhide all'
+		unhideall.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		unhideall.TextSize = 11
 		unhideall.FontFace = uipallet.Font
-		unhideall.Visible = false
-		unhideall.Parent = window
-		addCorner(unhideall, UDim.new(0, 4))
+		unhideall.ZIndex = 21
+		unhideall.Parent = edittools
+		addCorner(unhideall, UDim.new(0, 5))
 		addTooltip(unhideall, 'Show all hidden modules')
 		toggledisabled = Instance.new('TextButton')
 		toggledisabled.Name = 'ToggleDisabled'
-		toggledisabled.Size = UDim2.fromOffset(40, 13)
-		toggledisabled.Position = UDim2.new(1, -152, 0, 20)
-		toggledisabled.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		toggledisabled.Size = UDim2.new(1, -8, 0, 18)
+		toggledisabled.Position = UDim2.fromOffset(4, 26)
+		toggledisabled.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
 		toggledisabled.BorderSizePixel = 0
 		toggledisabled.AutoButtonColor = false
-		toggledisabled.Text = 'Disable'
-		toggledisabled.TextColor3 = color.Dark(uipallet.Text, 0.29)
-		toggledisabled.TextSize = 10
+		toggledisabled.Text = 'Disable all'
+		toggledisabled.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		toggledisabled.TextSize = 11
 		toggledisabled.FontFace = uipallet.Font
-		toggledisabled.Visible = false
-		toggledisabled.Parent = window
-		addCorner(toggledisabled, UDim.new(0, 4))
+		toggledisabled.ZIndex = 21
+		toggledisabled.Parent = edittools
+		addCorner(toggledisabled, UDim.new(0, 5))
 		addTooltip(toggledisabled, 'Disable or enable every module')
 		unhideall.MouseButton1Click:Connect(function()
 			table.clear(categoryapi.Hidden)
@@ -4817,10 +4829,11 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		local rowDragged = false
 		local dragGhost, dragLine
+		local dragStart
 		modulebutton.MouseButton1Down:Connect(function()
 			rowDragged = false
+			dragStart = nil
 			if not categoryapi.Editing then return end
-			local startPos = inputService:GetMouseLocation()
 			local baseX = (modulebutton.AbsolutePosition.X - clickgui.AbsolutePosition.X) / scale.Scale
 			local baseY = (modulebutton.AbsolutePosition.Y - clickgui.AbsolutePosition.Y) / scale.Scale
 			local movedConn, upConn
@@ -5050,16 +5063,15 @@ function mainapi:CreateCategory(categorysettings)
 			hidcount.Text = n > 0 and (n..' '..T('HidSuffix')) or ''
 			hidcount.Visible = n > 0
 		end
-		if unhideall then
-			unhideall.Visible = self.Editing
+		if edittools then
+			edittools.Visible = self.Editing
 		end
 		if toggledisabled then
-			toggledisabled.Visible = self.Editing
 			local anyOn = false
 			for _, m in pairs(mainapi.Modules) do
 				if m.Category == categorysettings.Name and m.Enabled then anyOn = true break end
 			end
-			toggledisabled.Text = anyOn and 'Disable' or 'Enable'
+			toggledisabled.Text = anyOn and 'Disable all' or 'Enable all'
 		end
 		for _, m in pairs(mainapi.Modules) do
 			if m.Category == categorysettings.Name and m.EditSection then

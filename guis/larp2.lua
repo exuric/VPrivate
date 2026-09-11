@@ -3171,6 +3171,9 @@ function mainapi:CreateGUI()
 				ImageColor3 = color.Light(uipallet.Main, 0.37)
 			})
 		end)
+		profilebutton.MouseButton1Click:Connect(function()
+			mainapi:OpenPublicProfiles()
+		end)
 		local shadow = Instance.new('TextButton')
 		shadow.Name = 'Shadow'
 		shadow.Size = UDim2.new(1, 0, 1, -5)
@@ -5646,7 +5649,23 @@ function mainapi:CreateCategoryList(categorysettings)
 				end)
 				dotsbutton.MouseButton1Click:Connect(function()
 					if v.Name ~= mainapi.Profile then
-						categoryapi:ChangeValue(v.Name)
+						local used = mainapi:PubSourceUsed(v.Name)
+						if used[1] then
+							mainapi:CreatePrompt({
+								Title = 'Delete Profile',
+								Text = "'"..v.Name.."' is the source of "..#used.." public profile(s). Delete them too?",
+								Confirm = 'Delete Both',
+								Cancel = 'Keep',
+								Function = function(ok)
+									if ok then
+										mainapi:PubDeleteIds(used)
+										categoryapi:ChangeValue(v.Name)
+									end
+								end
+							})
+						else
+							categoryapi:ChangeValue(v.Name)
+						end
 					end
 				end)
 				object.MouseButton1Click:Connect(function()
@@ -7048,14 +7067,7 @@ function mainapi:Remove(obj)
 	end
 end
 
-function mainapi:Save(newprofile)
-	if not self.Loaded then return end
-	local guidata = {
-		Categories = {},
-		Profile = newprofile or self.Profile,
-		Profiles = self.Profiles,
-		Keybind = self.Keybind
-	}
+function mainapi:BuildSaveData()
 	local savedata = {
 		Modules = {},
 		Categories = {},
@@ -7063,16 +7075,14 @@ function mainapi:Save(newprofile)
 	}
 
 	for i, v in self.Categories do
-		(v.Type ~= 'Category' and i ~= 'Main' and savedata or guidata).Categories[i] = {
-			Enabled = i ~= 'Main' and v.Button.Enabled or nil,
-			Expanded = v.Type ~= 'Overlay' and v.Expanded or nil,
-			Pinned = v.Pinned,
-			Position = {X = v.Object.Position.X.Offset, Y = v.Object.Position.Y.Offset},
-			Options = mainapi:SaveOptions(v, v.Options),
-			List = v.List,
-			ListEnabled = v.ListEnabled,
-			ModuleOrder = v.ModuleOrder
-		}
+		if v.Type ~= 'Category' and i ~= 'Main' then
+			savedata.Categories[i] = {
+				Enabled = v.Button.Enabled,
+				Options = mainapi:SaveOptions(v, v.Options),
+				List = v.List,
+				ListEnabled = v.ListEnabled
+			}
+		end
 	end
 
 	for i, v in self.Modules do
@@ -7093,6 +7103,34 @@ function mainapi:Save(newprofile)
 			Options = mainapi:SaveOptions(v, v.Options)
 		}
 	end
+	return savedata
+end
+
+function mainapi:Save(newprofile)
+	if not self.Loaded then return end
+	local guidata = {
+		Categories = {},
+		Profile = newprofile or self.Profile,
+		Profiles = self.Profiles,
+		Keybind = self.Keybind
+	}
+
+	for i, v in self.Categories do
+		if v.Type == 'Category' or i == 'Main' then
+			guidata.Categories[i] = {
+				Enabled = i ~= 'Main' and v.Button.Enabled or nil,
+				Expanded = v.Type ~= 'Overlay' and v.Expanded or nil,
+				Pinned = v.Pinned,
+				Position = {X = v.Object.Position.X.Offset, Y = v.Object.Position.Y.Offset},
+				Options = mainapi:SaveOptions(v, v.Options),
+				List = v.List,
+				ListEnabled = v.ListEnabled,
+				ModuleOrder = v.ModuleOrder
+			}
+		end
+	end
+
+	local savedata = mainapi:BuildSaveData()
 
 	local function writeSave(path, data)
 		if self.SaveCache[path] ~= data then
@@ -7728,12 +7766,1128 @@ Profiles:CreateButton({
 			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/init.lua?v='..tick(), true))(license)
 		end
 	end,
-	Tooltip = 'Resets the current profile back to default settings'
-})	
+		Tooltip = 'Resets the current profile back to default settings'
+	})
 
---[[
-	Targets
-]]
+	--[[
+		Public Profiles (Vape Online-style browser + sharing)
+	]]
+	local pubSys = {win = nil, view = 'browse', sort = 'rated', query = '', yours = {}, registry = {}, regOK = false, regTime = 0, selected = nil, creating = false, editing = false, importData = nil, rateSel = 5, editModule = nil}
+	local PUB_DIR = 'LarpV4/profiles/public'
+	local function pubEnsure()
+		pcall(function()
+			if not isfolder('LarpV4/profiles') then makefolder('LarpV4/profiles') end
+			if not isfolder(PUB_DIR) then makefolder(PUB_DIR) end
+			if not isfolder('LarpV4/profiles/shared') then makefolder('LarpV4/profiles/shared') end
+		end)
+	end
+	local function pubReadJson(path)
+		local ok, content = pcall(readfile, path)
+		if not ok or not content or content == '' then return nil end
+		local ok2, data = pcall(httpService.JSONDecode, httpService, content)
+		return ok2 and data or nil
+	end
+	local function pubWriteJson(path, tab)
+		local ok, encoded = pcall(httpService.JSONEncode, httpService, tab)
+		if ok and encoded then pcall(writefile, path, encoded) end
+	end
+	local function pubLoadIndex()
+		local data = pubReadJson('LarpV4/profiles/public.json')
+		return (data and data.profiles) or {}
+	end
+	local function pubSaveIndex(idx)
+		pubWriteJson('LarpV4/profiles/public.json', {version = 1, profiles = idx})
+	end
+	local function pubLoadItem(id)
+		return pubReadJson(PUB_DIR..'/'..id..'.json')
+	end
+	local function pubSaveItem(id, item)
+		pubWriteJson(PUB_DIR..'/'..id..'.json', item)
+	end
+	local function pubReviews(id)
+		local data = pubReadJson('LarpV4/profiles/reviews.json')
+		return (data and data[id]) or {}
+	end
+	local function pubAddReview(id, review)
+		local data = pubReadJson('LarpV4/profiles/reviews.json') or {}
+		data[id] = data[id] or {}
+		table.insert(data[id], 1, review)
+		pubWriteJson('LarpV4/profiles/reviews.json', data)
+	end
+	local function pubLiked(id)
+		local data = pubReadJson('LarpV4/profiles/likes.json')
+		return data and data[id] or false
+	end
+	local function pubSetLiked(id, val)
+		local data = pubReadJson('LarpV4/profiles/likes.json') or {}
+		if val then data[id] = true else data[id] = nil end
+		pubWriteJson('LarpV4/profiles/likes.json', data)
+	end
+	local function pubDownloads(id)
+		local data = pubReadJson('LarpV4/profiles/downloads.json')
+		return (data and data[id]) or 0
+	end
+	local function pubBumpDownloads(id)
+		local data = pubReadJson('LarpV4/profiles/downloads.json') or {}
+		data[id] = (data[id] or 0) + 1
+		pubWriteJson('LarpV4/profiles/downloads.json', data)
+	end
+	local function pubNewId()
+		pubEnsure()
+		local idx = pubLoadIndex()
+		local id
+		repeat
+			id = 'pub_'..string.format('%x', os.time() % 0xffffff)..string.format('%04x', math.random(0, 0xffff))
+		until not idx[id] and not isfile(PUB_DIR..'/'..id..'.json')
+		return id
+	end
+	local function pubCreator()
+		local name = 'Anonymous'
+		pcall(function()
+			local plr = cloneref(game:GetService('Players')).LocalPlayer
+			if plr then name = (plr.DisplayName ~= '' and plr.DisplayName or plr.Name)..' (@'..plr.Name..')' end
+		end)
+		return name
+	end
+	local function pubSnapshot(sourceName)
+		if sourceName and sourceName ~= '' then
+			for _, path in {'LarpV4/profiles/'..sourceName..mainapi.Place..'.txt', 'LarpV4/profiles/'..sourceName..'.last.txt'} do
+				local data = pubReadJson(path)
+				if data and type(data.Modules) == 'table' then return data.Modules end
+			end
+			return nil, 'No saved data found for "'..sourceName..'" on this game. Load it once first.'
+		end
+		local ok, data = pcall(mainapi.BuildSaveData, mainapi)
+		if ok and data and type(data.Modules) == 'table' then return data.Modules end
+		return nil, 'Could not snapshot current settings.'
+	end
+	local function pubSanitizeModules(mods)
+		local clean, dropped = {}, 0
+		if type(mods) ~= 'table' then return clean, 1 end
+		for name, entry in mods do
+			if type(name) == 'string' and type(entry) == 'table' and type(entry.Enabled) == 'boolean' then
+				local bind = (type(entry.Bind) == 'table' and not entry.Bind.Mobile) and entry.Bind or {}
+				local b2 = {}
+				for _, k in bind do
+					if type(k) == 'string' then table.insert(b2, k) end
+				end
+				clean[name] = {Enabled = entry.Enabled, Bind = b2, Options = type(entry.Options) == 'table' and entry.Options or nil}
+			else
+				dropped += 1
+			end
+		end
+		return clean, dropped
+	end
+	local function pubAffected(data)
+		local names, total = {}, 0
+		if data and type(data.Modules) == 'table' then
+			for name, entry in data.Modules do
+				total += 1
+				if type(entry) == 'table' and entry.Enabled then table.insert(names, name) end
+			end
+			table.sort(names)
+		end
+		return names, total
+	end
+	local function pubLikeCount(meta, id)
+		return (meta and meta.likes or 0) + (pubLiked(id) and 1 or 0)
+	end
+	local function pubDlCount(meta, id)
+		return (meta and meta.downloads or 0) + pubDownloads(id)
+	end
+	local function pubFetchRegistry()
+		if pubSys.regOK and tick() - pubSys.regTime < 300 then return pubSys.registry end
+		pubSys.registry, pubSys.regOK = {}, false
+		local root = (getgenv and getgenv().LarpReadRoot) or 'https://raw.githubusercontent.com/exuric/VPrivate/'
+		local ok, res = pcall(game.HttpGet, game, root..'main/profiles/registry.json', true)
+		if ok and res and res ~= '' and res ~= '404: Not Found' then
+			local ok2, data = pcall(httpService.JSONDecode, httpService, res)
+			if ok2 and data and type(data.profiles) == 'table' then
+				pubSys.registry, pubSys.regOK, pubSys.regTime = data.profiles, true, tick()
+			end
+		end
+		return pubSys.registry
+	end
+	local function pubUploadShare(payload)
+		local ok, encoded = pcall(httpService.JSONEncode, httpService, payload)
+		if not ok or not encoded then return nil, 'Could not encode profile.' end
+		local ok2, res = pcall(request, {Url = 'https://paste.rs/', Method = 'POST', Body = encoded, Headers = {['Content-Type'] = 'text/plain'}})
+		if not ok2 or type(res) ~= 'table' then return nil, 'Upload failed (no network?). Profile saved locally anyway.' end
+		local code = tostring(res.Body or ''):gsub('%s+', '')
+		if (res.StatusCode or 0) < 200 or (res.StatusCode or 0) > 299 or code == '' then
+			return nil, 'Upload rejected. Profile saved locally anyway.'
+		end
+		code = code:match('([^/]+)$') or code
+		return 'LARP-'..code, nil
+	end
+	local function pubDownloadShare(code)
+		code = tostring(code or ''):gsub('%s+', '')
+		code = code:gsub('^LARP%-', ''):gsub('^https?://paste%.rs/', ''):gsub('/$', '')
+		if code == '' then return nil, 'Empty share code.' end
+		local ok, res = pcall(game.HttpGet, game, 'https://paste.rs/'..code, true)
+		if not ok or not res or res == '' then return nil, 'Could not fetch that share code. Check it and try again.' end
+		local ok2, data = pcall(httpService.JSONDecode, httpService, res)
+		if not ok2 or type(data) ~= 'table' then return nil, 'Share code did not contain a valid profile.' end
+		return data, nil
+	end
+	function mainapi:PubSourceUsed(name)
+		pubEnsure()
+		local out = {}
+		for id, meta in pubLoadIndex() do
+			if meta.source == name then table.insert(out, id) end
+		end
+		return out
+	end
+	function mainapi:PubDeleteIds(ids)
+		pubEnsure()
+		local idx = pubLoadIndex()
+		for _, id in ids do
+			idx[id] = nil
+			pcall(delfile, PUB_DIR..'/'..id..'.json')
+		end
+		pubSaveIndex(idx)
+	end
+	local pubRefreshCards, pubShowForm, pubShowDetails, pubShowBrowse, pubShowImport, pubRefreshYours, pubRenderSort, pubRefreshAll
+	local function pubMkLabel(parent, text, size, dim, x, y, w, h)
+		local l = Instance.new('TextLabel')
+		l.Size = UDim2.new(0, w or 200, 0, h or 16)
+		l.Position = UDim2.fromOffset(x, y)
+		l.BackgroundTransparency = 1
+		l.TextXAlignment = Enum.TextXAlignment.Left
+		l.Text = text
+		l.TextColor3 = dim and color.Dark(uipallet.Text, 0.31) or uipallet.Text
+		l.TextSize = size
+		l.FontFace = uipallet.Font
+		l.TextTruncate = Enum.TextTruncate.AtEnd
+		l.Parent = parent
+		return l
+	end
+	local function pubMkButton(parent, text, x, y, w, h, accent, size)
+		local b = Instance.new('TextButton')
+		b.Size = UDim2.fromOffset(w, h)
+		b.Position = UDim2.fromOffset(x, y)
+		b.BackgroundColor3 = accent and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.05)
+		b.BorderSizePixel = 0
+		b.AutoButtonColor = false
+		b.Text = text
+		b.TextColor3 = accent and Color3.new(1, 1, 1) or color.Dark(uipallet.Text, 0.16)
+		b.TextSize = size or 12
+		b.FontFace = uipallet.FontSemiBold
+		b.Parent = parent
+		addCorner(b, UDim.new(0, 5))
+		return b
+	end
+	local function pubMkBox(parent, placeholder, x, y, w, h, multi)
+		local box = Instance.new('TextBox')
+		box.Size = UDim2.fromOffset(w, h)
+		box.Position = UDim2.fromOffset(x, y)
+		box.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+		box.BorderSizePixel = 0
+		box.Text = ''
+		box.PlaceholderText = placeholder
+		box.PlaceholderColor3 = color.Dark(uipallet.Text, 0.43)
+		box.TextXAlignment = Enum.TextXAlignment.Left
+		box.TextColor3 = Color3.new(1, 1, 1)
+		box.TextSize = 13
+		box.FontFace = uipallet.Font
+		box.ClearTextOnFocus = false
+		box.MultiLine = multi and true or false
+		box.TextYAlignment = multi and Enum.TextYAlignment.Top or Enum.TextYAlignment.Center
+		box.Parent = parent
+		addCorner(box, UDim.new(0, 5))
+		return box
+	end
+	local function pubCardData()
+		local out = {}
+		for id, meta in pubLoadIndex() do
+			if type(id) == 'string' and type(meta) == 'table' then
+			table.insert(out, {kind = 'local', id = id, name = meta.name or id, creator = (meta.anonymous and 'Anonymous' or meta.creator) or '?', desc = meta.description or '', tags = meta.tags or {}, privacy = meta.privacy or 'public', likes = pubLikeCount(meta, id), downloads = pubDlCount(meta, id), updated = meta.updated or 0, code = meta.shareCode or ''})
+			end
+		end
+		for _, r in pubFetchRegistry() do
+			if type(r) == 'table' and r.id and r.name then
+				local mine = false
+				for _, c in out do if c.id == r.id then mine = true break end end
+				if not mine then
+					table.insert(out, {kind = 'registry', id = r.id, name = r.name, creator = r.creator or '?', desc = r.description or '', tags = r.tags or {}, privacy = 'public', likes = (r.likes or 0) + (pubLiked(r.id) and 1 or 0), downloads = (r.downloads or 0) + pubDownloads(r.id), updated = tonumber(r.updated) or 0, file = r.file, mods = r.modules})
+				end
+			end
+		end
+		return out
+	end
+	local function pubMatches(c, q)
+		if q == '' then return true end
+		q = q:lower()
+		if c.code ~= '' and (c.code:lower() == q or c.code:lower():find(q, 1, true)) then return true end
+		if (c.name or ''):lower():find(q, 1, true) then return true end
+		if (c.creator or ''):lower():find(q, 1, true) then return true end
+		if (c.desc or ''):lower():find(q, 1, true) then return true end
+		for _, t in (c.tags or {}) do
+			if tostring(t):lower():find(q, 1, true) then return true end
+		end
+		return false
+	end
+	local function pubBuildWindow()
+		if pubSys.win then return end
+		local win = Instance.new('Frame')
+		win.Name = 'PublicProfiles'
+		win.Size = UDim2.fromOffset(580, 430)
+		win.Position = UDim2.new(0.5, -290, 0.5, -215)
+		win.BackgroundColor3 = uipallet.Main
+		win.BorderSizePixel = 0
+		win.Visible = false
+		win.Parent = clickgui
+		addCorner(win, UDim.new(0, 8))
+		addBlur(win)
+		makeDraggable(win)
+		pubMkLabel(win, 'Public Profiles', 15, false, 16, 10, 300, 20).FontFace = uipallet.FontSemiBold
+		local close = Instance.new('TextButton')
+		close.Size = UDim2.fromOffset(28, 28)
+		close.Position = UDim2.new(1, -36, 0, 8)
+		close.BackgroundTransparency = 1
+		close.AutoButtonColor = false
+		close.Text = 'x'
+		close.TextColor3 = color.Dark(uipallet.Text, 0.29)
+		close.TextSize = 15
+		close.FontFace = uipallet.Font
+		close.Parent = win
+		close.MouseButton1Click:Connect(function() win.Visible = false end)
+		pubMkLabel(win, 'YOUR PROFILES', 11, true, 12, 44, 160, 14)
+		local createBtn = pubMkButton(win, '+ CREATE NEW', 12, 62, 151, 30, true, 12)
+		createBtn.MouseButton1Click:Connect(function() pubShowForm('create') end)
+		local yours = Instance.new('ScrollingFrame')
+		yours.Name = 'Yours'
+		yours.Size = UDim2.new(0, 163, 1, -104)
+		yours.Position = UDim2.fromOffset(12, 98)
+		yours.BackgroundTransparency = 1
+		yours.BorderSizePixel = 0
+		yours.ScrollBarThickness = 2
+		yours.ScrollBarImageTransparency = 0.75
+		yours.CanvasSize = UDim2.new()
+		yours.Parent = win
+		local yoursList = Instance.new('UIListLayout')
+		yoursList.SortOrder = Enum.SortOrder.LayoutOrder
+		yoursList.Padding = UDim.new(0, 6)
+		yoursList.Parent = yours
+		yours:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+			yours.CanvasSize = UDim2.fromOffset(0, yoursList.AbsoluteContentSize.Y)
+		end)
+		pubSys.yoursBox = yours
+		local div = Instance.new('Frame')
+		div.Size = UDim2.new(0, 1, 1, -56)
+		div.Position = UDim2.fromOffset(183, 44)
+		div.BackgroundColor3 = color.Light(uipallet.Main, 0.08)
+		div.BorderSizePixel = 0
+		div.Parent = win
+		local right = Instance.new('Frame')
+		right.Name = 'Right'
+		right.Size = UDim2.new(1, -203, 1, -56)
+		right.Position = UDim2.fromOffset(191, 44)
+		right.BackgroundTransparency = 1
+		right.Parent = win
+		pubSys.right = right
+		local search = pubMkBox(right, 'Search Profile / Share Code', 0, 0, 377, 30, false)
+		pubSys.searchBox = search
+		search:GetPropertyChangedSignal('Text'):Connect(function()
+			pubSys.query = search.Text
+			pubRefreshCards()
+		end)
+		local sortRow = Instance.new('Frame')
+		sortRow.Size = UDim2.new(1, 0, 0, 24)
+		sortRow.Position = UDim2.fromOffset(0, 36)
+		sortRow.BackgroundTransparency = 1
+		sortRow.Parent = right
+		pubSys.sortRow = sortRow
+		local cards = Instance.new('ScrollingFrame')
+		cards.Name = 'Cards'
+		cards.Size = UDim2.new(1, 0, 1, -66)
+		cards.Position = UDim2.fromOffset(0, 66)
+		cards.BackgroundTransparency = 1
+		cards.BorderSizePixel = 0
+		cards.ScrollBarThickness = 2
+		cards.ScrollBarImageTransparency = 0.75
+		cards.CanvasSize = UDim2.new()
+		cards.Parent = right
+		local grid = Instance.new('UIGridLayout')
+		grid.CellSize = UDim2.fromOffset(180, 96)
+		grid.CellPadding = UDim2.fromOffset(8, 8)
+		grid.SortOrder = Enum.SortOrder.LayoutOrder
+		grid.HorizontalAlignment = Enum.HorizontalAlignment.Left
+		grid.Parent = cards
+		grid:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+			cards.CanvasSize = UDim2.fromOffset(0, grid.AbsoluteContentSize.Y + 8)
+		end)
+		pubSys.cards = cards
+		pubSys.win = win
+	end
+	pubRefreshYours = function()
+		if not pubSys.win then return end
+		local box = pubSys.yoursBox
+		for _, c in box:GetChildren() do
+			if c:IsA('GuiObject') then c:Destroy() end
+		end
+		local list = {}
+		for id, meta in pubLoadIndex() do
+			table.insert(list, {id = id, meta = meta})
+		end
+		table.sort(list, function(a, b) return (a.meta.updated or 0) > (b.meta.updated or 0) end)
+		if #list == 0 then
+			pubMkLabel(box, 'Nothing published yet', 11, true, 4, 4, 145, 28).TextWrapped = true
+		end
+		for k, e in list do
+			local row = Instance.new('TextButton')
+			row.Size = UDim2.fromOffset(151, 36)
+			row.LayoutOrder = k
+			row.BackgroundColor3 = (pubSys.selected and pubSys.selected.id == e.id) and color.Light(uipallet.Main, 0.08) or color.Light(uipallet.Main, 0.02)
+			row.BorderSizePixel = 0
+			row.AutoButtonColor = false
+			row.Text = ''
+			row.Parent = box
+			addCorner(row, UDim.new(0, 5))
+			pubMkLabel(row, e.meta.name or e.id, 12, false, 8, 3, 135, 15).FontFace = uipallet.FontSemiBold
+			local sub = (e.meta.privacy or 'public'):upper()
+			if e.meta.updated and e.meta.updated > 0 then
+				local ok, d = pcall(os.date, '%m/%d', e.meta.updated)
+				if ok and d then sub = sub..' · '..d end
+			end
+			pubMkLabel(row, sub, 10, true, 8, 19, 135, 13)
+			row.MouseButton1Click:Connect(function()
+				pubShowDetails({kind = 'local', id = e.id})
+			end)
+		end
+	end
+	pubRenderSort = function()
+		local row = pubSys.sortRow
+		if not row then return end
+		for _, c in row:GetChildren() do c:Destroy() end
+		local defs = {{'rated', 'TOP RATED'}, {'downloaded', 'MOST DOWNLOADED'}, {'new', 'NEWEST'}}
+		local x = 0
+		for _, d in defs do
+			local on = pubSys.sort == d[1]
+			local b = pubMkButton(row, d[2], x, 0, 0, 22, on, 10)
+			b.Size = UDim2.new(0, math.max(getfontsizeCached(d[2], 10, uipallet.Font).X + 16, 40), 0, 22)
+			b.MouseButton1Click:Connect(function()
+				pubSys.sort = d[1]
+				pubRenderSort()
+				pubRefreshCards()
+			end)
+			x += b.Size.X.Offset + 6
+		end
+		local imp = pubMkButton(row, 'Import', 0, 0, 64, 22, false, 10)
+		imp.Position = UDim2.new(1, -64, 0, 0)
+		imp.MouseButton1Click:Connect(function() pubShowImport() end)
+	end
+	pubRefreshCards = function()
+		if not pubSys.win then return end
+		local cards = pubSys.cards
+		for _, c in cards:GetChildren() do
+			if c:IsA('GuiObject') then c:Destroy() end
+		end
+		if pubSys.view ~= 'browse' then
+			cards.Visible = false
+			return
+		end
+		cards.Visible = true
+		local q = (pubSys.query or ''):gsub('%s+', '')
+		if q:lower():match('^larp%-') or q:find('paste%.rs') or (#q >= 5 and #q <= 12 and q:match('^[%w%-]+$') and not q:find(' ')) then
+			localb = pubMkButton(cards, 'Import from code "'..q..'"', 0, 0, 300, 34, true, 12)
+			localb.LayoutOrder = 0
+			localb.MouseButton1Click:Connect(function() pubShowImport(q) end)
+		end
+		local all = pubCardData()
+		local shown = {}
+		for _, c in all do
+			if pubMatches(c, pubSys.query or '') then table.insert(shown, c) end
+		end
+		table.sort(shown, function(a, b)
+			if pubSys.sort == 'downloaded' then return a.downloads > b.downloads end
+			if pubSys.sort == 'new' then return (tonumber(a.updated) or 0) > (tonumber(b.updated) or 0) end
+			return a.likes > b.likes
+		end)
+		if #shown == 0 and q == '' then
+			pubMkLabel(cards, 'No profiles yet. Publish one!', 12, true, 8, 8, 300, 20)
+		end
+		for k, c in shown do
+			local card = Instance.new('TextButton')
+			card.Name = 'Card'
+			card.LayoutOrder = k
+			card.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+			card.BorderSizePixel = 0
+			card.AutoButtonColor = false
+			card.Text = ''
+			card.Parent = cards
+			addCorner(card, UDim.new(0, 6))
+			pubMkLabel(card, c.name, 13, false, 8, 4, 164, 17).FontFace = uipallet.FontSemiBold
+			pubMkLabel(card, c.creator, 11, true, 8, 22, 164, 14)
+			pubMkLabel(card, '♥ '..c.likes..'    ⬇ '..c.downloads, 11, true, 8, 38, 164, 14)
+			local tagstr = table.concat(c.tags or {}, ', ')
+			if tagstr ~= '' then pubMkLabel(card, tagstr, 10, true, 8, 54, 164, 14) end
+			if c.privacy ~= 'public' then
+				pubMkLabel(card, c.privacy:upper(), 10, true, 8, 70, 164, 14)
+			end
+			card.MouseButton1Click:Connect(function()
+				pubShowDetails({kind = c.kind, id = c.id})
+			end)
+		end
+	end
+	local function pubGetMeta(ref)
+		if ref.kind == 'local' then
+			return pubLoadIndex()[ref.id]
+		end
+		for _, r in pubSys.registry do
+			if type(r) == 'table' and r.id == ref.id then return r end
+		end
+		return nil
+	end
+	local function pubGetData(ref)
+		if ref.kind == 'local' then
+			local item = pubLoadItem(ref.id)
+			if item and type(item.data) == 'table' and type(item.data.Modules) == 'table' then
+				return item.data.Modules
+			end
+			return nil, 'Published data file is missing.'
+		end
+		pubSys.cache = pubSys.cache or {}
+		if pubSys.cache[ref.id] then return pubSys.cache[ref.id] end
+		local meta = pubGetMeta(ref)
+		if not meta or not meta.file then return nil, 'Registry entry has no file.' end
+		local root = (getgenv and getgenv().LarpReadRoot) or 'https://raw.githubusercontent.com/exuric/VPrivate/'
+		local ok, res = pcall(game.HttpGet, game, root..'main/'..meta.file, true)
+		if not ok or not res or res == '' then return nil, 'Could not download profile data. Check connection.' end
+		local ok2, data = pcall(httpService.JSONDecode, httpService, res)
+		if not ok2 or type(data) ~= 'table' then return nil, 'Downloaded data is invalid.' end
+		local mods = data.modules or (data.data and data.data.Modules)
+		if type(mods) ~= 'table' then return nil, 'Downloaded data has no modules.' end
+		pubSys.cache[ref.id] = mods
+		return mods
+	end
+	local function pubApplyImport(name, modules, ref)
+		local clean, dropped = pubSanitizeModules(modules)
+		local count, on = 0, 0
+		for n, e in clean do
+			count += 1
+			if e.Enabled then on += 1 end
+		end
+		if count == 0 then
+			mainapi:CreateNotification('Import', 'Nothing usable in that profile.', 4, 'alert')
+			return
+		end
+		local target = name
+		local n = 2
+		while isfile('LarpV4/profiles/'..target..mainapi.Place..'.txt') do
+			target = name..' ('..n..')'
+			n += 1
+		end
+		mainapi:CreatePrompt({
+			Title = 'Import Profile',
+			Text = "Load '"..target.."'? "..on.." of "..count.." modules enabled."..(dropped > 0 and ' ('..dropped..' bad entries skipped)' or ''),
+			Confirm = 'Load',
+			Cancel = 'Cancel',
+			Function = function(ok)
+				if not ok then return end
+				pubWriteJson('LarpV4/profiles/'..target..mainapi.Place..'.txt', {Categories = {}, Modules = clean, Legit = {}})
+				local found = false
+				for _, p in mainapi.Profiles do
+					if p.Name == target then found = true break end
+				end
+				if not found then
+					table.insert(mainapi.Profiles, {Name = target, Bind = {}})
+					mainapi.Categories.Profiles:ChangeValue()
+				end
+				if ref then pubBumpDownloads(ref.id) end
+				mainapi:Save(target)
+				mainapi:Load(true)
+				mainapi:CreateNotification('Import', "Loaded '"..target.."'", 4)
+				pubRefreshAll()
+			end
+		})
+	end
+	local function pubDoShare(ref, regen)
+		local meta = pubGetMeta(ref)
+		if not meta then return end
+		if meta.shareCode and not regen then
+			pcall(setclipboard, meta.shareCode)
+			mainapi:CreateNotification('Share Code', 'Copied to clipboard', 3)
+			return
+		end
+		local mods, err = pubGetData(ref)
+		if not mods then
+			mainapi:CreateNotification('Share', err or 'No data', 4, 'alert')
+			return
+		end
+		mainapi:CreateNotification('Share', 'Uploading...', 2)
+		task.spawn(function()
+			local code, uerr = pubUploadShare({v = 1, app = 'larp', name = meta.name, creator = meta.anonymous and 'Anonymous' or meta.creator, description = meta.description, tags = meta.tags, privacy = meta.privacy, game = game.GameId, updated = os.time(), modules = mods})
+			if not code then
+				mainapi:CreateNotification('Share', uerr or 'Upload failed', 5, 'alert')
+				return
+			end
+			if ref.kind == 'local' then
+				local idx = pubLoadIndex()
+				if idx[ref.id] then
+					idx[ref.id].shareCode = code
+					pubSaveIndex(idx)
+				end
+				local item = pubLoadItem(ref.id)
+				if item then
+					item.meta.shareCode = code
+					pubSaveItem(ref.id, item)
+				end
+			end
+			pcall(setclipboard, code)
+			mainapi:CreateNotification('Share Code', code..' copied', 5)
+			pubRefreshAll()
+		end)
+	end
+	local function pubDetailsPane()
+		local right = pubSys.right
+		local old = right:FindFirstChild('Details')
+		if old then old:Destroy() end
+		local f = Instance.new('Frame')
+		f.Name = 'Details'
+		f.Size = UDim2.new(1, 0, 1, -66)
+		f.Position = UDim2.fromOffset(0, 66)
+		f.BackgroundTransparency = 1
+		f.Visible = false
+		f.Parent = right
+		return f
+	end
+pubShowDetails = function(ref)
+	pubBuildWindow()
+	pubSys.view = 'details'
+	pubSys.selected = ref
+	pubSys.cards.Visible = false
+	local meta = pubGetMeta(ref) or {}
+	local mine = ref.kind == 'local'
+	local right = pubSys.right
+	local old = right:FindFirstChild('Details')
+	if old then old:Destroy() end
+	local oldf = right:FindFirstChild('Form')
+	if oldf then oldf:Destroy() end
+	local oldi = right:FindFirstChild('Import')
+	if oldi then oldi:Destroy() end
+	local f = Instance.new('Frame')
+	f.Name = 'Details'
+	f.Size = UDim2.new(1, 0, 1, -66)
+	f.Position = UDim2.fromOffset(0, 66)
+	f.BackgroundTransparency = 1
+	f.Parent = right
+	local sc = Instance.new('ScrollingFrame')
+	sc.Size = UDim2.fromScale(1, 1)
+	sc.BackgroundTransparency = 1
+	sc.BorderSizePixel = 0
+	sc.ScrollBarThickness = 2
+	sc.ScrollBarImageTransparency = 0.75
+	sc.CanvasSize = UDim2.new()
+	sc.Parent = f
+	local y = 0
+	local function gap(n) y = y + (n or 6) end
+	local function put(obj, h, g)
+		obj.Position = UDim2.fromOffset(0, y)
+		obj.Parent = sc
+		y = y + h + (g or 6)
+	end
+	local function wrapH(text, size, w)
+		local s = getfontsizeCached(text, size, uipallet.Font)
+		return math.max(1, math.ceil(s.X / w)) * (size + 1) + 6
+	end
+	local back = pubMkButton(sc, '< Back', 0, 0, 70, 24, false, 11)
+	put(back, 24)
+	back.MouseButton1Click:Connect(function() pubShowBrowse() end)
+	local nm = pubMkLabel(sc, meta.name or ref.id, 16, false, 0, 0, 340, 20)
+	nm.FontFace = uipallet.FontSemiBold
+	put(nm, 20)
+	local priv = (meta.privacy or 'public'):upper()
+	put(pubMkLabel(sc, (meta.anonymous and 'Anonymous' or meta.creator or '?') .. '   ' .. priv, 11, true, 0, 0, 340, 15), 15)
+	if meta.description and meta.description ~= '' then
+		local dh = wrapH(meta.description, 12, 332)
+		local d = pubMkLabel(sc, meta.description, 12, false, 0, 0, 340, dh)
+		d.TextWrapped = true
+		put(d, dh)
+	end
+	if meta.tags and #meta.tags > 0 then
+		put(pubMkLabel(sc, table.concat(meta.tags, '  |  '), 11, true, 0, 0, 340, 15), 15)
+	end
+	local likes = pubLikeCount(meta, ref.id)
+	local statline = pubMkLabel(sc, '♥ ' .. likes .. '      D/L ' .. pubDlCount(meta, ref.id), 12, false, 0, 0, 200, 18)
+	statline.Position = UDim2.fromOffset(0, y)
+	statline.Parent = sc
+	local likeBtn = pubMkButton(sc, pubLiked(ref.id) and '♥ Liked' or '♡ Like', 0, 0, 90, 22, pubLiked(ref.id), 11)
+	likeBtn.Position = UDim2.fromOffset(214, y)
+	likeBtn.Parent = sc
+	y = y + 28
+	likeBtn.MouseButton1Click:Connect(function()
+		pubSetLiked(ref.id, not pubLiked(ref.id))
+		pubShowDetails(ref)
+		pubRefreshCards()
+		pubRefreshYours()
+	end)
+	local mods, merr = pubGetData(ref)
+	local en, total = pubAffected({Modules = mods or {}})
+	put(pubMkLabel(sc, 'MODULES (' .. #en .. ' on / ' .. total .. ')', 11, true, 0, 0, 340, 15), 15)
+	if merr then put(pubMkLabel(sc, merr, 11, true, 0, 0, 340, 15), 15) end
+	local mbox = Instance.new('ScrollingFrame')
+	mbox.Size = UDim2.new(1, -8, 0, 96)
+	mbox.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+	mbox.BorderSizePixel = 0
+	mbox.ScrollBarThickness = 2
+	mbox.ScrollBarImageTransparency = 0.75
+	mbox.CanvasSize = UDim2.new()
+	put(mbox, 96)
+	addCorner(mbox, UDim.new(0, 5))
+	local mlay = Instance.new('UIListLayout')
+	mlay.SortOrder = Enum.SortOrder.LayoutOrder
+	mlay.Padding = UDim.new(0, 2)
+	mlay.Parent = mbox
+	mlay:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+		mbox.CanvasSize = UDim2.fromOffset(0, mlay.AbsoluteContentSize.Y + 6)
+	end)
+	if mods then
+		local k = 0
+		for _, n in en do
+			k += 1
+			local row = Instance.new('Frame')
+			row.Size = UDim2.new(1, -8, 0, 20)
+			row.BackgroundTransparency = 1
+			row.LayoutOrder = k
+			row.Parent = mbox
+			pubMkLabel(row, n, 12, false, 6, 0, 230, 20)
+			local pill = pubMkLabel(row, 'ON', 10, false, 0, 0, 60, 20)
+			pill.Position = UDim2.new(1, -66, 0, 0)
+			pill.TextColor3 = Color3.fromRGB(90, 255, 90)
+			pill.TextXAlignment = Enum.TextXAlignment.Right
+	end
+	end
+	local brow = Instance.new('Frame')
+	brow.Size = UDim2.new(1, -8, 0, 30)
+	brow.BackgroundTransparency = 1
+	put(brow, 30)
+	local bx = 0
+	local function abtn(label, accent, fn)
+		local b = pubMkButton(brow, label, bx, 4, 0, 24, accent, 12)
+		b.Size = UDim2.new(0, math.max(getfontsizeCached(label, 12, uipallet.Font).X + 20, 56), 0, 24)
+		b.MouseButton1Click:Connect(fn)
+		bx += b.Size.X.Offset + 6
+	end
+	abtn('LOAD', true, function()
+		local m2, e2 = pubGetData(ref)
+		if not m2 then
+			mainapi:CreateNotification('Load', e2 or 'No data', 4, 'alert')
+			return
+		end
+		pubApplyImport(meta.name or ref.id, m2, ref)
+	end)
+	if mine then
+		abtn('UPDATE', false, function()
+			local src = meta.sourceLive and nil or meta.source
+			local m2, e2 = pubSnapshot(src)
+			if not m2 then
+				mainapi:CreateNotification('Update', e2 or 'No data', 4, 'alert')
+				return
+			end
+			local item = pubLoadItem(ref.id) or {meta = meta}
+			item.data = {Modules = m2}
+			item.meta.updated = os.time()
+			pubSaveItem(ref.id, item)
+			local idx = pubLoadIndex()
+			if idx[ref.id] then idx[ref.id].updated = item.meta.updated end
+			pubSaveIndex(idx)
+			mainapi:CreateNotification('Updated', 'Updated from source', 3)
+			pubShowDetails(ref)
+			pubRefreshYours()
+			pubRefreshCards()
+		end)
+		abtn('EDIT', false, function() pubShowForm('edit', ref) end)
+		abtn('DELETE', false, function()
+			mainapi:CreatePrompt({Title = 'Delete', Text = "Delete published profile '" .. (meta.name or '') .. "'? Your private profiles are kept.", Confirm = 'Delete', Cancel = 'Keep', Function = function(ok)
+				if ok then
+					mainapi:PubDeleteIds({ref.id})
+					pubShowBrowse()
+				end
+			end})
+		end)
+		abtn('SHARE', false, function() pubDoShare(ref, false) end)
+		abtn('CODE', false, function() pubDoShare(ref, true) end)
+	end
+	local revs = pubReviews(ref.id)
+	local avg = 0
+	for _, r in revs do avg += (tonumber(r.rating) or 0) end
+	if #revs > 0 then avg = math.floor(avg / #revs * 10 + 0.5) / 10 end
+	put(pubMkLabel(sc, 'REVIEWS (' .. #revs .. (#revs > 0 and '  AVG ' .. avg or '') .. ')', 11, true, 0, 0, 340, 15), 15)
+	for _, r in revs do
+		local rh = wrapH((r.by or '?') .. ' [' .. tostring(r.rating or '?') .. '/5] ' .. (r.text or ''), 11, 332)
+		local rl = pubMkLabel(sc, (r.by or '?') .. ' [' .. tostring(r.rating or '?') .. '/5] ' .. (r.text or ''), 11, false, 0, 0, 340, rh)
+		rl.TextWrapped = true
+		put(rl, rh)
+	end
+	put(pubMkLabel(sc, 'Your rating:', 11, true, 0, 0, 340, 15), 15)
+	local rateRow = Instance.new('Frame')
+	rateRow.Size = UDim2.new(1, -8, 0, 24)
+	rateRow.BackgroundTransparency = 1
+	put(rateRow, 24)
+	for s = 1, 5 do
+		local rb = pubMkButton(rateRow, tostring(s), (s - 1) * 34, 0, 28, 22, pubSys.rateSel == s, 11)
+		rb.MouseButton1Click:Connect(function()
+			pubSys.rateSel = s
+			pubShowDetails(ref)
+		end)
+	end
+	local rbox = pubMkBox(sc, 'Write a review...', 0, 0, 340, 26, false)
+	put(rbox, 26)
+	local sub = pubMkButton(sc, 'SUBMIT REVIEW', 0, 0, 130, 26, true, 11)
+	put(sub, 26)
+	sub.MouseButton1Click:Connect(function()
+		local t = tostring(rbox.Text or ''):gsub('^%s+', ''):gsub('%s+$', '')
+		if t == '' then
+			mainapi:CreateNotification('Review', 'Write something first', 3, 'warning')
+			return
+		end
+		pubAddReview(ref.id, {by = pubCreator(), rating = pubSys.rateSel or 5, text = t:sub(1, 300), time = os.time()})
+		pubShowDetails(ref)
+	end)
+	sc.CanvasSize = UDim2.fromOffset(0, y + 8)
+	end
+	pubRefreshAll = function()
+		pubRefreshYours()
+		pubRefreshCards()
+	end
+	pubShowBrowse = function()
+		pubBuildWindow()
+		pubSys.view = 'browse'
+		pubSys.selected = nil
+		pubSys.creating = false
+		pubSys.editing = false
+		for _, n in {'Details', 'Form', 'Import'} do
+			local o = pubSys.right:FindFirstChild(n)
+			if o then o:Destroy() end
+		end
+		pubSys.cards.Visible = true
+		pubRenderSort()
+		pubRefreshYours()
+		pubRefreshCards()
+	end
+	pubRefreshAll = function()
+		pubRefreshYours()
+		pubRefreshCards()
+	end
+	pubShowImport = function(code)
+		pubBuildWindow()
+		pubSys.view = 'import'
+		pubSys.cards.Visible = false
+		for _, n in {'Details', 'Form', 'Import'} do
+			local o = pubSys.right:FindFirstChild(n)
+			if o then o:Destroy() end
+		end
+		local f = Instance.new('Frame')
+		f.Name = 'Import'
+		f.Size = UDim2.new(1, 0, 1, -66)
+		f.Position = UDim2.fromOffset(0, 66)
+		f.BackgroundTransparency = 1
+		f.Parent = pubSys.right
+		pubMkLabel(f, 'IMPORT FROM SHARE CODE', 11, true, 0, 0, 300, 15)
+		local box = pubMkBox(f, 'LARP-xxxxxx or paste.rs link', 0, 20, 260, 30, false)
+		if code and code ~= '' then box.Text = code end
+		local go = pubMkButton(f, 'IMPORT', 268, 20, 90, 30, true, 12)
+		local status = pubMkLabel(f, '', 11, true, 0, 56, 340, 15)
+		go.MouseButton1Click:Connect(function()
+			status.Text = 'Fetching...'
+			task.spawn(function()
+				local data, err = pubDownloadShare(box.Text)
+				if not data then
+					status.Text = err or 'Failed'
+					return
+				end
+				local mods = data.modules or (data.data and data.data.Modules)
+				local nm = data.name or 'Imported'
+				if type(mods) ~= 'table' then
+					status.Text = 'No modules in that code.'
+					return
+				end
+				status.Text = ''
+				pubApplyImport(nm, mods, nil)
+			end)
+		end)
+		pubMkLabel(f, 'OR PICK A SHARED FILE', 11, true, 0, 84, 300, 15)
+		local files = {}
+		pcall(function()
+			for _, fp in listfiles('LarpV4/profiles/shared') do
+				if fp:lower():sub(-5) == '.json' then table.insert(files, fp) end
+			end
+		end)
+		table.sort(files)
+		local fy = 104
+		if #files == 0 then
+			pubMkLabel(f, 'No files in LarpV4/profiles/shared', 11, true, 0, fy, 340, 15)
+		end
+		for _, fp in files do
+			local nm = fp:match('([^/\\]+)%.json$') or fp
+			local b = pubMkButton(f, nm, 0, fy, 300, 26, false, 12)
+			b.MouseButton1Click:Connect(function()
+				local data = pubReadJson(fp)
+				local mods = data and (data.modules or (data.data and data.data.Modules))
+				if not mods then
+					status.Text = 'That file has no modules.'
+					return
+				end
+				pubApplyImport(data.name or nm, mods, nil)
+			end)
+			fy += 30
+			if fy > 280 then break end
+		end
+	end
+	pubShowForm = function(mode, ref)
+		pubBuildWindow()
+		pubSys.view = 'form'
+		pubSys.cards.Visible = false
+		for _, n in {'Details', 'Form', 'Import'} do
+			local o = pubSys.right:FindFirstChild(n)
+			if o then o:Destroy() end
+		end
+		local meta, item, data = {}, nil, nil
+		if mode == 'edit' and ref then
+			meta = pubGetMeta(ref) or {}
+			item = ref.kind == 'local' and pubLoadItem(ref.id) or nil
+			if item and item.data and type(item.data.Modules) == 'table' then
+				data = item.data.Modules
+			else
+				data, _ = pubGetData(ref)
+				data = data or {}
+			end
+		end
+		local f = Instance.new('Frame')
+		f.Name = 'Form'
+		f.Size = UDim2.new(1, 0, 1, -66)
+		f.Position = UDim2.fromOffset(0, 66)
+		f.BackgroundTransparency = 1
+		f.Parent = pubSys.right
+		local sc = Instance.new('ScrollingFrame')
+		sc.Size = UDim2.fromScale(1, 1)
+		sc.BackgroundTransparency = 1
+		sc.BorderSizePixel = 0
+		sc.ScrollBarThickness = 2
+		sc.ScrollBarImageTransparency = 0.75
+		sc.CanvasSize = UDim2.new()
+		sc.Parent = f
+		local y = 0
+		local function put(obj, h, g)
+			obj.Position = UDim2.fromOffset(0, y)
+			obj.Parent = sc
+			y = y + h + (g or 8)
+		end
+		put(pubMkLabel(sc, mode == 'edit' and 'EDIT PROFILE' or 'CREATE PUBLIC PROFILE', 14, false, 0, 0, 300, 20), 20)
+		put(pubMkLabel(sc, 'Source private profile', 11, true, 0, 0, 300, 14), 14, 2)
+		local sources = {'*live*'}
+		for _, p in mainapi.Profiles do table.insert(sources, p.Name) end
+		local srcName = meta.source or '*live*'
+		local srcBtn = pubMkButton(sc, srcName == '*live*' and 'Current settings' or srcName, 0, 0, 300, 26, false, 12)
+		put(srcBtn, 26)
+		srcBtn.MouseButton1Click:Connect(function()
+			local k = 1
+			for i, s in sources do if s == srcName then k = i break end end
+			srcName = sources[k % #sources + 1]
+			srcBtn.Text = srcName == '*live*' and 'Current settings' or srcName
+		end)
+		put(pubMkLabel(sc, 'Profile name', 11, true, 0, 0, 300, 14), 14, 2)
+		local nameBox = pubMkBox(sc, 'My PvP Config', 0, 0, 300, 28, false)
+		nameBox.Text = meta.name or ''
+		put(nameBox, 28)
+		put(pubMkLabel(sc, 'Description', 11, true, 0, 0, 300, 14), 14, 2)
+		local descBox = pubMkBox(sc, 'What is this config for?', 0, 0, 300, 52, true)
+		descBox.Text = meta.description or ''
+		descBox.TextWrapped = true
+		put(descBox, 52)
+		put(pubMkLabel(sc, 'Tags (comma separated)', 11, true, 0, 0, 300, 14), 14, 2)
+		local tagBox = pubMkBox(sc, 'bedwars, pvp, legit', 0, 0, 300, 28, false)
+		tagBox.Text = table.concat(meta.tags or {}, ', ')
+		put(tagBox, 28)
+		put(pubMkLabel(sc, 'Privacy', 11, true, 0, 0, 300, 14), 14, 2)
+		local privs = {'public', 'unlisted', 'friends'}
+		local privLabels = {public = 'PUBLIC', unlisted = 'UNLISTED (CODE ONLY)', friends = 'FRIENDS ONLY'}
+		local priv = meta.privacy or 'public'
+		local privBtn = pubMkButton(sc, privLabels[priv] or 'PUBLIC', 0, 0, 300, 26, false, 12)
+		put(privBtn, 26)
+		privBtn.MouseButton1Click:Connect(function()
+			local k = 1
+			for i, p in privs do if p == priv then k = i break end end
+			priv = privs[k % #privs + 1]
+			privBtn.Text = privLabels[priv]
+		end)
+		local anon = (meta.anonymous and true) or false
+		local anonBtn = pubMkButton(sc, 'Anonymous upload: ' .. (anon and 'ON' or 'OFF'), 0, 0, 300, 26, anon, 12)
+		put(anonBtn, 26)
+		anonBtn.MouseButton1Click:Connect(function()
+			anon = not anon
+			anonBtn.Text = 'Anonymous upload: ' .. (anon and 'ON' or 'OFF')
+		end)
+		local status = pubMkLabel(sc, '', 11, true, 0, 0, 340, 15)
+		put(status, 15)
+		local modEdits = {}
+		if mode == 'edit' then
+			put(pubMkLabel(sc, 'MODULE SETTINGS', 11, true, 0, 0, 300, 14), 14, 2)
+			local en, _ = pubAffected({Modules = data})
+			put(pubMkLabel(sc, #en .. ' enabled modules (tap a value to edit)', 11, true, 0, 0, 340, 14), 14, 2)
+			for _, n in en do
+				local entry = data[n]
+				if type(entry) == 'table' and type(entry.Options) == 'table' then
+					local hdr = pubMkLabel(sc, n, 12, false, 0, 0, 340, 17)
+					hdr.FontFace = uipallet.FontSemiBold
+					put(hdr, 17, 2)
+					for k, v in entry.Options do
+						if type(v) == 'boolean' or type(v) == 'number' or type(v) == 'string' then
+							local lab = pubMkLabel(sc, tostring(k), 11, true, 8, 0, 150, 22)
+							lab.Position = UDim2.fromOffset(8, y)
+							lab.Parent = sc
+							if type(v) == 'boolean' then
+								local tb = pubMkButton(sc, v and 'ON' or 'OFF', 0, 0, 64, 20, v, 11)
+								tb.Position = UDim2.fromOffset(170, y)
+								tb.Parent = sc
+								tb.MouseButton1Click:Connect(function()
+									modEdits[n] = modEdits[n] or {}
+									local cur = modEdits[n][k]
+									if cur == nil then cur = not v else cur = not cur end
+									modEdits[n][k] = cur
+									tb.Text = cur and 'ON' or 'OFF'
+								end)
+							else
+								local tb = pubMkBox(sc, tostring(v), 0, 0, 150, 22, false)
+								tb.Position = UDim2.fromOffset(170, y)
+								tb.Parent = sc
+								tb.Text = tostring(v)
+								tb:GetPropertyChangedSignal('Text'):Connect(function()
+									modEdits[n] = modEdits[n] or {}
+									modEdits[n][k] = tb.Text
+								end)
+							end
+							y = y + 26
+						end
+					end
+				end
+			end
+		end
+		local go = pubMkButton(sc, mode == 'edit' and 'SAVE CHANGES' or 'PUBLISH PROFILE', 0, 0, 300, 30, true, 13)
+		put(go, 30)
+		go.MouseButton1Click:Connect(function()
+			local nm = tostring(nameBox.Text or ''):gsub('^%s+', ''):gsub('%s+$', '')
+			if nm == '' then status.Text = 'Give it a name first.' return end
+			if #nm > 40 then status.Text = 'Name too long (40 max).' return end
+			local tags = {}
+			for t in tostring(tagBox.Text or ''):gmatch('[^,]+') do
+				t = t:gsub('^%s+', ''):gsub('%s+$', ''):lower()
+				if t ~= '' and #tags < 8 then table.insert(tags, t:sub(1, 20)) end
+			end
+			local desc = tostring(descBox.Text or ''):gsub('^%s+', ''):gsub('%s+$', ''):sub(1, 500)
+			if mode == 'edit' and ref then
+				local it = pubLoadItem(ref.id)
+				if not it then status.Text = 'Data file missing.' return end
+				for mn, changes in modEdits do
+					if it.data and it.data.Modules and it.data.Modules[mn] and type(it.data.Modules[mn].Options) == 'table' then
+						for k, nv in changes do
+							local old = it.data.Modules[mn].Options[k]
+							if type(old) == 'boolean' and type(nv) == 'boolean' then
+								it.data.Modules[mn].Options[k] = nv
+							elseif type(old) == 'number' then
+								local num = tonumber(nv)
+								if num then it.data.Modules[mn].Options[k] = num end
+							elseif type(old) == 'string' and type(nv) == 'string' then
+								it.data.Modules[mn].Options[k] = nv:sub(1, 120)
+							end
+						end
+					end
+				end
+				it.meta.name, it.meta.description, it.meta.tags, it.meta.privacy, it.meta.anonymous, it.meta.source, it.meta.sourceLive =
+					nm, desc, tags, priv, anon, (srcName == '*live*' and '' or srcName), srcName == '*live*'
+				it.meta.updated = os.time()
+				pubSaveItem(ref.id, it)
+				local idx = pubLoadIndex()
+				if idx[ref.id] then
+					idx[ref.id].name, idx[ref.id].description, idx[ref.id].tags, idx[ref.id].privacy, idx[ref.id].anonymous, idx[ref.id].source, idx[ref.id].updated =
+						nm, desc, tags, priv, anon, it.meta.source, it.meta.updated
+				end
+				pubSaveIndex(idx)
+				status.Text = 'Saved.'
+				mainapi:CreateNotification('Public Profiles', 'Changes saved', 3)
+				pubShowDetails(ref)
+			else
+				status.Text = 'Reading source...'
+				task.spawn(function()
+					local mods, err = pubSnapshot(srcName == '*live*' and nil or srcName)
+					if not mods then
+						status.Text = err or 'No data.'
+						return
+					end
+					local clean = pubSanitizeModules(mods)
+					local id = pubNewId()
+					local now = os.time()
+					local meta2 = {id = id, name = nm, creator = anon and 'Anonymous' or pubCreator(), anonymous = anon, description = desc, tags = tags, privacy = priv, source = (srcName == '*live*' and '' or srcName), sourceLive = srcName == '*live*', shareCode = '', created = now, updated = now, likes = 0, downloads = 0, game = game.GameId}
+					pubSaveItem(id, {meta = meta2, data = {Modules = clean}})
+					local idx = pubLoadIndex()
+					idx[id] = meta2
+					pubSaveIndex(idx)
+					status.Text = 'Published!'
+					mainapi:CreateNotification('Public Profiles', "Published '"..nm.."'", 4)
+					pubShowDetails({kind = 'local', id = id})
+				end)
+			end
+		end)
+		sc.CanvasSize = UDim2.fromOffset(0, y + 8)
+	end
+	function mainapi:OpenPublicProfiles()
+		pubEnsure()
+		pubBuildWindow()
+		task.spawn(function()
+			pubFetchRegistry()
+			if pubSys.win and pubSys.win.Visible and pubSys.view == 'browse' then
+				pubRefreshCards()
+			end
+		end)
+		pubShowBrowse()
+		pubSys.win.Visible = true
+	end
+	task.spawn(function()
+		local waited = 0
+		while not mainapi.Loaded and waited < 60 do
+			task.wait(0.5)
+			waited += 0.5
+		end
+		if not mainapi.Loaded then return end
+		pcall(function()
+			local w = clickgui:FindFirstChild('ProfilesCategoryList')
+			if not w then return end
+			local ch = w:FindFirstChild('Children')
+			if not ch then return end
+			if ch:FindFirstChild('PublicBtn') then return end
+			local b = Instance.new('TextButton')
+			b.Name = 'PublicBtn'
+			b.Size = UDim2.fromOffset(200, 33)
+			b.LayoutOrder = -1
+			b.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+			b.BorderSizePixel = 0
+			b.AutoButtonColor = false
+			b.Text = ''
+			b.Parent = ch
+			addCorner(b, UDim.new(0, 6))
+			local bar = Instance.new('Frame')
+			bar.Size = UDim2.fromOffset(3, 20)
+			bar.Position = UDim2.fromOffset(6, 7)
+			bar.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			bar.BorderSizePixel = 0
+			bar.Parent = b
+			addCorner(bar, UDim.new(1, 0))
+			local t = Instance.new('TextLabel')
+			t.Size = UDim2.new(1, -16, 1, 0)
+			t.Position = UDim2.fromOffset(14, 0)
+			t.BackgroundTransparency = 1
+			t.TextXAlignment = Enum.TextXAlignment.Left
+			t.Text = 'Public Profiles'
+			t.TextColor3 = uipallet.Text
+			t.TextSize = 14
+			t.FontFace = uipallet.FontSemiBold
+			t.Parent = b
+			b.MouseButton1Click:Connect(function()
+				mainapi:OpenPublicProfiles()
+			end)
+		end)
+	end)
 local targets
 targets = mainapi:CreateCategoryList({
 	Name = 'Targets',

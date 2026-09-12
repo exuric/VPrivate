@@ -5026,16 +5026,14 @@ end)
 run(function()
 	local TargetPart
 	local Targets
-	local Sort
 	local FOV
 	local Distance
 	local Prediction
 	local AimPart
-	local VelocityLerp
-	local Profile
-	local FireballPrediction
-	local FireballWall
 	local AutoCharge
+	local Blacklist
+	local Lock
+	local Priority
 	local lockedTarget
 	local lockedTime
 	local Aim = {}
@@ -5082,10 +5080,27 @@ run(function()
 		end
 		return false
 	end
+	local function entHealth(ent)
+		local char = ent.Character
+		local hum = char and char:FindFirstChildOfClass('Humanoid')
+		return hum and hum.Health or math.huge
+	end
 	local function pickTarget(p0, isFire)
 		local cam = workspace.CurrentCamera
 		if not cam then return nil end
+		if Lock.Enabled and lockedTarget and lockedTarget.RootPart and lockedTarget.RootPart.Parent then
+			local lent = lockedTarget
+			if lent.Player ~= playersService.LocalPlayer and isAliveTarget(lent)
+				and (not lent.Player or Targets.Players.Enabled)
+				and (lent.Player or Targets.NPCs.Enabled)
+				and (not Targets.Invisible.Enabled or not isInvisible(lent))
+				and (lent.RootPart.Position - p0).Magnitude <= Distance.Value then
+				return lent
+			end
+			lockedTarget = nil
+		end
 		local vp = cam.ViewportSize
+		local mode = Priority.Value
 		local best, bestScore
 		for _, ent in entitylib.List do
 			if not ent then continue end
@@ -5097,18 +5112,26 @@ run(function()
 			local root = ent.RootPart
 			if not root then continue end
 			local dist = (root.Position - p0).Magnitude
-			if dist > 1000 then continue end
+			if dist > Distance.Value then continue end
 			local sv = cam:WorldToViewportPoint(root.Position)
 			if sv.Z <= 0 then continue end
 			if sv.X < -40 or sv.X > vp.X + 40 or sv.Y < -40 or sv.Y > vp.Y + 40 then continue end
 			local cursorDist = (Vector2.new(sv.X, sv.Y) - vp / 2).Magnitude
 			if cursorDist > FOV.Value then continue end
 			if Targets.Walls.Enabled and not isFire and not trajLOS(p0, root.Position) then continue end
-			local score = cursorDist + dist * 0.05
+			local score
+			if mode == 'Closest' then
+				score = dist
+			elseif mode == 'Lowest HP' then
+				score = entHealth(ent) * 10 + dist * 0.01
+			else
+				score = cursorDist + dist * 0.05
+			end
 			if not bestScore or score < bestScore then
 				best, bestScore = ent, score
 			end
 		end
+		if Lock.Enabled then lockedTarget = best end
 		return best
 	end
 	local limbNames = {["Left Arm"] = "LeftUpperArm", ["Right Arm"] = "RightUpperArm", ["Left Leg"] = "LeftUpperLeg", ["Right Leg"] = "RightUpperLeg"}
@@ -5137,6 +5160,11 @@ run(function()
 		local dz = aim.Z - p0.Z
 		local horiz2 = dx * dx + dz * dz
 		local dist2 = horiz2 + dy * dy
+		if gravity < 1 then
+			local t = math.sqrt(dist2) / speed
+			if not t or t < 0.02 or t > maxt then return nil end
+			return Vector3.new(dx / t, dy / t, dz / t), t
+		end
 		local s2 = speed * speed
 		local mid = s2 - gravity * dy
 		local disc = mid * mid - gravity * gravity * dist2
@@ -5176,14 +5204,19 @@ run(function()
 			local dz = a.Z - p0.Z
 			local horiz2 = dx * dx + dz * dz
 			local dist2 = horiz2 + dy * dy
-			local s2 = speed * speed
-			local mid = s2 - gravity * dy
-			local disc = mid * mid - gravity * gravity * dist2
-			if disc < 0 then return nil end
-			local sq = math.sqrt(disc)
-			local want = mid + sq
-			if want <= 0 then return nil end
-			local t = math.sqrt(want * 2 / (gravity * gravity))
+			local t
+			if gravity < 1 then
+				t = math.sqrt(dist2) / speed
+			else
+				local s2 = speed * speed
+				local mid = s2 - gravity * dy
+				local disc = mid * mid - gravity * gravity * dist2
+				if disc < 0 then return nil end
+				local sq = math.sqrt(disc)
+				local want = mid + sq
+				if want <= 0 then return nil end
+				t = math.sqrt(want * 2 / (gravity * gravity))
+			end
 			if not t or t < 0.02 or t > maxt then return nil end
 			local vx = dx / t
 			local vz = dz / t
@@ -5252,17 +5285,17 @@ run(function()
 						if projName == 'telepearl' then
 							return old(...)
 						end
-						local lifetime = worldmeta and meta.predictionLifetimeSec or meta.lifetimeSec or 3
+						local lifetime = (isBeam and meta.predictionLifetimeSec) or meta.lifetimeSec or 3
 						if isLasso then
 							lifetime = math.max(lifetime, 2.5)
 						end
-						local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
-						local charge = AutoCharge.Enabled and 1 or projmeta.velocityMultiplier
+						local gravity = (meta.gravitationalAcceleration or 196.2) * (projmeta.gravityMultiplier or 1)
+						local charge = AutoCharge.Enabled and 1 or (projmeta.velocityMultiplier or 1)
 						local speed = (meta.launchVelocity or 100) * charge
 						if speed <= 0 then
 							return old(...)
 						end
-						local offsetpos = pos + (projName == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
+						local offsetpos = pos + (projName == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset or Vector3.zero)
 						local plr = pickTarget(offsetpos, isFireball)
 						if not plr then
 							return old(...)
@@ -5370,6 +5403,7 @@ run(function()
 				aimCache.at = 0
 				aimCache.result = nil
 				aimCache.target = nil
+				lockedTarget = nil
 			end
 		end,
 		Tooltip = 'Silently adjusts your aim towards the enemy'
@@ -5409,6 +5443,26 @@ run(function()
 	Blacklist = ProjectileAimbot:CreateTextList({
 		Name = 'Blacklist',
 		Default = {'glue_trap'}
+	})
+	Lock = ProjectileAimbot:CreateToggle({
+		Name = 'Target Lock',
+		Tooltip = 'Sticks to one target until it dies or leaves range instead of switching every shot'
+	})
+	Priority = ProjectileAimbot:CreateDropdown({
+		Name = 'Priority',
+		List = {'Cursor', 'Closest', 'Lowest HP'},
+		Default = 'Cursor',
+		Tooltip = 'How to choose between multiple targets'
+	})
+	Distance = ProjectileAimbot:CreateSlider({
+		Name = 'Distance',
+		Min = 1,
+		Max = 1000,
+		Default = 1000,
+		Suffix = function(val)
+			return val <= 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Ignore targets further than this many studs'
 	})
 end)
 

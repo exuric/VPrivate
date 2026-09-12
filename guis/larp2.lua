@@ -4338,13 +4338,13 @@ function mainapi:CreateCategory(categorysettings)
 			local indicator = Instance.new('TextLabel')
 			indicator.LayoutOrder = i - 1
 			indicator.Size = UDim2.new(0, size.X + 12, 0, 18)
-			indicator.BackgroundColor3 = tag == 'NEW' and Color3.fromRGB(74, 222, 128) or Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			indicator.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 			indicator.TextSize = 12
 			indicator.TextTransparency = 1
 			indicator.Text = tag
 			indicator.Name = tag
 			indicator.Position = UDim2.new()
-			indicator.TextColor3 = tag == 'NEW' and Color3.new(0.12, 0.12, 0.12) or mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			indicator.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 			indicator.FontFace = uipallet.FontSemiBold
 				indicator.Parent = indicatorholder
 				addCorner(indicator, UDim.new(0, 5))
@@ -6011,7 +6011,7 @@ function mainapi:CreateSearch()
 	addBlur(searchbkg)
 	addCorner(searchbkg)
 	local search = Instance.new('TextBox')
-	search.Size = UDim2.new(1, -84, 0, 37)
+	search.Size = UDim2.new(1, -50, 0, 37)
 	search.Position = UDim2.fromOffset(50, 0)
 	search.BackgroundTransparency = 1
 	search.Text = ''
@@ -6054,63 +6054,6 @@ function mainapi:CreateSearch()
 		self.Legit.Window.Visible = true
 		self.Legit.Window.Position = UDim2.new(0.5, -350, 0.5, -194)
 	end)
-	local tagfilter = 'All'
-	local function hasTag(m, want)
-		if not m.Tags then return false end
-		for _, t in m.Tags do
-			if t.Name == want then
-				return true
-			end
-		end
-		return false
-	end
-	local function collectTags()
-		local tags = {}
-		local seen = {}
-		for _, m in self.Modules do
-			if m.Tags then
-				for _, t in m.Tags do
-					if t.Name ~= 'MATCHED' and not seen[t.Name] then
-						seen[t.Name] = true
-						table.insert(tags, t.Name)
-					end
-				end
-			end
-		end
-		table.sort(tags)
-		return tags
-	end
-	local filterbutton = Instance.new('TextButton')
-	filterbutton.Name = 'TagFilter'
-	filterbutton.Size = UDim2.fromOffset(46, 37)
-	filterbutton.Position = UDim2.new(1, -77, 0, 0)
-	filterbutton.BackgroundTransparency = 1
-	filterbutton.AutoButtonColor = false
-	filterbutton.Text = 'All'
-	filterbutton.TextXAlignment = Enum.TextXAlignment.Right
-	filterbutton.TextColor3 = color.Dark(uipallet.Text, 0.29)
-	filterbutton.TextSize = 11
-	filterbutton.FontFace = uipallet.FontSemiBold
-	filterbutton.Parent = searchbkg
-	addTooltip(filterbutton, 'Filter by tag')
-	filterbutton.MouseButton1Click:Connect(function()
-		local tags = collectTags()
-		local idx = 0
-		for k, n in tags do
-			if n == tagfilter then
-				idx = k
-				break
-			end
-		end
-		tagfilter = idx >= #tags and 'All' or tags[idx + 1]
-		filterbutton.Text = tagfilter == 'All' and 'All' or tagfilter:sub(1, 1)..tagfilter:sub(2):lower()
-		filterbutton.TextColor3 = tagfilter == 'All' and color.Dark(uipallet.Text, 0.29) or Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-		local cur = search.Text
-		search.Text = ''
-		if cur ~= '' then
-			search.Text = cur
-		end
-	end)
 	search:GetPropertyChangedSignal('Text'):Connect(function()
 		for _, v in children:GetChildren() do
 			if v:IsA('TextButton') then
@@ -6120,13 +6063,9 @@ function mainapi:CreateSearch()
 		if search.Text == '' then return end
 
 		for i, v in self.Modules do
-			local s, e = i:lower():find(search.Text:lower(), 1, true)
-			if s and (tagfilter == 'All' or hasTag(v, tagfilter)) then
+			if i:lower():find(search.Text:lower(), 1, true) then
 				local button = v.Object:Clone()
 				button.Bind:Destroy()
-				local accent = Color3.fromHSV(self.GUIColor.Hue, self.GUIColor.Sat, self.GUIColor.Value)
-				button.RichText = true
-				button.Text = i:sub(1, s - 1).."<font color='#"..accent:ToHex().."'>"..i:sub(s, e)..'</font>'..i:sub(e + 1)
 				button.MouseButton1Click:Connect(function()
 					v:Toggle()
 				end)
@@ -6151,7 +6090,7 @@ function mainapi:CreateSearch()
 				button.Parent = children
 				task.spawn(function()
 					repeat
-						for _, v2 in {'TextColor3', 'BackgroundColor3'} do
+						for _, v2 in {'Text', 'TextColor3', 'BackgroundColor3'} do
 							button[v2] = v.Object[v2]
 						end
 						button.UIGradient.Color = v.Object.UIGradient.Color
@@ -8000,17 +7939,23 @@ do
 	end
 	local function pubCardData()
 		local out = {}
+		local likeTab = pubReadJson('LarpV4/profiles/likes.json') or {}
+		local dlTab = pubReadJson('LarpV4/profiles/downloads.json') or {}
+		local myGame = 0
+		pcall(function() myGame = game.GameId end)
 		for id, meta in pubLoadIndex() do
 			if type(id) == 'string' and type(meta) == 'table' then
-			table.insert(out, {kind = 'local', id = id, name = meta.name or id, creator = (meta.anonymous and 'Anonymous' or meta.creator) or '?', desc = meta.description or '', tags = meta.tags or {}, privacy = meta.privacy or 'public', likes = pubLikeCount(meta, id), downloads = pubDlCount(meta, id), updated = meta.updated or 0, code = meta.shareCode or ''})
+			table.insert(out, {kind = 'local', id = id, name = meta.name or id, creator = (meta.anonymous and 'Anonymous' or meta.creator) or '?', desc = meta.description or '', tags = meta.tags or {}, privacy = meta.privacy or 'public', likes = (meta.likes or 0) + (likeTab[id] and 1 or 0), downloads = (meta.downloads or 0) + (dlTab[id] or 0), updated = meta.updated or 0, code = meta.shareCode or ''})
 			end
 		end
 		for _, r in pubFetchRegistry() do
 			if type(r) == 'table' and r.id and r.name then
+				local rg = tonumber(r.game) or 0
+				if rg ~= 0 and rg ~= myGame then continue end
 				local mine = false
 				for _, c in out do if c.id == r.id then mine = true break end end
 				if not mine then
-					table.insert(out, {kind = 'registry', id = r.id, name = r.name, creator = r.creator or '?', desc = r.description or '', tags = r.tags or {}, privacy = 'public', likes = (r.likes or 0) + (pubLiked(r.id) and 1 or 0), downloads = (r.downloads or 0) + pubDownloads(r.id), updated = tonumber(r.updated) or 0, file = r.file, mods = r.modules})
+					table.insert(out, {kind = 'registry', id = r.id, name = r.name, creator = r.creator or '?', desc = r.description or '', tags = r.tags or {}, privacy = 'public', likes = (r.likes or 0) + (likeTab[r.id] and 1 or 0), downloads = (r.downloads or 0) + (dlTab[r.id] or 0), updated = tonumber(r.updated) or 0, file = r.file, mods = r.modules})
 				end
 			end
 		end
@@ -8019,7 +7964,8 @@ do
 	local function pubMatches(c, q)
 		if q == '' then return true end
 		q = q:lower()
-		if c.code ~= '' and (c.code:lower() == q or c.code:lower():find(q, 1, true)) then return true end
+		local code = c.code or ''
+		if code ~= '' and (code:lower() == q or code:lower():find(q, 1, true)) then return true end
 		if (c.name or ''):lower():find(q, 1, true) then return true end
 		if (c.creator or ''):lower():find(q, 1, true) then return true end
 		if (c.desc or ''):lower():find(q, 1, true) then return true end
@@ -8191,9 +8137,10 @@ do
 		cards.Visible = true
 		local q = (pubSys.query or ''):gsub('%s+', '')
 		if q:lower():match('^larp%-') or q:find('paste%.rs') or (#q >= 5 and #q <= 12 and q:match('^[%w%-]+$') and not q:find(' ')) then
-			localb = pubMkButton(cards, 'Import from code "'..q..'"', 0, 0, 300, 34, true, 12)
-			localb.LayoutOrder = 0
-			localb.MouseButton1Click:Connect(function() pubShowImport(q) end)
+			local banner = pubMkButton(cards, 'Import from code "'..q..'"', 0, 0, 300, 34, true, 12)
+			banner.Name = 'ImportBanner'
+			banner.LayoutOrder = 0
+			banner.MouseButton1Click:Connect(function() pubShowImport(q) end)
 		end
 		local all = pubCardData()
 		local shown = {}
@@ -8273,7 +8220,9 @@ do
 			mainapi:CreateNotification('Import', 'Nothing usable in that profile.', 4, 'alert')
 			return
 		end
-		local target = name
+		local target = tostring(name or 'Imported'):gsub('[/\\:%*%?"<>|]', ''):gsub('^%s+', ''):gsub('%s+$', '')
+		if target == '' then target = 'Imported' end
+		target = target:sub(1, 40)
 		local n = 2
 		while isfile('LarpV4/profiles/'..target..mainapi.Place..'.txt') do
 			target = name..' ('..n..')'
@@ -8807,6 +8756,8 @@ pubShowDetails = function(ref)
 				pubSaveIndex(idx)
 				status.Text = 'Saved.'
 				mainapi:CreateNotification('Public Profiles', 'Changes saved', 3)
+				pubRefreshYours()
+				pubRefreshCards()
 				pubShowDetails(ref)
 			else
 				status.Text = 'Reading source...'
@@ -8817,6 +8768,12 @@ pubShowDetails = function(ref)
 						return
 					end
 					local clean = pubSanitizeModules(mods)
+					local nmods = 0
+					for _ in clean do nmods += 1 end
+					if nmods == 0 then
+						status.Text = 'Source has no usable modules.'
+						return
+					end
 					local id = pubNewId()
 					local now = os.time()
 					local meta2 = {id = id, name = nm, creator = anon and 'Anonymous' or pubCreator(), anonymous = anon, description = desc, tags = tags, privacy = priv, source = (srcName == '*live*' and '' or srcName), sourceLive = srcName == '*live*', shareCode = '', created = now, updated = now, likes = 0, downloads = 0, game = game.GameId}
@@ -8826,6 +8783,8 @@ pubShowDetails = function(ref)
 					pubSaveIndex(idx)
 					status.Text = 'Published!'
 					mainapi:CreateNotification('Public Profiles', "Published '"..nm.."'", 4)
+					pubRefreshYours()
+					pubRefreshCards()
 					pubShowDetails({kind = 'local', id = id})
 				end)
 			end
@@ -10715,15 +10674,9 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 		end
 
 		for _, v in button.Tags do
-			if v.Name == 'NEW' then
-				v.BackgroundColor3 = Color3.fromRGB(74, 222, 128)
-				v.BackgroundTransparency = (rainbow or not button.Enabled) and 0.4 or 0
-				v:FindFirstChild('Text').TextColor3 = Color3.new(0.12, 0.12, 0.12)
-			else
-				v.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or button.Enabled and Color3.new(1, 1, 1) or Color3.fromHSV(hue, sat, val)
-				v.BackgroundTransparency = (rainbow or not button.Enabled) and 0 or 0.85
-				v:FindFirstChild('Text').TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
-			end
+			v.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or button.Enabled and Color3.new(1, 1, 1) or Color3.fromHSV(hue, sat, val)
+			v.BackgroundTransparency = (rainbow or not button.Enabled) and 0 or 0.85
+			v:FindFirstChild('Text').TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
 		end
 	end
 

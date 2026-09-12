@@ -5117,14 +5117,16 @@ run(function()
 		if which == 'Head' then
 			return ent.Head or ent.RootPart
 		end
-		if which == 'UpperTorso' or which == 'LowerTorso' then
-			local found = ent.Character and ent.Character:FindFirstChild(which)
-			if found then return found end
+		if which == 'RootPart' then
+			return ent.RootPart
 		end
-		if which ~= 'Neck' and which ~= 'RootPart' then
-			local mapped = limbNames[which]
-			local found = mapped and ent.Character and ent.Character:FindFirstChild(mapped)
-			if found then return found end
+		local char = ent.Character
+		if char then
+			local target = which == 'UpperTorso' and 'UpperTorso' or which == 'LowerTorso' and 'LowerTorso' or limbNames[which]
+			if target then
+				local found = char:FindFirstChild(target)
+				if found then return found end
+			end
 		end
 		return ent.RootPart
 	end
@@ -5276,19 +5278,24 @@ run(function()
 							return old(...)
 						end
 						local part = getAimPart(plr)
-						local targetPos = isLasso and root.Position + Vector3.new(0, 2, 0) or part.Position + (AimPart.Value == 'Neck' and Vector3.new(0, 2.2, 0) or Vector3.zero)
-						local rawVel = projName == 'telepearl' and Vector3.zero or root.AssemblyLinearVelocity
-						if not plr.Jumping and math.abs(rawVel.Y) < 5 then
-							rawVel = Vector3.new(rawVel.X, rawVel.Y * 0.15, rawVel.Z)
+						local targetPos = part.Position
+						local rawVel = root.AssemblyLinearVelocity
+						if Vector3.new(rawVel.X, 0, rawVel.Z).Magnitude < 3 then
+							rawVel = Vector3.new(0, rawVel.Y, 0)
+							smoothVel[plr] = Vector3.zero
+						else
+							local prevVel = smoothVel[plr]
+							if prevVel and (rawVel - prevVel).Magnitude < 40 then
+								rawVel = prevVel:Lerp(rawVel, 0.35)
+							end
+							smoothVel[plr] = rawVel
+						end
+						if not plr.Jumping and math.abs(rawVel.Y) < 2 then
+							rawVel = Vector3.new(rawVel.X, 0, rawVel.Z)
 						end
 						if rawVel.Magnitude > 60 then
 							rawVel = rawVel.Unit * 60
 						end
-						local prevVel = smoothVel[plr]
-						if prevVel and (rawVel - prevVel).Magnitude < 40 then
-							rawVel = prevVel:Lerp(rawVel, 0.35)
-						end
-						smoothVel[plr] = rawVel
 						local airborne = plr.Humanoid and (plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(root.AssemblyLinearVelocity.Y) > 0.01) or math.abs(rawVel.Y) > 0.01
 						local targetVel = rawVel * math.clamp(Prediction.Value, 0.05, 2)
 						local okCalc, aimPoint, _, travelTime = pcall(prediction.SolveTrajectory, offsetpos, speed, gravity, targetPos, targetVel, workspace.Gravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, airborne, part.Position, root, nil, true)
@@ -5321,6 +5328,9 @@ run(function()
 							else
 								return old(...)
 							end
+						end
+						if travelTime and travelTime > lifetime then
+							return old(...)
 						end
 						local res = {
 							initialVelocity = v0,
@@ -5387,9 +5397,9 @@ run(function()
 	})
 	AimPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Aim Part',
-		List = {'Neck', 'Head', 'UpperTorso', 'LowerTorso', 'RootPart', 'Left Arm', 'Right Arm', 'Left Leg', 'Right Leg'},
-		Default = 'Neck',
-		Tooltip = 'Body part to aim at. Neck aims mid-body for reliable splash damage.'
+		List = {'UpperTorso', 'Head', 'LowerTorso', 'RootPart', 'Left Arm', 'Right Arm', 'Left Leg', 'Right Leg'},
+		Default = 'UpperTorso',
+		Tooltip = 'Exact body part to aim at, no offsets.'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',

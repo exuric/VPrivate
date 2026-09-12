@@ -5218,8 +5218,7 @@ run(function()
 		Tags = {'REWORK'},
 		Function = function(callback)
 			if callback then
-				local pingMs = math.floor((store.ping.total or 0) * 1000)
-				Prediction:SetValue(pingMs < 40 and 1 or pingMs < 90 and 1.1 or pingMs < 160 and 1.2 or 1.35, nil, true)
+				Prediction:SetValue(1, nil, true)
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
 				realOld = old
 				old = function(...)
@@ -5256,7 +5255,8 @@ run(function()
 							lifetime = math.max(lifetime, 2.5)
 						end
 						local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
-						local speed = (meta.launchVelocity or 100) * (AutoCharge.Enabled and 1 or projmeta.velocityMultiplier)
+						local charge = AutoCharge.Enabled and 1 or projmeta.velocityMultiplier
+						local speed = (meta.launchVelocity or 100) * charge
 						if speed <= 0 then
 							return old(...)
 						end
@@ -5293,8 +5293,10 @@ run(function()
 						local targetVel = rawVel * math.clamp(Prediction.Value, 0.05, 2)
 						local okCalc, aimPoint, _, travelTime = pcall(prediction.SolveTrajectory, offsetpos, speed, gravity, targetPos, targetVel, workspace.Gravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, airborne, part.Position, root, nil, true)
 						local v0 = okCalc and aimPoint and (aimPoint - offsetpos) or nil
+						local fellBack = false
 						if not v0 or v0.Magnitude < 1 then
-							v0, travelTime = predictShot(offsetpos, targetPos + targetVel * (store.ping.total or 0), targetVel, speed, gravity, lifetime)
+							fellBack = true
+							v0, travelTime = predictShot(offsetpos, targetPos, targetVel, speed, gravity, lifetime)
 						end
 						if not v0 then
 							return old(...)
@@ -5343,7 +5345,7 @@ run(function()
 								if dd < minp then minp = dd end
 								if minp < 0.1 then break end
 							end
-							table.insert(shotLog, { p = projName, d = (offsetpos - root.Position).Magnitude, t = travelTime, s = speed, g = gravity, m = minp, plr = plr.Player and plr.Player.Name or 'npc' })
+							table.insert(shotLog, { p = projName, d = (offsetpos - root.Position).Magnitude, t = travelTime, s = speed, g = gravity, m = minp, plr = plr.Player and plr.Player.Name or 'npc', fb = fellBack, chg = charge })
 							if stats then stats.shots += 1 end
 						end
 						return res
@@ -5381,7 +5383,7 @@ run(function()
 		Max = 2,
 		Default = 1,
 		Decimal = 100,
-		Tooltip = 'Lead multiplier applied to target velocity. Automatically set from your ping when the module is toggled.'
+		Tooltip = 'Lead multiplier applied to target velocity. Ping is compensated automatically by the solver; keep at 1.0 unless targets consistently outrun your shots.'
 	})
 	AimPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Aim Part',

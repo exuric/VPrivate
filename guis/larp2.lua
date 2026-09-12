@@ -7772,6 +7772,7 @@ Profiles:CreateButton({
 	--[[
 		Public Profiles (Vape Online-style browser + sharing)
 	]]
+do
 	local pubSys = {win = nil, view = 'browse', sort = 'rated', query = '', yours = {}, registry = {}, regOK = false, regTime = 0, selected = nil, creating = false, editing = false, importData = nil, rateSel = 5, editModule = nil}
 	local PUB_DIR = 'LarpV4/profiles/public'
 	local function pubEnsure()
@@ -8888,6 +8889,7 @@ pubShowDetails = function(ref)
 			end)
 		end)
 	end)
+end
 local targets
 targets = mainapi:CreateCategoryList({
 	Name = 'Targets',

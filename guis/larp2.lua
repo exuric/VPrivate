@@ -6826,7 +6826,9 @@ function mainapi:Load(skipgui, profile)
 				object.ListEnabled = v.ListEnabled or {}
 				object:ChangeValue()
 			end
-			object.Object.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
+			if v.Position then
+				object.Object.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
+			end
 		end
 
 		local restore
@@ -8016,7 +8018,7 @@ do
 		yoursList.SortOrder = Enum.SortOrder.LayoutOrder
 		yoursList.Padding = UDim.new(0, 6)
 		yoursList.Parent = yours
-		yours:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+		yoursList:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 			yours.CanvasSize = UDim2.fromOffset(0, yoursList.AbsoluteContentSize.Y)
 		end)
 		pubSys.yoursBox = yours

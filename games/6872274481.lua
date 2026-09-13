@@ -5063,6 +5063,11 @@ run(function()
 			if team and team.Name == 'Spectators' then return false end
 			if plr:GetAttribute('Dead') or plr:GetAttribute('IsDead') then return false end
 		end
+		local myTeam = playersService.LocalPlayer:GetAttribute('Team')
+		if myTeam then
+			local tTeam = plr and plr:GetAttribute('Team') or char:GetAttribute('Team')
+			if tTeam and tTeam == myTeam then return false end
+		end
 		return true
 	end
 	local function trajLOS(p0, po)
@@ -5285,10 +5290,11 @@ run(function()
 						if projName == 'telepearl' then
 							return old(...)
 						end
-						local lifetime = (isBeam and meta.predictionLifetimeSec) or meta.lifetimeSec or 3
-						if isLasso then
-							lifetime = math.max(lifetime, 2.5)
-						end
+local lifetime = (isBeam and meta.predictionLifetimeSec) or meta.lifetimeSec or 3
+					if isLasso then
+						lifetime = math.max(lifetime, 2.5)
+					end
+					local timeout = math.max(lifetime * 1.5, 1.25)
 						local gravity = (meta.gravitationalAcceleration or 196.2) * (projmeta.gravityMultiplier or 1)
 						local charge = AutoCharge.Enabled and 1 or (projmeta.velocityMultiplier or 1)
 						local speed = (meta.launchVelocity or 100) * charge
@@ -5336,12 +5342,12 @@ run(function()
 						local fellBack = false
 						if not v0 or v0.Magnitude < 1 then
 							fellBack = true
-							v0, travelTime = predictShot(offsetpos, targetPos, targetVel, speed, gravity, lifetime)
+							v0, travelTime = predictShot(offsetpos, targetPos, targetVel, speed, gravity, timeout)
 						end
 						if not v0 then
 							return old(...)
 						end
-						local lobV, lobT = lobVelocity(offsetpos, targetPos + targetVel * (travelTime or 0), targetVel, speed, gravity, lifetime)
+						local lobV, lobT = lobVelocity(offsetpos, targetPos + targetVel * (travelTime or 0), targetVel, speed, gravity, timeout)
 						if isBeam then
 							local pv = beamVel[plr]
 							if pv then
@@ -5362,13 +5368,13 @@ run(function()
 								return old(...)
 							end
 						end
-						if travelTime and travelTime > lifetime then
-							return old(...)
-						end
-						local res = {
-							initialVelocity = v0,
-							positionFrom = offsetpos,
-							deltaT = lifetime,
+if travelTime and travelTime > timeout then
+						return old(...)
+					end
+					local res = {
+						initialVelocity = v0,
+						positionFrom = offsetpos,
+						deltaT = math.max(lifetime, travelTime or 0),
 							gravitationalAcceleration = gravity,
 							drawDurationSeconds = projmeta.drawDurationSeconds
 						}

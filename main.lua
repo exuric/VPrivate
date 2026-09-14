@@ -241,25 +241,6 @@ task.spawn(function()
 	if not isfolder('LarpV4/assets/'..gui) then
 		makefolder('LarpV4/assets/'..gui)
 	end
-	local liteSrc = nil
-	do
-		local ed = 'v4'
-		pcall(function()
-			if isfile('LarpV4/profiles/edition.txt') then
-				ed = (readfile('LarpV4/profiles/edition.txt') == 'lite') and 'lite' or 'v4'
-			else
-				local pick = loadstring(downloadFile('LarpV4/guis/edition.lua'), 'edition')()
-				ed = (pick == 'lite') and 'lite' or 'v4'
-				writefile('LarpV4/profiles/edition.txt', ed)
-			end
-		end)
-		getgenv().LarpLite = (ed == 'lite')
-		shared.LarpLite = getgenv().LarpLite
-		if getgenv().LarpLite then
-			pcall(function() liteSrc = downloadFile('LarpV4/guis/larplite.lua') end)
-		end
-	end
-	getgenv().LarpLiteSrc = liteSrc
 	larp = loadstring(downloadFile('LarpV4/guis/larp2.lua'), 'gui')(license)
 	if type(larp) ~= 'table' then
 		error('larp.lua did not return a valid api table' .. (larp and ': '..tostring(larp) or ''))
@@ -293,26 +274,6 @@ task.spawn(function()
 			end
 			task.wait()
 			finishLoading()
-			if getgenv().LarpLite and larp then
-				task.spawn(function()
-					local src = getgenv().LarpLiteSrc
-					if type(src) ~= 'string' or #src < 500 then
-						pcall(function() larp:CreateNotification('Larp Lite', 'Lite file bad download (' .. tostring(src and #src or 0) .. 'b)', 8, 'alert') end)
-						return
-					end
-					local okld, a, b = pcall(function() return loadstring(src, 'lite') end)
-					local fn = (okld and type(a) == 'function') and a or nil
-					local lerr = (not okld and tostring(a)) or b
-					if not fn then
-						pcall(function() larp:CreateNotification('Larp Lite', 'Lite compile: ' .. tostring(lerr):sub(1, 120), 10, 'alert') end)
-						return
-					end
-					local ok, rerr = pcall(fn, larp)
-					if not ok then
-						pcall(function() larp:CreateNotification('Larp Lite', 'Lite start: ' .. tostring(rerr):sub(1, 120), 10, 'alert') end)
-					end
-				end)
-			end
 		else
 			larp.Init = finishLoading
 		end

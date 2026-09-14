@@ -534,19 +534,33 @@ local function makeDraggable(gui, window)
 			-- positioned with scale (profiles) can never teleport on first grab
 			local startPos = inputObj.Position
 			local startGuiPos = gui.AbsolutePosition
+			local view = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+			local winsize = gui.AbsoluteSize
+			local target = nil
+			local stepConn
+			local changed
+			stepConn = runService.RenderStepped:Connect(function()
+				if not gui.Parent or inputObj.UserInputState == Enum.UserInputState.End then
+					if stepConn then stepConn:Disconnect() end
+					if changed then changed:Disconnect() end
+					return
+				end
+				if target then
+					gui.Position = target
+					target = nil
+				end
+			end)
 
-			local changed = inputService.InputChanged:Connect(function(input)
+			changed = inputService.InputChanged:Connect(function(input)
 				if input.UserInputType == (inputObj.UserInputType == Enum.UserInputType.MouseButton1 and Enum.UserInputType.MouseMovement or Enum.UserInputType.Touch) then
 					local position = input.Position
 					local delta = Vector2.new(position.X - startPos.X, position.Y - startPos.Y) / scale.Scale
 					if inputService:IsKeyDown(Enum.KeyCode.LeftShift) then
 						delta = (delta // 3) * 3
 					end
-					local view = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-					local winsize = gui.AbsoluteSize
 					local x = math.clamp(startGuiPos.X + delta.X, 40 - winsize.X, view.X - 40)
 					local y = math.clamp(startGuiPos.Y + delta.Y, 0, view.Y - 40)
-					gui.Position = UDim2.fromOffset(x, y)
+					target = UDim2.fromOffset(x, y)
 				end
 			end)
 
@@ -555,6 +569,9 @@ local function makeDraggable(gui, window)
 				if inputObj.UserInputState == Enum.UserInputState.End then
 					if changed then
 						changed:Disconnect()
+					end
+					if stepConn then
+						stepConn:Disconnect()
 					end
 					if ended then
 						ended:Disconnect()
@@ -4410,10 +4427,10 @@ function mainapi:CreateCategory(categorysettings)
 		local hidebutton = Instance.new('TextButton')
 		hidebutton.Name = 'HideButton'
 		hidebutton.Size = UDim2.fromOffset(22, 40)
-		hidebutton.Position = UDim2.new(1, -72, 0, 0)
+		hidebutton.Position = UDim2.new(1, -94, 0, 0)
 		hidebutton.BackgroundTransparency = 1
 		hidebutton.Text = ''
-		hidebutton.Visible = false
+		hidebutton.Visible = categoryapi.Editing and true or false
 		hidebutton.Parent = modulebutton
 		local hideart = Instance.new('ImageLabel')
 		hideart.Name = 'Art'

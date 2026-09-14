@@ -30,6 +30,23 @@ local BRANCH = 'main'
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
 local SELFCOMMIT = '5527544f1a7b33d7402b40d7c3bf2833aef565ba'
 
+local MANIFEST = {}
+
+local function fetchManifest()
+	table.clear(MANIFEST)
+	local ok, res = pcall(function()
+		return game:HttpGet(ROOT..BRANCH..'/profiles/manifest.txt?v='..tick(), true)
+	end)
+	if ok and res then
+		for line in (res..'\n'):gmatch('(.-)\r?\n') do
+			local path, hex = line:match('^(%S+)%s+(%x+)$')
+			if path and hex then
+				MANIFEST[path] = hex
+			end
+		end
+	end
+end
+
 local function fetchCommit()
 	local ok, res = pcall(function()
 		return game:HttpGet(ROOT..BRANCH..'/profiles/commit.txt?v='..tick(), true)
@@ -43,7 +60,14 @@ local function fetchCommit()
 	return SELFCOMMIT
 end
 
-local COMMIT = fetchCommit()
+local COMMIT, _cok = nil, false
+task.spawn(function()
+	local ok, res = pcall(fetchCommit)
+	COMMIT = (ok and res) or SELFCOMMIT
+	_cok = true
+end)
+fetchManifest()
+repeat task.wait() until _cok
 local LARPWATER = '--LARP:'..COMMIT..'\n'
 
 for _, f in {'LarpV4', 'LarpV4/assets', 'LarpV4/assets/larp'} do
@@ -127,23 +151,6 @@ local VERIFY_FILES = {
 	'games/8444591321.lua',
 	'games/100702124803290.lua',
 }
-
-local MANIFEST = {}
-
-local function fetchManifest()
-	table.clear(MANIFEST)
-	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..BRANCH..'/profiles/manifest.txt?v='..tick(), true)
-	end)
-	if ok and res then
-		for line in (res..'\n'):gmatch('(.-)\r?\n') do
-			local path, hex = line:match('^(%S+)%s+(%x+)$')
-			if path and hex then
-				MANIFEST[path] = hex
-			end
-		end
-	end
-end
 
 local bit32_band, bit32_bxor = bit32.band, bit32.bxor
 local bit32_lshift, bit32_rshift = bit32.lshift, bit32.rshift
@@ -280,7 +287,6 @@ local function verifyFiles()
 	if getgenv().LarpVerifiedCommit == COMMIT then
 		return
 	end
-	fetchManifest()
 	local ok, good = pcall(function()
 		local content = readfile('LarpV4/libraries/hash.lua')
 		local i = content:find('\n')

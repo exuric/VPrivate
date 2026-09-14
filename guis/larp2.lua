@@ -529,11 +529,11 @@ local function makeDraggable(gui, window)
 			(inputObj.UserInputType == Enum.UserInputType.MouseButton1 or inputObj.UserInputType == Enum.UserInputType.Touch)
 			and (inputObj.Position.Y - gui.AbsolutePosition.Y < 40 or window)
 		then
-			-- delta-based dragging: only apply the movement between frames, so the
-			-- window can never teleport (the old start-offset math mixed screen
-			-- space with parent space and jumped on the first drag input)
+			-- delta-based dragging from AbsolutePosition: only the movement between
+			-- frames is applied, and the full on-screen position is kept, so windows
+			-- positioned with scale (profiles) can never teleport on first grab
 			local startPos = inputObj.Position
-			local startGuiPos = gui.Position
+			local startGuiPos = gui.AbsolutePosition
 
 			local changed = inputService.InputChanged:Connect(function(input)
 				if input.UserInputType == (inputObj.UserInputType == Enum.UserInputType.MouseButton1 and Enum.UserInputType.MouseMovement or Enum.UserInputType.Touch) then
@@ -544,8 +544,8 @@ local function makeDraggable(gui, window)
 					end
 					local view = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
 					local winsize = gui.AbsoluteSize
-					local x = math.clamp(startGuiPos.X.Offset + delta.X, 40 - winsize.X, view.X - 40)
-					local y = math.clamp(startGuiPos.Y.Offset + delta.Y, 0, view.Y - 40)
+					local x = math.clamp(startGuiPos.X + delta.X, 40 - winsize.X, view.X - 40)
+					local y = math.clamp(startGuiPos.Y + delta.Y, 0, view.Y - 40)
 					gui.Position = UDim2.fromOffset(x, y)
 				end
 			end)
@@ -4124,9 +4124,6 @@ function mainapi:CreateCategory(categorysettings)
 	arrow.Parent = arrowbutton
 	local editbutton
 	local hidcount
-	local unhideall
-	local toggledisabled
-	local edittools
 	if categorysettings.Name ~= 'Favorites' then
 		editbutton = Instance.new('ImageButton')
 		editbutton.Name = 'Edit'
@@ -4157,66 +4154,6 @@ function mainapi:CreateCategory(categorysettings)
 		hidcount.FontFace = uipallet.Font
 		hidcount.Visible = false
 		hidcount.Parent = window
-		edittools = Instance.new('Frame')
-		edittools.Name = 'EditTools'
-		edittools.Size = UDim2.fromOffset(72, 48)
-		edittools.AnchorPoint = Vector2.new(1, 1)
-		edittools.Position = UDim2.new(1, -6, 1, -6)
-		edittools.BackgroundColor3 = color.Dark(uipallet.Main, 0.04)
-		edittools.BorderSizePixel = 0
-		edittools.Visible = false
-		edittools.ZIndex = 20
-		edittools.Parent = window
-		addCorner(edittools, UDim.new(0, 8))
-		unhideall = Instance.new('TextButton')
-		unhideall.Name = 'UnhideAll'
-		unhideall.Size = UDim2.new(1, -8, 0, 18)
-		unhideall.Position = UDim2.fromOffset(4, 4)
-		unhideall.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
-		unhideall.BorderSizePixel = 0
-		unhideall.AutoButtonColor = false
-		unhideall.Text = 'Unhide all'
-		unhideall.TextColor3 = color.Dark(uipallet.Text, 0.16)
-		unhideall.TextSize = 11
-		unhideall.FontFace = uipallet.Font
-		unhideall.ZIndex = 21
-		unhideall.Parent = edittools
-		addCorner(unhideall, UDim.new(0, 5))
-		addTooltip(unhideall, 'Show all hidden modules')
-		toggledisabled = Instance.new('TextButton')
-		toggledisabled.Name = 'ToggleDisabled'
-		toggledisabled.Size = UDim2.new(1, -8, 0, 18)
-		toggledisabled.Position = UDim2.fromOffset(4, 26)
-		toggledisabled.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
-		toggledisabled.BorderSizePixel = 0
-		toggledisabled.AutoButtonColor = false
-		toggledisabled.Text = 'Disable all'
-		toggledisabled.TextColor3 = color.Dark(uipallet.Text, 0.16)
-		toggledisabled.TextSize = 11
-		toggledisabled.FontFace = uipallet.Font
-		toggledisabled.ZIndex = 21
-		toggledisabled.Parent = edittools
-		addCorner(toggledisabled, UDim.new(0, 5))
-		addTooltip(toggledisabled, 'Disable or enable every module')
-		unhideall.MouseButton1Click:Connect(function()
-			table.clear(categoryapi.Hidden)
-			categoryapi:RefreshHidden()
-		end)
-		toggledisabled.MouseButton1Click:Connect(function()
-			local targets = {}
-			local anyOn = false
-			for _, m in pairs(mainapi.Modules) do
-				if m.Category == categorysettings.Name then
-					table.insert(targets, m)
-					if m.Enabled then anyOn = true end
-				end
-			end
-			for _, m in targets do
-				if m.Enabled == anyOn then m:Toggle(true) end
-			end
-			mainapi:UpdateTextGUI()
-			categoryapi:RefreshHidden()
-		end)
 		editbutton.MouseEnter:Connect(function()
 			editart.ImageColor3 = uipallet.Text
 		end)
@@ -4470,6 +4407,26 @@ function mainapi:CreateCategory(categorysettings)
 		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = dotsbutton
+		local hidebutton = Instance.new('TextButton')
+		hidebutton.Name = 'HideButton'
+		hidebutton.Size = UDim2.fromOffset(22, 40)
+		hidebutton.Position = UDim2.new(1, -72, 0, 0)
+		hidebutton.BackgroundTransparency = 1
+		hidebutton.Text = ''
+		hidebutton.Visible = false
+		hidebutton.Parent = modulebutton
+		local hideart = Instance.new('ImageLabel')
+		hideart.Name = 'Art'
+		hideart.Size = UDim2.fromOffset(14, 14)
+		hideart.Position = UDim2.fromOffset(4, 13)
+		hideart.BackgroundTransparency = 1
+		hideart.Image = getcustomasset('LarpV4/assets/larp/hide.png')
+		hideart.ImageColor3 = color.Light(uipallet.Main, 0.37)
+		hideart.Parent = hidebutton
+		hidebutton.MouseButton1Click:Connect(function()
+			moduleapi._hideClicked = true
+			categoryapi:ToggleHidden(moduleapi)
+		end)
 		modulechildren.Name = modulesettings.Name..'Children'
 		modulechildren.Size = UDim2.new(1, 0, 0, 0)
 		modulechildren.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -4917,8 +4874,9 @@ function mainapi:CreateCategory(categorysettings)
 		end)
 		modulebutton.MouseButton1Click:Connect(function()
 			if rowDragged then rowDragged = false return end
+			if moduleapi._hideClicked then moduleapi._hideClicked = false return end
 			if categoryapi.Editing then
-				categoryapi:ToggleHidden(moduleapi)
+				modulechildren.Visible = not modulechildren.Visible
 			else
 				moduleapi:Toggle()
 			end
@@ -5059,21 +5017,17 @@ function mainapi:CreateCategory(categorysettings)
 					local mark = m.Object:FindFirstChild('HiddenMark')
 					if mark then mark.Visible = false end
 				end
+				local eye = m.Object:FindFirstChild('HideButton')
+				if eye then
+					eye.Visible = self.Editing
+					local art = eye:FindFirstChild('Art')
+					if art then art.ImageColor3 = self.Hidden[m] and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37) end
+				end
 			end
 		end
 		if hidcount then
 			hidcount.Text = n > 0 and (n..' '..T('HidSuffix')) or ''
 			hidcount.Visible = n > 0
-		end
-		if edittools then
-			edittools.Visible = self.Editing
-		end
-		if toggledisabled then
-			local anyOn = false
-			for _, m in pairs(mainapi.Modules) do
-				if m.Category == categorysettings.Name and m.Enabled then anyOn = true break end
-			end
-			toggledisabled.Text = anyOn and 'Disable all' or 'Enable all'
 		end
 		for _, m in pairs(mainapi.Modules) do
 			if m.Category == categorysettings.Name and m.EditSection then

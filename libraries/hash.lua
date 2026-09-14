@@ -1,5 +1,5 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
--- HashLib by Egor Skriptunoff, boatbomber, and howmanysmall, I'm not trusting exploits to have a built in crypt library.
+-- HashLib by Egor Skriptunoff, boatbomber, and howmanysmall.
 
 --[=[------------------------------------------------------------------------------------------------------------------------
 

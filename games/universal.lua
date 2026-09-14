@@ -2825,7 +2825,7 @@ run(function()
 			table.clear(modified)
 			fflag = nil
 		end,
-		Tooltip = 'Part - Modifies parts collision status around you\nCharacter - Modifies the local collision status of the character\nCFrame - Teleports you past parts\nMotor - Same as CFrame with a bypass\nFFlag - Directly adjusts all physics collisions'
+		Tooltip = 'Part - Modifies parts collision status around you\nCharacter - Modifies the local collision status of the character\nCFrame - Moves you past parts\nMotor - Same as CFrame with velocity matching\nFFlag - Directly adjusts all physics collisions'
 	})
 	StudLimit = Phase:CreateSlider({
 		Name = 'Wall Size',

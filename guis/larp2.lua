@@ -60,7 +60,7 @@ local LarpLocales = {
 		Combat = 'Combat', Blatant = 'Blatant', Render = 'Render', Utility = 'Utility', World = 'World', Inventory = 'Inventory',
 		Minigames = 'Minigames', Other = 'Other', Favorites = 'Favorites', Friends = 'Friends', Profiles = 'Profiles', Targets = 'Targets',
 		Overlays = 'Overlays', Search = 'Search', Settings = 'Settings', General = 'General', Performance = 'Performance', TextGUI = 'Text GUI',
-		TargetInfo = 'Target Info', ResetProfile = 'Reset Profile', SelfDestruct = 'Self destruct', Reinject = 'Reinject',
+		TargetInfo = 'Target Info', ResetProfile = 'Reset Profile', SelfDestruct = 'Unload', Reinject = 'Reinject',
 		MultiBind = 'Enable Multi-Keybinding', Language = 'Language', EnglishDefault = 'English (default)', LoadedIn = 'Successfully loaded in ',
 		AddEntry = 'Add entry...', TypeName = 'Type name', RobloxUser = 'Roblox username', ToggleFav = 'Toggle favourite',
 		FavTooltip = 'Shows this module in the Favorites tab.', Mode = 'Mode', ModeTip = 'Amount of information shown.', Minimal = 'Minimal',
@@ -73,7 +73,7 @@ local LarpLocales = {
 		Combat = 'Combate', Utility = 'Utilidad', World = 'Mundo', Inventory = 'Inventario', Minigames = 'Minijuegos', Other = 'Otro',
 		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfiles', Targets = 'Objetivos', Overlays = 'Superposiciones',
 		Search = 'Buscar', Settings = 'Ajustes', General = 'General', Performance = 'Rendimiento', TextGUI = 'Texto en pantalla',
-		TargetInfo = 'Info de objetivo', ResetProfile = 'Restablecer perfil', SelfDestruct = 'Autodestruir', Reinject = 'Reinyectar',
+		TargetInfo = 'Info de objetivo', ResetProfile = 'Restablecer perfil', SelfDestruct = 'Unload', Reinject = 'Reinyectar',
 		MultiBind = 'Activar multi-teclas', Language = 'Idioma', EnglishDefault = 'Inglés (predeterminado)', LoadedIn = 'Cargado correctamente en ',
 		AddEntry = 'Añadir...', TypeName = 'Escribe un nombre', RobloxUser = 'Usuario de Roblox', ToggleFav = 'Alternar favorito',
 		FavTooltip = 'Muestra este módulo en Favoritos.', Mode = 'Modo', ModeTip = 'Cantidad de información mostrada.', Minimal = 'Mínimo',
@@ -86,7 +86,7 @@ local LarpLocales = {
 		Combat = 'Combat', Utility = 'Utilitaire', World = 'Monde', Inventory = 'Inventaire', Minigames = 'Mini-jeux', Other = 'Autre',
 		Favorites = 'Favoris', Friends = 'Amis', Profiles = 'Profils', Targets = 'Cibles', Overlays = 'Superpositions',
 		Search = 'Rechercher', Settings = 'Paramètres', General = 'Général', Performance = 'Performances', TextGUI = 'Texte à l’écran',
-		TargetInfo = 'Infos cible', ResetProfile = 'Réinitialiser le profil', SelfDestruct = 'Autodestruction', Reinject = 'Réinjecter',
+		TargetInfo = 'Infos cible', ResetProfile = 'Réinitialiser le profil', SelfDestruct = 'Unload', Reinject = 'Réinjecter',
 		MultiBind = 'Activer multi-touches', Language = 'Langue', EnglishDefault = 'Anglais (par défaut)', LoadedIn = 'Chargé avec succès en ',
 		AddEntry = 'Ajouter...', TypeName = 'Tapez un nom', RobloxUser = "Nom d'utilisateur Roblox", ToggleFav = 'Basculer le favori',
 		FavTooltip = 'Affiche ce module dans Favoris.', Mode = 'Mode', ModeTip = "Quantité d'informations affichées.", Minimal = 'Minimal',
@@ -99,7 +99,7 @@ local LarpLocales = {
 		Combat = 'Kampf', Utility = 'Dienstprogramm', World = 'Welt', Inventory = 'Inventar', Minigames = 'Minispiele', Other = 'Sonstiges',
 		Favorites = 'Favoriten', Friends = 'Freunde', Profiles = 'Profile', Targets = 'Ziele', Overlays = 'Overlays',
 		Search = 'Suchen', Settings = 'Einstellungen', General = 'Allgemein', Performance = 'Leistung', TextGUI = 'Text-GUI',
-		TargetInfo = 'Zielinfo', ResetProfile = 'Profil zurücksetzen', SelfDestruct = 'Selbstzerstörung', Reinject = 'Neu injizieren',
+		TargetInfo = 'Zielinfo', ResetProfile = 'Profil zurücksetzen', SelfDestruct = 'Unload', Reinject = 'Neu injizieren',
 		MultiBind = 'Mehrfachbelegung aktivieren', Language = 'Sprache', EnglishDefault = 'Englisch (Standard)', LoadedIn = 'Erfolgreich geladen auf ',
 		AddEntry = 'Hinzufügen...', TypeName = 'Namen eingeben', RobloxUser = 'Roblox-Benutzername', ToggleFav = 'Favorit umschalten',
 		FavTooltip = 'Zeigt dieses Modul in Favoriten.', Mode = 'Modus', ModeTip = 'Umfang der angezeigten Informationen.', Minimal = 'Minimal',
@@ -112,7 +112,7 @@ local LarpLocales = {
 		Combat = 'Combate', Utility = 'Utilidade', World = 'Mundo', Inventory = 'Inventário', Minigames = 'Minijogos', Other = 'Outro',
 		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfis', Targets = 'Alvos', Overlays = 'Sobreposições',
 		Search = 'Pesquisar', Settings = 'Configurações', General = 'Geral', Performance = 'Desempenho', TextGUI = 'Texto na tela',
-		TargetInfo = 'Info do alvo', ResetProfile = 'Redefinir perfil', SelfDestruct = 'Autodestruir', Reinject = 'Reinjetar',
+		TargetInfo = 'Info do alvo', ResetProfile = 'Redefinir perfil', SelfDestruct = 'Unload', Reinject = 'Reinjetar',
 		MultiBind = 'Ativar múltiplas teclas', Language = 'Idioma', EnglishDefault = 'Inglês (padrão)', LoadedIn = 'Carregado com sucesso em ',
 		AddEntry = 'Adicionar...', TypeName = 'Digite um nome', RobloxUser = 'Nome de usuário Roblox', ToggleFav = 'Alternar favorito',
 		FavTooltip = 'Mostra este módulo em Favoritos.', Mode = 'Modo', ModeTip = 'Quantidade de informações exibidas.', Minimal = 'Mínimo',
@@ -9284,7 +9284,7 @@ mainapi.MultiKeybind = general:CreateToggle({
 	Tooltip = 'Allows multiple keys to be bound to a module (eg. G + H)'
 })
 	general:CreateButton({
-		Name = 'Self destruct',
+		Name = 'Unload',
 		Function = function()
 			mainapi:Uninject()
 		end,

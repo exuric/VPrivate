@@ -3218,7 +3218,7 @@ run(function()
 	OnlyNearby = GodMode:CreateToggle({
 		Name = 'Only when enemy nearby',
 		Default = true,
-		Tooltip = 'Keeps you normal when nobody is around, so the anticheat never sees constant displacement'
+		Tooltip = 'Only applies the effect when an enemy is nearby'
 	})
 end)
 

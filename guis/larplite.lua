@@ -2,14 +2,18 @@
 local mainapi = ...
 if type(mainapi) ~= 'table' then return end
 local inputService = game:GetService('UserInputService')
-local ACCENT = Color3.fromRGB(79, 140, 255)
+local ACCENT = Color3.fromRGB(5, 133, 102)
+pcall(function()
+	local g = mainapi.GUIColor
+	if type(g) == 'table' then ACCENT = Color3.fromHSV(g.Hue or 0.46, g.Sat or 0.96, g.Value or 0.52) end
+end)
 local BG = Color3.fromRGB(13, 17, 23)
 local ROW = Color3.fromRGB(20, 25, 34)
 local DIM = Color3.fromRGB(150, 160, 175)
 local clickgui = nil
 if mainapi.Categories then
 	for _, c in mainapi.Categories do
-		if type(c) == 'table' and c.Object and typeof(c.Object.Parent) == 'Instance' then
+		if type(c) == 'table' and type(c.Object) == 'userdata' and typeof(c.Object.Parent) == 'Instance' then
 			clickgui = c.Object.Parent
 			break
 		end

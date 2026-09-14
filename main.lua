@@ -296,13 +296,21 @@ task.spawn(function()
 			end
 			task.wait()
 			finishLoading()
-			if getgenv().LarpLite and getgenv().LarpLiteSrc and larp then
+			if getgenv().LarpLite and larp then
 				task.spawn(function()
-					local ok = pcall(function()
-						return loadstring(getgenv().LarpLiteSrc, 'lite')(larp)
-					end)
+					local src = getgenv().LarpLiteSrc
+					if type(src) ~= 'string' or #src < 500 then
+						pcall(function() larp:CreateNotification('Larp Lite', 'Lite file bad download (' .. tostring(src and #src or 0) .. 'b)', 8, 'alert') end)
+						return
+					end
+					local fn, lerr = loadstring(src, 'lite')
+					if not fn then
+						pcall(function() larp:CreateNotification('Larp Lite', 'Lite compile: ' .. tostring(lerr):sub(1, 120), 10, 'alert') end)
+						return
+					end
+					local ok, rerr = pcall(fn, larp)
 					if not ok then
-						pcall(function() larp:CreateNotification('Larp Lite', 'Lite HUD failed to start, full GUI still available', 6, 'alert') end)
+						pcall(function() larp:CreateNotification('Larp Lite', 'Lite start: ' .. tostring(rerr):sub(1, 120), 10, 'alert') end)
 					end
 				end)
 			end

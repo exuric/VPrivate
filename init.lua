@@ -105,6 +105,10 @@ local function downloadFile(path, func)
 	if not outdated and path:find('.lua') then
 		local cached = readfile(path)
 		outdated = #cached < 100 or cached:sub(1, #LARPWATER) ~= LARPWATER
+		if not outdated and path:find('%.lua$') then
+			local ok, fn = pcall(loadstring, cached)
+			if not ok or type(fn) ~= 'function' then outdated = true end
+		end
 	end
 	if outdated then
 		if not license.Closet then

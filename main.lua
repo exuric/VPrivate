@@ -68,6 +68,10 @@ local function downloadFile(path, func)
 	if isfile(path) then
 		content = readfile(path)
 	end
+	if content and #content >= 100 and path:find('%.lua$') then
+		local ok, fn = pcall(loadstring, content)
+		if not ok or type(fn) ~= 'function' then content = nil end
+	end
 	if not content or #content < 100 or (not (shared.LarpDeveloper and shared.LarpOwner) and content:sub(1, #LARPWATER) ~= LARPWATER) then
 		_dstats.misses += 1
 		if _pending[path] then
@@ -243,8 +247,12 @@ task.spawn(function()
 		makefolder('LarpV4/assets/'..gui)
 	end
 	larp = loadstring(downloadFile('LarpV4/guis/larp2.lua'), 'gui')(license)
-	if type(larp) ~= 'table' then
-		error('larp.lua did not return a valid api table' .. (larp and ': '..tostring(larp) or ''))
+	if type(larp) ~= 'table' or type(larp.Load) ~= 'function' then
+		pcall(writefile, 'LarpV4/guis/larp2.lua', '')
+		larp = loadstring(downloadFile('LarpV4/guis/larp2.lua'), 'gui')(license)
+	end
+	if type(larp) ~= 'table' or type(larp.Load) ~= 'function' then
+		error('larp.lua did not return a valid api table' .. (type(larp) == 'table' and ' (missing Load)' or (larp and ': '..tostring(larp) or '')))
 	end
 	shared.larp = larp
 	_G.larp = larp

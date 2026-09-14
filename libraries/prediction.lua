@@ -1,4 +1,24 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
+--[[
+	Larp prediction library. Solves projectile trajectories against moving targets:
+	ping latency, jumps, strafing, knockback, and residual spread.
+
+	Public API:
+	  module.setLatency(v) / getLatency() / getRawLatency()    ping model (seconds)
+	  module.Raycast(o, d, params)                             thin raycast wrapper
+	  module.IsTrajectoryClear(o, v, g, t, params, ...)        swept LOS check
+	  module.solveQuartic(c0, c1, c2, c3, c4) -> roots         low-level solver
+	  module.SpawnTracer(from, to) / SpawnArcTracer(...)       visual tracers
+	  module.markKnockback(target, mult, impulse)              knockback exemption
+	  module.trackShot(targetRoot) / reportHit(targetRoot)     shot grading / spread
+	  module.getResidualSpread() / getLatencyBias()            statistics
+	  module.SolveTrajectory(origin, speed, g, targetPos, targetVel, playerGravity,
+	    playerHeight, playerJump, params, airborne, rootPos, root, minTime, strict)
+	    -> origin + velocity, impact, travelTime   (strict => nil on failure)
+
+	Section banners: [1] latency, [2] raycast/LOS, [3] root solvers,
+	[4] tracers, [5] target motion + shot tracking, [6] SolveTrajectory.
+]]
 local module = {}
 local eps = 1e-9
 local vector = vector or { create = function(x, y, z) return Vector3.new(x, y, z) end }
@@ -19,6 +39,7 @@ local function sampleRtt()
 	return 0
 end
 
+-- [1] Latency / ping (RTT is doubled into one-way).
 function module.setLatency(value)
 	if value == nil then
 		responseTime = nil
@@ -69,6 +90,7 @@ function module.Raycast(origin, direction, params)
 	return workspace:Raycast(origin, direction, params)
 end
 
+-- [2] Raycast wrapper + swept trajectory clearance.
 module.IsTrajectoryClear = function(origin, velocity, gravity, travelTime, params, target, ignored)
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = params.FilterType
@@ -197,6 +219,7 @@ local solveCubic = function(c0, c1, c2, c3)
 
 	return s0, s1, s2
 end
+-- [3] Cubic / quartic root solvers (pure math, no game state).
 function module.solveQuartic(c0, c1, c2, c3, c4)
 	local s0, s1, s2, s3
 	if isZero(c0) then
@@ -297,6 +320,7 @@ function module.solveQuartic(c0, c1, c2, c3, c4)
 
 	return roots
 end
+-- [4] Tracers (SpawnTracer straight line, SpawnArcTracer ballistic arc).
 module.SpawnTracer = function(from, to, custom)
 	local distance = (to - from).Magnitude
 	if distance < 0.01 then return end
@@ -351,6 +375,7 @@ local validVector = function(value)
 		and validNumber(value.Z)
 end
 
+-- [5] Target motion model + knockback exemption + shot grading.
 local function getAttribute(root, attribute)
 	local character = root and root.Parent
 	if character and character:IsA('Model') then
@@ -1238,6 +1263,7 @@ local jumpHeightAt = function(groundY, jumpVelocity, playerGravity, elapsed, jum
 	return groundY + height
 end
 
+-- [6] SolveTrajectory — main entry. Returns origin+velocity, impact, travelTime.
 module.SolveTrajectory = function(origin, projectileSpeed, gravity, targetPos, targetVelocity, playerGravity, playerHeight, playerJump, params, targetAirborne, targetRootPosition, targetRoot, minimumTime, strict)
 	resolveShots()
 	targetVelocity = targetVelocity or Vector3.zero

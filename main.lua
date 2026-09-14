@@ -244,6 +244,25 @@ task.spawn(function()
 	if not isfolder('LarpV4/assets/'..gui) then
 		makefolder('LarpV4/assets/'..gui)
 	end
+	local liteSrc = nil
+	do
+		local ed = 'v4'
+		pcall(function()
+			if isfile('LarpV4/profiles/edition.txt') then
+				ed = (readfile('LarpV4/profiles/edition.txt') == 'lite') and 'lite' or 'v4'
+			else
+				local pick = loadstring(downloadFile('LarpV4/guis/edition.lua'), 'edition')()
+				ed = (pick == 'lite') and 'lite' or 'v4'
+				writefile('LarpV4/profiles/edition.txt', ed)
+			end
+		end)
+		getgenv().LarpLite = (ed == 'lite')
+		shared.LarpLite = getgenv().LarpLite
+		if getgenv().LarpLite then
+			pcall(function() liteSrc = downloadFile('LarpV4/guis/larplite.lua') end)
+		end
+	end
+	getgenv().LarpLiteSrc = liteSrc
 	larp = loadstring(downloadFile('LarpV4/guis/larp2.lua'), 'gui')(license)
 	if type(larp) ~= 'table' then
 		error('larp.lua did not return a valid api table' .. (larp and ': '..tostring(larp) or ''))
@@ -277,6 +296,16 @@ task.spawn(function()
 			end
 			task.wait()
 			finishLoading()
+			if getgenv().LarpLite and getgenv().LarpLiteSrc and larp then
+				task.spawn(function()
+					local ok = pcall(function()
+						return loadstring(getgenv().LarpLiteSrc, 'lite')(larp)
+					end)
+					if not ok then
+						pcall(function() larp:CreateNotification('Larp Lite', 'Lite HUD failed to start, full GUI still available', 6, 'alert') end)
+					end
+				end)
+			end
 		else
 			larp.Init = finishLoading
 		end

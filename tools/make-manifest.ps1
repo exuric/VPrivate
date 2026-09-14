@@ -2,6 +2,8 @@ $ErrorActionPreference = 'Stop'
 $files = @(
 	'main.lua',
 	'guis/larp2.lua',
+	'guis/edition.lua',
+	'guis/larplite.lua',
 	'libraries/entity.lua',
 	'libraries/hash.lua',
 	'libraries/prediction.lua',

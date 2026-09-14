@@ -9323,6 +9323,11 @@ end
 			self:Panic()
 		end
 	end
+	function mainapi:SwitchEdition(ed)
+		pcall(writefile, 'LarpV4/profiles/edition.txt', ed == 'lite' and 'lite' or 'v4')
+		pcall(function() mainapi:CreateNotification('Edition', 'Reloading into ' .. (ed == 'lite' and 'Larp Lite' or 'Larp V4'), 3) end)
+		task.delay(0.5, function() reloadLarp() end)
+	end
 	local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
 mainapi.MultiKeybind = general:CreateToggle({
 	Name = 'Enable Multi-Keybinding',
@@ -9335,6 +9340,15 @@ mainapi.MultiKeybind = general:CreateToggle({
 		end,
 		Tooltip = 'Removes larp from the current game'
 	})
+	if not getgenv().LarpLite then
+		general:CreateButton({
+			Name = 'Switch to Lite edition',
+			Function = function()
+				mainapi:SwitchEdition('lite')
+			end,
+			Tooltip = 'Reload into the compact Larp Lite HUD'
+		})
+	end
 	local panicconfirm = general:CreateToggle({
 		Name = 'Confirm before panic',
 		Default = true,

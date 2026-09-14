@@ -42,10 +42,18 @@ loader, which loads the GUI, libraries, and `games/<PlaceId>.lua`.
 
 - `init.lua` — inject entry. Owner branch loads `games/<PlaceId>.lua` before the GUI.
 - `main.lua` — LocalPlayer whitelist gateway (DO NOT TOUCH), watermark commit read,
-  `downloadFile`, `finishLoading`, OnTeleport AutoExecute gate.
+  `downloadFile`, `finishLoading`, OnTeleport AutoExecute gate. Also resolves the
+  edition (`LarpV4/profiles/edition.txt`, picker on first run) and preloads
+  `LarpLiteSrc` for Lite boots. `mainapi:SwitchEdition(ed)` writes the file and
+  reloads; a General-pane button (V4 side) and the Lite footer (Lite side) call it.
 - `guis/larp2.lua` — the entire GUI (~11k lines): categories, TextGUI label cache,
   Public Profiles subsystem (inside a big `do...end`), panic, edit mode. Watch the
   register ceiling.
+- `guis/edition.lua` — first-run edition picker (V4 vs Lite). Returns `'v4'|'lite'`.
+  `guis/larplite.lua` — compact Lite HUD, booted with `(mainapi)` after
+  `finishLoading()` when `getgenv().LarpLite` is set. Own chunk, own drag/search;
+  parents its panel to `clickgui` via a category window so GUI key, cursor, and Panic
+  stay in sync. Do not grow these past the register ceiling either.
 - `libraries/prediction.lua` — clean ballistic solver with section banners and a
   top-of-file API index. Already deobfuscated; keep it that way.
 - `libraries/entity.lua` — `entitylib`: `targetCheck` (teams via `Player.Team`),

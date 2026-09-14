@@ -11,15 +11,30 @@ local BG = Color3.fromRGB(12, 12, 14)
 local ROW = Color3.fromRGB(32, 32, 36)
 local DIM = Color3.fromRGB(140, 140, 140)
 local clickgui = nil
-if mainapi.Categories then
+local function findRoot()
+	if type(mainapi.Categories) ~= 'table' then return nil end
 	for _, c in mainapi.Categories do
 		if type(c) == 'table' and type(c.Object) == 'userdata' and typeof(c.Object.Parent) == 'Instance' then
-			clickgui = c.Object.Parent
-			break
+			return c.Object.Parent
 		end
 	end
+	if mainapi.Legit and type(mainapi.Legit.Window) == 'userdata' and typeof(mainapi.Legit.Window.Parent) == 'Instance' then
+		return mainapi.Legit.Window.Parent
+	end
+	return nil
 end
-if not clickgui then return end
+clickgui = findRoot()
+if not clickgui then
+	for _ = 1, 80 do
+		task.wait(0.1)
+		clickgui = findRoot()
+		if clickgui then break end
+	end
+end
+if not clickgui then
+	pcall(function() mainapi:CreateNotification('Larp Lite', 'No GUI root found, full GUI active', 8, 'alert') end)
+	return
+end
 local function label(parent, text, size, color, x, y, w, h, bold)
 	local l = Instance.new('TextLabel')
 	l.BackgroundTransparency = 1

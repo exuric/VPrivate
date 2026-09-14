@@ -135,6 +135,10 @@ local function option(y, name, desc, pill, value)
 	end)
 	b.MouseButton1Click:Connect(function()
 		choice = value
+		b.BackgroundTransparency = 0
+		b.BackgroundColor3 = TEAL
+		n.Text = 'LOADING...'
+		task.wait(0.3)
 		done:Fire()
 	end)
 	return b

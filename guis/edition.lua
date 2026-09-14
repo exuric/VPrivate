@@ -1,7 +1,8 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after larp updates.
-local ACCENT = Color3.fromRGB(5, 133, 102)
-local BG = Color3.fromRGB(26, 25, 26)
-local ROW = Color3.fromRGB(34, 33, 34)
+local TEAL = Color3.fromRGB(15, 118, 110)
+local TEALLIGHT = Color3.fromRGB(32, 148, 139)
+local BG = Color3.fromRGB(10, 10, 12)
+local PILL = Color3.fromRGB(40, 40, 44)
 local DIM = Color3.fromRGB(140, 140, 140)
 local parent = nil
 pcall(function() parent = game:GetService('CoreGui') end)
@@ -33,18 +34,18 @@ dim.BackgroundTransparency = 0.45
 dim.BorderSizePixel = 0
 dim.Parent = gui
 local panel = Instance.new('Frame')
-panel.Size = UDim2.fromOffset(400, 268)
-panel.Position = UDim2.new(0.5, -200, 0.5, -134)
+panel.Size = UDim2.fromOffset(360, 252)
+panel.Position = UDim2.new(0.5, -180, 0.5, -126)
 panel.BackgroundColor3 = BG
 panel.BorderSizePixel = 0
 panel.Parent = gui
 local corner = Instance.new('UICorner')
-corner.CornerRadius = UDim.new(0, 6)
+corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = panel
 if logo then
 	local img = Instance.new('ImageLabel')
 	img.Size = UDim2.fromOffset(62, 18)
-	img.Position = UDim2.fromOffset(12, 12)
+	img.Position = UDim2.fromOffset(14, 12)
 	img.BackgroundTransparency = 1
 	img.Image = logo
 	img.ImageColor3 = Color3.new(1, 1, 1)
@@ -59,8 +60,8 @@ if logo then
 	end
 else
 	local title = Instance.new('TextLabel')
-	title.Size = UDim2.new(1, 0, 0, 30)
-	title.Position = UDim2.fromOffset(12, 6)
+	title.Size = UDim2.fromOffset(200, 30)
+	title.Position = UDim2.fromOffset(14, 6)
 	title.BackgroundTransparency = 1
 	title.Text = 'LARP'
 	title.TextColor3 = Color3.new(1, 1, 1)
@@ -70,8 +71,8 @@ else
 	title.Parent = panel
 end
 local sub = Instance.new('TextLabel')
-sub.Size = UDim2.new(1, -24, 0, 16)
-sub.Position = UDim2.fromOffset(12, 40)
+sub.Size = UDim2.fromOffset(300, 16)
+sub.Position = UDim2.fromOffset(14, 40)
 sub.BackgroundTransparency = 1
 sub.Text = 'choose your edition'
 sub.TextColor3 = DIM
@@ -79,39 +80,31 @@ sub.TextSize = 11
 sub.Font = Enum.Font.Gotham
 sub.TextXAlignment = Enum.TextXAlignment.Left
 sub.Parent = panel
-local function option(y, name, desc, value)
+local function option(y, name, desc, pill, value)
 	local b = Instance.new('TextButton')
-	b.Size = UDim2.fromOffset(376, 66)
-	b.Position = UDim2.fromOffset(12, y)
-	b.BackgroundColor3 = ROW
+	b.Size = UDim2.fromOffset(332, 64)
+	b.Position = UDim2.fromOffset(14, y)
+	b.BackgroundColor3 = BG
+	b.BackgroundTransparency = 1
 	b.Text = ''
 	b.AutoButtonColor = false
 	b.Parent = panel
 	local c = Instance.new('UICorner')
-	c.CornerRadius = UDim.new(0, 4)
+	c.CornerRadius = UDim.new(0, 8)
 	c.Parent = b
-	local dot = Instance.new('Frame')
-	dot.Size = UDim2.fromOffset(8, 8)
-	dot.Position = UDim2.fromOffset(12, 29)
-	dot.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-	dot.BorderSizePixel = 0
-	dot.Parent = b
-	local dc = Instance.new('UICorner')
-	dc.CornerRadius = UDim.new(1, 0)
-	dc.Parent = dot
 	local n = Instance.new('TextLabel')
-	n.Size = UDim2.fromOffset(300, 20)
-	n.Position = UDim2.fromOffset(30, 10)
+	n.Size = UDim2.fromOffset(220, 22)
+	n.Position = UDim2.fromOffset(16, 10)
 	n.BackgroundTransparency = 1
 	n.Text = name
 	n.TextColor3 = Color3.new(1, 1, 1)
-	n.TextSize = 14
+	n.TextSize = 15
 	n.Font = Enum.Font.GothamBold
 	n.TextXAlignment = Enum.TextXAlignment.Left
 	n.Parent = b
 	local d = Instance.new('TextLabel')
-	d.Size = UDim2.fromOffset(300, 16)
-	d.Position = UDim2.fromOffset(30, 34)
+	d.Size = UDim2.fromOffset(220, 16)
+	d.Position = UDim2.fromOffset(16, 34)
 	d.BackgroundTransparency = 1
 	d.Text = desc
 	d.TextColor3 = DIM
@@ -119,13 +112,26 @@ local function option(y, name, desc, value)
 	d.Font = Enum.Font.Gotham
 	d.TextXAlignment = Enum.TextXAlignment.Left
 	d.Parent = b
+	local p = Instance.new('TextLabel')
+	p.Size = UDim2.fromOffset(40, 32)
+	p.Position = UDim2.new(1, -52, 0.5, -16)
+	p.BackgroundColor3 = PILL
+	p.Text = pill
+	p.TextColor3 = Color3.new(1, 1, 1)
+	p.TextSize = 13
+	p.Font = Enum.Font.GothamBold
+	p.Parent = b
+	local pc = Instance.new('UICorner')
+	pc.CornerRadius = UDim.new(0, 6)
+	pc.Parent = p
 	b.MouseEnter:Connect(function()
-		dot.BackgroundColor3 = ACCENT
-		b.BackgroundColor3 = Color3.fromRGB(42, 41, 42)
+		b.BackgroundTransparency = 0
+		b.BackgroundColor3 = TEAL
+		p.BackgroundColor3 = TEALLIGHT
 	end)
 	b.MouseLeave:Connect(function()
-		dot.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-		b.BackgroundColor3 = ROW
+		b.BackgroundTransparency = 1
+		p.BackgroundColor3 = PILL
 	end)
 	b.MouseButton1Click:Connect(function()
 		choice = value
@@ -133,16 +139,17 @@ local function option(y, name, desc, value)
 	end)
 	return b
 end
-option(66, 'LARP V4', 'Full interface. Categories, settings, profiles.', 'v4')
-option(140, 'LARP LITE', 'Compact HUD. Fast, minimal, streamer mode.', 'lite')
+option(66, 'Larp V4', 'Full interface, settings, profiles', 'V4', 'v4')
+option(138, 'Larp Lite', 'Compact HUD, streamer mode', 'LT', 'lite')
 local foot = Instance.new('TextLabel')
 foot.Size = UDim2.new(1, 0, 0, 16)
-foot.Position = UDim2.fromOffset(0, 224)
+foot.Position = UDim2.fromOffset(14, 218)
 foot.BackgroundTransparency = 1
 foot.Text = 'you can switch anytime'
 foot.TextColor3 = Color3.fromRGB(100, 100, 100)
 foot.TextSize = 10
 foot.Font = Enum.Font.Gotham
+foot.TextXAlignment = Enum.TextXAlignment.Left
 foot.Parent = panel
 do
 	local dragging, sx, sy, px, py = false, 0, 0, 0, 0

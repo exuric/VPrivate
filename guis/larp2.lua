@@ -186,7 +186,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/range.png'] = 'rbxassetid://14368347435',
 	['LarpV4/assets/larp/rangearrow.png'] = 'rbxassetid://14368348640',
 	['LarpV4/assets/larp/rendericon.png'] = 'rbxassetid://14368350193',
-	['LarpV4/assets/search.png'] = 'rbxassetid://14425646684',
+	['LarpV4/assets/larp/search.png'] = 'rbxassetid://14425646684',
 	['LarpV4/assets/larp/targetinfoicon.png'] = 'rbxassetid://14368354234',
 	['LarpV4/assets/larp/targetnpc1.png'] = 'rbxassetid://14497400332',
 	['LarpV4/assets/larp/targetnpc2.png'] = 'rbxassetid://14497402744',
@@ -5993,7 +5993,7 @@ function mainapi:CreateSearch()
 	searchicon.Size = UDim2.fromOffset(22, 22)
 	searchicon.Position = UDim2.new(1, -31, 0, 8)
 	searchicon.BackgroundTransparency = 1
-	searchicon.Image = getcustomasset('LarpV4/assets/search.png')
+	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 	searchicon.ImageColor3 = Color3.new(1, 1, 1)
 	searchicon.Parent = searchbkg
 	local legiticon = Instance.new('ImageButton')

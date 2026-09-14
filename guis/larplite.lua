@@ -7,9 +7,9 @@ pcall(function()
 	local g = mainapi.GUIColor
 	if type(g) == 'table' then ACCENT = Color3.fromHSV(g.Hue or 0.46, g.Sat or 0.96, g.Value or 0.52) end
 end)
-local BG = Color3.fromRGB(13, 17, 23)
-local ROW = Color3.fromRGB(20, 25, 34)
-local DIM = Color3.fromRGB(150, 160, 175)
+local BG = Color3.fromRGB(12, 12, 14)
+local ROW = Color3.fromRGB(32, 32, 36)
+local DIM = Color3.fromRGB(140, 140, 140)
 local clickgui = nil
 if mainapi.Categories then
 	for _, c in mainapi.Categories do
@@ -42,12 +42,8 @@ panel.BackgroundColor3 = BG
 panel.BorderSizePixel = 0
 panel.Parent = clickgui
 local pc = Instance.new('UICorner')
-pc.CornerRadius = UDim.new(0, 6)
+pc.CornerRadius = UDim.new(0, 8)
 pc.Parent = panel
-local ps = Instance.new('UIStroke')
-ps.Color = Color3.fromRGB(35, 42, 54)
-ps.Thickness = 1
-ps.Parent = panel
 mainapi.LitePanel = panel
 local head = Instance.new('TextButton')
 head.Size = UDim2.new(1, 0, 0, 34)
@@ -126,30 +122,27 @@ end
 local function addRow(name, mod)
 	order += 1
 	local r = Instance.new('TextButton')
-	r.Size = UDim2.new(1, -4, 0, 24)
-	r.BackgroundColor3 = ROW
+	r.Size = UDim2.new(1, -4, 0, 28)
+	r.BackgroundColor3 = Color3.new(0, 0, 0)
+	r.BackgroundTransparency = 1
 	r.Text = ''
 	r.AutoButtonColor = false
 	r.LayoutOrder = order
 	r.Parent = list
 	local rc = Instance.new('UICorner')
-	rc.CornerRadius = UDim.new(0, 4)
+	rc.CornerRadius = UDim.new(0, 6)
 	rc.Parent = r
-	local dot = Instance.new('Frame')
-	dot.Size = UDim2.fromOffset(8, 8)
-	dot.Position = UDim2.fromOffset(8, 8)
-	dot.BackgroundColor3 = Color3.fromRGB(70, 76, 88)
-	dot.BorderSizePixel = 0
-	dot.Parent = r
-	local dc = Instance.new('UICorner')
-	dc.CornerRadius = UDim.new(1, 0)
-	dc.Parent = dot
-	label(r, name, 12, Color3.new(1, 1, 1), 24, 0, 150, 24, false)
-	local b = label(r, '', 10, DIM, 0, 0, 60, 24, false)
-	b.Size = UDim2.new(1, -70, 1, 0)
-	b.Position = UDim2.new(0, 64, 0, 0)
-	b.TextXAlignment = Enum.TextXAlignment.Right
-	local row = {mod = mod, dot = dot, bind = b, name = tostring(name):lower()}
+	local nm = label(r, name, 13, Color3.fromRGB(190, 190, 190), 12, 0, 150, 28, false)
+	local b = label(r, '', 10, DIM, 0, 0, 60, 20, false)
+	b.Size = UDim2.new(0, 70, 0, 20)
+	b.Position = UDim2.new(1, -78, 0, 4)
+	b.BackgroundColor3 = ROW
+	b.BackgroundTransparency = 0
+	b.TextXAlignment = Enum.TextXAlignment.Center
+	local bc = Instance.new('UICorner')
+	bc.CornerRadius = UDim.new(0, 5)
+	bc.Parent = b
+	local row = {mod = mod, frame = r, title = nm, bind = b, name = tostring(name):lower()}
 	rows[#rows + 1] = row
 	r.MouseButton1Click:Connect(function()
 		pcall(mod.Toggle, mod)
@@ -185,9 +178,14 @@ local function refreshRows()
 		local mod = row.mod
 		local enabled = mod.Enabled and true or false
 		if enabled then on += 1 end
-		row.dot.BackgroundColor3 = enabled and ACCENT or Color3.fromRGB(70, 76, 88)
+		row.frame.BackgroundTransparency = enabled and 0 or 1
+		row.frame.BackgroundColor3 = enabled and ACCENT or Color3.new(0, 0, 0)
+		row.title.TextColor3 = enabled and Color3.new(1, 1, 1) or Color3.fromRGB(190, 190, 190)
 		row.bind.Text = bindText(mod)
-		row.dot.Parent.Visible = (q == '') or (row.name:find(q, 1, true) ~= nil)
+		row.bind.BackgroundColor3 = enabled and Color3.new(1, 1, 1) or ROW
+		row.bind.BackgroundTransparency = enabled and 0.75 or 0
+		row.bind.TextColor3 = enabled and Color3.new(1, 1, 1) or DIM
+		row.frame.Visible = (q == '') or (row.name:find(q, 1, true) ~= nil)
 	end
 	count.Text = on .. ' on'
 end
@@ -204,7 +202,8 @@ local function applyStreamer()
 	panel.Visible = (not streamer) or clickgui.Visible
 	if sbtn then
 		sbtn.Text = streamer and 'STREAMER ON' or 'STREAMER'
-		sbtn.TextColor3 = streamer and ACCENT or DIM
+		sbtn.BackgroundColor3 = streamer and ACCENT or ROW
+		sbtn.TextColor3 = streamer and Color3.new(1, 1, 1) or DIM
 	end
 end
 local foot = Instance.new('Frame')

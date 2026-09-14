@@ -165,6 +165,7 @@ end
 local function finishLoading()
 	larp.Init = nil
 	larp:Load()
+	showNotify('LarpV4/ ready: guis, games, libraries, assets, profiles ('..(getgenv().LarpDownloaded or 0)..' new files)')
 
 	local teleportedServers
 	larp:Clean(playersService.LocalPlayer.OnTeleport:Connect(function()

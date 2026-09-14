@@ -28,11 +28,11 @@ downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(ga
 local RTOK = ''
 local BRANCH = 'main'
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
-local SELFCOMMIT = '86d9b964de67acb9ec171b749dbfefab8f0304f6'
+local SELFCOMMIT = '5527544f1a7b33d7402b40d7c3bf2833aef565ba'
 
 local function fetchCommit()
 	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..BRANCH..'/profiles/commit.txt', true)
+		return game:HttpGet(ROOT..BRANCH..'/profiles/commit.txt?v='..tick(), true)
 	end)
 	if ok and res then
 		local commit = res:gsub('%s+$', ''):gsub('^%s+', '')
@@ -60,7 +60,7 @@ for png, size in loaderAssets do
 	local ok, content = pcall(readfile, path)
 	if not ok or not content or #content < 100 or #content < size * 0.9 then
 		pcall(function()
-			local res = game:HttpGet(ROOT..COMMIT..'/assets/larp/'..png, true)
+			local res = game:HttpGet(ROOT..COMMIT..'/assets/larp/'..png..'?v='..COMMIT, true)
 			if res and res ~= '404: Not Found' and #res > 100 then
 				writefile(path, res)
 			end
@@ -87,13 +87,10 @@ local function downloadFile(path, func)
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
 		end
 		local relative = select(1, path:gsub('LarpV4/', ''))
-		local urls = {
-			ROOT..COMMIT..'/'..relative,
-			'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..COMMIT..'/'..relative
-		}
 		local suc, res
 		for i = 1, 8 do
-			local url = urls[(i - 1) % 2 + 1]
+			local tag = '?v='..COMMIT..'_'..i
+			local url = ((i - 1) % 2 == 0) and (ROOT..COMMIT..'/'..relative..tag) or ('https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..COMMIT..'/'..relative..tag)
 			suc, res = pcall(function()
 				return game:HttpGet(url, true)
 			end)
@@ -136,7 +133,7 @@ local MANIFEST = {}
 local function fetchManifest()
 	table.clear(MANIFEST)
 	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..BRANCH..'/profiles/manifest.txt', true)
+		return game:HttpGet(ROOT..BRANCH..'/profiles/manifest.txt?v='..tick(), true)
 	end)
 	if ok and res then
 		for line in (res..'\n'):gmatch('(.-)\r?\n') do

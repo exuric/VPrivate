@@ -116,6 +116,11 @@ loader, which loads the GUI, libraries, and `games/<PlaceId>.lua`.
 
 ## Workflow notes
 
+- Cache-busting is mandatory on every `game:HttpGet` of repo content: commit-pinned
+  URLs carry `?v=<COMMIT>_<attempt>`, mutable control files (`commit.txt`,
+  `manifest.txt`, `registry.json`, reload `init.lua`) carry `?v='..tick()`. Never
+  fetch repo content from a bare URL — the CDN caches 5 min and serves stale/mixed
+  builds. `paste.rs` share-code fetches stay bare (content-addressed).
 - After every push: tell the user to wait ~5 minutes then inject once (or the CDN
   serves a stale/mixed file set, which reproduces the "not working" reports).
 - The owner confirms each roundtrip; never assume a fix worked without that one fresh

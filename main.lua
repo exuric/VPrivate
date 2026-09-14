@@ -76,13 +76,10 @@ local function downloadFile(path, func)
 		else
 			_pending[path] = true
 			local relative = select(1, path:gsub('LarpV4/', ''))
-			local urls = {
-				ROOT..LARPCOMMIT..'/'..relative,
-				'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..LARPCOMMIT..'/'..relative
-			}
 			local suc, res
 			for i = 1, 8 do
-				local url = urls[(i - 1) % 2 + 1]
+				local tag = '?v='..LARPCOMMIT..'_'..i
+				local url = ((i - 1) % 2 == 0) and (ROOT..LARPCOMMIT..'/'..relative..tag) or ('https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..LARPCOMMIT..'/'..relative..tag)
 				suc, res = pcall(function() return game:HttpGet(url, true) end)
 				if suc and res ~= '404: Not Found' and not (#res < 100 and path:find('.lua')) then break end
 				_dstats.retries += 1
@@ -178,7 +175,7 @@ local function finishLoading()
 				if shared.LarpDeveloper and shared.LarpOwner then
 					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet(']]..ROOT..'main'..[['/init.lua', true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet(']]..ROOT..'main'..[['/init.lua?v='..tick(), true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)

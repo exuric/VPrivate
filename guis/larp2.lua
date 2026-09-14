@@ -450,14 +450,11 @@ local function downloadFile(path, func)
 		else
 			_pending[path] = true
 			createDownloader(path)
-			local relative = select(1, path:gsub('LarpV4/', ''))
-			local urls = {
-				'https://raw.githubusercontent.com/exuric/VPrivate/main/'..relative,
-				'https://cdn.jsdelivr.net/gh/exuric/VPrivate@main/'..relative
-			}
-			local suc, res
-			for i = 1, 8 do
-				local url = urls[(i - 1) % 2 + 1]
+local relative = select(1, path:gsub('LarpV4/', ''))
+local suc, res
+for i = 1, 8 do
+local tag = '?v='..tick()..'_'..i
+local url = ((i - 1) % 2 == 0) and ('https://raw.githubusercontent.com/exuric/VPrivate/main/'..relative..tag) or ('https://cdn.jsdelivr.net/gh/exuric/VPrivate@main/'..relative..tag)
 				suc, res = pcall(function() return game:HttpGet(url, true) end)
 				if suc and res ~= '404: Not Found' and not (path:find('.lua') and #res < 100) then break end
 				_dstats.retries += 1
@@ -490,7 +487,7 @@ end
 local function tryAsset(path)
 	if isfile(path) then return true end
 	local ok, res = pcall(function()
-		return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/'..select(1, path:gsub('LarpV4/', '')), true)
+		return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
 	end)
 	if ok and res and res ~= '404: Not Found' and #res > 100 then
 		pcall(writefile, path, res)
@@ -7843,7 +7840,7 @@ do
 		if pubSys.regOK and tick() - pubSys.regTime < 300 then return pubSys.registry end
 		pubSys.registry, pubSys.regOK = {}, false
 		local root = (getgenv and getgenv().LarpReadRoot) or 'https://raw.githubusercontent.com/exuric/VPrivate/'
-		local ok, res = pcall(game.HttpGet, game, root..'main/profiles/registry.json', true)
+		local ok, res = pcall(game.HttpGet, game, root..'main/profiles/registry.json?v='..tick(), true)
 		if ok and res and res ~= '' and res ~= '404: Not Found' then
 			local ok2, data = pcall(httpService.JSONDecode, httpService, res)
 			if ok2 and data and type(data.profiles) == 'table' then
@@ -8204,7 +8201,7 @@ do
 		local meta = pubGetMeta(ref)
 		if not meta or not meta.file then return nil, 'Registry entry has no file.' end
 		local root = (getgenv and getgenv().LarpReadRoot) or 'https://raw.githubusercontent.com/exuric/VPrivate/'
-		local ok, res = pcall(game.HttpGet, game, root..'main/'..meta.file, true)
+		local ok, res = pcall(game.HttpGet, game, root..'main/'..meta.file..'?v='..tick(), true)
 		if not ok or not res or res == '' then return nil, 'Could not download profile data. Check connection.' end
 		local ok2, data = pcall(httpService.JSONDecode, httpService, res)
 		if not ok2 or type(data) ~= 'table' then return nil, 'Downloaded data is invalid.' end

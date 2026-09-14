@@ -300,7 +300,9 @@ task.spawn(function()
 						pcall(function() larp:CreateNotification('Larp Lite', 'Lite file bad download (' .. tostring(src and #src or 0) .. 'b)', 8, 'alert') end)
 						return
 					end
-					local fn, lerr = loadstring(src, 'lite')
+					local okld, a, b = pcall(function() return loadstring(src, 'lite') end)
+					local fn = (okld and type(a) == 'function') and a or nil
+					local lerr = (not okld and tostring(a)) or b
 					if not fn then
 						pcall(function() larp:CreateNotification('Larp Lite', 'Lite compile: ' .. tostring(lerr):sub(1, 120), 10, 'alert') end)
 						return

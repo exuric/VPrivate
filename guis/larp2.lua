@@ -5987,8 +5987,8 @@ function mainapi:CreateSearch()
 	searchbkg.Parent = clickgui
 	local searchicon = Instance.new('ImageLabel')
 	searchicon.Name = 'Icon'
-	searchicon.Size = UDim2.fromOffset(22, 22)
-	searchicon.Position = UDim2.new(1, -31, 0, 8)
+searchicon.Size = UDim2.fromOffset(18, 18)
+searchicon.Position = UDim2.new(1, -27, 0, 10)
 	searchicon.BackgroundTransparency = 1
 	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 	searchicon.ImageColor3 = Color3.new(1, 1, 1)

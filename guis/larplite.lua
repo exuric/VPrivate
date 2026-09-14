@@ -311,6 +311,6 @@ end)
 refreshRows()
 do
 	local key = ''
-	pcall(function() key = table.concat(mainapi.Keybind, ' + '):upper() end
+	pcall(function() key = table.concat(mainapi.Keybind, ' + '):upper() end)
 	pcall(function() mainapi:CreateNotification('Larp Lite', 'Press ' .. key .. ' to open', 5) end)
 end

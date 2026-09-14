@@ -11665,8 +11665,8 @@ run(function()
 		searchcorner.CornerRadius = UDim.new(0, 4)
 		searchcorner.Parent = searchbkg
 		local searchicon = Instance.new('ImageLabel')
-		searchicon.Size = UDim2.fromOffset(14, 14)
-		searchicon.Position = UDim2.new(1, -26, 0, 8)
+searchicon.Size = UDim2.fromOffset(12, 12)
+searchicon.Position = UDim2.new(1, -24, 0, 9)
 		searchicon.BackgroundTransparency = 1
 		searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 		searchicon.ImageColor3 = color.Light(uipallet.Main, 0.37)

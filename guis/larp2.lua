@@ -529,11 +529,13 @@ local function makeDraggable(gui, window)
 			(inputObj.UserInputType == Enum.UserInputType.MouseButton1 or inputObj.UserInputType == Enum.UserInputType.Touch)
 			and (inputObj.Position.Y - gui.AbsolutePosition.Y < 40 or window)
 		then
-			-- delta-based dragging from AbsolutePosition: only the movement between
-			-- frames is applied, and the full on-screen position is kept, so windows
-			-- positioned with scale (profiles) can never teleport on first grab
+			-- delta-based dragging: only the movement between frames is applied.
+			-- pure-offset windows (tabs) anchor on .Offset exactly like the original;
+			-- scale-positioned windows (profiles) anchor on AbsolutePosition so the
+			-- scale part survives the first grab instead of teleporting
 			local startPos = inputObj.Position
-			local startGuiPos = gui.AbsolutePosition
+			local useAbs = gui.Position.X.Scale ~= 0 or gui.Position.Y.Scale ~= 0
+			local startGuiPos = useAbs and gui.AbsolutePosition or Vector2.new(gui.Position.X.Offset, gui.Position.Y.Offset)
 
 			local changed = inputService.InputChanged:Connect(function(input)
 				if input.UserInputType == (inputObj.UserInputType == Enum.UserInputType.MouseButton1 and Enum.UserInputType.MouseMovement or Enum.UserInputType.Touch) then

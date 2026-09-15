@@ -2775,18 +2775,6 @@ function mainapi:CreateGUI()
 			mainapi:CreateNotification('Discord', 'Copied Discord server invite', 5, 'discord')
 		end
 	end)
-	local panicbutton = Instance.new('ImageButton')
-	panicbutton.Name = 'Panic'
-	panicbutton.Size = UDim2.fromOffset(16, 16)
-	panicbutton.Position = UDim2.new(1, -78, 0, 11)
-	panicbutton.BackgroundTransparency = 1
-	panicbutton.Image = getcustomasset('LarpV4/assets/larp/hide.png')
-	panicbutton.ImageColor3 = Color3.new(1, 1, 1)
-	panicbutton.Parent = window
-	addTooltip(panicbutton, 'Panic')
-	panicbutton.MouseButton1Click:Connect(function()
-		mainapi:TriggerPanic()
-	end)
 	local settingspane = Instance.new('TextButton')
 	settingspane.Size = UDim2.fromScale(1, 1)
 	settingspane.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
@@ -4054,7 +4042,13 @@ function mainapi:ApplyRowVisuals(m)
 	local bind = btn:FindFirstChild('Bind')
 	if bind then bind.Position = bind.Position + UDim2.fromOffset(0, dy) end
 	local favb = btn:FindFirstChild('Favourite')
-	if favb then favb.Position = UDim2.new(1, -49, 0, 12 + dy) end
+	if favb then favb.Position = UDim2.new(1, -79, 0, 12 + dy) end
+	local hideb = btn:FindFirstChild('HideButton')
+	if hideb then
+		hideb.Size = UDim2.fromOffset(22, h)
+		local hart = hideb:FindFirstChild('Art')
+		if hart then hart.Position = UDim2.fromOffset(3, (h - 16) / 2) end
+	end
 	local art = btn:FindFirstChild('ModuleIcon')
 	if art then art.Position = UDim2.fromOffset(10, (h - art.Size.Y.Offset) / 2) end
 	local abar = btn:FindFirstChild('ActiveBar')
@@ -4146,16 +4140,25 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(editbutton, 'Hide modules')
 		hidcount = Instance.new('TextLabel')
 		hidcount.Name = 'HiddenCount'
-		hidcount.Size = UDim2.fromOffset(40, 18)
-		hidcount.Position = UDim2.new(1, -108, 0, 11)
+		hidcount.AnchorPoint = Vector2.new(1, 0)
+		hidcount.Size = UDim2.fromOffset(100, 18)
+		hidcount.Position = UDim2.new(1, -70, 0, 11)
 		hidcount.BackgroundTransparency = 1
 		hidcount.Text = ''
-		hidcount.TextXAlignment = Enum.TextXAlignment.Right
+		hidcount.TextXAlignment = Enum.TextXAlignment.Left
 		hidcount.TextColor3 = color.Dark(uipallet.Text, 0.29)
 		hidcount.TextSize = 12
 		hidcount.FontFace = uipallet.Font
 		hidcount.Visible = false
 		hidcount.Parent = window
+		local hidart = Instance.new('ImageLabel')
+		hidart.Name = 'Art'
+		hidart.Size = UDim2.fromOffset(12, 12)
+		hidart.Position = UDim2.fromOffset(84, 3)
+		hidart.BackgroundTransparency = 1
+		hidart.Image = getcustomasset('LarpV4/assets/larp/hide.png')
+		hidart.ImageColor3 = color.Dark(uipallet.Text, 0.29)
+		hidart.Parent = hidcount
 		editbutton.MouseEnter:Connect(function()
 			editart.ImageColor3 = uipallet.Text
 		end)
@@ -4249,7 +4252,7 @@ function mainapi:CreateCategory(categorysettings)
 		hiddenmark.Name = 'HiddenMark'
 		hiddenmark.Size = UDim2.fromOffset(3, 34)
 		hiddenmark.Position = UDim2.fromOffset(2, 3)
-		hiddenmark.BackgroundColor3 = Color3.fromRGB(255, 184, 31)
+		hiddenmark.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 		hiddenmark.BorderSizePixel = 0
 		hiddenmark.Visible = false
 		hiddenmark.Parent = modulebutton
@@ -4309,7 +4312,7 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(bind, 'Click to bind')
 		bind.Name = 'Bind'
 		bind.Size = UDim2.fromOffset(20, 21)
-		bind.Position = UDim2.new(1, -27, 0, 9)
+		bind.Position = UDim2.new(1, -51, 0, 9)
 		bind.AnchorPoint = Vector2.new(1, 0)
 		bind.BackgroundColor3 = Color3.new(1, 1, 1)
 		bind.BackgroundTransparency = 0.92
@@ -4359,7 +4362,7 @@ function mainapi:CreateCategory(categorysettings)
 		local favicon = Instance.new('ImageButton')
 		favicon.Name = 'Favourite'
 		favicon.Size = UDim2.fromOffset(16, 16)
-		favicon.Position = UDim2.new(1, -49, 0, 12)
+		favicon.Position = UDim2.new(1, -79, 0, 12)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
 		local favRowIcon = getcustomasset('LarpV4/assets/larp/star.png')
@@ -4381,7 +4384,7 @@ function mainapi:CreateCategory(categorysettings)
 		end
 		addTooltip(favicon, T('ToggleFav'))
 		favicon.MouseEnter:Connect(function()
-			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
+			favicon.ImageColor3 = Color3.new(1, 1, 1)
 		end)
 		favicon.MouseLeave:Connect(function()
 			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
@@ -4412,19 +4415,32 @@ function mainapi:CreateCategory(categorysettings)
 		local hidebutton = Instance.new('TextButton')
 		hidebutton.Name = 'HideButton'
 		hidebutton.Size = UDim2.fromOffset(22, 40)
-		hidebutton.Position = UDim2.new(1, -94, 0, 0)
+		hidebutton.Position = UDim2.new(1, -49, 0, 0)
+		hidebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.0875)
 		hidebutton.BackgroundTransparency = 1
 		hidebutton.Text = ''
 		hidebutton.Visible = categoryapi.Editing and true or false
 		hidebutton.Parent = modulebutton
+		addCorner(hidebutton, UDim.new(0, 6))
 		local hideart = Instance.new('ImageLabel')
 		hideart.Name = 'Art'
-		hideart.Size = UDim2.fromOffset(14, 14)
-		hideart.Position = UDim2.fromOffset(4, 13)
+		hideart.Size = UDim2.fromOffset(16, 16)
+		hideart.Position = UDim2.fromOffset(3, 12)
 		hideart.BackgroundTransparency = 1
 		hideart.Image = getcustomasset('LarpV4/assets/larp/hide.png')
 		hideart.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		hideart.Parent = hidebutton
+		hidebutton.MouseEnter:Connect(function()
+			hidebutton.BackgroundTransparency = 0
+			tween:Tween(hidebutton, uipallet.Tween, {
+				BackgroundColor3 = color.Light(uipallet.Main, 0.14)
+			})
+			hideart.ImageColor3 = Color3.new(1, 1, 1)
+		end)
+		hidebutton.MouseLeave:Connect(function()
+			hidebutton.BackgroundTransparency = 1
+			categoryapi:RefreshHidden()
+		end)
 		hidebutton.MouseButton1Click:Connect(function()
 			moduleapi._hideClicked = true
 			categoryapi:ToggleHidden(moduleapi)
@@ -5012,7 +5028,10 @@ function mainapi:CreateCategory(categorysettings)
 					if m.Children then m.Children.Visible = false end
 					m.Object.BackgroundTransparency = self.Editing and 0.5 or 0
 					local mark = m.Object:FindFirstChild('HiddenMark')
-					if mark then mark.Visible = self.Editing end
+					if mark then
+						mark.Visible = self.Editing
+						mark.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+					end
 				else
 					m.Object.Visible = true
 					m.Object.BackgroundTransparency = 0
@@ -5023,13 +5042,23 @@ function mainapi:CreateCategory(categorysettings)
 				if eye then
 					eye.Visible = self.Editing
 					local art = eye:FindFirstChild('Art')
-					if art then art.ImageColor3 = self.Hidden[m] and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37) end
+					if art then art.ImageColor3 = self.Hidden[m] and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.37) end
 				end
 			end
 		end
 		if hidcount then
-			hidcount.Text = n > 0 and (n..' '..T('HidSuffix')) or ''
-			hidcount.Visible = n > 0
+			if n > 0 then
+				local txt = '( ' .. n .. ' hidden )'
+				hidcount.Text = txt
+				local tw = getfontsizeCached(txt, 12, uipallet.Font).X
+				hidcount.Size = UDim2.fromOffset(tw + 24, 18)
+				local art = hidcount:FindFirstChild('Art')
+				if art then art.Position = UDim2.fromOffset(tw + 8, 3) end
+				hidcount.Visible = true
+			else
+				hidcount.Text = ''
+				hidcount.Visible = false
+			end
 		end
 		for _, m in pairs(mainapi.Modules) do
 			if m.Category == categorysettings.Name and m.EditSection then
@@ -5943,8 +5972,8 @@ function mainapi:CreateSearch()
 	searchbkg.Parent = clickgui
 	local searchicon = Instance.new('ImageLabel')
 	searchicon.Name = 'Icon'
-searchicon.Size = UDim2.fromOffset(18, 18)
-searchicon.Position = UDim2.new(1, -27, 0, 10)
+searchicon.Size = UDim2.fromOffset(24, 24)
+searchicon.Position = UDim2.new(1, -33, 0, 6)
 	searchicon.BackgroundTransparency = 1
 	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 	searchicon.ImageColor3 = Color3.new(1, 1, 1)
@@ -6147,6 +6176,7 @@ function mainapi:CreateLegit()
 			Enabled = false,
 			Options = {},
 			Name = modulesettings.Name,
+			Bind = {},
 			Legit = true
 		}
 
@@ -6200,6 +6230,61 @@ function mainapi:CreateLegit()
 		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = moduledotsbutton
+		local setbindtext
+		local bindbtn = Instance.new('TextButton')
+		bindbtn.Name = 'Bind'
+		bindbtn.Size = UDim2.fromOffset(20, 20)
+		bindbtn.Position = UDim2.new(1, -81, 0, 10)
+		bindbtn.BackgroundColor3 = Color3.new(1, 1, 1)
+		bindbtn.BackgroundTransparency = 0.92
+		bindbtn.Text = ''
+		bindbtn.AutoButtonColor = false
+		bindbtn.Parent = module
+		addCorner(bindbtn, UDim.new(0, 4))
+		addTooltip(bindbtn, 'Click to bind')
+		local bindicon = Instance.new('ImageLabel')
+		bindicon.Name = 'Icon'
+		bindicon.Size = UDim2.fromOffset(12, 12)
+		bindicon.Position = UDim2.fromOffset(4, 4)
+		bindicon.BackgroundTransparency = 1
+		bindicon.Image = getcustomasset('LarpV4/assets/larp/bind.png')
+		bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+		bindicon.Parent = bindbtn
+		local bindtext = Instance.new('TextLabel')
+		bindtext.Name = 'Text'
+		bindtext.Size = UDim2.fromScale(1, 1)
+		bindtext.BackgroundTransparency = 1
+		bindtext.Text = ''
+		bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
+		bindtext.TextSize = 9
+		bindtext.FontFace = uipallet.Font
+		bindtext.Visible = false
+		bindtext.Parent = bindbtn
+		local function refreshLegitBind()
+			local tab = moduleapi.Bind or {}
+			if #tab > 0 then
+				bindtext.Text = table.concat(tab, '+'):upper()
+				bindtext.Visible = true
+				bindicon.Visible = false
+				if setbindtext then setbindtext.Text = table.concat(tab, ' + '):upper() end
+			else
+				bindtext.Visible = false
+				bindicon.Visible = true
+				if setbindtext then setbindtext.Text = 'NONE' end
+			end
+		end
+		function moduleapi:SetBind(tab)
+			if type(tab) == 'table' and tab.Mobile then return end
+			moduleapi.Bind = table.clone(tab or {})
+			refreshLegitBind()
+			mainapi:QueueSave()
+		end
+		bindbtn.MouseButton1Click:Connect(function()
+			bindtext.Text = '...'
+			bindtext.Visible = true
+			bindicon.Visible = false
+			mainapi.Binding = {SetBind = function(tab) moduleapi:SetBind(tab) end, Bind = moduleapi.Bind}
+		end)
 		if modulesettings.Icon then
 			local modicon = Instance.new('ImageLabel')
 			modicon.Name = 'ModuleIcon'
@@ -6269,6 +6354,40 @@ function mainapi:CreateLegit()
 		settingswindowlist.SortOrder = Enum.SortOrder.LayoutOrder
 		settingswindowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		settingswindowlist.Parent = settingschildren
+		local setbindrow = Instance.new('TextButton')
+		setbindrow.LayoutOrder = -1000
+		setbindrow.Size = UDim2.fromOffset(200, 32)
+		setbindrow.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		setbindrow.Text = ''
+		setbindrow.AutoButtonColor = false
+		setbindrow.Parent = settingschildren
+		addCorner(setbindrow)
+		local setbindtitle = Instance.new('TextLabel')
+		setbindtitle.Size = UDim2.fromOffset(100, 32)
+		setbindtitle.Position = UDim2.fromOffset(10, 0)
+		setbindtitle.BackgroundTransparency = 1
+		setbindtitle.Text = 'Keybind'
+		setbindtitle.TextXAlignment = Enum.TextXAlignment.Left
+		setbindtitle.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		setbindtitle.TextSize = 12
+		setbindtitle.FontFace = uipallet.Font
+		setbindtitle.Parent = setbindrow
+		setbindtext = Instance.new('TextButton')
+		setbindtext.Size = UDim2.fromOffset(80, 22)
+		setbindtext.Position = UDim2.new(1, -90, 0.5, -11)
+		setbindtext.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
+		setbindtext.Text = 'NONE'
+		setbindtext.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		setbindtext.TextSize = 11
+		setbindtext.FontFace = uipallet.Font
+		setbindtext.AutoButtonColor = false
+		setbindtext.Parent = setbindrow
+		addCorner(setbindtext, UDim.new(0, 4))
+		addTooltip(setbindtext, 'Click to bind')
+		setbindtext.MouseButton1Click:Connect(function()
+			setbindtext.Text = '...'
+			mainapi.Binding = {SetBind = function(tab) moduleapi:SetBind(tab) end, Bind = moduleapi.Bind}
+		end)
 		if modulesettings.Size then
 			local modulechildren = Instance.new('Frame')
 			modulechildren.Size = modulesettings.Size
@@ -6831,6 +6950,9 @@ function mainapi:Load(skipgui, profile)
 				if object.Enabled ~= v.Enabled then
 					object:Toggle()
 				end
+				if v.Bind and object.SetBind then
+					object:SetBind(v.Bind)
+				end
 				if v.Position and object.Children then
 					object.Children.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
 				end
@@ -6995,6 +7117,7 @@ function mainapi:BuildSaveData()
 	for i, v in self.Legit.Modules do
 		savedata.Legit[i:gsub(' ', '')] = {
 			Enabled = v.Enabled,
+			Bind = v.Bind,
 			Position = v.Children and {X = v.Children.Position.X.Offset, Y = v.Children.Position.Y.Offset} or nil,
 			Options = mainapi:SaveOptions(v, v.Options)
 		}
@@ -7156,41 +7279,6 @@ cursor.Parent = gui
 	notifications = Instance.new('Folder')
 	notifications.Name = 'Notifications'
 	notifications.Parent = scaledgui
-	local panicrestore = Instance.new('ImageButton')
-	panicrestore.Name = 'PanicRestore'
-	panicrestore.Size = UDim2.fromOffset(30, 30)
-	panicrestore.Position = UDim2.new(1, -44, 1, -44)
-	panicrestore.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-	panicrestore.BorderSizePixel = 0
-	panicrestore.AutoButtonColor = false
-	panicrestore.Image = ''
-	panicrestore.Visible = false
-	panicrestore.Parent = gui
-	addCorner(panicrestore)
-	local panicart = Instance.new('ImageLabel')
-	panicart.Name = 'Art'
-	panicart.Size = UDim2.fromOffset(18, 18)
-	panicart.Position = UDim2.new(0.5, -9, 0.5, -9)
-	panicart.BackgroundTransparency = 1
-	panicart.Image = getcustomasset('LarpV4/assets/larp/hide.png')
-	panicart.ImageColor3 = Color3.new(1, 1, 1)
-	panicart.Parent = panicrestore
-	addTooltip(panicrestore, 'Show interface')
-	panicrestore.MouseButton1Click:Connect(function()
-		clickgui.Visible = true
-		local st = mainapi.PanicState
-		if mainapi.TextGUIHolder then
-			mainapi.TextGUIHolder.Visible = st and st.textgui or true
-		end
-		if st then
-			mainapi.Legit.Window.Visible = st.legit
-		end
-		mainapi.PanicState = nil
-		mainapi:BlurCheck()
-		panicrestore.Visible = false
-	end)
-	makeDraggable(panicrestore)
-	mainapi.PanicRestore = panicrestore
 tooltip = Instance.new('TextLabel')
 tooltip.Name = 'Tooltip'
 tooltip.Position = UDim2.fromScale(-1, -1)
@@ -9234,50 +9322,6 @@ function mainapi:ShowLanguagePicker(onPick)
 		if onPick then onPick(selected) end
 	end)
 end
-	function mainapi:Panic()
-		for _, m in self.Modules do
-			if m.Enabled then
-				pcall(m.Toggle, m, true)
-			end
-		end
-		for _, m in self.Legit.Modules do
-			if m.Enabled then
-				pcall(m.Toggle, m)
-			end
-		end
-		self:UpdateTextGUI()
-		self.PanicState = {
-			legit = self.Legit.Window.Visible,
-			textgui = self.TextGUIHolder and self.TextGUIHolder.Visible or false
-		}
-		clickgui.Visible = false
-		self.Legit.Window.Visible = false
-		if self.TextGUIHolder then
-			self.TextGUIHolder.Visible = false
-		end
-		pcall(function()
-			if self.ThreadFix then setthreadidentity(8) end
-			runService:SetRobloxGuiFocused(false)
-		end)
-		self.PanicRestore.Visible = true
-	end
-	function mainapi:TriggerPanic()
-		if self.PanicConfirm and self.PanicConfirm.Enabled then
-			self:CreatePrompt({
-				Title = 'Panic',
-				Text = 'Turn off all modules and hide the interface? Click the eye button to bring it back.',
-				Icon = 'hide',
-				Confirm = 'Hide',
-				Function = function(ok)
-					if ok then
-						mainapi:Panic()
-					end
-				end
-			})
-		else
-			self:Panic()
-		end
-	end
 	local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
 mainapi.MultiKeybind = general:CreateToggle({
 	Name = 'Enable Multi-Keybinding',
@@ -9290,12 +9334,6 @@ mainapi.MultiKeybind = general:CreateToggle({
 		end,
 		Tooltip = 'Removes larp from the current game'
 	})
-	local panicconfirm = general:CreateToggle({
-		Name = 'Confirm before panic',
-		Default = true,
-		Tooltip = 'Ask for confirmation before hiding the interface'
-	})
-	mainapi.PanicConfirm = panicconfirm
 	mainapi.AutoExecute = general:CreateToggle({
 		Name = 'Auto Execute',
 		Tooltip = 'Automatically execute the script when you teleport'
@@ -10709,6 +10747,15 @@ mainapi:Clean(inputService.InputBegan:Connect(function(inputObj)
 					mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>"..bindSuffix(v.Bind, 'to disable') or "<font color='#FF5A5A'>Disabled</font>"..bindSuffix(v.Bind, 'to enable')), 0.75, v.Enabled and 'warning' or nil)
 				end
 				v:Toggle(true)
+			end
+		end
+		for _, v in mainapi.Legit.Modules do
+			if v.Bind and checkKeybinds(mainapi.HeldKeybinds, v.Bind, bindName) then
+				toggled = true
+				if mainapi.ToggleNotifications.Enabled then
+					mainapi:CreateNotification(v.Name, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>" or "<font color='#FF5A5A'>Disabled</font>"), 0.75, v.Enabled and 'warning' or nil)
+				end
+				v:Toggle()
 			end
 		end
 		if toggled then

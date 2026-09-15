@@ -1,8 +1,0 @@
-Changelog
-
-+ Changelog terminal window (Larp.png, gray code font, typewriter lines, prev/next state)
-+ "Don't show again until a new update" checkbox on the changelog
-+ Pin button next to the bind button on every module
-+ Pinned tab clones the module, keeps settings, unpin via holding the pin
-~ ProjectileAimbot: aim lock extended to 1s, Lasso uses full force so it stops ghosting
-~ ProjectileAimbot: fireball splash arc now uses the prediction and charge velocity

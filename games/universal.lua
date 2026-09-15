@@ -8209,9 +8209,11 @@ end)
 run(function()
 	local Clock
 	local TwentyFourHour
-	local Analog
+	local ClockType
+	local RenderBG
 	local label
 	local face
+	local bg
 	local hourhand
 	local minhand
 	local sechand
@@ -8221,20 +8223,29 @@ run(function()
 		Function = function(callback)
 			if callback then
 				repeat
-					label.Text = DateTime.now():FormatLocalTime('LT', TwentyFourHour.Enabled and 'zh-cn' or 'en-us')
 					local t = os.date('*t')
-					hourhand.Rotation = (t.hour % 12) * 30 + t.min * 0.5
-					minhand.Rotation = t.min * 6 + t.sec * 0.1
-					sechand.Rotation = t.sec * 6
-					label.Visible = not Analog.Enabled
-					face.Visible = Analog.Enabled
+					local mode = ClockType.Value
+					local isAnalog = mode == 'Analog'
+					label.Visible = not isAnalog
+					face.Visible = isAnalog
+					if isAnalog then
+						hourhand.Rotation = (t.hour % 12) * 30 + t.min * 0.5
+						minhand.Rotation = t.min * 6 + t.sec * 0.1
+						sechand.Rotation = t.sec * 6
+					else
+						local ts = DateTime.now():FormatLocalTime('LT', TwentyFourHour.Enabled and 'zh-cn' or 'en-us')
+						if mode == 'Date' then
+							ts = ts .. '  ' .. ('%02d/%02d/%04d'):format(t.month, t.day, t.year)
+						end
+						label.Text = ts
+					end
 					task.wait(1)
 				until not Clock.Enabled
 			end
 		end,
-		Size = UDim2.fromOffset(120, 48),
+		Size = UDim2.fromOffset(150, 104),
 		Icon = getcustomasset('LarpV4/assets/larp/clock.png'),
-		IconSize = UDim2.fromOffset(18, 18),
+		IconSize = UDim2.fromOffset(15, 15),
 		Tooltip = 'Shows the current local time'
 	})
 	Clock:CreateFont({
@@ -8249,46 +8260,71 @@ run(function()
 		DefaultValue = 0,
 		DefaultOpacity = 0.5,
 		Function = function(hue, sat, val, opacity)
-			label.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
-			label.BackgroundTransparency = 1 - opacity
-			face.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
-			face.BackgroundTransparency = 1 - opacity
+			bg.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+			bg.BackgroundTransparency = 1 - opacity
 		end
 	})
 	TwentyFourHour = Clock:CreateToggle({
 		Name = '24 Hour Clock'
 	})
-	Analog = Clock:CreateToggle({
-		Name = 'Analog',
-		Function = function(on)
-			label.Visible = not on
-			face.Visible = on
+	ClockType = Clock:CreateDropdown({
+		Name = 'Clock Type',
+		List = {'Digital', 'Date', 'Analog'},
+		Function = function()
+			if label and face then
+				local isAnalog = ClockType.Value == 'Analog'
+				label.Visible = not isAnalog
+				face.Visible = isAnalog
+			end
 		end
 	})
+	RenderBG = Clock:CreateToggle({
+		Name = 'Render Background',
+		Default = true,
+		Function = function(on)
+			if bg then bg.Visible = on end
+		end
+	})
+	Clock.Children.Position = UDim2.new(0, 12, 1, -116)
+	bg = Instance.new('Frame')
+	bg.Name = 'ClockBG'
+	bg.Size = UDim2.fromOffset(150, 104)
+	bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	bg.BackgroundTransparency = 0.3
+	bg.BorderSizePixel = 0
+	bg.Parent = Clock.Children
+	local bgcorner = Instance.new('UICorner')
+	bgcorner.CornerRadius = UDim.new(0, 6)
+	bgcorner.Parent = bg
 	label = Instance.new('TextLabel')
-	label.Size = UDim2.new(0, 120, 0, 48)
-	label.BackgroundTransparency = 0.5
-	label.TextSize = 17
+	label.Size = UDim2.fromOffset(150, 52)
+	label.BackgroundTransparency = 1
+	label.TextSize = 16
 	label.Font = Enum.Font.Gotham
 	label.Text = '0:00 PM'
 	label.TextColor3 = Color3.new(1, 1, 1)
-	label.BackgroundColor3 = Color3.new()
 	label.Parent = Clock.Children
-	local corner = Instance.new('UICorner')
-	corner.CornerRadius = UDim.new(0, 4)
-	corner.Parent = label
 	face = Instance.new('Frame')
 	face.Name = 'Face'
-	face.Size = UDim2.fromOffset(44, 44)
-	face.Position = UDim2.new(0.5, -22, 0.5, -22)
-	face.BackgroundColor3 = Color3.new()
-	face.BackgroundTransparency = 0.5
+	face.Size = UDim2.fromOffset(96, 96)
+	face.Position = UDim2.fromOffset(27, 4)
+	face.BackgroundTransparency = 1
 	face.BorderSizePixel = 0
 	face.Visible = false
 	face.Parent = Clock.Children
-	local facecorner = Instance.new('UICorner')
-	facecorner.CornerRadius = UDim.new(1, 0)
-	facecorner.Parent = face
+	for i = 1, 12 do
+		local num = Instance.new('TextLabel')
+		num.Size = UDim2.fromOffset(16, 16)
+		num.AnchorPoint = Vector2.new(0.5, 0.5)
+		local ang = math.rad(i * 30 - 90)
+		num.Position = UDim2.new(0.5, math.cos(ang) * 36, 0.5, math.sin(ang) * 36)
+		num.BackgroundTransparency = 1
+		num.Text = tostring(i)
+		num.TextColor3 = Color3.new(1, 1, 1)
+		num.TextSize = 11
+		num.Font = Enum.Font.GothamBold
+		num.Parent = face
+	end
 	local function makehand(len, w, handcolor)
 		local h = Instance.new('Frame')
 		h.AnchorPoint = Vector2.new(0.5, 1)
@@ -8299,12 +8335,12 @@ run(function()
 		h.Parent = face
 		return h
 	end
-	hourhand = makehand(11, 3, Color3.new(1, 1, 1))
-	minhand = makehand(16, 2, Color3.new(1, 1, 1))
-	sechand = makehand(18, 1, Color3.fromRGB(255, 80, 80))
+	hourhand = makehand(24, 4, Color3.new(1, 1, 1))
+	minhand = makehand(34, 3, Color3.new(1, 1, 1))
+	sechand = makehand(38, 2, Color3.fromRGB(255, 80, 80))
 	local pin = Instance.new('Frame')
 	pin.AnchorPoint = Vector2.new(0.5, 0.5)
-	pin.Size = UDim2.fromOffset(4, 4)
+	pin.Size = UDim2.fromOffset(6, 6)
 	pin.Position = UDim2.new(0.5, 0, 0.5, 0)
 	pin.BackgroundColor3 = Color3.new(1, 1, 1)
 	pin.BorderSizePixel = 0
@@ -8425,6 +8461,8 @@ run(function()
 	
 	Disguise = larp.Legit:CreateModule({
 		Name = 'Disguise',
+		Icon = getcustomasset('LarpV4/assets/larp/disguise.png'),
+		IconSize = UDim2.fromOffset(15, 15),
 		Function = function(callback)
 			if callback then
 				Disguise:Clean(entitylib.Events.LocalAdded:Connect(localAdded))
@@ -8726,6 +8764,8 @@ run(function()
 
 	Keystrokes = larp.Legit:CreateModule({
 		Name = 'Keystrokes',
+		Icon = getcustomasset('LarpV4/assets/larp/keystroke.png'),
+		IconSize = UDim2.fromOffset(15, 15),
 		Function = function(callback)
 			if callback then
 				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), Style.Value == 'Arrow' and '↑' or nil)
@@ -8872,7 +8912,7 @@ run(function()
 	Ping = larp.Legit:CreateModule({
 		Name = 'Ping',
 		Icon = getcustomasset('LarpV4/assets/larp/connection.png'),
-		IconSize = UDim2.fromOffset(16, 16),
+		IconSize = UDim2.fromOffset(15, 15),
 		Function = function(callback)
 			if callback then
 				repeat

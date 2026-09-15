@@ -4374,13 +4374,13 @@ function mainapi:CreateCategory(categorysettings)
 		end
 		favicon.Image = favRowIcon
 		favicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
-		favicon.Visible = true
+		favicon.Visible = false
 		favicon.Parent = modulebutton
 		local favstate = false
 		local function updateFav()
 			favstate = fav and fav.Enabled or false
 			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
-			favicon.Visible = true
+			favicon.Visible = favstate
 		end
 		addTooltip(favicon, T('ToggleFav'))
 		favicon.MouseEnter:Connect(function()

@@ -8765,7 +8765,7 @@ run(function()
 	Keystrokes = larp.Legit:CreateModule({
 		Name = 'Keystrokes',
 		Icon = getcustomasset('LarpV4/assets/larp/keystroke.png'),
-		IconSize = UDim2.fromOffset(15, 15),
+		IconSize = UDim2.fromOffset(20, 20),
 		Function = function(callback)
 			if callback then
 				createKeystroke(Enum.KeyCode.W, UDim2.new(0, 38, 0, 0), Style.Value == 'Arrow' and '↑' or nil)

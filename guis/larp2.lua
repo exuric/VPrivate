@@ -4042,7 +4042,7 @@ function mainapi:ApplyRowVisuals(m)
 	local bind = btn:FindFirstChild('Bind')
 	if bind then bind.Position = bind.Position + UDim2.fromOffset(0, dy) end
 	local favb = btn:FindFirstChild('Favourite')
-	if favb then favb.Position = UDim2.new(1, -79, 0, 12 + dy) end
+	if favb then favb.Position = UDim2.new(1, -49, 0, 12 + dy) end
 	local hideb = btn:FindFirstChild('HideButton')
 	if hideb then
 		hideb.Size = UDim2.fromOffset(22, h)
@@ -4124,7 +4124,7 @@ function mainapi:CreateCategory(categorysettings)
 		editbutton = Instance.new('ImageButton')
 		editbutton.Name = 'Edit'
 		editbutton.Size = UDim2.fromOffset(18, 18)
-		editbutton.Position = UDim2.new(1, -64, 0, 11)
+		editbutton.Position = UDim2.new(1, -60, 0, 11)
 		editbutton.BackgroundTransparency = 1
 		editbutton.AutoButtonColor = false
 		editbutton.Image = ''
@@ -4142,7 +4142,7 @@ function mainapi:CreateCategory(categorysettings)
 		hidcount.Name = 'HiddenCount'
 		hidcount.AnchorPoint = Vector2.new(1, 0)
 		hidcount.Size = UDim2.fromOffset(100, 18)
-		hidcount.Position = UDim2.new(1, -70, 0, 11)
+		hidcount.Position = UDim2.new(1, -84, 0, 11)
 		hidcount.BackgroundTransparency = 1
 		hidcount.Text = ''
 		hidcount.TextXAlignment = Enum.TextXAlignment.Left
@@ -4312,7 +4312,7 @@ function mainapi:CreateCategory(categorysettings)
 		addTooltip(bind, 'Click to bind')
 		bind.Name = 'Bind'
 		bind.Size = UDim2.fromOffset(20, 21)
-		bind.Position = UDim2.new(1, -51, 0, 9)
+		bind.Position = UDim2.new(1, -27, 0, 9)
 		bind.AnchorPoint = Vector2.new(1, 0)
 		bind.BackgroundColor3 = Color3.new(1, 1, 1)
 		bind.BackgroundTransparency = 0.92
@@ -4362,7 +4362,7 @@ function mainapi:CreateCategory(categorysettings)
 		local favicon = Instance.new('ImageButton')
 		favicon.Name = 'Favourite'
 		favicon.Size = UDim2.fromOffset(16, 16)
-		favicon.Position = UDim2.new(1, -79, 0, 12)
+		favicon.Position = UDim2.new(1, -49, 0, 12)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
 		local favRowIcon = getcustomasset('LarpV4/assets/larp/star.png')
@@ -4374,13 +4374,13 @@ function mainapi:CreateCategory(categorysettings)
 		end
 		favicon.Image = favRowIcon
 		favicon.ImageColor3 = color.Light(uipallet.Main, 0.37)
-		favicon.Visible = false
+		favicon.Visible = true
 		favicon.Parent = modulebutton
 		local favstate = false
 		local function updateFav()
 			favstate = fav and fav.Enabled or false
 			favicon.ImageColor3 = favstate and Color3.fromRGB(255, 184, 31) or color.Light(uipallet.Main, 0.37)
-			favicon.Visible = favstate
+			favicon.Visible = true
 		end
 		addTooltip(favicon, T('ToggleFav'))
 		favicon.MouseEnter:Connect(function()
@@ -4415,7 +4415,7 @@ function mainapi:CreateCategory(categorysettings)
 		local hidebutton = Instance.new('TextButton')
 		hidebutton.Name = 'HideButton'
 		hidebutton.Size = UDim2.fromOffset(22, 40)
-		hidebutton.Position = UDim2.new(1, -49, 0, 0)
+		hidebutton.Position = UDim2.new(1, -94, 0, 0)
 		hidebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.0875)
 		hidebutton.BackgroundTransparency = 1
 		hidebutton.Text = ''
@@ -5972,8 +5972,8 @@ function mainapi:CreateSearch()
 	searchbkg.Parent = clickgui
 	local searchicon = Instance.new('ImageLabel')
 	searchicon.Name = 'Icon'
-searchicon.Size = UDim2.fromOffset(24, 24)
-searchicon.Position = UDim2.new(1, -33, 0, 6)
+searchicon.Size = UDim2.fromOffset(16, 16)
+searchicon.Position = UDim2.new(1, -25, 0, 10)
 	searchicon.BackgroundTransparency = 1
 	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 	searchicon.ImageColor3 = Color3.new(1, 1, 1)
@@ -6283,7 +6283,13 @@ function mainapi:CreateLegit()
 			bindtext.Text = '...'
 			bindtext.Visible = true
 			bindicon.Visible = false
-			mainapi.Binding = {SetBind = function(tab) moduleapi:SetBind(tab) end, Bind = moduleapi.Bind}
+			mainapi.Binding = {SetBind = function(_, tab) moduleapi:SetBind(moduleapi, tab) end, Bind = moduleapi.Bind}
+		end)
+		bindbtn.MouseEnter:Connect(function()
+			bindbtn.BackgroundTransparency = 0.75
+		end)
+		bindbtn.MouseLeave:Connect(function()
+			bindbtn.BackgroundTransparency = 0.92
 		end)
 		if modulesettings.Icon then
 			local modicon = Instance.new('ImageLabel')
@@ -6386,7 +6392,17 @@ function mainapi:CreateLegit()
 		addTooltip(setbindtext, 'Click to bind')
 		setbindtext.MouseButton1Click:Connect(function()
 			setbindtext.Text = '...'
-			mainapi.Binding = {SetBind = function(tab) moduleapi:SetBind(tab) end, Bind = moduleapi.Bind}
+			mainapi.Binding = {SetBind = function(_, tab) moduleapi:SetBind(moduleapi, tab) end, Bind = moduleapi.Bind}
+		end)
+		setbindtext.MouseEnter:Connect(function()
+			tween:Tween(setbindtext, uipallet.Tween, {
+				BackgroundColor3 = color.Light(uipallet.Main, 0.14)
+			})
+		end)
+		setbindtext.MouseLeave:Connect(function()
+			tween:Tween(setbindtext, uipallet.Tween, {
+				BackgroundColor3 = color.Light(uipallet.Main, 0.06)
+			})
 		end)
 		if modulesettings.Size then
 			local modulechildren = Instance.new('Frame')

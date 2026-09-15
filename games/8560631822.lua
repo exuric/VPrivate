@@ -4105,6 +4105,7 @@ run(function()
 		local swingInterval = math.max(getAttackInterval(), 0.05)
 		local lastShot = 0
 		local lastSwing = 0
+		local okk = pcall(function()
 		while entitylib.isAlive and FastHits.Enabled do
 			if not ent or not ent.RootPart or not entitylib.isVulnerable(ent) then break end
 			local charRoot = entitylib.character and entitylib.character.RootPart
@@ -4159,8 +4160,9 @@ run(function()
 			-- keep the sword swinging at full rate during the shot cooldown
 			task.wait(0.02)
 		end
-		if oldHotbar then hotbarSwitch(oldHotbar) end
-		if oldTool and oldTool.Parent then switchItem(oldTool, 0) end
+		end)
+		if oldHotbar then pcall(hotbarSwitch, oldHotbar) end
+		if oldTool and oldTool.Parent then pcall(switchItem, oldTool, 0) end
 		comboRunning = false
 	end
 
@@ -4226,8 +4228,8 @@ run(function()
 										attack(t[1], startTime, false)
 									end
 								end
+								return true
 							end
-							return true
 						end
 					end
 					return realSwingInRegion(self, ...)

@@ -1,7 +1,0 @@
-# Larp V4 project
-
-Private Roblox Luau codebase: GUI (guis/larp2.lua), game modules
-(games/<PlaceId>.lua), shared libraries (libraries/), loader
-(init.lua/main.lua). Short lowercase commits to main, regenerating
-profiles/manifest.txt and bumping profiles/commit.txt each time. Verify
-.lua edits balance (function/end) before committing.

@@ -4216,6 +4216,14 @@ run(function()
 							if os.clock() - lastSwing >= getAttackInterval() then
 								lastSwing = os.clock()
 								local startTime = workspace:GetServerTimeNow()
+								if SwingAnim.Enabled then
+									local st = SwingTime.Value or 0
+									local swingGap = (st > 0 and st) or getAttackInterval()
+									if os.clock() - lastAnimPlay >= swingGap then
+										lastAnimPlay = os.clock()
+										playSwingAnim()
+									end
+								end
 								if FastHits.Enabled then
 									local targets = selectTargets()
 									if #targets > 0 then

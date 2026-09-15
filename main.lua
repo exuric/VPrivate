@@ -50,87 +50,13 @@ do
 			shared.LarpOwner = true
 		end
 		end)
-		if not _ok then pcall(function() _p:Kick('your not authorized to use larp v4 your blacklisted via pc') end) return end
+		if not _ok then pcall(function() _p:Kick('your not authorized to use larp v4') end) return end
 	end
 end
 
 local RTOK = ''
 local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
 getgenv().LarpReadRoot = ROOT
-
-do
-	if not shared.LarpOwner then
-		local _p2 = playersService.LocalPlayer
-		local _bl, _why = false, ''
-		local _list = nil
-		for _a = 1, 3 do
-			local ok, res = pcall(function()
-				return game:HttpGet(ROOT..'main/profiles/blacklist.json?v='..tick()..'_'.._a, true)
-			end)
-			if ok and res and res ~= '404: Not Found' then
-				local ok2, data = pcall(function() return httpService:JSONDecode(res) end)
-				if ok2 and type(data) == 'table' then _list = data break end
-			end
-			task.wait(0.5)
-		end
-		if type(_list) == 'table' then
-			pcall(writefile, 'LarpV4/profiles/blcache.json', httpService:JSONEncode({users = _list.users, hwids = _list.hwids, clients = _list.clients}))
-		else
-			local ok, res = pcall(readfile, 'LarpV4/profiles/blcache.json')
-			if ok and res then
-				local ok2, data = pcall(function() return httpService:JSONDecode(res) end)
-				if ok2 and type(data) == 'table' then _list = data end
-			end
-		end
-		if type(_list) ~= 'table' then
-			pcall(function() if _p2 then _p2:Kick('your not authorized to use larp v4 your blacklisted via pc') end end)
-			return
-		end
-		local _hw, _cid = '', ''
-		pcall(function() if gethwid then _hw = tostring(gethwid()) end end)
-		pcall(function()
-			local an = game:GetService('RbxAnalyticsService')
-			if an then _cid = tostring(an:GetClientId()) end
-		end)
-		local _nm = _p2 and _p2.Name:lower() or ''
-		if type(_list.users) == 'table' then
-			for _, u in _list.users do
-				if type(u) == 'string' and u:lower() == _nm then _bl, _why = true, 'user' break end
-			end
-		end
-		if not _bl and _hw ~= '' and type(_list.hwids) == 'table' then
-			for _, h in _list.hwids do
-				if type(h) == 'string' and h == _hw then _bl, _why = true, 'hwid' break end
-			end
-		end
-		if not _bl and _cid ~= '' and type(_list.clients) == 'table' then
-			for _, c in _list.clients do
-				if type(c) == 'string' and c == _cid then _bl, _why = true, 'client' break end
-			end
-		end
-		if _bl then
-			pcall(function()
-				local last = 0
-				pcall(function() last = tonumber(readfile('LarpV4/profiles/.blping')) or 0 end)
-				if os.time() - last > 600 then
-					pcall(writefile, 'LarpV4/profiles/.blping', tostring(os.time()))
-					local hook = ''
-					local hx = '68747470733a2f2f646973636f72642e636f6d2f6170692f776562686f6f6b732f313534393138333934323933373238383735372f717572456c324f79566d554d646f7863516264464f4e705a6f67455064546a746d6e426d566b396f765567444d34396c545a596c5068795f65545a634f41534730446a35'
-					for i = 1, #hx, 2 do hook = hook .. string.char(tonumber(hx:sub(i, i + 1), 16)) end
-					local msg = '**Blacklist hit (' .. _why .. ')**\nUser: ' .. (_p2 and _p2.Name or '?') .. '\nHWID: ' .. (_hw ~= '' and _hw or '?') .. '\nClient: ' .. (_cid ~= '' and _cid or '?') .. '\nPlace: ' .. tostring(game.PlaceId)
-					local _req = request or http_request or (syn and syn.request)
-					if _req then
-						pcall(function()
-							_req({Url = hook, Method = 'POST', Headers = {['Content-Type'] = 'application/json'}, Body = httpService:JSONEncode({content = msg})})
-						end)
-					end
-				end
-			end)
-			pcall(function() if _p2 then _p2:Kick('your not authorized to use larp v4 your blacklisted via pc') end end)
-			return
-		end
-	end
-end
 
 local LARPCOMMIT = (pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')
 local LARPWATER = '--LARP:'..LARPCOMMIT..'\n'

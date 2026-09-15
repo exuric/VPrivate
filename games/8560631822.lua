@@ -3859,6 +3859,7 @@ run(function()
 	local MaxAngle
 	local HitReg
 	local SwingAnim
+	local SwingTime
 	local FastHits
 	local FastBow
 	local FastDelay
@@ -3893,12 +3894,14 @@ run(function()
 		local speed = sword and sword.attackSpeed
 		local weapon = math.max((speed and speed > 0 and speed) or 0.3, 0.05)
 		local hits = tonumber(HitReg.Value) or 34
-		local margin = 0.004 + (hits >= 35 and 0.004 or 0)
-		local hitReg = 10 / hits - margin
-		return math.min(weapon, math.max(hitReg, 0.05))
+		local base = 10 / hits - 0.002
+		local floor = math.max(weapon - 0.02, 0.05)
+		return math.max(base, floor)
 	end
 
 	local lastSwing = 0
+	local loopLastFire = 0
+	local lastAnimPlay = 0
 
 	local function playSwingAnim()
 		local hand = getHandItem()
@@ -4034,7 +4037,12 @@ run(function()
 		local e = toGameEntity(ent)
 		if not e then return false end
 		if animate ~= false and SwingAnim.Enabled then
-			playSwingAnim()
+			local st = SwingTime.Value or 0
+			local swingGap = (st > 0 and st) or getAttackInterval()
+			if os.clock() - lastAnimPlay >= swingGap then
+				lastAnimPlay = os.clock()
+				playSwingAnim()
+			end
 		end
 		store.killauraAttacking = true
 		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, {
@@ -4083,7 +4091,7 @@ run(function()
 				end
 			end
 		end
-		if #bows == 0 then comboRunning = false return end
+		if #bows == 0 then comboRunning = false return attack(ent, workspace:GetServerTimeNow()) end
 		local item, ammo, projectile, itemMeta = unpack(bows[1])
 		local switchDelay = math.max(FastDelay.Value, 0.03)
 		local ping = math.max(store.ping.total or 0, 0.03)
@@ -4116,6 +4124,8 @@ run(function()
 					task.wait(ping)
 				end
 				if not ent or not ent.RootPart or not entitylib.isVulnerable(ent) then break end
+				local _hum = ent.Character and ent.Character:FindFirstChildOfClass('Humanoid')
+				if not _hum or _hum.Health <= 0 then break end
 				if (ent.RootPart.Position - charRoot.Position).Magnitude <= reach then
 					local calc = prediction.SolveTrajectory(charRoot.Position, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, ent.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(ent.RootPart.Velocity.Y) > 0.01, ent.RootPart.Position, ent.RootPart, nil, true)
 					if calc then
@@ -4213,7 +4223,7 @@ run(function()
 								else
 									local targets = selectTargets()
 									for _, t in ipairs(targets) do
-										attack(t[1], startTime)
+										attack(t[1], startTime, false)
 									end
 								end
 							end
@@ -4248,12 +4258,16 @@ run(function()
 
 				repeat
 					local target
+					local iv = getAttackInterval()
 					if canAttack() and not comboRunning then
 						target = selectTargets()[1]
 						if target then
 							store.KillauraTarget = target[1]
 							if not SwingOnly.Enabled then
-								swingMulti()
+								if os.clock() - loopLastFire >= iv then
+									swingMulti()
+									loopLastFire = os.clock()
+								end
 							end
 							-- SwingOnly: the hit + animation happen in the
 							-- swingSwordInRegion hook (one real swing = one killaura
@@ -4263,9 +4277,11 @@ run(function()
 					end
 					if not target then
 						store.KillauraTarget = nil
+						task.wait(math.min(iv, 0.15))
+					else
+						local wait = iv - (os.clock() - loopLastFire)
+						if wait > 0.005 then task.wait(wait) else task.wait(0.01) end
 					end
-
-					task.wait(getAttackInterval())
 				until not Killaura.Enabled
 			else
 				store.KillauraTarget = nil
@@ -4402,12 +4418,21 @@ run(function()
 		Name = 'Hit reg',
 		List = {'33', '34', '35'},
 		Default = '34',
-		Tooltip = 'Swing rate in hits per 10 seconds: 34 is consistent, 35 lands more but some swings get rejected'
+		Tooltip = 'Swing rate in hits per 10 seconds. Spacing auto-floors at your weapon speed so 34 lands clean'
 	})
 	SwingAnim = Killaura:CreateToggle({
 		Name = 'Swing animation',
 		Default = true,
 		Tooltip = 'Plays the sword swing animation when attacking'
+	})
+	SwingTime = Killaura:CreateSlider({
+		Name = 'Swing time',
+		Min = 0,
+		Max = 0.6,
+		Default = 0,
+		Decimal = 100,
+		Suffix = 'seconds',
+		Tooltip = 'Minimum seconds between swing visuals. 0 = auto (matches your hit rate so every swing reads clean)'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',

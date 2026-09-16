@@ -4062,9 +4062,18 @@ run(function()
 			end
 		end
 		store.killauraAttacking = true
+		local baseTime = swingStartTime or workspace:GetServerTimeNow()
 		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, {
-			swingStartTime = swingStartTime or workspace:GetServerTimeNow()
+			swingStartTime = baseTime
 		})
+		task.spawn(function()
+			task.wait(0.02)
+			if SwordController and ent and entitylib.isVulnerable(ent) then
+				pcall(SwordController.sendServerRequest, SwordController, e, 0, {
+					swingStartTime = baseTime + 0.02
+				})
+			end
+		end)
 		store.killauraAttacking = false
 		if ok then
 			if targetinfo then targetinfo.Targets[ent] = tick() + 1 end

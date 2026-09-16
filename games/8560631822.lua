@@ -2680,14 +2680,10 @@ run(function()
 			})
 		end
 		if not plr then
-			if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 2.5 then
-				if lockedTarget.RootPart and (lockedTarget.RootPart.Position - origin).Magnitude <= FOV.Value + 15 then
-					plr = lockedTarget
-				else
-					lockedTarget = nil
-					lockedTime = nil
-					return
-				end
+			local held = lockedTarget
+			local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
+			if held and heldRoot and heldRoot.Parent and (not held.Health or held.Health > 0) and tick() - lockedTime < 3 then
+				plr = held
 			else
 				lockedTarget = nil
 				lockedTime = nil
@@ -5199,14 +5195,10 @@ run(function()
 						})
 					end
 					if not plr then
-						if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 2.5 then
-							local lp = entitylib.isAlive and entitylib.character.RootPart.Position or Vector3.zero
-							if lockedTarget.RootPart and (lockedTarget.RootPart.Position - lp).Magnitude <= FOV.Value + 15 then
-								plr = lockedTarget
-							else
-								lockedTarget = nil
-								lockedTime = nil
-							end
+						local held = lockedTarget
+						local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
+						if held and heldRoot and heldRoot.Parent and (not held.Health or held.Health > 0) and tick() - lockedTime < 3 then
+							plr = held
 						else
 							lockedTarget = nil
 							lockedTime = nil

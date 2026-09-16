@@ -2000,7 +2000,11 @@ run(function()
 	
 local function getAim(ent)
 		local base
-		if AimPart.Value == 'Closest' then
+		if AimPart.Value == 'Head' then
+			if ent.Head and ent.Head.Position then
+				return ent.Head.Position
+			end
+		elseif AimPart.Value == 'Closest' then
 			if not cache[ent.Character] then
 				cache[ent.Character] = ent.Character:GetChildren()
 			end
@@ -2078,7 +2082,12 @@ end
 		end
 		local remaining = math.acos(math.clamp(forward.Unit:Dot(direction.Unit), -1, 1))
 		local easef = math.clamp(remaining / math.rad(AngleSlider.Value), 0, 1)
-		local alpha = math.clamp(1 - math.exp(-factor * dt * (0.25 + 0.75 * easef)), 0, 1)
+		local sm = (Smoothness and Smoothness.Value) or 0
+		if sm <= 0 then
+			return CFrame.lookAt(localcframe.Position, localcframe.Position + direction * 100)
+		end
+		local reducedFactor = factor / (1 + sm * 0.6)
+		local alpha = math.clamp(1 - math.exp(-reducedFactor * dt * (0.25 + 0.75 * easef)), 0, 1)
 		return localcframe:Lerp(CFrame.lookAt(localcframe.Position, localcframe.Position + direction * 100), alpha)
 	end
 
@@ -2094,13 +2103,17 @@ end
 		Simple = function(localcframe, ent, fps)
 			local rng = Random.new()
 			local speed = (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0))
-			local jitter = Vector3.new((rng:NextNumber() - 0.5) * 0 * fps, (rng:NextNumber() - 0.5) * 0 * fps, (rng:NextNumber() - 0.5) * 0 * fps)
+			local shk = (Shake and Shake.Value) or 0
+			local jMag = shk * 0.15 * fps
+			local jitter = Vector3.new((rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag)
 			return applyHumanAim(localcframe, ent, getAim(ent) + jitter, fps, speed), speed
 		end,
 		Adaptive = function(localcframe, ent, fps)
 			local prog, rng = ease(math.min(tick() - started, 1)), Random.new()
 			local speed = (AimSpeed.Value * 0.1 * prog) + (1 - prog) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 5)
-			local jitter = Vector3.new((rng:NextNumber() - 0.5) * 0 * fps, (rng:NextNumber() - 0.5) * 0 * fps, (rng:NextNumber() - 0.5) * 0 * fps)
+			local shk = (Shake and Shake.Value) or 0
+			local jMag = shk * 0.15 * fps
+			local jitter = Vector3.new((rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag)
 			return applyHumanAim(localcframe, ent, getAim(ent) + jitter, fps, speed), speed
 		end
 	}
@@ -2177,7 +2190,7 @@ end
 							local localfacing = root.CFrame.LookVector * Vector3.new(1, 0, 1)
 							local horizontal = delta * Vector3.new(1, 0, 1)
 							local angle = localfacing.Magnitude > 0 and horizontal.Magnitude > 0 and math.acos(math.clamp(localfacing.Unit:Dot(horizontal.Unit), -1, 1)) or 0
-							if angle >= (math.rad(AngleSlider.Value) / 2) then
+							if angle >= math.rad(AngleSlider.Value) then
 								return
 							end
 							targetinfo.Targets[ent] = tick() + 1
@@ -2275,6 +2288,20 @@ end
 		Max = 360,
 		Default = 70,
 	})
+	Smoothness = AimAssist:CreateSlider({
+		Name = 'Smoothness',
+		Min = 0,
+		Max = 10,
+		Default = 0,
+		Tooltip = '0 = snap instantly, higher = slower human-like tracking',
+	})
+	Shake = AimAssist:CreateSlider({
+		Name = 'Shake',
+		Min = 0,
+		Max = 10,
+		Default = 0,
+		Tooltip = '0 = off, 10 = heavy jitter for a human feel',
+	})
 	Limit = AimAssist:CreateToggle({
 		Name = 'Limit to items',
 		Tooltip = 'Only attacks when sword is held',
@@ -2286,7 +2313,7 @@ end
 	})
 	AimPart = AimAssist:CreateDropdown({
 		Name = 'Target area',
-		List = {'Center', 'Closest'},
+		List = {'Center', 'Head', 'Closest'},
 		Default = 'Center',
 	})
 end)

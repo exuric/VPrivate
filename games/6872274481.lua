@@ -2001,8 +2001,13 @@ run(function()
 local function getAim(ent)
 		local base
 		if AimPart.Value == 'Head' then
-			if ent.Head and ent.Head.Position then
-				return ent.Head.Position
+			local headPart = (ent.Head and ent.Head.Parent and ent.Head)
+				or (ent.Character and ent.Character:FindFirstChild('Head'))
+				or (ent.Character and ent.Character:FindFirstChild('UpperTorso'))
+			if headPart and headPart.Position then
+				return headPart.Position
+			elseif ent.RootPart then
+				return ent.RootPart.Position + Vector3.new(0, 1.5, 0)
 			end
 		elseif AimPart.Value == 'Closest' then
 			if not cache[ent.Character] then
@@ -3918,7 +3923,9 @@ run(function()
 		local speed = sword and sword.attackSpeed
 		local weapon = math.max((speed and speed > 0 and speed) or 0.3, 0.05)
 		local hits = tonumber(getgenv().LarpHitRegOverride) or tonumber(HitReg.Value) or 34
-		local base = 10 / hits - 0.002
+		-- overshoot: fire at target+2 rate so ghosts still leave `hits` landing per 10s
+		local fireRate = hits + 2
+		local base = 10 / fireRate - 0.002
 		local floor = math.max(weapon - 0.02, 0.05)
 		return math.max(base, floor)
 	end
@@ -5372,8 +5379,15 @@ run(function()
 
 		if Lock.Enabled and LockedTarget and LockedTarget.RootPart and LockedTarget.RootPart.Parent
 			and entitylib.isVulnerable(LockedTarget)
-			and (LockedTarget.RootPart.Position - pos).Magnitude <= Range.Value then
+			and (LockedTarget.RootPart.Position - pos).Magnitude <= Range.Value + 5 then
+			getgenv()._larpProjLockLast = tick()
 			return {LockedTarget}
+		end
+		if Lock.Enabled and LockedTarget and (tick() - (getgenv()._larpProjLockLast or 0)) < 0.4 then
+			-- brief grace window so a jump/momentary state change doesn't drop lock
+			if LockedTarget.RootPart and LockedTarget.RootPart.Parent and entitylib.isVulnerable(LockedTarget) then
+				return {LockedTarget}
+			end
 		end
 		LockedTarget = nil
 

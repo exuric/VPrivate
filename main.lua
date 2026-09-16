@@ -264,22 +264,25 @@ task.spawn(function()
 		if not shared.LarpIndependent then
 			loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
 			task.wait()
-			if isfile('LarpV4/games/'..game.PlaceId..'.lua') then
-				loadstring(readfile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
-			else
-				if not (shared.LarpDeveloper and shared.LarpOwner) then
-					local ok, err = pcall(function()
-						loadstring(downloadFile('LarpV4/games/'..game.PlaceId..'.lua'), tostring(game.PlaceId))(license)
-					end)
-					if not ok then
-						local msg = tostring(err or '')
-						if msg:find('404') or msg:find('Not Found') then
-							pcall(function()
-								larp:CreateNotification('LarpV4', 'No script for this game (PlaceId '..game.PlaceId..')', 6, 'alert')
+			do
+				local gamePath = 'LarpV4/games/'..game.PlaceId..'.lua'
+				if isfile(gamePath) then
+					local cached = readfile(gamePath)
+					if #cached < 100 or cached:sub(1, #LARPWATER) ~= LARPWATER then
+						pcall(delfile, gamePath)
+					end
+				end
+				local ok, err = pcall(function()
+					loadstring(downloadFile(gamePath), tostring(game.PlaceId))(license)
+				end)
+				if not ok then
+					local msg = tostring(err or '')
+					if msg:find('404') or msg:find('Not Found') then
+						pcall(function()
+							larp:CreateNotification('LarpV4', 'No script for this game (PlaceId '..game.PlaceId..')', 6, 'alert')
 						end)
 					end
 				end
-			end
 			end
 			task.wait()
 			finishLoading()

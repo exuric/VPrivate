@@ -3230,6 +3230,7 @@ run(function()
 	local StrafeMode
 	local SwitchInterval
 	local Randomize
+	local Posture
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
 	local module, old
@@ -3292,7 +3293,10 @@ run(function()
 	
 							local yFactor = math.abs(localPosition.Y - targetPos.Y) * (YFactor.Value / 100)
 							local entityPos = Vector3.new(targetPos.X, localPosition.Y, targetPos.Z)
-							local newPos = entityPos + (CFrame.Angles(0, math.rad(ang), 0).LookVector * (StrafeRange.Value - yFactor))
+							local postureMul = 1
+							if Posture and Posture.Value == 'Defensive' then postureMul = 1.4
+							elseif Posture and Posture.Value == 'Aggressive' then postureMul = 0.65 end
+							local newPos = entityPos + (CFrame.Angles(0, math.rad(ang), 0).LookVector * ((StrafeRange.Value * postureMul) - yFactor))
 							local startRay, endRay = entityPos, newPos
 	
 							if not wallcheck and workspace:Raycast(targetPos, (localPosition - targetPos), rayCheck) then
@@ -3308,9 +3312,14 @@ run(function()
 								end
 							end
 	
-							if not flymod.Enabled and not workspace:Raycast(newPos, Vector3.new(0, -70, 0), rayCheck) then
+							if not flymod.Enabled and not workspace:Raycast(newPos, Vector3.new(0, -160, 0), rayCheck) then
 								newPos = entityPos
 								factor = 40
+							end
+							if not flymod.Enabled and not workspace:Raycast(localPosition, Vector3.new(0, -80, 0), rayCheck) then
+								TargetStrafeVector = nil
+								oldent = ent
+								return old(self, vec, face)
 							end
 	
 							ang += factor * (StrafeSpeed.Value / 10) % 360
@@ -3340,6 +3349,12 @@ run(function()
 	Targets = TargetStrafe:CreateTargets({
 		Players = true,
 		Walls = true
+	})
+	Posture = TargetStrafe:CreateDropdown({
+		Name = 'Posture',
+		List = {'Balanced', 'Defensive', 'Aggressive'},
+		Default = 'Balanced',
+		Tooltip = 'Defensive keeps distance on the far side of the target; Aggressive orbits close and cuts angles in',
 	})
 	SearchRange = TargetStrafe:CreateSlider({
 		Name = 'Search Range',

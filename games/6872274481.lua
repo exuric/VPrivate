@@ -2083,10 +2083,7 @@ end
 		local remaining = math.acos(math.clamp(forward.Unit:Dot(direction.Unit), -1, 1))
 		local easef = math.clamp(remaining / math.rad(AngleSlider.Value), 0, 1)
 		local sm = (Smoothness and Smoothness.Value) or 0
-		if sm <= 0 then
-			return CFrame.lookAt(localcframe.Position, localcframe.Position + direction * 100)
-		end
-		local reducedFactor = factor / (1 + sm * 0.6)
+		local reducedFactor = sm > 0 and (factor / (1 + sm * 0.6)) or factor
 		local alpha = math.clamp(1 - math.exp(-reducedFactor * dt * (0.25 + 0.75 * easef)), 0, 1)
 		return localcframe:Lerp(CFrame.lookAt(localcframe.Position, localcframe.Position + direction * 100), alpha)
 	end
@@ -3920,7 +3917,7 @@ run(function()
 		local _, sword = getHandSword()
 		local speed = sword and sword.attackSpeed
 		local weapon = math.max((speed and speed > 0 and speed) or 0.3, 0.05)
-		local hits = tonumber(HitReg.Value) or 34
+		local hits = tonumber(getgenv().LarpHitRegOverride) or tonumber(HitReg.Value) or 34
 		local base = 10 / hits - 0.002
 		local floor = math.max(weapon - 0.02, 0.05)
 		return math.max(base, floor)
@@ -4496,6 +4493,35 @@ run(function()
 		Max = 360,
 		Default = 360,
 		Tooltip = 'Maximum angle between your view and the target'
+	})
+end)
+
+run(function()
+	local HitRegAdjuster
+	local Amount
+	HitRegAdjuster = larp.Categories.Combat:CreateModule({
+		Name = 'HitRegAdjuster',
+		Function = function(callback)
+			if callback then
+				getgenv().LarpHitRegOverride = tonumber(Amount.Value) or 34
+				task.spawn(function()
+					while HitRegAdjuster.Enabled do
+						getgenv().LarpHitRegOverride = tonumber(Amount.Value) or 34
+						task.wait(0.25)
+					end
+				end)
+			else
+				getgenv().LarpHitRegOverride = nil
+			end
+		end,
+		Tooltip = 'Forces killaura hit-reg to the chosen value. Pins the rate every swing so your setting sticks.',
+	})
+	Amount = HitRegAdjuster:CreateSlider({
+		Name = 'Amount',
+		Min = 33,
+		Max = 35,
+		Default = 34,
+		Tooltip = 'Target hits per 10 seconds. 34 is the sweet spot.',
 	})
 end)
 
@@ -5320,6 +5346,27 @@ run(function()
 			if ent then
 				return {ent}
 			end
+			-- fall back: cursor missed but target is in FOV, pick closest-in-fov by camera angle
+			local camCF = gameCamera.CFrame
+			local camForward = camCF.LookVector
+			local best, bestDot = nil, math.cos(math.rad(60))
+			for _, e in entitylib.List do
+				if e.Targetable and entitylib.isVulnerable(e) and e.RootPart and e.RootPart.Position then
+					if (e.Player and Targets.Players.Enabled) or (e.NPC and Targets.NPCs.Enabled) then
+						local dir = e.RootPart.Position - camCF.Position
+						if dir.Magnitude <= Range.Value and dir.Magnitude > 0 then
+							local dot = camForward:Dot(dir.Unit)
+							if dot > bestDot then
+								if not Targets.Walls.Enabled or not entitylib.Wallcheck(camCF.Position, e.RootPart.Position) then
+									best = e
+									bestDot = dot
+								end
+							end
+						end
+					end
+				end
+			end
+			if best then return {best} end
 			return {}
 		end
 

@@ -3908,6 +3908,19 @@ run(function()
 		if not hand or not hand.itemType then return end
 		local meta = bedwars.ItemMeta and bedwars.ItemMeta[hand.itemType]
 		if not meta or not SwordController then return end
+		local ch = entitylib.character and entitylib.character.Character
+		if ch then
+			local hum = ch:FindFirstChildOfClass('Humanoid')
+			local animator = hum and hum:FindFirstChildOfClass('Animator')
+			if animator then
+				for _, tr in ipairs(animator:GetPlayingAnimationTracks()) do
+					local n = (tr.Name or ''):lower()
+					if n:find('swing') or n:find('attack') or n:find('slash') then
+						pcall(function() tr:Stop(0) end)
+					end
+				end
+			end
+		end
 		pcall(SwordController.playSwordEffect, SwordController, meta, false, {
 			playAnimation = true,
 			playSound = true
@@ -4038,8 +4051,12 @@ run(function()
 		if not e then return false end
 		if animate ~= false and SwingAnim.Enabled then
 			local st = SwingTime.Value or 0
-			local swingGap = (st > 0 and st) or getAttackInterval()
-			if os.clock() - lastAnimPlay >= swingGap then
+			if st > 0 then
+				if os.clock() - lastAnimPlay >= st then
+					lastAnimPlay = os.clock()
+					playSwingAnim()
+				end
+			else
 				lastAnimPlay = os.clock()
 				playSwingAnim()
 			end

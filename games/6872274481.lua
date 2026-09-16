@@ -4209,21 +4209,15 @@ run(function()
 				realSwingInRegion = SwordController.swingSwordInRegion
 				realCanSee = SwordController.canSee
 				SwordController.swingSwordInRegion = function(self, ...)
-					if SwingOnly.Enabled and canAttack() and not comboRunning then
-						local target = selectTargets()[1]
+					if SwingOnly.Enabled and canAttack() then
+						lastAnimPlay = os.clock()
+						playSwingAnim()
+						local target = (not comboRunning) and selectTargets()[1] or nil
 						if target and target[1] then
 							store.KillauraTarget = target[1]
 							if os.clock() - lastSwing >= getAttackInterval() then
 								lastSwing = os.clock()
 								local startTime = workspace:GetServerTimeNow()
-								if SwingAnim.Enabled then
-									local st = SwingTime.Value or 0
-									local swingGap = (st > 0 and st) or getAttackInterval()
-									if os.clock() - lastAnimPlay >= swingGap then
-										lastAnimPlay = os.clock()
-										playSwingAnim()
-									end
-								end
 								if FastHits.Enabled then
 									local targets = selectTargets()
 									if #targets > 0 then
@@ -4236,8 +4230,8 @@ run(function()
 									end
 								end
 							end
-							return true
 						end
+						return true
 					end
 					return realSwingInRegion(self, ...)
 				end

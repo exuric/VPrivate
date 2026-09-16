@@ -3902,13 +3902,25 @@ run(function()
 	local lastSwing = 0
 	local loopLastFire = 0
 	local lastAnimPlay = 0
-	local swingSpeedConn, swingSpeedCharConn
 
 	local function playSwingAnim()
 		local hand = getHandItem()
 		if not hand or not hand.itemType then return end
 		local meta = bedwars.ItemMeta and bedwars.ItemMeta[hand.itemType]
 		if not meta or not SwordController then return end
+		local ch = entitylib.character and entitylib.character.Character
+		if ch then
+			local hum = ch:FindFirstChildOfClass('Humanoid')
+			local animator = hum and hum:FindFirstChildOfClass('Animator')
+			if animator then
+				for _, tr in ipairs(animator:GetPlayingAnimationTracks()) do
+					local n = (tr.Name or ''):lower()
+					if n:find('swing') or n:find('attack') or n:find('slash') then
+						pcall(function() tr:Stop(0) end)
+					end
+				end
+			end
+		end
 		pcall(SwordController.playSwordEffect, SwordController, meta, false, {
 			playAnimation = true,
 			playSound = true
@@ -4039,8 +4051,12 @@ run(function()
 		if not e then return false end
 		if animate ~= false and SwingAnim.Enabled then
 			local st = SwingTime.Value or 0
-			local swingGap = (st > 0 and st) or getAttackInterval()
-			if os.clock() - lastAnimPlay >= swingGap then
+			if st > 0 then
+				if os.clock() - lastAnimPlay >= st then
+					lastAnimPlay = os.clock()
+					playSwingAnim()
+				end
+			else
 				lastAnimPlay = os.clock()
 				playSwingAnim()
 			end
@@ -4196,31 +4212,6 @@ run(function()
 		Function = function(callback)
 			if callback then
 				SwordController = bedwars.SwordController
-				local function attachSwingSpeed()
-					if swingSpeedConn then pcall(function() swingSpeedConn:Disconnect() end) swingSpeedConn = nil end
-					local ch = lplr.Character
-					if not ch then return end
-					local hum = ch:FindFirstChildOfClass('Humanoid')
-					local animator = hum and hum:FindFirstChildOfClass('Animator')
-					if not animator then return end
-					swingSpeedConn = animator.AnimationPlayed:Connect(function(track)
-						local n = (track.Name or ''):lower()
-						if n:find('swing') or n:find('attack') or n:find('slash') then
-							local len = track.Length or 0.5
-							if len > 0 then
-								local iv = getAttackInterval()
-								local target = math.max(1, len / math.max(iv * 0.85, 0.08))
-								pcall(function() track:AdjustSpeed(target) end)
-							end
-						end
-					end)
-				end
-				attachSwingSpeed()
-				if swingSpeedCharConn then pcall(function() swingSpeedCharConn:Disconnect() end) end
-				swingSpeedCharConn = lplr.CharacterAdded:Connect(function()
-					task.wait(0.5)
-					if Killaura and Killaura.Enabled then attachSwingSpeed() end
-				end)
 				EntityUtil = (function()
 					local ok, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
 					if ok and mod and mod.EntityUtil then
@@ -4332,8 +4323,6 @@ run(function()
 				realCanSee = nil
 				SwordController = nil
 				EntityUtil = nil
-				if swingSpeedConn then pcall(function() swingSpeedConn:Disconnect() end) swingSpeedConn = nil end
-				if swingSpeedCharConn then pcall(function() swingSpeedCharConn:Disconnect() end) swingSpeedCharConn = nil end
 			end
 		end,
 		Tooltip = 'Attack players around you without aiming'

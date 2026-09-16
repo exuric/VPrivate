@@ -5231,7 +5231,7 @@ run(function()
 							playerGravity = (workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))))
 						end
 	
-						if plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
+						if plr.Character and plr.Character.PrimaryPart and plr.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
 							playerGravity = 6
 						end
 	
@@ -5243,11 +5243,20 @@ run(function()
 							end
 						end
 	
-local newlook = CFrame.new(offsetpos, plr[TargetPart.Value].Position) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local calc, _, travelTime = prediction.SolveTrajectory(newlook.p, projSpeed * Prediction.Value, gravity, plr[TargetPart.Value].Position, projmeta.projectile == 'telepearl' and Vector3.zero or plr[TargetPart.Value].Velocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(plr.RootPart.Velocity.Y) > 0.01, plr.RootPart.Position, plr.RootPart, nil, true)
-						if calc and travelTime and travelTime <= lifetime then
+						local tpart = plr[TargetPart.Value] or plr.RootPart or plr.HumanoidRootPart
+						if not tpart or not tpart.Position then return old(...) end
+						local tpos = tpart.Position
+						local tvel = (projmeta.projectile == 'telepearl' and Vector3.zero) or tpart.Velocity or Vector3.zero
+						local rootPart = plr.RootPart or plr.HumanoidRootPart or tpart
+						local rootPos = rootPart and rootPart.Position or tpos
+						local hipH = plr.HipHeight or 2
+						local airborne = (plr.Humanoid and plr.Humanoid.FloorMaterial == Enum.Material.Air) or (rootPart and math.abs(rootPart.Velocity.Y) > 0.01) or false
+						local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
+						local okSolve, calc, _s2, travelTime = pcall(prediction.SolveTrajectory, newlook.p, projSpeed * Prediction.Value, gravity, tpos, tvel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, airborne, rootPos, rootPart, nil, true)
+						if okSolve and calc and travelTime and travelTime <= lifetime then
 							local dir = CFrame.new(newlook.Position, calc).LookVector * projSpeed
-							if prediction.IsTrajectoryClear(newlook.Position, dir, gravity, travelTime, rayCheck) then
+							local okClear, clear = pcall(prediction.IsTrajectoryClear, newlook.Position, dir, gravity, travelTime, rayCheck)
+							if not okClear or clear then
 								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 								return {
 									initialVelocity = dir * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),

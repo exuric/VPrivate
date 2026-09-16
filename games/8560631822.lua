@@ -3894,7 +3894,7 @@ run(function()
 		local speed = sword and sword.attackSpeed
 		local weapon = math.max((speed and speed > 0 and speed) or 0.3, 0.05)
 		local hits = tonumber(HitReg.Value) or 34
-		local base = 10 / hits
+		local base = 10 / hits - 0.002
 		local floor = math.max(weapon - 0.02, 0.05)
 		return math.max(base, floor)
 	end
@@ -4267,23 +4267,23 @@ run(function()
 						target = selectTargets()[1]
 						if target then
 							store.KillauraTarget = target[1]
-							local shouldFire = (not SwingOnly.Enabled) or inputService:IsMouseButtonPressed(0)
-							if shouldFire and os.clock() - lastSwing >= iv then
-								lastSwing = os.clock()
-								loopLastFire = os.clock()
-								if SwingOnly.Enabled then
-									lastAnimPlay = os.clock()
-									playSwingAnim()
+							if not SwingOnly.Enabled then
+								if os.clock() - loopLastFire >= iv then
+									swingMulti()
+									loopLastFire = os.clock()
 								end
-								swingMulti()
 							end
+							-- SwingOnly: the hit + animation happen in the
+							-- swingSwordInRegion hook (one real swing = one killaura
+							-- hit, normal animation). The loop only keeps the overlay
+							-- target fresh so the box/health bar renders.
 						end
 					end
 					if not target then
 						store.KillauraTarget = nil
 						task.wait(math.min(iv, 0.15))
 					else
-						local wait = iv - (os.clock() - lastSwing)
+						local wait = iv - (os.clock() - loopLastFire)
 						if wait > 0.005 then task.wait(wait) else task.wait(0.01) end
 					end
 				until not Killaura.Enabled

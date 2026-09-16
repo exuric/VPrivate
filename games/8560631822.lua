@@ -2668,9 +2668,26 @@ run(function()
 			Sort = sortmethods[Sort.Value or 'Distance'],
 			Origin = origin,
 		})
+		if not plr and Targets.Walls.Enabled then
+			plr = entitylib.EntityMouse({
+				Part = 'RootPart',
+				Range = FOV.Value,
+				Players = Targets.Players.Enabled,
+				NPCs = Targets.NPCs.Enabled,
+				Wallcheck = false,
+				Sort = sortmethods[Sort.Value or 'Distance'],
+				Origin = origin,
+			})
+		end
 		if not plr then
-			if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.35 then
-				plr = lockedTarget
+			if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 2.5 then
+				if lockedTarget.RootPart and (lockedTarget.RootPart.Position - origin).Magnitude <= FOV.Value + 15 then
+					plr = lockedTarget
+				else
+					lockedTarget = nil
+					lockedTime = nil
+					return
+				end
 			else
 				lockedTarget = nil
 				lockedTime = nil
@@ -5160,18 +5177,36 @@ run(function()
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local self, projmeta, worldmeta, origin, shootpos = ...
+					local originPos = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero
 					local plr = entitylib.EntityMouse({
 						Part = 'RootPart',
 						Range = FOV.Value,
 						Players = Targets.Players.Enabled,
 						NPCs = Targets.NPCs.Enabled,
 						Wallcheck = Targets.Walls.Enabled,
-						Origin = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero,
+						Origin = originPos,
 						Sort = sortmethods[Sort.Value]
 					})
+					if not plr and Targets.Walls.Enabled then
+						plr = entitylib.EntityMouse({
+							Part = 'RootPart',
+							Range = FOV.Value,
+							Players = Targets.Players.Enabled,
+							NPCs = Targets.NPCs.Enabled,
+							Wallcheck = false,
+							Origin = originPos,
+							Sort = sortmethods[Sort.Value]
+						})
+					end
 					if not plr then
-						if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 0.35 then
-							plr = lockedTarget
+						if lockedTarget and lockedTarget.Character and lockedTarget.Character.PrimaryPart and tick() - lockedTime < 2.5 then
+							local lp = entitylib.isAlive and entitylib.character.RootPart.Position or Vector3.zero
+							if lockedTarget.RootPart and (lockedTarget.RootPart.Position - lp).Magnitude <= FOV.Value + 15 then
+								plr = lockedTarget
+							else
+								lockedTarget = nil
+								lockedTime = nil
+							end
 						else
 							lockedTarget = nil
 							lockedTime = nil

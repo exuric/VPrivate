@@ -3924,7 +3924,7 @@ run(function()
 		local weapon = math.max((speed and speed > 0 and speed) or 0.3, 0.05)
 		local hits = tonumber(getgenv().LarpHitRegOverride) or tonumber(HitReg.Value) or 34
 		-- overshoot: fire at target+2 rate so ghosts still leave `hits` landing per 10s
-		local fireRate = hits + 2
+		local fireRate = hits + 3
 		local base = 10 / fireRate - 0.002
 		local floor = math.max(weapon - 0.02, 0.05)
 		return math.max(base, floor)
@@ -4523,11 +4523,10 @@ run(function()
 		end,
 		Tooltip = 'Forces killaura hit-reg to the chosen value. Pins the rate every swing so your setting sticks.',
 	})
-	Amount = HitRegAdjuster:CreateSlider({
+	Amount = HitRegAdjuster:CreateDropdown({
 		Name = 'Amount',
-		Min = 33,
-		Max = 35,
-		Default = 34,
+		List = {'33', '34', '35'},
+		Default = '34',
 		Tooltip = 'Target hits per 10 seconds. 34 is the sweet spot.',
 	})
 end)
@@ -5351,12 +5350,14 @@ run(function()
 				Part = 'RootPart'
 			})
 			if ent then
+				getgenv()._larpProjCursorLast = {ent = ent, tick = tick()}
 				return {ent}
 			end
-			-- fall back: cursor missed but target is in FOV, pick closest-in-fov by camera angle
+			-- fallback 1: cursor missed but a target is in FOV, pick closest-in-fov
 			local camCF = gameCamera.CFrame
 			local camForward = camCF.LookVector
-			local best, bestDot = nil, math.cos(math.rad(60))
+			local cone = math.cos(math.rad(90))
+			local best, bestDot = nil, cone
 			for _, e in entitylib.List do
 				if e.Targetable and entitylib.isVulnerable(e) and e.RootPart and e.RootPart.Position then
 					if (e.Player and Targets.Players.Enabled) or (e.NPC and Targets.NPCs.Enabled) then
@@ -5373,7 +5374,19 @@ run(function()
 					end
 				end
 			end
-			if best then return {best} end
+			if best then
+				getgenv()._larpProjCursorLast = {ent = best, tick = tick()}
+				return {best}
+			end
+			-- fallback 2: grace window - hold last-known cursor target for up to 1.5s
+			local last = getgenv()._larpProjCursorLast
+			if last and last.ent and last.ent.RootPart and last.ent.RootPart.Parent
+				and entitylib.isVulnerable(last.ent)
+				and (last.ent.RootPart.Position - pos).Magnitude <= Range.Value + 6
+				and (tick() - last.tick) < 1.5 then
+				return {last.ent}
+			end
+			getgenv()._larpProjCursorLast = nil
 			return {}
 		end
 

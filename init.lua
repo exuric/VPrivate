@@ -99,6 +99,7 @@ pcall(function()
 	ISOWNER = p and p.UserId == OID or false
 end)
 shared.LarpOwner = ISOWNER
+shared.LarpPureOwner = ISOWNER
 
 local function downloadFile(path, func)
 	local outdated = not isfile(path)

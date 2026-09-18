@@ -1,8 +1,20 @@
---id:notice-5
+--id:notice-6
 --target:discipleofgodd
-local _seen5 = false
-pcall(function() _seen5 = isfile('LarpV4/profiles/.survey_seen') end)
-if _seen5 then return true end
+pcall(function()
+	local _par = nil
+	pcall(function()
+		if gethui then _par = gethui() end
+	end)
+	if not _par then _par = game:GetService('CoreGui') end
+	for _, _g in ipairs(_par:GetChildren()) do
+		if _g.Name == 'SurveyNotice' then
+			pcall(function() _g:Destroy() end)
+		end
+	end
+end)
+local _seen6 = false
+pcall(function() _seen6 = isfile('LarpV4/profiles/.rate_seen') end)
+if _seen6 then return true end
 task.spawn(function()
 	pcall(function()
 		local _accent = Color3.fromRGB(5, 133, 102)
@@ -13,17 +25,35 @@ task.spawn(function()
 				_accent = Color3.fromHSV(_l.GUIColor.Hue or 0.46, _l.GUIColor.Sat or 0.96, _l.GUIColor.Value or 0.52)
 			end
 		end)
-		local function _light(_c, _a)
-			local _h, _s, _v = _c:ToHSV()
-			return Color3.fromHSV(_h, _s, math.clamp(_v + _a, 0, 1))
+		local _star = ''
+		pcall(function()
+			if getcustomasset then
+				_star = getcustomasset('LarpV4/assets/larp/favourite.png')
+			end
+		end)
+		if type(_star) ~= 'string' then _star = '' end
+		if _star == '' then
+			pcall(function()
+				if getcustomasset then
+					_star = getcustomasset('LarpV4/assets/larp/star.png')
+				end
+			end)
 		end
+		if type(_star) ~= 'string' then _star = '' end
+		local _logo = nil
+		pcall(function()
+			if getcustomasset then
+				_logo = getcustomasset('LarpV4/assets/larp/Larp.png')
+			end
+		end)
+		if type(_logo) ~= 'string' or _logo == '' then _logo = nil end
 		local _par = nil
 		pcall(function()
 			if gethui then _par = gethui() end
 		end)
 		if not _par then _par = game:GetService('CoreGui') end
 		local _gui = Instance.new('ScreenGui')
-		_gui.Name = 'SurveyNotice'
+		_gui.Name = 'RateNotice'
 		_gui.ResetOnSpawn = false
 		_gui.IgnoreGuiInset = true
 		_gui.DisplayOrder = 9999
@@ -31,75 +61,111 @@ task.spawn(function()
 		local _panel = Instance.new('Frame')
 		_panel.AnchorPoint = Vector2.new(0.5, 0.5)
 		_panel.Position = UDim2.new(0.5, 0, 0.5, 12)
-		_panel.Size = UDim2.fromOffset(420, 170)
-		_panel.BackgroundColor3 = Color3.fromRGB(26, 25, 26)
+		_panel.Size = UDim2.fromOffset(380, 220)
+		_panel.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
 		_panel.BackgroundTransparency = 1
 		_panel.BorderSizePixel = 0
 		_panel.Parent = _gui
 		local _pc = Instance.new('UICorner')
-		_pc.CornerRadius = UDim.new(0, 8)
+		_pc.CornerRadius = UDim.new(0, 10)
 		_pc.Parent = _panel
-		local _bar = Instance.new('Frame')
-		_bar.Size = UDim2.new(1, 0, 0, 4)
-		_bar.BackgroundColor3 = _accent
-		_bar.BorderSizePixel = 0
-		_bar.BackgroundTransparency = 1
-		_bar.Parent = _panel
-		local _bc = Instance.new('UICorner')
-		_bc.CornerRadius = UDim.new(0, 8)
-		_bc.Parent = _bar
-		local function _mkbtn(x, text, accent)
+		if _logo then
+			local _img = Instance.new('ImageLabel')
+			_img.Size = UDim2.fromOffset(62, 18)
+			_img.Position = UDim2.new(0.5, -31, 0, 14)
+			_img.BackgroundTransparency = 1
+			_img.Image = _logo
+			_img.ImageColor3 = Color3.new(1, 1, 1)
+			_img.ImageTransparency = 1
+			_img.Parent = _panel
+			task.spawn(function()
+				for _s = 1, 8 do
+					pcall(function() _img.ImageTransparency = 1 - (_s / 8) end)
+					task.wait(0.04)
+				end
+			end)
+		end
+		local _q = Instance.new('TextLabel')
+		_q.Size = UDim2.new(1, -40, 0, 24)
+		_q.Position = UDim2.fromOffset(20, 44)
+		_q.BackgroundTransparency = 1
+		_q.Text = 'hows the larp v4 experience?'
+		_q.TextColor3 = Color3.new(1, 1, 1)
+		_q.TextSize = 16
+		_q.Font = Enum.Font.GothamBold
+		_q.TextTransparency = 1
+		_q.Parent = _panel
+		local _stars = {}
+		local _rated, _hover, _answered = 0, 0, false
+		local function _paint()
+			for _i, _s in ipairs(_stars) do
+				local _lit = _i <= ((_hover > 0 and _hover) or _rated)
+				local _art = _s:FindFirstChild('Art')
+				if _art then
+					_art.ImageColor3 = _lit and Color3.fromRGB(255, 184, 31) or Color3.fromRGB(70, 70, 70)
+				else
+					_s.TextColor3 = _lit and Color3.fromRGB(255, 184, 31) or Color3.fromRGB(70, 70, 70)
+				end
+			end
+		end
+		for _i = 1, 5 do
 			local _b = Instance.new('TextButton')
-			_b.Size = UDim2.fromOffset(150, 40)
-			_b.Position = UDim2.fromOffset(x, 108)
-			_b.BackgroundColor3 = accent and _accent or Color3.fromRGB(45, 45, 45)
+			_b.Size = UDim2.fromOffset(36, 36)
+			_b.Position = UDim2.fromOffset(86 + (_i - 1) * 42, 84)
 			_b.BackgroundTransparency = 1
 			_b.Text = ''
 			_b.AutoButtonColor = false
 			_b.Parent = _panel
-			local _cc = Instance.new('UICorner')
-			_cc.CornerRadius = UDim.new(0, 6)
-			_cc.Parent = _b
-			local _t = Instance.new('TextLabel')
-			_t.Size = UDim2.new(1, 0, 1, 0)
-			_t.BackgroundTransparency = 1
-			_t.Text = text
-			_t.TextColor3 = Color3.new(1, 1, 1)
-			_t.TextSize = 15
-			_t.Font = Enum.Font.GothamBold
-			_t.TextTransparency = 1
-			_t.Parent = _b
+			if _star ~= '' then
+				local _a = Instance.new('ImageLabel')
+				_a.Name = 'Art'
+				_a.Size = UDim2.fromOffset(30, 30)
+				_a.Position = UDim2.fromOffset(3, 3)
+				_a.BackgroundTransparency = 1
+				_a.Image = _star
+				_a.ImageColor3 = Color3.fromRGB(70, 70, 70)
+				_a.ImageTransparency = 1
+				_a.Parent = _b
+			else
+				_b.Text = tostring(_i)
+				_b.TextColor3 = Color3.fromRGB(70, 70, 70)
+				_b.TextSize = 20
+				_b.Font = Enum.Font.GothamBold
+			end
+			local _idx = _i
 			_b.MouseEnter:Connect(function()
-				_b.BackgroundColor3 = accent and _light(_accent, 0.12) or Color3.fromRGB(62, 62, 62)
+				if _answered then return end
+				_hover = _idx
+				_paint()
 			end)
 			_b.MouseLeave:Connect(function()
-				_b.BackgroundColor3 = accent and _accent or Color3.fromRGB(45, 45, 45)
+				if _answered then return end
+				_hover = 0
+				_paint()
 			end)
-			return _b, _t
+			_stars[_i] = _b
 		end
-		local _q = Instance.new('TextLabel')
-		_q.Size = UDim2.new(1, -40, 0, 30)
-		_q.Position = UDim2.fromOffset(20, 26)
-		_q.BackgroundTransparency = 1
-		_q.Text = 'did the revert config fix?'
-		_q.TextColor3 = Color3.new(1, 1, 1)
-		_q.TextSize = 17
-		_q.Font = Enum.Font.GothamBold
-		_q.TextTransparency = 1
-		_q.Parent = _panel
-		local _yes = _mkbtn(40, 'YES', true)
-		local _no = _mkbtn(230, 'NO', false)
-		local _res = Instance.new('TextLabel')
-		_res.Size = UDim2.new(1, -40, 0, 40)
-		_res.Position = UDim2.fromOffset(20, 96)
-		_res.BackgroundTransparency = 1
-		_res.Text = ''
-		_res.TextColor3 = _accent
-		_res.TextSize = 20
-		_res.Font = Enum.Font.GothamBold
-		_res.TextTransparency = 1
-		_res.Visible = false
-		_res.Parent = _panel
+		local _hint = Instance.new('TextLabel')
+		_hint.Size = UDim2.new(1, -40, 0, 16)
+		_hint.Position = UDim2.fromOffset(20, 130)
+		_hint.BackgroundTransparency = 1
+		_hint.Text = 'tap a star to rate'
+		_hint.TextColor3 = Color3.fromRGB(140, 140, 140)
+		_hint.TextSize = 11
+		_hint.Font = Enum.Font.Gotham
+		_hint.TextTransparency = 1
+		_hint.Parent = _panel
+		local _thanks = Instance.new('TextLabel')
+		_thanks.Size = UDim2.new(1, -40, 0, 30)
+		_thanks.Position = UDim2.fromOffset(20, 150)
+		_thanks.BackgroundTransparency = 1
+		_thanks.Text = 'thank you for your feedback'
+		_thanks.TextColor3 = _accent
+		_thanks.TextSize = 18
+		_thanks.Font = Enum.Font.GothamBold
+		_thanks.TextTransparency = 1
+		_thanks.Visible = false
+		_thanks.Parent = _panel
 		local function _fadeBg(to, dur)
 			local from = _panel.BackgroundTransparency
 			local steps = 10
@@ -117,61 +183,56 @@ task.spawn(function()
 			end
 		end
 		local _done = Instance.new('BindableEvent')
-		local _answered, _choice = false, nil
-		_yes.MouseButton1Click:Connect(function()
-			if _answered then return end
-			_answered, _choice = true, 'yes'
-			_done:Fire()
-		end)
-		_no.MouseButton1Click:Connect(function()
-			if _answered then return end
-			_answered, _choice = true, 'no'
-			_done:Fire()
-		end)
+		for _i, _b in ipairs(_stars) do
+			local _idx = _i
+			_b.MouseButton1Click:Connect(function()
+				if _answered then return end
+				_answered = true
+				_rated = _idx
+				_hover = 0
+				_paint()
+				pcall(writefile, 'LarpV4/profiles/.rate_seen', tostring(_idx))
+				_done:Fire()
+			end)
+		end
 		local _py = 12
 		for _s = 1, 10 do
 			_panel.Position = UDim2.new(0.5, 0, 0.5, _py - (_s / 10) * 12)
 			task.wait(0.025)
 		end
 		_panel.Position = UDim2.new(0.5, 0, 0.5, 0)
-		_fadeBg(0.05, 0.35)
-		_bar.BackgroundTransparency = 0
+		_fadeBg(0, 0.35)
 		_fadeTxt(_q, 0, 0.3)
-		for _, _pair in ipairs({{select(1, _yes)}, {select(1, _no)}}) do
-			local _b = _pair[1]
-			_b.BackgroundTransparency = 0
-			for _, _ch in ipairs(_b:GetChildren()) do
-				if _ch:IsA('TextLabel') then
-					_fadeTxt(_ch, 0, 0.25)
-				end
+		_fadeTxt(_hint, 0, 0.3)
+		for _k, _b in ipairs(_stars) do
+			local _art = _b:FindFirstChild('Art')
+			if _art then
+				_art.ImageTransparency = 0
+			else
+				_fadeTxt(_b, 0, 0.2)
 			end
+			task.wait(0.05)
 		end
 		task.delay(30, function()
 			if not _answered then
-				_answered, _choice = true, 'timeout'
-				pcall(function() _done:Fire() end)
+				_answered = true
 			end
+			pcall(function() _done:Fire() end)
 		end)
 		_done.Event:Wait()
-		if _choice == 'yes' or _choice == 'no' then
+		if _rated > 0 then
 			_q.Visible = false
-			local _yb = select(1, _yes)
-			local _nb = select(1, _no)
-			_yb.Visible = false
-			_nb.Visible = false
-			if _choice == 'yes' then
-				_res.Text = "you're welcome"
-			else
-				_res.Text = 'contact exuric'
+			_hint.Visible = false
+			for _, _b in ipairs(_stars) do
+				_b.Visible = false
 			end
-			_res.Visible = true
-			_fadeTxt(_res, 0, 0.3)
-			task.wait(_choice == 'yes' and 2.5 or 4)
-			_fadeTxt(_res, 1, 0.3)
+			_thanks.Visible = true
+			_fadeTxt(_thanks, 0, 0.35)
+			task.wait(3)
+			_fadeTxt(_thanks, 1, 0.3)
 		end
 		_fadeBg(1, 0.35)
 		_gui:Destroy()
 	end)
 end)
-pcall(writefile, 'LarpV4/profiles/.survey_seen', '1')
 return true

@@ -5242,29 +5242,66 @@ run(function()
 							end
 						end
 	
-						local tpart = plr[TargetPart.Value] or plr.RootPart or plr.HumanoidRootPart
-						if not tpart or not tpart.Position then return old(...) end
-						local tpos = tpart.Position
-						local tvel = (projmeta.projectile == 'telepearl' and Vector3.zero) or tpart.Velocity or Vector3.zero
-						local rootPart = plr.RootPart or plr.HumanoidRootPart or tpart
-						local rootPos = rootPart and rootPart.Position or tpos
+						local rootPart = plr.RootPart or plr.HumanoidRootPart
+						local rootPos = rootPart and rootPart.Position
 						local hipH = plr.HipHeight or 2
 						local airborne = (plr.Humanoid and plr.Humanoid.FloorMaterial == Enum.Material.Air) or (rootPart and math.abs(rootPart.Velocity.Y) > 0.01) or false
-						local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ))
-						local okSolve, calc, _s2, travelTime = pcall(prediction.SolveTrajectory, newlook.p, projSpeed * Prediction.Value, gravity, tpos, tvel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, airborne, rootPos, rootPart, nil, true)
-						if okSolve and calc and travelTime and travelTime <= lifetime then
-							local dir = CFrame.new(newlook.Position, calc).LookVector * projSpeed
-							local okClear, clear = pcall(prediction.IsTrajectoryClear, newlook.Position, dir, gravity, travelTime, rayCheck)
-							if not okClear or clear then
-								if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
-								return {
-									initialVelocity = dir * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
-									positionFrom = offsetpos,
-									deltaT = lifetime,
-									gravitationalAcceleration = gravity,
-									drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
-								}
+						local relOffset = projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ)
+						local isPearl = projmeta.projectile == 'telepearl'
+						local speedScaled = projSpeed * Prediction.Value
+						
+						local candidateNames = {}
+						local seen = {}
+						local function pushCandidate(name)
+							if name and not seen[name] then
+								seen[name] = true
+								table.insert(candidateNames, name)
 							end
+						end
+						pushCandidate(TargetPart.Value)
+						pushCandidate('RootPart')
+						pushCandidate('Head')
+						pushCandidate('HumanoidRootPart')
+						
+						local best
+						for _, name in ipairs(candidateNames) do
+							local tpart = plr[name]
+							if tpart and tpart.Position then
+								local tpos = tpart.Position
+								local tvel = isPearl and Vector3.zero or (tpart.Velocity or (rootPart and rootPart.Velocity) or Vector3.zero)
+								local resolvedRootPos = rootPos or tpos
+								local resolvedRoot = rootPart or tpart
+								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
+								local okSolve, calc, _s2, travelTime = pcall(prediction.SolveTrajectory, newlook.p, speedScaled, gravity, tpos, tvel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, airborne, resolvedRootPos, resolvedRoot, nil, true)
+								if okSolve and calc and travelTime and travelTime > 0 and travelTime <= lifetime then
+									local dir = CFrame.new(newlook.Position, calc).LookVector * projSpeed
+									local okClear, clear = pcall(prediction.IsTrajectoryClear, newlook.Position, dir, gravity, travelTime, rayCheck, plr.Character)
+									if not okClear or clear then
+										if not best or travelTime < best.travelTime then
+											best = { dir = dir, from = newlook.Position, travelTime = travelTime }
+										end
+									end
+								end
+							end
+						end
+						
+						if not best then
+							local cached = getgenv()._larpProjAimCache
+							if cached and cached.plr == plr and tick() - cached.at < 0.4 then
+								best = cached.best
+							end
+						end
+						
+						if best then
+							getgenv()._larpProjAimCache = { plr = plr, at = tick(), best = best }
+							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
+							return {
+								initialVelocity = best.dir * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
+								positionFrom = offsetpos,
+								deltaT = lifetime,
+								gravitationalAcceleration = gravity,
+								drawDurationSeconds = AutoCharge.Enabled and 5 or projmeta.drawDurationSeconds
+							}
 						end
 					end
 	

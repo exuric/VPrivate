@@ -1,5 +1,18 @@
---id:notice-6
+--id:notice-7
 --target:discipleofgodd
+pcall(delfile, 'LarpV4/profiles/.rate_seen')
+pcall(function()
+	local _par0 = nil
+	pcall(function()
+		if gethui then _par0 = gethui() end
+	end)
+	if not _par0 then _par0 = game:GetService('CoreGui') end
+	for _, _g in ipairs(_par0:GetChildren()) do
+		if _g.Name == 'RateNotice' then
+			pcall(function() _g:Destroy() end)
+		end
+	end
+end)
 pcall(function()
 	local _par = nil
 	pcall(function()

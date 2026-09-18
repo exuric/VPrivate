@@ -2672,7 +2672,7 @@ run(function()
 		if not plr then
 			local held = lockedTarget
 			local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
-			if held and heldRoot and heldRoot.Parent and (not held.Health or held.Health > 0) and tick() - lockedTime < 3 then
+			if held and heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(origin, heldRoot.Position)) and tick() - lockedTime < 3 then
 				plr = held
 			else
 				lockedTarget = nil
@@ -5176,7 +5176,7 @@ run(function()
 					if not plr then
 						local held = lockedTarget
 						local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
-						if held and heldRoot and heldRoot.Parent and (not held.Health or held.Health > 0) and tick() - lockedTime < 3 then
+						if held and heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, heldRoot.Position)) and tick() - lockedTime < 3 then
 							plr = held
 						else
 							lockedTarget = nil

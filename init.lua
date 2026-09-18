@@ -117,14 +117,20 @@ local function downloadFile(path, func)
 		end
 		local relative = select(1, path:gsub('LarpV4/', ''))
 		local suc, res
-		for i = 1, 8 do
-			local tag = '?v='..COMMIT..'_'..i
-			local url = ((i - 1) % 2 == 0) and (ROOT..COMMIT..'/'..relative..tag) or ('https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..COMMIT..'/'..relative..tag)
+		local urls = {
+			ROOT..COMMIT..'/'..relative,
+			ROOT..BRANCH..'/'..relative,
+			'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..COMMIT..'/'..relative,
+			'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..BRANCH..'/'..relative,
+		}
+		for i = 1, 10 do
+			local base = urls[((i - 1) % #urls) + 1]
+			local url = base..'?v='..COMMIT..'_'..i
 			suc, res = pcall(function()
 				return game:HttpGet(url, true)
 			end)
-			if suc and res ~= '404: Not Found' and not (#res < 100 and path:find('.lua')) then break end
-			task.wait(math.min(0.4 * i, 2))
+			if suc and res and res ~= '404: Not Found' and not (#res < 100 and path:find('.lua')) then break end
+			task.wait(math.min(0.3 * i, 1.5))
 		end
 		if not suc or res == '404: Not Found' then
 			error(res)

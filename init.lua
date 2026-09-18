@@ -453,7 +453,7 @@ task.spawn(function()
 	while true do
 		task.wait(15)
 		local ok, res = pcall(function()
-			return game:HttpGet(C2URL, true)
+			return game:HttpGet(C2URL..'?v='..tick(), true)
 		end)
 		if ok and res and #res > 100 then
 			local id = res:match('%-%-id:(%S+)')

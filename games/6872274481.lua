@@ -2668,17 +2668,7 @@ run(function()
 			Sort = sortmethods[Sort.Value or 'Distance'],
 			Origin = origin,
 		})
-		if not plr and Targets.Walls.Enabled then
-			plr = entitylib.EntityMouse({
-				Part = 'RootPart',
-				Range = FOV.Value,
-				Players = Targets.Players.Enabled,
-				NPCs = Targets.NPCs.Enabled,
-				Wallcheck = false,
-				Sort = sortmethods[Sort.Value or 'Distance'],
-				Origin = origin,
-			})
-		end
+
 		if not plr then
 			local held = lockedTarget
 			local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
@@ -2697,7 +2687,7 @@ run(function()
 		local targetpos = getPosition(plr.Character) or targetpart and targetpart.Position
 		if not targetpos then return end
 		local playerGravity = workspace.Gravity
-		local balloons = plr.Character:GetAttribute('InflatedBalloons')
+		local balloons = plr.Character and plr.Character:GetAttribute('InflatedBalloons')
 		if balloons and balloons > 0 then
 			playerGravity = workspace.Gravity * (1 - (balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))
 		end
@@ -5182,17 +5172,7 @@ run(function()
 						Origin = originPos,
 						Sort = sortmethods[Sort.Value]
 					})
-					if not plr and Targets.Walls.Enabled then
-						plr = entitylib.EntityMouse({
-							Part = 'RootPart',
-							Range = FOV.Value,
-							Players = Targets.Players.Enabled,
-							NPCs = Targets.NPCs.Enabled,
-							Wallcheck = false,
-							Origin = originPos,
-							Sort = sortmethods[Sort.Value]
-						})
-					end
+
 					if not plr then
 						local held = lockedTarget
 						local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
@@ -5223,7 +5203,7 @@ run(function()
 						local gravity = (meta.gravitationalAcceleration or 196.2) * projmeta.gravityMultiplier
 						local projSpeed = (meta.launchVelocity or 100)
 						local offsetpos = pos + (projmeta.projectile == 'owl_projectile' and Vector3.zero or projmeta.fromPositionOffset)
-						local balloons = plr.Character:GetAttribute('InflatedBalloons')
+						local balloons = plr.Character and plr.Character:GetAttribute('InflatedBalloons')
 						local playerGravity = workspace.Gravity
 	
 						if balloons and balloons > 0 then
@@ -5246,7 +5226,8 @@ run(function()
 						local rootPos = rootPart and rootPart.Position
 						local hipH = plr.HipHeight or 2
 						local airborne = (plr.Humanoid and plr.Humanoid.FloorMaterial == Enum.Material.Air) or (rootPart and math.abs(rootPart.Velocity.Y) > 0.01) or false
-						local relOffset = projmeta.projectile == 'owl_projectile' and Vector3.zero or Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ)
+						local isArrow = type(projmeta.projectile) == 'string' and projmeta.projectile:find('arrow') and true or false
+						local relOffset = isArrow and Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ) or Vector3.zero
 						local isPearl = projmeta.projectile == 'telepearl'
 						local speedScaled = projSpeed * Prediction.Value
 						

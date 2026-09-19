@@ -5260,7 +5260,10 @@ run(function()
 						local isArrow = type(projmeta.projectile) == 'string' and projmeta.projectile:find('arrow') and true or false
 						local relOffset = isArrow and Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ) or Vector3.zero
 						local isPearl = projmeta.projectile == 'telepearl'
-						local speedScaled = projSpeed * Prediction.Value
+						local effectiveMult = (AutoCharge.Enabled or not Aim.Enabled) and 1 or (projmeta.velocityMultiplier or 1)
+						local fireSpeed = projSpeed * effectiveMult
+						local speedScaled = fireSpeed * Prediction.Value
+						local hasHighArc = typeof(prediction.SolveTrajectoryHigh) == 'function'
 						
 						local candidateNames = {}
 						local seen = {}
@@ -5281,31 +5284,45 @@ run(function()
 							local tpart = plr[name]
 							if tpart and tpart.Position then
 								local tpos = tpart.Position
-								local tvel = isPearl and Vector3.zero or (tpart.Velocity or (rootPart and rootPart.Velocity) or Vector3.zero)
+								local realVel = isPearl and Vector3.zero or (tpart.Velocity or (rootPart and rootPart.Velocity) or Vector3.zero)
 								local resolvedRootPos = rootPos or tpos
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
-								local function attempt(useVel, useAirborne)
-									local effVel = useVel and tvel or Vector3.new(tvel.X, 0, tvel.Z)
-									local okSolve, calc, _s2, travelTime = pcall(prediction.SolveTrajectory, newlook.p, speedScaled, gravity, tpos, effVel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, useAirborne, resolvedRootPos, resolvedRoot, nil, true)
-									if okSolve and calc and travelTime and travelTime > 0 and travelTime <= lifetime then
-										local dir = CFrame.new(newlook.Position, calc).LookVector * projSpeed
-										local okClear, clear = pcall(prediction.IsTrajectoryClear, newlook.Position, dir, gravity, travelTime, rayCheck, plr.Character)
-										local cleared = not okClear or clear
-										if cleared then
-											if not best or travelTime < best.travelTime then
-												best = { dir = dir, from = newlook.Position, travelTime = travelTime }
-											end
-										else
-											if not bestBlocked or travelTime < bestBlocked.travelTime then
-												bestBlocked = { dir = dir, from = newlook.Position, travelTime = travelTime }
-											end
+								local origin3 = newlook.Position
+								local function record(calc, travelTime, cleared)
+									local dir = CFrame.new(origin3, calc).LookVector * fireSpeed
+									if cleared then
+										if not best or travelTime < best.travelTime then
+											best = { dir = dir, from = origin3, travelTime = travelTime }
+										end
+									else
+										if not bestBlocked or travelTime < bestBlocked.travelTime then
+											bestBlocked = { dir = dir, from = origin3, travelTime = travelTime }
 										end
 									end
 								end
-								attempt(true, airborne)
-								if not best and (airborne or math.abs(tvel.Y) > 3) then
-									attempt(false, false)
+								local function tryOne(solver, vel, useAirborne)
+									if not solver then return end
+									local okSolve, calc, _s2, travelTime = pcall(solver, origin3, speedScaled, gravity, tpos, vel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, useAirborne, resolvedRootPos, resolvedRoot, nil, true)
+									if not okSolve or not calc or not travelTime then return end
+									if travelTime <= 0 or travelTime > lifetime * 1.1 then return end
+									local dir = CFrame.new(origin3, calc).LookVector * fireSpeed
+									local okClear, clear = pcall(prediction.IsTrajectoryClear, origin3, dir, gravity, travelTime, rayCheck, plr.Character)
+									record(calc, travelTime, (not okClear) or clear)
+								end
+								-- primary pass: real velocity + real airborne, both arcs
+								tryOne(prediction.SolveTrajectory, realVel, airborne)
+								if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, realVel, airborne) end
+								-- if nothing cleared, try zero-Y velocity (bridging: target hovers, doesn't fall)
+								if not best and (airborne or math.abs(realVel.Y) > 3) then
+									local flat = Vector3.new(realVel.X, 0, realVel.Z)
+									tryOne(prediction.SolveTrajectory, flat, false)
+									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, flat, false) end
+								end
+								-- last-ditch: completely stationary target model
+								if not best then
+									tryOne(prediction.SolveTrajectory, Vector3.zero, false)
+									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, Vector3.zero, false) end
 								end
 							end
 						end
@@ -5315,7 +5332,7 @@ run(function()
 						end
 						if not best then
 							local cached = getgenv()._larpProjAimCache
-							if cached and cached.plr == plr and tick() - cached.at < 0.4 then
+							if cached and cached.plr == plr and tick() - cached.at < 0.6 then
 								best = cached.best
 							end
 						end
@@ -5324,7 +5341,7 @@ run(function()
 							getgenv()._larpProjAimCache = { plr = plr, at = tick(), best = best }
 							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 							return {
-								initialVelocity = best.dir * ((AutoCharge.Enabled or not Aim.Enabled) and 1 or projmeta.velocityMultiplier),
+								initialVelocity = best.dir,
 								positionFrom = offsetpos,
 								deltaT = lifetime,
 								gravitationalAcceleration = gravity,

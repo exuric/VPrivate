@@ -4717,7 +4717,7 @@ run(function()
 		elseif lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') or lower:find('pc') or lower:find('uwp') or lower:find('web') then
 			icon = '🖥'
 		else
-			icon = '🖥'
+			icon = '❓'
 		end
 		DeviceCache[userId] = icon
 		return icon

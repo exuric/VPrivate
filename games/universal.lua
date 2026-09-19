@@ -4674,9 +4674,7 @@ run(function()
 		if not ent.Player then return end
 		local userId = ent.Player.UserId
 		local cached = DeviceCache[userId]
-		if cached ~= nil then return cached end
-		-- Cache immediately so we never re-scan for this player (prevents lag).
-		DeviceCache[userId] = '❓'
+		if cached and (cached.icon ~= '❓' or tick() - cached.at < 30) then return cached.icon end
 		local platform = ''
 		local function accept(v)
 			if v ~= nil then
@@ -4711,14 +4709,15 @@ run(function()
 				if platform ~= '' then break end
 			end
 		end
-		-- 4. Character heuristic (cheap folder lookup).
-		if platform == '' and ent.Character then
-			for _, name in ipairs({'MobileControls','TouchControls','MobileUI','VRControls','ConsoleControls'}) do
-				if ent.Character:FindFirstChild(name) then
-					if name:find('Mobile') or name:find('Touch') then platform = 'Mobile'
-					elseif name:find('VR') then platform = 'VR'
-					elseif name:find('Console') then platform = 'Console' end
-					break
+		-- 4. Replicated auto-jump flag (mobile clients spawn with it enabled, PC/console do not).
+		if platform == '' then
+			local ok, aj = pcall(function() return ent.Player.AutoJumpEnabled end)
+			if ok and aj == true then platform = 'Mobile' end
+			if platform == '' then
+				local hum = ent.Humanoid or (ent.Character and ent.Character:FindFirstChildOfClass('Humanoid'))
+				if hum then
+					local ok2, hj = pcall(function() return hum.AutoJumpEnabled end)
+					if ok2 and hj == true then platform = 'Mobile' end
 				end
 			end
 		end
@@ -4746,7 +4745,7 @@ run(function()
 		else
 			icon = '❓'
 		end
-		DeviceCache[userId] = icon
+		DeviceCache[userId] = {icon = icon, at = tick()}
 		return icon
 	end
 	

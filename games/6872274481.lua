@@ -2112,7 +2112,7 @@ end
 		end,
 		Adaptive = function(localcframe, ent, fps)
 			local prog, rng = ease(math.min(tick() - started, 1)), Random.new()
-			local speed = (AimSpeed.Value * 0.1 * prog) + (1 - prog) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 5)
+			local speed = (AimSpeed.Value * math.max(prog, 0.15)) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0)
 			local shk = (Shake and Shake.Value) or 0
 			local jMag = shk * 0.15 * fps
 			local jitter = Vector3.new((rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag)
@@ -3796,6 +3796,8 @@ run(function()
 		end
 	end
 	
+	local hookedCanSee
+	local WallCheck
 	HitBoxes = larp.Categories.Blatant:CreateModule({
 		Name = 'HitBoxes',
 		Function = function(callback)
@@ -3803,6 +3805,18 @@ run(function()
 				if Mode.Value == 'Sword' then
 					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (Expand.Value / 3))
 					set = true
+					if WallCheck and WallCheck.Enabled and not hookedCanSee and bedwars.SwordController and bedwars.SwordController.canSee then
+						hookedCanSee = bedwars.SwordController.canSee
+						bedwars.SwordController.canSee = function(self, ent)
+							if not entitylib.isAlive then return hookedCanSee(self, ent) end
+							local target = ent and (ent.RootPart or ent.HumanoidRootPart or (ent.Character and ent.Character.PrimaryPart))
+							if target then
+								local origin = entitylib.character.RootPart.Position
+								if entitylib.Wallcheck(origin, target.Position) then return false end
+							end
+							return hookedCanSee(self, ent)
+						end
+					end
 				else
 					HitBoxes:Clean(entitylib.Events.EntityAdded:Connect(createHitbox))
 					HitBoxes:Clean(entitylib.Events.LocalAdded:Connect(function()
@@ -3824,6 +3838,10 @@ run(function()
 				if set then
 					debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, 3.8)
 					set = nil
+				end
+				if hookedCanSee then
+					bedwars.SwordController.canSee = hookedCanSee
+					hookedCanSee = nil
 				end
 				for _, part in objects do
 					part:Destroy()
@@ -3864,6 +3882,17 @@ run(function()
 		Suffix = function(val)
 			return val == 1 and 'stud' or 'studs'
 		end
+	})
+	WallCheck = HitBoxes:CreateToggle({
+		Name = 'Wall check',
+		Default = true,
+		Function = function()
+			if HitBoxes.Enabled then
+				HitBoxes:Toggle()
+				HitBoxes:Toggle()
+			end
+		end,
+		Tooltip = 'Refuses to register hits through walls when the sword region is expanded'
 	})
 end)
 
@@ -5245,6 +5274,7 @@ run(function()
 						pushCandidate('HumanoidRootPart')
 						
 						local best
+						local bestBlocked
 						for _, name in ipairs(candidateNames) do
 							local tpart = plr[name]
 							if tpart and tpart.Position then
@@ -5253,19 +5283,34 @@ run(function()
 								local resolvedRootPos = rootPos or tpos
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
-								local okSolve, calc, _s2, travelTime = pcall(prediction.SolveTrajectory, newlook.p, speedScaled, gravity, tpos, tvel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, airborne, resolvedRootPos, resolvedRoot, nil, true)
-								if okSolve and calc and travelTime and travelTime > 0 and travelTime <= lifetime then
-									local dir = CFrame.new(newlook.Position, calc).LookVector * projSpeed
-									local okClear, clear = pcall(prediction.IsTrajectoryClear, newlook.Position, dir, gravity, travelTime, rayCheck, plr.Character)
-									if not okClear or clear then
-										if not best or travelTime < best.travelTime then
-											best = { dir = dir, from = newlook.Position, travelTime = travelTime }
+								local function attempt(useVel, useAirborne)
+									local effVel = useVel and tvel or Vector3.new(tvel.X, 0, tvel.Z)
+									local okSolve, calc, _s2, travelTime = pcall(prediction.SolveTrajectory, newlook.p, speedScaled, gravity, tpos, effVel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, useAirborne, resolvedRootPos, resolvedRoot, nil, true)
+									if okSolve and calc and travelTime and travelTime > 0 and travelTime <= lifetime then
+										local dir = CFrame.new(newlook.Position, calc).LookVector * projSpeed
+										local okClear, clear = pcall(prediction.IsTrajectoryClear, newlook.Position, dir, gravity, travelTime, rayCheck, plr.Character)
+										local cleared = not okClear or clear
+										if cleared then
+											if not best or travelTime < best.travelTime then
+												best = { dir = dir, from = newlook.Position, travelTime = travelTime }
+											end
+										else
+											if not bestBlocked or travelTime < bestBlocked.travelTime then
+												bestBlocked = { dir = dir, from = newlook.Position, travelTime = travelTime }
+											end
 										end
 									end
+								end
+								attempt(true, airborne)
+								if not best and (airborne or math.abs(tvel.Y) > 3) then
+									attempt(false, false)
 								end
 							end
 						end
 						
+						if not best and bestBlocked then
+							best = bestBlocked
+						end
 						if not best then
 							local cached = getgenv()._larpProjAimCache
 							if cached and cached.plr == plr and tick() - cached.at < 0.4 then

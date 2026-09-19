@@ -6725,22 +6725,25 @@ run(function()
 		local function accept(v)
 			if v ~= nil then
 				local str = tostring(v)
-				if str ~= '' and str:lower() ~= 'unknown' and str:lower() ~= 'none' then
+				if str ~= '' and str:lower() ~= 'unknown' and str:lower() ~= 'none' and str:lower() ~= '0' then
 					platform = str
 				end
 			end
 		end
+		-- 1. direct public property
 		if platform == '' then
 			local ok, v = pcall(function() return ent.Player.OsPlatform end)
 			if ok then accept(v) end
 		end
+		-- 2. gethiddenproperty for known keys
 		if platform == '' and typeof(gethiddenproperty) == 'function' then
-			for _, prop in ipairs({'OsPlatform','DeviceType','Platform','DeviceModel','ClientAppInfo'}) do
+			for _, prop in ipairs({'OsPlatform','DeviceType','Platform','DeviceModel','ClientAppInfo','FollowUserId'}) do
 				local ok, v = pcall(gethiddenproperty, ent.Player, prop)
 				if ok then accept(v) end
 				if platform ~= '' then break end
 			end
 		end
+		-- 3. custom attributes some games set
 		if platform == '' then
 			for _, key in ipairs({'Platform','Device','OsPlatform','DeviceType','MobileControls','IsMobile'}) do
 				local ok, v = pcall(function() return ent.Player:GetAttribute(key) end)
@@ -6751,6 +6754,7 @@ run(function()
 				if platform ~= '' then break end
 			end
 		end
+		-- 4. character-side heuristic
 		if platform == '' and ent.Character then
 			for _, name in ipairs({'MobileControls','TouchControls','MobileUI','VRControls','ConsoleControls'}) do
 				if ent.Character:FindFirstChild(name) then
@@ -6761,6 +6765,28 @@ run(function()
 				end
 			end
 		end
+		-- 5. GC scan (top-tier executor): find any live table that references
+		-- this player and carries a device-like string field.
+		if platform == '' and typeof(getgc) == 'function' then
+			local ok = pcall(function()
+				for _, v in pairs(getgc(true)) do
+					if type(v) == 'table' then
+						local linked = rawget(v, 'Player') == ent.Player
+							or rawget(v, 'player') == ent.Player
+							or rawget(v, 'UserId') == userId
+							or rawget(v, 'userId') == userId
+						if linked then
+							for _, k in ipairs({'OsPlatform','osPlatform','Platform','platform','DeviceType','deviceType','Device','device'}) do
+								local val = rawget(v, k)
+								if val ~= nil then accept(val) end
+								if platform ~= '' then return end
+							end
+						end
+					end
+				end
+			end)
+		end
+		-- 6. local player: reliable UIS + heuristic
 		if platform == '' and ent.Player == lplr then
 			local ok, v = pcall(function() return inputService:GetPlatform() end)
 			if ok then accept(v) end
@@ -6770,6 +6796,11 @@ run(function()
 				elseif inputService.TouchEnabled and not inputService.KeyboardEnabled then platform = 'IOS'
 				else platform = 'Windows' end
 			end
+		end
+		-- Debug log: fires when getgenv().LarpDeviceDebug is truthy so dj can
+		-- see what each source returned for a given player.
+		if getgenv().LarpDeviceDebug then
+			print('[LarpDevice]', ent.Player and ent.Player.Name, '->', platform)
 		end
 		local lower = platform:lower()
 		local icon

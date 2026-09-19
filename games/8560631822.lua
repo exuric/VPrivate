@@ -6756,15 +6756,15 @@ run(function()
 		local lower = platform:lower()
 		local icon
 		if lower:find('vr') then
-			icon = '[VR]'
+			icon = '🥽'
 		elseif lower:find('xbox') or lower:find('playstation') or lower:find('ps4') or lower:find('ps5') or lower:find('gamepad') or lower:find('console') then
-			icon = '[CONSOLE]'
+			icon = '🎮'
 		elseif lower:find('ios') or lower:find('iphone') or lower:find('ipad') or lower:find('android') or lower:find('mobile') or lower:find('phone') then
-			icon = '[MOBILE]'
+			icon = '📱'
 		elseif lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') or lower:find('pc') or lower:find('uwp') or lower:find('web') then
-			icon = '[PC]'
+			icon = '🖥'
 		else
-			icon = '[PC]'
+			icon = '🖥'
 		end
 		DeviceCache[userId] = icon
 		return icon

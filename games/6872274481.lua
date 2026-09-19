@@ -3432,8 +3432,9 @@ run(function()
 
     AutoChargeProj = larp.Categories.Blatant:CreateModule({
         Name = 'Charge Percent',
-	Function = function(callback)
-		if callback then
+		Function = function(callback)
+			seedSelected()
+			if callback then
 			ProjectileAimbot:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
 				if Mode.Value ~= 'Adaptive' then
 					return
@@ -7592,6 +7593,9 @@ end)
 
 run(function()
 	local LarpSkins
+	local handConn
+	local accConn
+	local watchGen = 0
 	local Options = {}
 	local selected = {}
 	local groups = {
@@ -7666,6 +7670,18 @@ run(function()
 		local tag = group and selected[group]
 		return tag and skins[group][tag][itemType] or nil
 	end
+
+	-- profile restore sets the dropdowns' display values but never fills the
+	-- internal selection, so after a reload nothing applies anywhere until the
+	-- user re-picks. Seed it from what's visibly selected, once.
+	local function seedSelected()
+		if next(selected) ~= nil then return end
+		local itype = Options.ItemType and Options.ItemType.Value
+		local disp = Options.Skin and Options.Skin.Value
+		if itype and disp and disp ~= 'None' and tags[itype] and tags[itype][disp] then
+			selected[itype] = tags[itype][disp]
+		end
+	end
 	
 	local function applySkins()
 		local inventory = store.inventory.inventory
@@ -7678,9 +7694,11 @@ run(function()
 		bedwars.InventoryViewmodelController:handleStore(bedwars.Store:getState())
 	end
 
-	-- third person: the character's held item is welded as an Accessory named
-	-- after the itemType. The game only re-skins the first person viewmodel,
-	-- so we swap the character's hand accessory to the skin template ourselves
+	-- third person: the character's held item is an Accessory named after the
+	-- itemType. Newer rigs joint it with a generic weld (no RightGrip), so the
+	-- old destroy-and-reweld approach could never find its grip and silently
+	-- did nothing. Instead we copy the skin template's mesh onto the existing
+	-- handle, which keeps the game's own joints (and alignment) intact.
 	local function reskinHand()
 		local char = lplr.Character
 		if not char then return end
@@ -7688,7 +7706,6 @@ run(function()
 		local itemType = handItem and handItem.Name or (char:FindFirstChild('HandInvItem') and char.HandInvItem.Value and char.HandInvItem.Value.Name)
 		if not itemType then return end
 		local skin = getSkin(itemType)
-		-- find the current hand accessory for this item
 		local accessory
 		for _, v in char:GetChildren() do
 			if v:IsA('Accessory') and v.Name == itemType then
@@ -7699,57 +7716,114 @@ run(function()
 		if not accessory then return end
 		local handle = accessory:FindFirstChild('Handle')
 		if not handle then return end
-		local grip = handle:FindFirstChild('RightGrip') or (char.RightHand and char.RightHand:FindFirstChild('RightGrip'))
-		local gripPart = grip and grip.Part1
-		if not gripPart then return end
 
-		local template
-		if skin then
-			local ok, items = pcall(function()
-				return replicatedStorage:FindFirstChild('Items')
-			end)
-			if ok and items then
-				template = items:FindFirstChild(skin)
-			end
-		end
-		if not template then
-			local ok, items = pcall(function()
-				return replicatedStorage:FindFirstChild('Items')
-			end)
-			if ok and items then
-				template = items:FindFirstChild(itemType)
-			end
-		end
-		if not template then return end
-
-		local ok, newModel = pcall(function()
-			local model = template:Clone()
-			model.Name = itemType
-			if skin then
-				model:SetAttribute('ItemSkin', skin)
-			end
-			return model
+		local ok, items = pcall(function()
+			return replicatedStorage:FindFirstChild('Items')
 		end)
-		if not ok or not newModel then return end
+		if not (ok and items) then return end
+		local template = (skin and items:FindFirstChild(skin)) or items:FindFirstChild(itemType)
+		if not template then return end
+		local srcHandle = template:FindFirstChild('Handle') or template:FindFirstChild('Handle', true) or template:FindFirstChildWhichIsA('BasePart', true)
+		if not srcHandle then return end
 
-		local newHandle = newModel:FindFirstChild('Handle') or newModel:FindFirstChildWhichIsA('BasePart')
-		if not newHandle then newModel:Destroy() return end
-
-		accessory:Destroy()
-		local newAccessory = Instance.new('Accessory')
-		newAccessory.Name = itemType
-		newHandle.Name = 'Handle'
-		newAccessory.Parent = char
-		newHandle.Parent = newAccessory
-		local weld = Instance.new('Weld')
-		weld.Part0 = gripPart
-		weld.Part1 = newHandle
-		weld.C0 = grip and grip.C0 or CFrame.new()
-		weld.C1 = grip and grip.C1 or CFrame.new()
-		weld.Parent = newHandle
-		bedwars.QueryUtil:setQueryIgnored(newHandle, true)
+		pcall(function()
+			if handle:IsA('MeshPart') and srcHandle:IsA('MeshPart') then
+				if srcHandle.MeshId ~= '' then handle.MeshId = srcHandle.MeshId end
+				handle.TextureID = srcHandle.TextureID
+				handle.Material = srcHandle.Material
+				handle.Color = srcHandle.Color
+			else
+				for _, m in handle:GetChildren() do
+					if m:IsA('DataModelMesh') then m:Destroy() end
+				end
+				for _, m in srcHandle:GetChildren() do
+					if m:IsA('DataModelMesh') then m:Clone().Parent = handle end
+				end
+			end
+			for _, sm in srcHandle:GetChildren() do
+				if sm:IsA('MeshPart') then
+					local dm = handle:FindFirstChild(sm.Name)
+					if dm and dm:IsA('MeshPart') then
+						if sm.MeshId ~= '' then dm.MeshId = sm.MeshId end
+						dm.TextureID = sm.TextureID
+						dm.Material = sm.Material
+						dm.Color = sm.Color
+					end
+				end
+			end
+			accessory:SetAttribute('ItemSkin', skin)
+		end)
 	end
 	
+	-- instant equip swaps: apply now plus two delayed follow-ups, so we win
+	-- even when the game rebuilds the accessory after we do
+	local function reskinSoon()
+		task.defer(reskinHand)
+		task.delay(0.3, function()
+			if LarpSkins.Enabled then reskinHand() end
+		end)
+		task.delay(0.7, function()
+			if LarpSkins.Enabled then reskinHand() end
+		end)
+	end
+	local function expectedMesh(itemType, skin)
+		local ok, items = pcall(function()
+			return replicatedStorage:FindFirstChild('Items')
+		end)
+		if not (ok and items) then return nil end
+		local template = (skin and items:FindFirstChild(skin)) or items:FindFirstChild(itemType)
+		local src = template and (template:FindFirstChild('Handle') or template:FindFirstChild('Handle', true))
+		if src and src:IsA('MeshPart') and src.MeshId ~= '' then
+			return src.MeshId
+		end
+		return nil
+	end
+
+	-- the game rebuilds the hand accessory on swings/equips, wiping our mesh.
+	-- a slow poll re-applies only on mismatch, so it self-heals no matter
+	-- what the game does, at negligible cost (2 checks/sec, enabled only).
+	local function watchSkins()
+		watchGen += 1
+		local gen = watchGen
+		task.spawn(function()
+			while LarpSkins.Enabled and gen == watchGen do
+				task.wait(0.25)
+				if not (LarpSkins.Enabled and gen == watchGen) then break end
+				pcall(function()
+					local char = lplr.Character
+					if not char then return end
+					local hum = char:FindFirstChildOfClass('Humanoid')
+					if hum and hum.Health <= 0 then return end
+					local handItem = store.hand and store.hand.tool
+					local itemType = handItem and handItem.Name or (char:FindFirstChild('HandInvItem') and char.HandInvItem.Value and char.HandInvItem.Value.Name)
+					if not itemType then return end
+					local skin = getSkin(itemType)
+					if not skin then return end
+					-- first person source of truth: if the swing cleared the
+					-- hand's skin, restore it so the viewmodel comes back too
+					local inventory = store.inventory and store.inventory.inventory
+					local hand = inventory and inventory.hand
+					if hand and hand.itemType == itemType and hand.itemSkin ~= skin then
+						applySkins()
+					end
+					local want = expectedMesh(itemType, skin)
+					if not want then return end
+					local accessory
+					for _, v in char:GetChildren() do
+						if v:IsA('Accessory') and v.Name == itemType then
+							accessory = v
+							break
+						end
+					end
+					local handle = accessory and accessory:FindFirstChild('Handle')
+					if handle and handle:IsA('MeshPart') and handle.MeshId ~= want then
+						reskinHand()
+					end
+				end)
+			end
+		end)
+	end
+
 	LarpSkins = larp.Categories.Render:CreateModule({
 		Name = 'Larp Skins',
 		Function = function(callback)
@@ -7759,16 +7833,49 @@ run(function()
 					task.defer(reskinHand)
 				end))
 				LarpSkins:Clean(lplr.CharacterAdded:Connect(function()
+					if handConn then handConn:Disconnect() handConn = nil end
+					if accConn then accConn:Disconnect() accConn = nil end
 					task.wait(1)
 					if LarpSkins.Enabled then
 						applySkins()
 						reskinHand()
+						watchSkins()
+						local char = lplr.Character
+						local hiv = char and char:FindFirstChild('HandInvItem')
+						if hiv then
+							handConn = hiv:GetPropertyChangedSignal('Value'):Connect(function()
+								if LarpSkins.Enabled then
+									task.defer(function()
+										if LarpSkins.Enabled then
+											applySkins()
+											reskinSoon()
+										end
+									end)
+								end
+							end)
+						end
+						if char then
+							accConn = char.ChildAdded:Connect(function(c)
+								if not (LarpSkins.Enabled and c:IsA('Accessory')) then return end
+								local handItem = store.hand and store.hand.tool
+								local itemType = handItem and handItem.Name or (char:FindFirstChild('HandInvItem') and char.HandInvItem.Value and char.HandInvItem.Value.Name)
+								if itemType and c.Name == itemType then
+									reskinSoon()
+								end
+							end)
+						end
 					end
 				end))
 			end
+			if not callback then
+				if handConn then handConn:Disconnect() handConn = nil end
+				if accConn then accConn:Disconnect() accConn = nil end
+				watchGen += 1
+			end
 			applySkins()
+			task.defer(reskinHand)
 			if callback then
-				task.defer(reskinHand)
+				watchSkins()
 			end
 		end,
 		Tooltip = 'Reskins the items you hold - visible in first AND third person, only you can see it'

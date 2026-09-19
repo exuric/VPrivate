@@ -4676,47 +4676,50 @@ run(function()
 		local cached = DeviceCache[userId]
 		if cached then return cached end
 		local platform = ''
-		local ok, os = pcall(function() return ent.Player.OsPlatform end)
-		if ok and os ~= nil then
-			platform = tostring(os)
-		end
-		if platform == '' or platform:lower() == 'unknown' then
-			local ok2, os2 = pcall(gethiddenproperty, ent.Player, 'OsPlatform')
-			if ok2 and os2 ~= nil then
-				platform = tostring(os2)
+		local function accept(v)
+			if v ~= nil then
+				local str = tostring(v)
+				if str ~= '' and str:lower() ~= 'unknown' then
+					platform = str
+				end
 			end
+		end
+		if platform == '' then
+			local ok, v = pcall(function() return ent.Player.OsPlatform end)
+			if ok then accept(v) end
+		end
+		if platform == '' and typeof(gethiddenproperty) == 'function' then
+			local ok, v = pcall(gethiddenproperty, ent.Player, 'OsPlatform')
+			if ok then accept(v) end
+		end
+		if platform == '' and typeof(getcustomasset) == 'function' then
+			local ok, v = pcall(function() return ent.Player:GetAttribute('Platform') end)
+			if ok then accept(v) end
 		end
 		if platform == '' and ent.Player == lplr then
-			local ok3, p = pcall(function() return inputService:GetPlatform() end)
-			if ok3 and p then
-				platform = tostring(p)
-			end
+			local ok, v = pcall(function() return inputService:GetPlatform() end)
+			if ok then accept(v) end
 			if platform == '' then
-				if guiService:IsTenFootInterface() then
-					platform = 'XBoxOne'
-				elseif inputService.TouchEnabled and not inputService.KeyboardEnabled then
-					platform = 'IOS'
-				else
-					platform = 'Windows'
-				end
+				if guiService:IsTenFootInterface() then platform = 'XBoxOne'
+				elseif inputService.VREnabled then platform = 'VR'
+				elseif inputService.TouchEnabled and not inputService.KeyboardEnabled then platform = 'IOS'
+				else platform = 'Windows' end
 			end
 		end
 		local lower = platform:lower()
 		local icon
 		if lower:find('vr') then
 			icon = '[VR]'
-		elseif lower:find('xbox') or lower:find('playstation') or lower:find('gamepad') or lower:find('console') then
+		elseif lower:find('xbox') or lower:find('playstation') or lower:find('ps4') or lower:find('ps5') or lower:find('gamepad') or lower:find('console') then
 			icon = '[CONSOLE]'
-		elseif lower:find('ios') or lower:find('android') or lower:find('mobile') or lower:find('web') then
+		elseif lower:find('ios') or lower:find('iphone') or lower:find('ipad') or lower:find('android') or lower:find('mobile') or lower:find('phone') then
 			icon = '[MOBILE]'
-		elseif lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') then
+		elseif lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') or lower:find('pc') or lower:find('uwp') or lower:find('web') then
 			icon = '[PC]'
-		elseif lower ~= '' then
+		else
 			icon = '[PC]'
 		end
-		if icon then
-			DeviceCache[userId] = icon
-		end
+		DeviceCache[userId] = icon
 		return icon
 	end
 	

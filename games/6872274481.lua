@@ -7660,11 +7660,6 @@ run(function()
 		return list
 	end
 	
-	local function randomName(groupName)
-		local list = skinList(groupName)
-		return list[math.random(2, #list)]
-	end
-	
 	local function getSkin(itemType)
 		local group = LarpSkins.Enabled and getGroup(itemType)
 		local tag = group and selected[group]
@@ -7682,7 +7677,40 @@ run(function()
 			selected[itype] = tags[itype][disp]
 		end
 	end
-	
+
+	-- Larp-network: publish selections as a character attribute so other
+	-- Larp users render your skins locally. Vanilla clients ignore it.
+	-- Same-value writes don't replicate, so calling this often is free.
+	local appliedRemote = {}
+	local function broadcastSkins()
+		pcall(function()
+			local char = lplr.Character
+			if not char then return end
+			if not LarpSkins.Enabled then
+				char:SetAttribute('LarpSkins', '')
+				return
+			end
+			local parts = {}
+			for group, tag in selected do
+				if type(group) == 'string' and type(tag) == 'string' and tag ~= '' then
+					parts[#parts + 1] = group .. '=' .. tag
+				end
+			end
+			table.sort(parts)
+			char:SetAttribute('LarpSkins', table.concat(parts, ';'))
+		end)
+	end
+	local function parseSkins(str)
+		local map = {}
+		if type(str) == 'string' and str ~= '' then
+			for chunk in str:gmatch('([^;]+)') do
+				local g, t = chunk:match('^([^=]+)=([^=]+)$')
+				if g and t then map[g] = t end
+			end
+		end
+		return map
+	end
+
 	local function applySkins()
 		local inventory = store.inventory.inventory
 		for _, item in inventory.items do
@@ -7692,20 +7720,22 @@ run(function()
 			inventory.hand.itemSkin = getSkin(inventory.hand.itemType)
 		end
 		bedwars.InventoryViewmodelController:handleStore(bedwars.Store:getState())
+		broadcastSkins()
 	end
 
 	-- third person: the character's held item is an Accessory named after the
-	-- itemType. Newer rigs joint it with a generic weld (no RightGrip), so the
-	-- old destroy-and-reweld approach could never find its grip and silently
-	-- did nothing. Instead we copy the skin template's mesh onto the existing
-	-- handle, which keeps the game's own joints (and alignment) intact.
-	local function reskinHand()
-		local char = lplr.Character
+	-- itemType. The game deletes foreign handle instances, so we keep its own
+	-- part and match the template's full geometry (size, meshes, sub-parts).
+	local function reskinHand(targetChar, targetItem, forcedSkin)
+		local char = targetChar or lplr.Character
 		if not char then return end
-		local handItem = store.hand and store.hand.tool
-		local itemType = handItem and handItem.Name or (char:FindFirstChild('HandInvItem') and char.HandInvItem.Value and char.HandInvItem.Value.Name)
+		local itemType = targetItem
+		if not itemType then
+			local handItem = (not targetChar and store.hand and store.hand.tool)
+			itemType = handItem and handItem.Name or (char:FindFirstChild('HandInvItem') and char.HandInvItem.Value and char.HandInvItem.Value.Name)
+		end
 		if not itemType then return end
-		local skin = getSkin(itemType)
+		local skin = forcedSkin or getSkin(itemType)
 		local accessory
 		for _, v in char:GetChildren() do
 			if v:IsA('Accessory') and v.Name == itemType then
@@ -7726,31 +7756,74 @@ run(function()
 		local srcHandle = template:FindFirstChild('Handle') or template:FindFirstChild('Handle', true) or template:FindFirstChildWhichIsA('BasePart', true)
 		if not srcHandle then return end
 
-		pcall(function()
-			if handle:IsA('MeshPart') and srcHandle:IsA('MeshPart') then
-				if srcHandle.MeshId ~= '' then handle.MeshId = srcHandle.MeshId end
-				handle.TextureID = srcHandle.TextureID
-				handle.Material = srcHandle.Material
-				handle.Color = srcHandle.Color
-			else
-				for _, m in handle:GetChildren() do
-					if m:IsA('DataModelMesh') then m:Destroy() end
-				end
-				for _, m in srcHandle:GetChildren() do
-					if m:IsA('DataModelMesh') then m:Clone().Parent = handle end
-				end
+	-- instance-preserving full geometry sync. The game deletes foreign handle
+	-- instances, so we keep its own part and match the template exactly: size,
+	-- meshes, missing sub-parts (positioned from template offsets and welded
+	-- rigid ourselves), decals and emitters. Joints and attachments untouched.
+	local function syncHandleGeometry(handle, srcHandle)
+		if handle:IsA('BasePart') and srcHandle:IsA('BasePart') then
+			handle.Size = srcHandle.Size
+		end
+		if handle:IsA('MeshPart') and srcHandle:IsA('MeshPart') then
+			if srcHandle.MeshId ~= '' then handle.MeshId = srcHandle.MeshId end
+			handle.TextureID = srcHandle.TextureID
+			handle.Material = srcHandle.Material
+			handle.Color = srcHandle.Color
+		else
+			for _, m in handle:GetChildren() do
+				if m:IsA('DataModelMesh') then m:Destroy() end
 			end
-			for _, sm in srcHandle:GetChildren() do
-				if sm:IsA('MeshPart') then
-					local dm = handle:FindFirstChild(sm.Name)
-					if dm and dm:IsA('MeshPart') then
-						if sm.MeshId ~= '' then dm.MeshId = sm.MeshId end
-						dm.TextureID = sm.TextureID
-						dm.Material = sm.Material
-						dm.Color = sm.Color
+			for _, m in srcHandle:GetChildren() do
+				if m:IsA('DataModelMesh') then m:Clone().Parent = handle end
+			end
+		end
+		for _, sm in srcHandle:GetChildren() do
+			if sm:IsA('TouchTransmitter') or sm:IsA('LuaSourceContainer') then continue end
+			if sm:IsA('Weld') or sm:IsA('Motor6D') or sm:IsA('Snap') or sm:IsA('RigidConstraint') or sm:IsA('WeldConstraint') then continue end
+			if sm:IsA('Attachment') or sm:IsA('ValueBase') then continue end
+			local dm = handle:FindFirstChild(sm.Name)
+			if dm and dm.ClassName == sm.ClassName then
+				if dm:IsA('MeshPart') and sm:IsA('MeshPart') then
+					if sm.MeshId ~= '' then dm.MeshId = sm.MeshId end
+					dm.TextureID = sm.TextureID
+					dm.Material = sm.Material
+					dm.Color = sm.Color
+					dm.Size = sm.Size
+				end
+			else
+				local ok, c = pcall(function()
+					return sm:Clone()
+				end)
+				if ok and c then
+					if c:IsA('BasePart') and sm:IsA('BasePart') and handle:IsA('BasePart') and srcHandle:IsA('BasePart') then
+						local ok2 = pcall(function()
+							c.CFrame = handle.CFrame * (srcHandle.CFrame:ToObjectSpace(sm.CFrame))
+						end)
+						if not ok2 then c:Destroy() continue end
+					end
+					c.Parent = handle
+					if c:IsA('BasePart') then
+						local wc = Instance.new('WeldConstraint')
+						wc.Part0 = handle
+						wc.Part1 = c
+						wc.Parent = handle
 					end
 				end
 			end
+		end
+		for _, dm in handle:GetChildren() do
+			if dm:IsA('MeshPart') or dm:IsA('DataModelMesh') or dm:IsA('Decal') or dm:IsA('Texture') or dm:IsA('SurfaceAppearance') or dm:IsA('ParticleEmitter') then
+				local sm = srcHandle:FindFirstChild(dm.Name)
+				if not (sm and sm.ClassName == dm.ClassName) then
+					pcall(function() dm:Destroy() end)
+				end
+			end
+		end
+	end
+		pcall(function()
+			syncHandleGeometry(handle, srcHandle)
+		end)
+		pcall(function()
 			accessory:SetAttribute('ItemSkin', skin)
 		end)
 	end
@@ -7824,6 +7897,56 @@ run(function()
 		end)
 	end
 
+	-- render other Larp users' broadcast skins on their characters (1s poll,
+	-- mismatch-gated so idle cost is a few attribute reads)
+	local function readRemoteSkins()
+		local gen = watchGen
+		task.spawn(function()
+			while LarpSkins.Enabled and gen == watchGen do
+				task.wait(1)
+				if not (LarpSkins.Enabled and gen == watchGen) then break end
+				pcall(function()
+					for _, plr in playersService:GetPlayers() do
+						if plr == lplr then continue end
+						local char = plr.Character
+						if not char then continue end
+						local str = char:GetAttribute('LarpSkins')
+						if str == nil or str == '' then
+							appliedRemote[plr.UserId] = nil
+							continue
+						end
+						local map = parseSkins(str)
+						local hiv = char:FindFirstChild('HandInvItem')
+						local itemType = hiv and hiv.Value and hiv.Value.Name
+						if not itemType then continue end
+						local group = getGroup(itemType)
+						local tag = group and map[group]
+						local template = tag and skins[group] and skins[group][tag] and skins[group][tag][itemType]
+						if not template then continue end
+						if appliedRemote[plr.UserId] == template then
+							local ok2, showing = pcall(function()
+								local accessory
+								for _, v in char:GetChildren() do
+									if v:IsA('Accessory') and v.Name == itemType then accessory = v break end
+								end
+								local handle = accessory and accessory:FindFirstChild('Handle')
+								if not (handle and handle:IsA('MeshPart')) then return nil end
+								local items = replicatedStorage:FindFirstChild('Items')
+								local tobj = items and items:FindFirstChild(template)
+								local src = tobj and (tobj:FindFirstChild('Handle') or tobj:FindFirstChild('Handle', true))
+								if not (src and src:IsA('MeshPart') and src.MeshId ~= '') then return nil end
+								return handle.MeshId == src.MeshId
+							end)
+							if showing ~= false then continue end
+						end
+						reskinHand(char, itemType, template)
+						appliedRemote[plr.UserId] = template
+					end
+				end)
+			end
+		end)
+	end
+
 	LarpSkins = larp.Categories.Render:CreateModule({
 		Name = 'Larp Skins',
 		Function = function(callback)
@@ -7840,6 +7963,7 @@ run(function()
 						applySkins()
 						reskinHand()
 						watchSkins()
+						readRemoteSkins()
 						local char = lplr.Character
 						local hiv = char and char:FindFirstChild('HandInvItem')
 						if hiv then
@@ -7876,9 +8000,10 @@ run(function()
 			task.defer(reskinHand)
 			if callback then
 				watchSkins()
+				readRemoteSkins()
 			end
 		end,
-		Tooltip = 'Reskins the items you hold - visible in first AND third person, only you can see it'
+		Tooltip = 'Reskins held items in first AND third person. Other Larp users see your skins, vanilla players cannot'
 	})
 	
 	Options.ItemType = LarpSkins:CreateDropdown({
@@ -7900,28 +8025,6 @@ run(function()
 				if LarpSkins.Enabled then
 					applySkins()
 				end
-			end
-		end
-	})
-	LarpSkins:CreateButton({
-		Name = 'Random',
-		Darker = true,
-		Function = function()
-			Options.Skin:SetValue(randomName(Options.ItemType.Value))
-		end
-	})
-	LarpSkins:CreateButton({
-		Name = 'Random All',
-		Darker = true,
-		Function = function()
-			for _, group in groups do
-				if tags[group.Name] then
-					selected[group.Name] = tags[group.Name][randomName(group.Name)]
-				end
-			end
-			Options.Skin:SetValue(Options.Skin.Value)
-			if LarpSkins.Enabled then
-				applySkins()
 			end
 		end
 	})

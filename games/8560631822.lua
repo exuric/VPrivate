@@ -6721,12 +6721,12 @@ run(function()
 		if not ent.Player then return end
 		local userId = ent.Player.UserId
 		local cached = DeviceCache[userId]
-		if cached then return cached end
+		if cached ~= nil then return cached end
 		local platform = ''
 		local function accept(v)
 			if v ~= nil then
 				local str = tostring(v)
-				if str ~= '' and str:lower() ~= 'unknown' then
+				if str ~= '' and str:lower() ~= 'unknown' and str:lower() ~= 'none' then
 					platform = str
 				end
 			end
@@ -6736,12 +6736,31 @@ run(function()
 			if ok then accept(v) end
 		end
 		if platform == '' and typeof(gethiddenproperty) == 'function' then
-			local ok, v = pcall(gethiddenproperty, ent.Player, 'OsPlatform')
-			if ok then accept(v) end
+			for _, prop in ipairs({'OsPlatform','DeviceType','Platform','DeviceModel','ClientAppInfo'}) do
+				local ok, v = pcall(gethiddenproperty, ent.Player, prop)
+				if ok then accept(v) end
+				if platform ~= '' then break end
+			end
 		end
-		if platform == '' and typeof(getcustomasset) == 'function' then
-			local ok, v = pcall(function() return ent.Player:GetAttribute('Platform') end)
-			if ok then accept(v) end
+		if platform == '' then
+			for _, key in ipairs({'Platform','Device','OsPlatform','DeviceType','MobileControls','IsMobile'}) do
+				local ok, v = pcall(function() return ent.Player:GetAttribute(key) end)
+				if ok then
+					if type(v) == 'boolean' and key:lower():find('mobile') and v then platform = 'Mobile' end
+					accept(v)
+				end
+				if platform ~= '' then break end
+			end
+		end
+		if platform == '' and ent.Character then
+			for _, name in ipairs({'MobileControls','TouchControls','MobileUI','VRControls','ConsoleControls'}) do
+				if ent.Character:FindFirstChild(name) then
+					if name:find('Mobile') or name:find('Touch') then platform = 'Mobile'
+					elseif name:find('VR') then platform = 'VR'
+					elseif name:find('Console') then platform = 'Console' end
+					break
+				end
+			end
 		end
 		if platform == '' and ent.Player == lplr then
 			local ok, v = pcall(function() return inputService:GetPlatform() end)
@@ -6759,14 +6778,14 @@ run(function()
 			icon = '🥽'
 		elseif lower:find('xbox') or lower:find('playstation') or lower:find('ps4') or lower:find('ps5') or lower:find('gamepad') or lower:find('console') then
 			icon = '🎮'
-		elseif lower:find('ios') or lower:find('iphone') or lower:find('ipad') or lower:find('android') or lower:find('mobile') or lower:find('phone') then
+		elseif lower:find('ios') or lower:find('iphone') or lower:find('ipad') or lower:find('android') or lower:find('mobile') or lower:find('phone') or lower:find('touch') then
 			icon = '📱'
 		elseif lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') or lower:find('pc') or lower:find('uwp') or lower:find('web') then
 			icon = '🖥'
 		else
 			icon = '❓'
 		end
-		DeviceCache[userId] = icon
+		if platform ~= '' then DeviceCache[userId] = icon end
 		return icon
 	end
 
@@ -6826,6 +6845,10 @@ run(function()
 				end
 			end
 	
+			nametag.TextSize = 14 * Scale.Value
+			nametag.FontFace = FontOption.Value
+			local size = getfontsize(removeTags(Strings[ent]), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
+
 			task.spawn(function()
 				if Rank.Enabled and ent.Player then
 					local Icon = Instance.new('ImageLabel')
@@ -6837,7 +6860,7 @@ run(function()
 					Icon.Parent = nametag
 				end
 			end)
-	
+
 			task.spawn(function()
 				if Enchant.Enabled and ent.Player then
 					local Icon = Instance.new('ImageLabel')
@@ -6849,10 +6872,6 @@ run(function()
 					Icon.Parent = nametag
 				end
 			end)
-	
-			nametag.TextSize = 14 * Scale.Value
-			nametag.FontFace = FontOption.Value
-			local size = getfontsize(removeTags(Strings[ent]), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
 			nametag.Name = ent.Player and ent.Player.Name or ent.Character.Name
 			nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
 			nametag.AnchorPoint = Vector2.new(0.5, 1)

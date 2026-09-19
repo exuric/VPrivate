@@ -6704,6 +6704,7 @@ run(function()
 	local Enchant
 	local Equipment
 	local HealthBar
+	local Device
 	local DrawingToggle
 	local Scale
 	local FontOption
@@ -6714,7 +6715,50 @@ run(function()
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
 	local methodused
-	
+	local DeviceCache = {}
+
+	local function getPlatformIcon(ent)
+		if not ent.Player then return end
+		local userId = ent.Player.UserId
+		local cached = DeviceCache[userId]
+		if cached then return cached end
+		local platform = ''
+		local ok, os = pcall(function() return ent.Player.OsPlatform end)
+		if ok and os ~= nil then platform = tostring(os) end
+		if platform == '' or platform:lower() == 'unknown' then
+			local ok2, os2 = pcall(gethiddenproperty, ent.Player, 'OsPlatform')
+			if ok2 and os2 ~= nil then platform = tostring(os2) end
+		end
+		if platform == '' and ent.Player == lplr then
+			local ok3, p = pcall(function() return inputService:GetPlatform() end)
+			if ok3 and p then platform = tostring(p) end
+			if platform == '' then
+				if guiService:IsTenFootInterface() then
+					platform = 'XBoxOne'
+				elseif inputService.TouchEnabled and not inputService.KeyboardEnabled then
+					platform = 'IOS'
+				else
+					platform = 'Windows'
+				end
+			end
+		end
+		local lower = platform:lower()
+		local icon
+		if lower:find('vr') then
+			icon = '[VR]'
+		elseif lower:find('xbox') or lower:find('playstation') or lower:find('gamepad') or lower:find('console') then
+			icon = '[CONSOLE]'
+		elseif lower:find('ios') or lower:find('android') or lower:find('mobile') or lower:find('web') then
+			icon = '[MOBILE]'
+		elseif lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') then
+			icon = '[PC]'
+		elseif lower ~= '' then
+			icon = '[PC]'
+		end
+		if icon then DeviceCache[userId] = icon end
+		return icon
+	end
+
 	local Added = {
 		Normal = function(ent)
 			if not Targets.Players.Enabled and ent.Player then return end
@@ -6722,7 +6766,7 @@ run(function()
 			if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
 
 			local nametag = Instance.new('TextLabel')
-			Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+			Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' <font color="rgb(160,170,220)">'..getPlatformIcon(ent)..'</font>' or '')
 
 			if Health.Enabled then
 				local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
@@ -6737,24 +6781,26 @@ run(function()
 			if HealthBar.Enabled then
 				local barbg = Instance.new('Frame')
 				barbg.Name = 'HealthBar'
-				barbg.Size = UDim2.new(1, -6, 0, 4)
-				barbg.Position = UDim2.new(0, 3, 1, -6)
-				barbg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-				barbg.BackgroundTransparency = 0.25
+				barbg.AnchorPoint = Vector2.new(1, 0.5)
+				barbg.Position = UDim2.new(0, -3, 0.5, 0)
+				barbg.Size = UDim2.new(0, 3, 1, -2)
+				barbg.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+				barbg.BackgroundTransparency = 0.15
 				barbg.BorderSizePixel = 0
 				barbg.Parent = nametag
 				local barcorner = Instance.new('UICorner')
-				barcorner.CornerRadius = UDim.new(1, 0)
+				barcorner.CornerRadius = UDim.new(0.5, 0)
 				barcorner.Parent = barbg
 				local fill = Instance.new('Frame')
 				fill.Name = 'Fill'
-				fill.Size = UDim2.fromScale(1, 1)
-				fill.Position = UDim2.fromScale(0, 0)
+				fill.AnchorPoint = Vector2.new(0.5, 1)
+				fill.Position = UDim2.new(0.5, 0, 1, 0)
+				fill.Size = UDim2.new(1, 0, math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1), 0)
 				fill.BackgroundColor3 = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
 				fill.BorderSizePixel = 0
 				fill.Parent = barbg
 				local fillcorner = Instance.new('UICorner')
-				fillcorner.CornerRadius = UDim.new(1, 0)
+				fillcorner.CornerRadius = UDim.new(0.5, 0)
 				fillcorner.Parent = fill
 			end
 			if Equipment.Enabled then
@@ -6824,7 +6870,7 @@ run(function()
 			nametag.Text.Size = 15 * Scale.Value
 			nametag.Text.Font = 0
 			nametag.Text.ZIndex = 2
-			Strings[ent] = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+			Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
 	
 			if Health.Enabled then
 				Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
@@ -6872,7 +6918,7 @@ run(function()
 			local nametag = Reference[ent]
 			if nametag then
 				Sizes[ent] = nil
-				Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+				Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' <font color="rgb(160,170,220)">'..getPlatformIcon(ent)..'</font>' or '')
 	
 				if Health.Enabled then
 					local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
@@ -6886,10 +6932,10 @@ run(function()
 				-- refresh the visual health bar
 				local barbg = nametag:FindFirstChild('HealthBar')
 				if barbg then
-					local pct = math.clamp(ent.Health / ent.MaxHealth, 0, 1)
+					local pct = math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1)
 					local fill = barbg:FindFirstChild('Fill')
 					if fill then
-						fill.Size = UDim2.fromScale(pct, 1)
+						fill.Size = UDim2.new(1, 0, pct, 0)
 						fill.BackgroundColor3 = Color3.fromHSV(pct / 2.5, 0.89, 0.75)
 					end
 				end
@@ -6920,7 +6966,7 @@ run(function()
 					setthreadidentity(8)
 				end
 				Sizes[ent] = nil
-				Strings[ent] = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
+				Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
 	
 				if Health.Enabled then
 					Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
@@ -7179,6 +7225,16 @@ run(function()
 			end
 		end,
 		Default = true
+	})
+	Device = NameTags:CreateToggle({
+		Name = 'Device',
+		Function = function()
+			if NameTags.Enabled then
+				NameTags:Toggle()
+				NameTags:Toggle()
+			end
+		end,
+		Tooltip = "Shows the target's device tag next to their name"
 	})
 	Teammates = NameTags:CreateToggle({
 		Name = 'Priority Only',

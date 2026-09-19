@@ -4662,6 +4662,7 @@ run(function()
 	local DistanceCheck
 	local DistanceLimit
 	local Device
+	local HealthBar
 	local Strings, Sizes, Reference = {}, {}, {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
@@ -4702,10 +4703,16 @@ run(function()
 		end
 		local lower = platform:lower()
 		local icon
-		if lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') then
-			icon = '??'
-		elseif lower:find('ios') or lower:find('android') or lower:find('web') or lower:find('mobile') or lower:find('gamepad') or lower:find('xbox') or lower:find('playstation') or lower:find('vr') then
-			icon = '??'
+		if lower:find('vr') then
+			icon = '[VR]'
+		elseif lower:find('xbox') or lower:find('playstation') or lower:find('gamepad') or lower:find('console') then
+			icon = '[CONSOLE]'
+		elseif lower:find('ios') or lower:find('android') or lower:find('mobile') or lower:find('web') then
+			icon = '[MOBILE]'
+		elseif lower:find('windows') or lower:find('osx') or lower:find('mac') or lower:find('linux') or lower:find('steam') then
+			icon = '[PC]'
+		elseif lower ~= '' then
+			icon = '[PC]'
 		end
 		if icon then
 			DeviceCache[userId] = icon
@@ -4722,7 +4729,7 @@ run(function()
 				setthreadidentity(8)
 			end
 	
-		Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
+		Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' <font color="rgb(160,170,220)">'..getPlatformIcon(ent)..'</font>' or '')
 
 		if Health.Enabled then
 			local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
@@ -4749,22 +4756,33 @@ run(function()
 			nametag.TextColor3 = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			nametag.RichText = true
 			nametag.Parent = Folder
-			local barBG = Instance.new('TextLabel')
+			local barBG = Instance.new('Frame')
 			barBG.Name = 'BarBG'
-			barBG.Size = UDim2.new(1, -8, 0, 4)
-			barBG.Position = UDim2.new(0.5, 0, 1, 6)
-			barBG.AnchorPoint = Vector2.new(0.5, 1)
-			barBG.BackgroundColor3 = Color3.new()
-			barBG.BackgroundTransparency = math.min(1, Background.Value + 0.35)
+			barBG.AnchorPoint = Vector2.new(1, 0.5)
+			barBG.Position = UDim2.new(0, -3, 0.5, 0)
+			barBG.Size = UDim2.new(0, 3, 1, -2)
+			barBG.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+			barBG.BackgroundTransparency = 0.15
 			barBG.BorderSizePixel = 0
 			barBG.Parent = nametag
-			local barFill = Instance.new('TextLabel')
+			local barCorner = Instance.new('UICorner')
+			barCorner.CornerRadius = UDim.new(0.5, 0)
+			barCorner.Parent = barBG
+			local barFill = Instance.new('Frame')
 			barFill.Name = 'BarFill'
+			barFill.AnchorPoint = Vector2.new(0.5, 1)
+			barFill.Position = UDim2.new(0.5, 0, 1, 0)
 			barFill.Size = UDim2.new(1, 0, 1, 0)
 			barFill.BackgroundColor3 = Color3.fromHSV(0.333, 0.9, 0.85)
-			barFill.BackgroundTransparency = 0.15
+			barFill.BackgroundTransparency = 0
 			barFill.BorderSizePixel = 0
 			barFill.Parent = barBG
+			local fillCorner = Instance.new('UICorner')
+			fillCorner.CornerRadius = UDim.new(0.5, 0)
+			fillCorner.Parent = barFill
+			if not HealthBar.Enabled then
+				barBG.Visible = false
+			end
 			Bars[ent] = barFill
 			Reference[ent] = nametag
 		end,
@@ -4850,7 +4868,7 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 					setthreadidentity(8)
 				end
 				Sizes[ent] = nil
-Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' '..getPlatformIcon(ent) or '')
+Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name)..(Device.Enabled and getPlatformIcon(ent) and ' <font color="rgb(160,170,220)">'..getPlatformIcon(ent)..'</font>' or '')
 
 				if Health.Enabled then
 					local color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
@@ -4936,10 +4954,11 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 				nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
 				local bar = Bars[ent]
 				if bar then
-					bar.Visible = Health.Enabled
-					bar.Parent.Visible = Health.Enabled
+					local show = HealthBar.Enabled
+					bar.Visible = show
+					bar.Parent.Visible = show
 					local frac = math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1)
-					bar.Size = UDim2.new(frac, 0, 1, 0)
+					bar.Size = UDim2.new(1, 0, frac, 0)
 					bar.BackgroundColor3 = Color3.fromHSV(frac / 3, 0.9, 0.85)
 				end
 			end
@@ -5107,6 +5126,17 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 				NameTags:Toggle()
 			end
 		end
+	})
+	HealthBar = NameTags:CreateToggle({
+		Name = 'Health bar',
+		Default = true,
+		Function = function()
+			if NameTags.Enabled then
+				NameTags:Toggle()
+				NameTags:Toggle()
+			end
+		end,
+		Tooltip = 'Vertical health bar to the left of the name'
 	})
 	Distance = NameTags:CreateToggle({
 		Name = 'Distance',

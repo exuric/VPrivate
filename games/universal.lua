@@ -3673,11 +3673,14 @@ run(function()
 					end
 				end))
 	
+				local __chBatch = 0
 				for _, v in entitylib.List do
 					if Reference[v] then
 						Removed(v)
 					end
 					Added(v)
+					__chBatch = __chBatch + 1
+					if __chBatch % 4 == 0 then task.wait() end
 				end
 			else
 				for i in Reference do
@@ -5425,11 +5428,14 @@ run(function()
 		Function = function(callback)
 			if callback then
 				Radar:Clean(entitylib.Events.EntityRemoved:Connect(Removed))
+				local __chBatch = 0
 				for _, v in entitylib.List do
 					if Reference[v] then
 						Removed(v)
 					end
 					Added(v)
+					__chBatch = __chBatch + 1
+					if __chBatch % 4 == 0 then task.wait() end
 				end
 				Radar:Clean(entitylib.Events.EntityAdded:Connect(function(ent)
 					if Reference[ent] then
@@ -6153,11 +6159,14 @@ run(function()
 		Function = function(callback)
 			if callback then
 				Tracers:Clean(entitylib.Events.EntityRemoved:Connect(Removed))
+				local __chBatch = 0
 				for _, v in entitylib.List do
 					if Reference[v] then
 						Removed(v)
 					end
 					Added(v)
+					__chBatch = __chBatch + 1
+					if __chBatch % 4 == 0 then task.wait() end
 				end
 				Tracers:Clean(entitylib.Events.EntityAdded:Connect(function(ent)
 					if Reference[ent] then

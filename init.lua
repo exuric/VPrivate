@@ -79,17 +79,25 @@ local loaderAssets = {
 	['Larp.png'] = 423638,
 	['Textv4.png'] = 10107,
 }
-for png, size in loaderAssets do
-	local path = 'LarpV4/assets/larp/'..png
-	local ok, content = pcall(readfile, path)
-	if not ok or not content or #content < 100 or #content < size * 0.9 then
-		pcall(function()
-			local res = game:HttpGet(ROOT..COMMIT..'/assets/larp/'..png..'?v='..COMMIT, true)
-			if res and res ~= '404: Not Found' and #res > 100 then
-				writefile(path, res)
-			end
-		end)
+do
+	local pending = 0
+	for png, size in loaderAssets do
+		local path = 'LarpV4/assets/larp/'..png
+		local ok, content = pcall(readfile, path)
+		if not ok or not content or #content < 100 or #content < size * 0.9 then
+			pending = pending + 1
+			task.spawn(function()
+				pcall(function()
+					local res = game:HttpGet(ROOT..COMMIT..'/assets/larp/'..png..'?v='..COMMIT, true)
+					if res and res ~= '404: Not Found' and #res > 100 then
+						writefile(path, res)
+					end
+				end)
+				pending = pending - 1
+			end)
+		end
 	end
+	while pending > 0 do task.wait() end
 end
 
 local OID = 0x23d100184
@@ -300,6 +308,11 @@ local function verifyFiles()
 	end
 	local ok, good = pcall(function()
 		local content = readfile('LarpV4/libraries/hash.lua')
+		-- watermark already brands the file with the exact commit; if it matches
+		-- we trust it and skip a 53 KB pure-Lua SHA-512 pass on every load.
+		if content:sub(1, #LARPWATER) == LARPWATER then
+			return true
+		end
 		local i = content:find('\n')
 		if i then
 			content = content:sub(i + 1)

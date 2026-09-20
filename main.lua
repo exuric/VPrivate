@@ -254,6 +254,14 @@ task.spawn(function()
 	if not isfolder('LarpV4/assets/'..gui) then
 		makefolder('LarpV4/assets/'..gui)
 	end
+	-- Warm the cache for universal + the game script in parallel with GUI
+	-- load. downloadFile coordinates concurrent fetches through _pending, so
+	-- the later calls that need these files will read the finished writefile.
+	do
+		local gamePath = 'LarpV4/games/'..game.PlaceId..'.lua'
+		task.spawn(function() pcall(downloadFile, 'LarpV4/games/universal.lua') end)
+		task.spawn(function() pcall(downloadFile, gamePath) end)
+	end
 	larp = loadstring(downloadFile('LarpV4/guis/larp2.lua'), 'gui')(license)
 	if type(larp) ~= 'table' or type(larp.Load) ~= 'function' then
 		pcall(writefile, 'LarpV4/guis/larp2.lua', '')

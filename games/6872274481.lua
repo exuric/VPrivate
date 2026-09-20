@@ -7176,11 +7176,14 @@ run(function()
 					NameTags:Clean(entitylib.Events.EntityRemoved:Connect(Removed[methodused]))
 				end
 				if Added[methodused] then
+					local __batch = 0
 					for _, v in entitylib.List do
 						if Reference[v] then
 							Removed[methodused](v)
 						end
 						Added[methodused](v)
+						__batch = __batch + 1
+						if __batch % 4 == 0 then task.wait() end
 					end
 					NameTags:Clean(entitylib.Events.EntityAdded:Connect(function(ent)
 						if Reference[ent] then
@@ -7191,8 +7194,11 @@ run(function()
 				end
 				if Updated[methodused] then
 					NameTags:Clean(entitylib.Events.EntityUpdated:Connect(Updated[methodused]))
+					local __batchU = 0
 					for _, v in entitylib.List do
 						Updated[methodused](v)
+						__batchU = __batchU + 1
+						if __batchU % 8 == 0 then task.wait() end
 					end
 				end
 				if ColorFunc[methodused] then

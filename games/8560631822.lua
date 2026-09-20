@@ -2101,22 +2101,26 @@ end
 		return smoothedLook(localcframe, getSmoothPoint(ent, aimPoint, dt), dt, factor)
 	end
 
+	local sharedRng = Random.new()
+	local ZERO3 = Vector3.zero
+	local function computeJitter(fps)
+		local shk = (Shake and Shake.Value) or 0
+		if shk <= 0 then return ZERO3 end
+		local jMag = shk * 0.15 * fps
+		return Vector3.new((sharedRng:NextNumber() - 0.5) * jMag, (sharedRng:NextNumber() - 0.5) * jMag, (sharedRng:NextNumber() - 0.5) * jMag)
+	end
+	local function strafeBonus()
+		return (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0)
+	end
 	local aimfuncs = {
 		Simple = function(localcframe, ent, fps)
-			local rng = Random.new()
-			local speed = (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0))
-			local shk = (Shake and Shake.Value) or 0
-			local jMag = shk * 0.15 * fps
-			local jitter = Vector3.new((rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag)
-			return applyHumanAim(localcframe, ent, getAim(ent) + jitter, fps, speed), speed
+			local speed = AimSpeed.Value + strafeBonus()
+			return applyHumanAim(localcframe, ent, getAim(ent) + computeJitter(fps), fps, speed), speed
 		end,
 		Adaptive = function(localcframe, ent, fps)
-			local prog, rng = ease(math.min(tick() - started, 1)), Random.new()
-			local speed = (AimSpeed.Value * math.max(prog, 0.15)) + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0)
-			local shk = (Shake and Shake.Value) or 0
-			local jMag = shk * 0.15 * fps
-			local jitter = Vector3.new((rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag, (rng:NextNumber() - 0.5) * jMag)
-			return applyHumanAim(localcframe, ent, getAim(ent) + jitter, fps, speed), speed
+			local prog = ease(math.min(tick() - started, 1))
+			local speed = (AimSpeed.Value * math.max(prog, 0.15)) + strafeBonus()
+			return applyHumanAim(localcframe, ent, getAim(ent) + computeJitter(fps), fps, speed), speed
 		end
 	}
 
@@ -5265,18 +5269,17 @@ run(function()
 						local speedScaled = fireSpeed * Prediction.Value
 						local hasHighArc = typeof(prediction.SolveTrajectoryHigh) == 'function'
 						
-						local candidateNames = {}
-						local seen = {}
-						local function pushCandidate(name)
-							if name and not seen[name] then
-								seen[name] = true
-								table.insert(candidateNames, name)
+						local candidateNames
+						do
+							local tp = TargetPart.Value
+							if tp == 'RootPart' then
+								candidateNames = {'RootPart', 'Head', 'HumanoidRootPart'}
+							elseif tp == 'Head' then
+								candidateNames = {'Head', 'RootPart', 'HumanoidRootPart'}
+							else
+								candidateNames = {tp, 'RootPart', 'Head', 'HumanoidRootPart'}
 							end
 						end
-						pushCandidate(TargetPart.Value)
-						pushCandidate('RootPart')
-						pushCandidate('Head')
-						pushCandidate('HumanoidRootPart')
 						
 						local best
 						local bestBlocked
@@ -7102,9 +7105,11 @@ run(function()
 	
 	local Loop = {
 		Normal = function()
+			local alive = entitylib.isAlive
+			local selfPos = alive and entitylib.character.RootPart.Position or nil
 			for ent, nametag in Reference do
 				if DistanceCheck.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					local distance = selfPos and (selfPos - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
 						nametag.Visible = false
 						continue

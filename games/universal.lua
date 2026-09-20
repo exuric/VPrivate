@@ -4956,9 +4956,11 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 	
 	local Loop = {
 		Normal = function()
+			local alive = entitylib.isAlive
+			local selfPos = alive and entitylib.character.RootPart.Position or nil
 			for ent, nametag in Reference do
 				if DistanceCheck.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					local distance = selfPos and (selfPos - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
 						nametag.Visible = false
 						continue

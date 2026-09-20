@@ -7123,7 +7123,7 @@ run(function()
 				end
 	
 				if Distance.Enabled then
-					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
+					local mag = selfPos and math.floor((selfPos - ent.RootPart.Position).Magnitude) or 0
 					if Sizes[ent] ~= mag then
 						nametag.Text = string.format(Strings[ent], mag)
 						local ize = getfontsize(removeTags(nametag.Text), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
@@ -7135,9 +7135,11 @@ run(function()
 			end
 		end,
 		Drawing = function()
+			local alive = entitylib.isAlive
+			local selfPos = alive and entitylib.character.RootPart.Position or nil
 			for ent, nametag in Reference do
 				if DistanceCheck.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					local distance = selfPos and (selfPos - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
 						nametag.Text.Visible = false
 						nametag.BG.Visible = false
@@ -7153,7 +7155,7 @@ run(function()
 				end
 	
 				if Distance.Enabled then
-					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
+					local mag = selfPos and math.floor((selfPos - ent.RootPart.Position).Magnitude) or 0
 					if Sizes[ent] ~= mag then
 						nametag.Text.Text = string.format(Strings[ent], mag)
 						nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)

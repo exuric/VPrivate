@@ -6883,7 +6883,7 @@ run(function()
 			end
 
 			-- visual health bar; three modes controlled by HealthBarMode dropdown
-			if HealthBar and HealthBar.Enabled then pcall(function()
+			if HealthBar.Enabled then
 				local mode = (HealthBarMode and HealthBarMode.Value) or 'Nametag'
 				local hp = math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1)
 				local hpColor = Color3.fromHSV(hp / 2.5, 0.89, 0.75)
@@ -6916,40 +6916,31 @@ run(function()
 					if adornee then
 						local bill = Instance.new('BillboardGui')
 						bill.Name = 'LarpHealthBar'
-						-- Vape V4-style: bigger, world-scaled, semi-transparent
-						bill.SizeOffset = Vector2.new(0, 0)
-						bill.Size = UDim2.new(0.4, 0, 5, 0)
-						bill.StudsOffsetWorldSpace = Vector3.new(-2.2, 0.5, 0)
+						bill.Size = UDim2.new(0, 6, 4, 0)
+						bill.StudsOffsetWorldSpace = Vector3.new(-1.8, 0, 0)
 						bill.AlwaysOnTop = true
 						bill.LightInfluence = 0
 						bill.MaxDistance = 500
-						bill.ClipsDescendants = false
 						bill.Adornee = adornee
 						bill.Parent = Folder
 						local bg = Instance.new('Frame')
 						bg.Size = UDim2.fromScale(1, 1)
-						bg.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
-						bg.BackgroundTransparency = 0.55
+						bg.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+						bg.BackgroundTransparency = 0.15
 						bg.BorderSizePixel = 0
 						bg.Parent = bill
 						local bgc = Instance.new('UICorner')
-						bgc.CornerRadius = UDim.new(0.2, 0)
+						bgc.CornerRadius = UDim.new(0.5, 0)
 						bgc.Parent = bg
-						local stroke = Instance.new('UIStroke')
-						stroke.Color = Color3.fromRGB(0, 0, 0)
-						stroke.Transparency = 0.4
-						stroke.Thickness = 1
-						stroke.Parent = bg
 						local fill = Instance.new('Frame')
 						fill.AnchorPoint = Vector2.new(0.5, 1)
-						fill.Position = UDim2.new(0.5, 0, 1, -1)
-						fill.Size = UDim2.new(1, -2, hp, -2)
+						fill.Position = UDim2.new(0.5, 0, 1, 0)
+						fill.Size = UDim2.new(1, 0, hp, 0)
 						fill.BackgroundColor3 = hpColor
-						fill.BackgroundTransparency = 0.1
 						fill.BorderSizePixel = 0
 						fill.Parent = bg
 						local fc = Instance.new('UICorner')
-						fc.CornerRadius = UDim.new(0.2, 0)
+						fc.CornerRadius = UDim.new(0.5, 0)
 						fc.Parent = fill
 						SecondaryBars[ent] = { kind = 'billboard', root = bill, fill = fill }
 					end
@@ -6969,7 +6960,7 @@ run(function()
 					fill.Visible = false
 					SecondaryBars[ent] = { kind = '2d', bg = bg, fill = fill }
 				end
-			end) end
+			end
 			if Equipment.Enabled then
 				for i, v in {'Hand', 'Helmet', 'Chestplate', 'Boots', 'Kit'} do
 					local Icon = Instance.new('ImageLabel')
@@ -7055,7 +7046,6 @@ run(function()
 	}
 	
 	local function destroySecondary(ent)
-		if type(SecondaryBars) ~= 'table' then return end
 		local sec = SecondaryBars[ent]
 		if not sec then return end
 		SecondaryBars[ent] = nil

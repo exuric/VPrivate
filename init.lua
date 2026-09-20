@@ -324,27 +324,61 @@ local function verifyFiles()
 	end
 	hash = loadstring(downloadFile('LarpV4/libraries/hash.lua'), 'hash')()
 	local todo = {}
+	local rebrand = {}
 	for _, path in VERIFY_FILES do
 		local full = 'LarpV4/'..path
 		if isfile(full) then
 			local content = readfile(full)
 			if content:sub(1, #LARPWATER) ~= LARPWATER then
-				todo[#todo + 1] = path
+				-- Watermark stale (commit bumped). Check if bytes actually
+				-- changed: hash the stripped body against the manifest before
+				-- committing to an HTTP re-download.
+				local expected = MANIFEST[path]
+				if expected then
+					local i = content:find('\n')
+					local body = i and content:sub(i + 1) or content
+					local ok, digest = pcall(function()
+						local partial = hash.sha512()
+						for j = 1, #body, 32768 do
+							partial(body:sub(j, j + 32767))
+							if j % 65536 == 0 then task.wait() end
+						end
+						return partial()
+					end)
+					if ok and digest == expected then
+						rebrand[#rebrand + 1] = { full = full, body = body }
+					else
+						todo[#todo + 1] = path
+					end
+				else
+					todo[#todo + 1] = path
+				end
 			end
 		else
 			todo[#todo + 1] = path
 		end
 	end
+	-- Rewrite watermarks for unchanged files. No network needed.
+	for _, entry in rebrand do
+		pcall(writefile, entry.full, LARPWATER..entry.body)
+	end
 	if #todo > 0 then
 		downloader.Text = 'Downloading '..#todo..' files...'
-		local remaining = #todo
-		for _, path in todo do
-			task.spawn(function()
-				pcall(downloadFile, 'LarpV4/'..path)
-				remaining = remaining - 1
-			end)
-		end
-		while remaining > 0 do
+		-- Bound concurrency to 3 to avoid saturating the network channel
+		-- and stalling game-position replication for the 10s the burst lasts.
+		local inflight, done, i = 0, 0, 1
+		local total = #todo
+		while done < total do
+			while inflight < 3 and i <= total do
+				local path = todo[i]
+				i = i + 1
+				inflight = inflight + 1
+				task.spawn(function()
+					pcall(downloadFile, 'LarpV4/'..path)
+					inflight = inflight - 1
+					done = done + 1
+				end)
+			end
 			task.wait()
 		end
 	end

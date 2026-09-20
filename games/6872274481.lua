@@ -5861,6 +5861,7 @@ run(function()
 	local Reference = {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
+	local SecondaryBars = {}
 	
 	local function Added(bed)
 		if not BedESP.Enabled then return end
@@ -6769,6 +6770,7 @@ run(function()
 	local Enchant
 	local Equipment
 	local HealthBar
+	local HealthBarMode
 	local Device
 	local DrawingToggle
 	local Scale
@@ -6879,31 +6881,84 @@ run(function()
 				Strings[ent] = '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> '..Strings[ent]
 			end
 
-			-- visual health bar under the name (Normal mode only)
+			-- visual health bar; three modes controlled by HealthBarMode dropdown
 			if HealthBar.Enabled then
-				local barbg = Instance.new('Frame')
-				barbg.Name = 'HealthBar'
-				barbg.AnchorPoint = Vector2.new(1, 0.5)
-				barbg.Position = UDim2.new(0, -3, 0.5, 0)
-				barbg.Size = UDim2.new(0, 3, 1, -2)
-				barbg.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-				barbg.BackgroundTransparency = 0.15
-				barbg.BorderSizePixel = 0
-				barbg.Parent = nametag
-				local barcorner = Instance.new('UICorner')
-				barcorner.CornerRadius = UDim.new(0.5, 0)
-				barcorner.Parent = barbg
-				local fill = Instance.new('Frame')
-				fill.Name = 'Fill'
-				fill.AnchorPoint = Vector2.new(0.5, 1)
-				fill.Position = UDim2.new(0.5, 0, 1, 0)
-				fill.Size = UDim2.new(1, 0, math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1), 0)
-				fill.BackgroundColor3 = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-				fill.BorderSizePixel = 0
-				fill.Parent = barbg
-				local fillcorner = Instance.new('UICorner')
-				fillcorner.CornerRadius = UDim.new(0.5, 0)
-				fillcorner.Parent = fill
+				local mode = (HealthBarMode and HealthBarMode.Value) or 'Nametag'
+				local hp = math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1)
+				local hpColor = Color3.fromHSV(hp / 2.5, 0.89, 0.75)
+				if mode == 'Nametag' then
+					local barbg = Instance.new('Frame')
+					barbg.Name = 'HealthBar'
+					barbg.AnchorPoint = Vector2.new(1, 0.5)
+					barbg.Position = UDim2.new(0, -3, 0.5, 0)
+					barbg.Size = UDim2.new(0, 3, 1, -2)
+					barbg.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+					barbg.BackgroundTransparency = 0.15
+					barbg.BorderSizePixel = 0
+					barbg.Parent = nametag
+					local barcorner = Instance.new('UICorner')
+					barcorner.CornerRadius = UDim.new(0.5, 0)
+					barcorner.Parent = barbg
+					local fill = Instance.new('Frame')
+					fill.Name = 'Fill'
+					fill.AnchorPoint = Vector2.new(0.5, 1)
+					fill.Position = UDim2.new(0.5, 0, 1, 0)
+					fill.Size = UDim2.new(1, 0, hp, 0)
+					fill.BackgroundColor3 = hpColor
+					fill.BorderSizePixel = 0
+					fill.Parent = barbg
+					local fillcorner = Instance.new('UICorner')
+					fillcorner.CornerRadius = UDim.new(0.5, 0)
+					fillcorner.Parent = fill
+				elseif mode == 'Character' and ent.Character then
+					local adornee = ent.RootPart or ent.HumanoidRootPart or ent.Character.PrimaryPart or ent.Character:FindFirstChild('HumanoidRootPart')
+					if adornee then
+						local bill = Instance.new('BillboardGui')
+						bill.Name = 'LarpHealthBar'
+						bill.Size = UDim2.new(0, 6, 4, 0)
+						bill.StudsOffsetWorldSpace = Vector3.new(-1.8, 0, 0)
+						bill.AlwaysOnTop = true
+						bill.LightInfluence = 0
+						bill.MaxDistance = 500
+						bill.Adornee = adornee
+						bill.Parent = Folder
+						local bg = Instance.new('Frame')
+						bg.Size = UDim2.fromScale(1, 1)
+						bg.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+						bg.BackgroundTransparency = 0.15
+						bg.BorderSizePixel = 0
+						bg.Parent = bill
+						local bgc = Instance.new('UICorner')
+						bgc.CornerRadius = UDim.new(0.5, 0)
+						bgc.Parent = bg
+						local fill = Instance.new('Frame')
+						fill.AnchorPoint = Vector2.new(0.5, 1)
+						fill.Position = UDim2.new(0.5, 0, 1, 0)
+						fill.Size = UDim2.new(1, 0, hp, 0)
+						fill.BackgroundColor3 = hpColor
+						fill.BorderSizePixel = 0
+						fill.Parent = bg
+						local fc = Instance.new('UICorner')
+						fc.CornerRadius = UDim.new(0.5, 0)
+						fc.Parent = fill
+						SecondaryBars[ent] = { kind = 'billboard', root = bill, fill = fill }
+					end
+				elseif mode == '2D' then
+					local bg = Drawing.new('Square')
+					bg.Filled = true
+					bg.Color = Color3.fromRGB(18, 18, 22)
+					bg.Transparency = 0.85
+					bg.ZIndex = 3
+					bg.Thickness = 1
+					bg.Visible = false
+					local fill = Drawing.new('Square')
+					fill.Filled = true
+					fill.Color = hpColor
+					fill.Transparency = 1
+					fill.ZIndex = 4
+					fill.Visible = false
+					SecondaryBars[ent] = { kind = '2d', bg = bg, fill = fill }
+				end
 			end
 			if Equipment.Enabled then
 				for i, v in {'Hand', 'Helmet', 'Chestplate', 'Boots', 'Kit'} do
@@ -6989,6 +7044,17 @@ run(function()
 		end
 	}
 	
+	local function destroySecondary(ent)
+		local sec = SecondaryBars[ent]
+		if not sec then return end
+		SecondaryBars[ent] = nil
+		if sec.kind == 'billboard' and sec.root then
+			pcall(function() sec.root:Destroy() end)
+		elseif sec.kind == '2d' then
+			if sec.bg then pcall(function() sec.bg.Visible = false; sec.bg:Remove() end) end
+			if sec.fill then pcall(function() sec.fill.Visible = false; sec.fill:Remove() end) end
+		end
+	end
 	local Removed = {
 		Normal = function(ent)
 			local v = Reference[ent]
@@ -6998,6 +7064,7 @@ run(function()
 				Sizes[ent] = nil
 				v:Destroy()
 			end
+			destroySecondary(ent)
 		end,
 		Drawing = function(ent)
 			local v = Reference[ent]
@@ -7111,6 +7178,8 @@ run(function()
 					local distance = selfPos and (selfPos - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
 						nametag.Visible = false
+						local sec = SecondaryBars[ent]
+						if sec and sec.kind == '2d' then sec.bg.Visible = false; sec.fill.Visible = false end
 						continue
 					end
 				end
@@ -7118,9 +7187,11 @@ run(function()
 				local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
 				nametag.Visible = headVis
 				if not headVis then
+					local sec = SecondaryBars[ent]
+					if sec and sec.kind == '2d' then sec.bg.Visible = false; sec.fill.Visible = false end
 					continue
 				end
-	
+
 				if Distance.Enabled then
 					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
 					if Sizes[ent] ~= mag then
@@ -7131,6 +7202,33 @@ run(function()
 					end
 				end
 				nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
+				local sec = SecondaryBars[ent]
+				if sec then
+					local hp = math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1)
+					local hpColor = Color3.fromHSV(hp / 2.5, 0.89, 0.75)
+					if sec.kind == 'billboard' and sec.fill and sec.fill.Parent then
+						sec.fill.Size = UDim2.new(1, 0, hp, 0)
+						sec.fill.BackgroundColor3 = hpColor
+					elseif sec.kind == '2d' and sec.bg and sec.fill then
+						local footPos, footVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, -ent.HipHeight - 2, 0))
+						if headVis and footVis then
+							local boxH = math.max(4, footPos.Y - headPos.Y)
+							local boxW = math.max(3, boxH * 0.5)
+							local bx = headPos.X - boxW * 0.5 - 5
+							local by = headPos.Y
+							sec.bg.Size = Vector2.new(3, boxH)
+							sec.bg.Position = Vector2.new(bx, by)
+							sec.bg.Visible = true
+							sec.fill.Size = Vector2.new(3, boxH * hp)
+							sec.fill.Position = Vector2.new(bx, by + boxH * (1 - hp))
+							sec.fill.Color = hpColor
+							sec.fill.Visible = true
+						else
+							sec.bg.Visible = false
+							sec.fill.Visible = false
+						end
+					end
+				end
 			end
 		end,
 		Drawing = function()
@@ -7282,7 +7380,19 @@ run(function()
 				NameTags:Toggle()
 			end
 		end,
-		Tooltip = 'Renders a colored health bar under the name (visual mode only)'
+		Tooltip = 'Renders a colored health bar'
+	})
+	HealthBarMode = NameTags:CreateDropdown({
+		Name = 'Health bar position',
+		List = {'Nametag', 'Character', '2D'},
+		Default = 'Nametag',
+		Function = function()
+			if NameTags.Enabled then
+				NameTags:Toggle()
+				NameTags:Toggle()
+			end
+		end,
+		Tooltip = 'Nametag - beside the name; Character - BillboardGui hovering on the character; 2D - Vape-style bar to the left of the character on screen'
 	})
 	Distance = NameTags:CreateToggle({
 		Name = 'Distance',

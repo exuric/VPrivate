@@ -5861,7 +5861,6 @@ run(function()
 	local Reference = {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
-	local SecondaryBars = {}
 	
 	local function Added(bed)
 		if not BedESP.Enabled then return end
@@ -6781,6 +6780,7 @@ run(function()
 	local Strings, Sizes, Reference = {}, {}, {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
+	local SecondaryBars = {}
 	local methodused
 	local DeviceCache = {}
 

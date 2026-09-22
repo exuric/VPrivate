@@ -6651,16 +6651,18 @@ run(function()
 	                if not strip then
 	                    strip = Instance.new('Frame')
 	                    strip.Name = 'KitHistoryStrip'
-	                    strip.AnchorPoint = Vector2.new(1, 1)
-	                    strip.Position = UDim2.fromScale(1.05, 1)
-	                    strip.Size = UDim2.fromScale(1.5, 0.35)
+	                    strip.AnchorPoint = Vector2.new(1, 0)
+	                    strip.Position = UDim2.new(1.05, 0, 1.3, 4)
+	                    strip.Size = UDim2.new(1.5, 0, 0, 28)
 	                    strip.BackgroundTransparency = 1
-	                    strip.ZIndex = 2
+	                    strip.ClipsDescendants = false
+	                    strip.ZIndex = 10
 	                    strip.Parent = card
 	                    local list = Instance.new('UIListLayout')
 	                    list.FillDirection = Enum.FillDirection.Horizontal
 	                    list.HorizontalAlignment = Enum.HorizontalAlignment.Right
-	                    list.Padding = UDim.new(0, 2)
+	                    list.VerticalAlignment = Enum.VerticalAlignment.Center
+	                    list.Padding = UDim.new(0, 3)
 	                    list.SortOrder = Enum.SortOrder.LayoutOrder
 	                    list.Parent = strip
 	                end
@@ -6679,8 +6681,9 @@ run(function()
 	                            img = Instance.new('ImageLabel')
 	                            img.BackgroundTransparency = 1
 	                            img.ImageTransparency = 0.35
-	                            img.Size = UDim2.fromScale(0.35, 1)
+	                            img.Size = UDim2.new(0, 28, 0, 28)
 	                            img.ScaleType = Enum.ScaleType.Fit
+	                            img.ZIndex = 11
 	                            img.Parent = strip
 	                        end
 	                        img.LayoutOrder = i

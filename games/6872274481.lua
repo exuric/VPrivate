@@ -5295,7 +5295,7 @@ run(function()
 							local tpart = plr[name]
 							if tpart and tpart.Position then
 								local tpos = tpart.Position
-								local realVel = isPearl and Vector3.zero or (tpart.Velocity or (rootPart and rootPart.Velocity) or Vector3.zero)
+								local realVel = isPearl and Vector3.zero or (tpart.AssemblyLinearVelocity or tpart.Velocity or (rootPart and (rootPart.AssemblyLinearVelocity or rootPart.Velocity)) or Vector3.zero)
 								local resolvedRootPos = rootPos or tpos
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
@@ -5324,6 +5324,19 @@ run(function()
 								-- primary pass: real velocity + real airborne, both arcs
 								tryOne(prediction.SolveTrajectory, realVel, airborne)
 								if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, realVel, airborne) end
+								-- micro-Prediction sweep for moving targets. Widen search over
+								-- the lead multiplier by +/- 8% so a small residual mistune in the
+								-- Prediction slider or the learned latency bias still lands.
+								if not best then
+								local savedScale = speedScaled
+								for _, mul in ipairs({0.92, 1.08}) do
+									speedScaled = fireSpeed * Prediction.Value * mul
+									tryOne(prediction.SolveTrajectory, realVel, airborne)
+									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, realVel, airborne) end
+									if best then break end
+								end
+								speedScaled = savedScale
+								end
 								-- if nothing cleared, try zero-Y velocity (bridging: target hovers, doesn't fall)
 								if not best and (airborne or math.abs(realVel.Y) > 3) then
 									local flat = Vector3.new(realVel.X, 0, realVel.Z)

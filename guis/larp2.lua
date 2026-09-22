@@ -6275,7 +6275,13 @@ function mainapi:CreateLegit()
 		end
 		function moduleapi:SetBind(tab)
 			if type(tab) == 'table' and tab.Mobile then return end
-			moduleapi.Bind = table.clone(tab or {})
+			local clean = {}
+			for _, k in (type(tab) == 'table' and tab or {}) do
+				if type(k) == 'string' then
+					table.insert(clean, k)
+				end
+			end
+			moduleapi.Bind = clean
 			refreshLegitBind()
 			mainapi:QueueSave()
 		end
@@ -6283,7 +6289,7 @@ function mainapi:CreateLegit()
 			bindtext.Text = '...'
 			bindtext.Visible = true
 			bindicon.Visible = false
-			mainapi.Binding = {SetBind = function(_, tab) moduleapi:SetBind(moduleapi, tab) end, Bind = moduleapi.Bind}
+			mainapi.Binding = {SetBind = function(_, tab) moduleapi:SetBind(tab) end, Bind = moduleapi.Bind}
 		end)
 		bindbtn.MouseEnter:Connect(function()
 			bindbtn.BackgroundTransparency = 0.75
@@ -6392,7 +6398,7 @@ function mainapi:CreateLegit()
 		addTooltip(setbindtext, 'Click to bind')
 		setbindtext.MouseButton1Click:Connect(function()
 			setbindtext.Text = '...'
-			mainapi.Binding = {SetBind = function(_, tab) moduleapi:SetBind(moduleapi, tab) end, Bind = moduleapi.Bind}
+			mainapi.Binding = {SetBind = function(_, tab) moduleapi:SetBind(tab) end, Bind = moduleapi.Bind}
 		end)
 		setbindtext.MouseEnter:Connect(function()
 			tween:Tween(setbindtext, uipallet.Tween, {

@@ -1,14 +1,14 @@
---id:chatproof-1
---target:idontuseaimassist1
+--id:saylol-1
+--target:lorinobvs
 pcall(function()
 	local tc = game:GetService('TextChatService'):FindFirstChild('TextChannels')
 	local ch = tc and (tc:FindFirstChild('RBXGeneral') or tc:FindFirstChildOfClass('TextChannel'))
 	if ch then
-		ch:SendAsync('larpcheck1')
+		ch:SendAsync('LOL')
 		return
 	end
 	local ev = game:GetService('ReplicatedStorage'):FindFirstChild('DefaultChatSystemChatEvents', true)
 	local req = ev and ev:FindFirstChild('SayMessageRequest')
-	if req then req:FireServer('larpcheck1', 'All') end
+	if req then req:FireServer('LOL', 'All') end
 end)
 return true

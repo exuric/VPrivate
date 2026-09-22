@@ -4067,12 +4067,38 @@ run(function()
 		return score
 	end
 
+	local function getSelfSwordDamage()
+		local _, sword = getHandSword()
+		if sword and sword.damage then return sword.damage end
+		return 3
+	end
+	
+	local function getKillableScore(ent)
+		local health = math.max(ent.Health or 100, 1)
+		local dmg = math.max(getSelfSwordDamage(), 1)
+		local hitsToKill = health / dmg
+		if ent.Player then
+			local ok, inv = pcall(bedwars.getInventory, ent.Player)
+			if ok and inv and inv.items then
+				for _, item in inv.items do
+					local m = item.itemType and bedwars.ItemMeta and bedwars.ItemMeta[item.itemType]
+					if m and m.armor and m.armor.damageReductionMultiplier then
+						hitsToKill = hitsToKill * (1 + m.armor.damageReductionMultiplier)
+					end
+				end
+			end
+		end
+		return hitsToKill
+	end
+	
 	local function sortTargets(targets)
 		local prio = TargetPriority.Value
 		if prio == 'Health' then
 			table.sort(targets, function(a, b) return a[1].Health < b[1].Health end)
 		elseif prio == 'Threat' then
 			table.sort(targets, function(a, b) return getThreatScore(a[1]) > getThreatScore(b[1]) end)
+		elseif prio == 'Killable' then
+			table.sort(targets, function(a, b) return getKillableScore(a[1]) < getKillableScore(b[1]) end)
 		else
 			table.sort(targets, function(a, b) return a[2] < b[2] end)
 		end
@@ -4411,7 +4437,7 @@ run(function()
 	})
 	TargetPriority = Killaura:CreateDropdown({
 		Name = 'Target priority',
-		List = {'Distance', 'Health', 'Threat'},
+		List = {'Distance', 'Health', 'Threat', 'Killable'},
 		Default = 'Distance',
 		Tooltip = 'How targets are ranked:\nDistance - nearest first\nHealth - lowest health first\nThreat - most geared up first'
 	})

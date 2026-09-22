@@ -6532,6 +6532,36 @@ end)
 
 run(function()
 	local KitDisplay
+	local PastKitsToggle
+	local KitHistory = getgenv().LarpKitHistory or {}
+	getgenv().LarpKitHistory = KitHistory
+	local MAX_HISTORY = 8
+	
+	local function recordKit(player, kit)
+		if not player or type(kit) ~= 'string' or kit == '' or kit == 'none' then return end
+		if not bedwars.BedwarsKitMeta or not bedwars.BedwarsKitMeta[kit] then return end
+		local uid = player.UserId
+		local list = KitHistory[uid]
+		if not list then list = {}; KitHistory[uid] = list end
+		if list[#list] == kit then return end
+		list[#list + 1] = kit
+		if #list > MAX_HISTORY then table.remove(list, 1) end
+	end
+	
+	-- Session-wide listener: record every kit switch for every player
+	-- so history is populated the moment the module renders anything.
+	if not getgenv()._larpKitListenerInstalled then
+		getgenv()._larpKitListenerInstalled = true
+		local function hook(player)
+			if type(player) ~= 'userdata' or not player:IsA('Player') then return end
+			recordKit(player, player:GetAttribute('PlayingAsKits'))
+			player:GetAttributeChangedSignal('PlayingAsKits'):Connect(function()
+				recordKit(player, player:GetAttribute('PlayingAsKits'))
+			end)
+		end
+		for _, p in playersService:GetPlayers() do task.spawn(hook, p) end
+		playersService.PlayerAdded:Connect(hook)
+	end
 	
 	local function waitForChild(start, ...)
 	    local parent = start
@@ -6608,10 +6638,69 @@ run(function()
 	
 	            tweenKit(roact, image.renderImage)
 	
+	            -- Past-kit strip: small icons of every kit the player has cycled
+	            -- through this session. Rebuild on each render + on attribute change.
+	            local function renderHistory()
+	                if not PastKitsToggle or not PastKitsToggle.Enabled then
+	                    local strip = card:FindFirstChild('KitHistoryStrip')
+	                    if strip then strip:Destroy() end
+	                    return
+	                end
+	                local strip = card:FindFirstChild('KitHistoryStrip')
+	                if not strip then
+	                    strip = Instance.new('Frame')
+	                    strip.Name = 'KitHistoryStrip'
+	                    strip.AnchorPoint = Vector2.new(1, 1)
+	                    strip.Position = UDim2.fromScale(1.05, 1)
+	                    strip.Size = UDim2.fromScale(1.5, 0.35)
+	                    strip.BackgroundTransparency = 1
+	                    strip.ZIndex = 2
+	                    strip.Parent = card
+	                    local list = Instance.new('UIListLayout')
+	                    list.FillDirection = Enum.FillDirection.Horizontal
+	                    list.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	                    list.Padding = UDim.new(0, 2)
+	                    list.SortOrder = Enum.SortOrder.LayoutOrder
+	                    list.Parent = strip
+	                end
+	                local history = KitHistory[player.UserId] or {}
+	                local current = player:GetAttribute('PlayingAsKits')
+	                local existing = {}
+	                for _, child in strip:GetChildren() do
+	                    if child:IsA('ImageLabel') then existing[#existing + 1] = child end
+	                end
+	                local shown = 0
+	                for i, kit in ipairs(history) do
+	                    if kit ~= current then
+	                        shown = shown + 1
+	                        local img = existing[shown]
+	                        if not img then
+	                            img = Instance.new('ImageLabel')
+	                            img.BackgroundTransparency = 1
+	                            img.ImageTransparency = 0.35
+	                            img.Size = UDim2.fromScale(0.35, 1)
+	                            img.ScaleType = Enum.ScaleType.Fit
+	                            img.Parent = strip
+	                        end
+	                        img.LayoutOrder = i
+	                        local meta = bedwars.BedwarsKitMeta[kit]
+	                        img.Image = meta and meta.renderImage or ''
+	                    end
+	                end
+	                for extra = shown + 1, #existing do
+	                    existing[extra]:Destroy()
+	                end
+	            end
+	            recordKit(player, player:GetAttribute('PlayingAsKits'))
+	            renderHistory()
+	
 	            local connection = player:GetAttributeChangedSignal('PlayingAsKits'):Connect(function()
 	                if not KitDisplay.Enabled or not roact.Parent then return end
-	                image = bedwars.BedwarsKitMeta[player:GetAttribute('PlayingAsKits')] or bedwars.BedwarsKitMeta.none
+	                local newKit = player:GetAttribute('PlayingAsKits')
+	                recordKit(player, newKit)
+	                image = bedwars.BedwarsKitMeta[newKit] or bedwars.BedwarsKitMeta.none
 	                tweenKit(roact, image.renderImage)
+	                renderHistory()
 	            end)
 	            KitDisplay:Clean(name:GetPropertyChangedSignal('Text'):Once(function()
 	                if connection then
@@ -6652,6 +6741,11 @@ run(function()
 	        end
 	    end,
 	    Tooltip = 'Allows you to view opponent\'s kit in match draft.'
+	})
+	PastKitsToggle = KitDisplay:CreateToggle({
+	    Name = 'Past kits',
+	    Default = true,
+	    Tooltip = 'Show every kit a player has cycled through this session, so kit-swap bait no longer hides the real pick.'
 	})
 	
 end)

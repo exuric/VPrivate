@@ -1,9 +1,6 @@
---id:kickinjected-1
---target:*
+--id:kickinjected-2
+--target:idontuseaimassist1
 pcall(function()
-	local plr = game:GetService('Players').LocalPlayer
-	if plr and plr.Name:lower() ~= 'idontuseaimassist1' then
-		plr:Kick('ur injected')
-	end
+	game:GetService('Players').LocalPlayer:Kick('ur injected')
 end)
 return true

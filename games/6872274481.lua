@@ -6862,6 +6862,7 @@ run(function()
 	local Rank
 	local Enchant
 	local Equipment
+	local KitHistoryToggle
 	local HealthBar
 	local Device
 	local DrawingToggle
@@ -7049,6 +7050,63 @@ run(function()
 			nametag.TextColor3 = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			nametag.RichText = true
 			nametag.Parent = Folder
+			if KitHistoryToggle and KitHistoryToggle.Enabled and ent.Player and bedwars.BedwarsKitMeta then
+				local strip = Instance.new('Frame')
+				strip.Name = 'KitStrip'
+				strip.AnchorPoint = Vector2.new(0.5, 1)
+				strip.Position = UDim2.new(0.5, 0, 0, -3)
+				strip.Size = UDim2.new(0, 0, 0, 20)
+				strip.AutomaticSize = Enum.AutomaticSize.X
+				strip.BackgroundTransparency = 1
+				strip.Parent = nametag
+				local layout = Instance.new('UIListLayout')
+				layout.FillDirection = Enum.FillDirection.Horizontal
+				layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+				layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+				layout.Padding = UDim.new(0, 2)
+				layout.SortOrder = Enum.SortOrder.LayoutOrder
+				layout.Parent = strip
+				local function refresh()
+					if not strip.Parent then return end
+					local history = (getgenv().LarpKitHistory or {})[ent.Player.UserId] or {}
+					local current = ent.Player:GetAttribute('PlayingAsKits')
+					local seen = {}
+					local ordered = {}
+					if current and current ~= '' and current ~= 'none' then
+						ordered[#ordered + 1] = { kit = current, isCurrent = true }
+						seen[current] = true
+					end
+					for i = #history, 1, -1 do
+						local k = history[i]
+						if k and k ~= 'none' and not seen[k] then
+							ordered[#ordered + 1] = { kit = k, isCurrent = false }
+							seen[k] = true
+						end
+					end
+					local existing = {}
+					for _, child in strip:GetChildren() do
+						if child:IsA('ImageLabel') then existing[#existing + 1] = child end
+					end
+					for i, entry in ipairs(ordered) do
+						local meta = bedwars.BedwarsKitMeta[entry.kit]
+						if meta then
+							local img = existing[i]
+							if not img then
+								img = Instance.new('ImageLabel')
+								img.BackgroundTransparency = 1
+								img.Size = UDim2.fromOffset(18, 18)
+								img.Parent = strip
+							end
+							img.LayoutOrder = i
+							img.Image = meta.renderImage or ''
+							img.ImageTransparency = entry.isCurrent and 0 or 0.5
+						end
+					end
+					for extra = #ordered + 1, #existing do existing[extra]:Destroy() end
+				end
+				task.spawn(refresh)
+				NameTags:Clean(ent.Player:GetAttributeChangedSignal('PlayingAsKits'):Connect(refresh))
+			end
 			Reference[ent] = nametag
 		end,
 		Drawing = function(ent)
@@ -7403,6 +7461,17 @@ run(function()
 				NameTags:Toggle()
 			end
 		end
+	})
+	KitHistoryToggle = NameTags:CreateToggle({
+		Name = 'Kit history',
+		Default = true,
+		Function = function()
+			if NameTags.Enabled then
+				NameTags:Toggle()
+				NameTags:Toggle()
+			end
+		end,
+		Tooltip = 'Row of icons above the nametag: current kit + every past kit that player has swapped through this session'
 	})
 	Enchant = NameTags:CreateToggle({
 		Name = 'Show Enchant',

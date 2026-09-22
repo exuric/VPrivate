@@ -6533,9 +6533,58 @@ end)
 run(function()
 	local KitDisplay
 	local PastKitsToggle
-	local KitHistory = getgenv().LarpKitHistory or {}
-	getgenv().LarpKitHistory = KitHistory
-	local MAX_HISTORY = 8
+	local MAX_HISTORY = 12
+	local HISTORY_FILE = 'LarpV4/profiles/kithistory.json'
+	
+	-- Load persisted history from disk on inject. Survives server hops,
+	-- rejoins and script reloads.
+	local function loadHistory()
+		if not isfile or not isfile(HISTORY_FILE) then return {} end
+		local ok, data = pcall(readfile, HISTORY_FILE)
+		if not ok or type(data) ~= 'string' or data == '' then return {} end
+		local ok2, decoded = pcall(httpService.JSONDecode, httpService, data)
+		if not ok2 or type(decoded) ~= 'table' then return {} end
+		local normalized = {}
+		for uidStr, list in pairs(decoded) do
+			local uid = tonumber(uidStr)
+			if uid and type(list) == 'table' then
+				local clean = {}
+				for _, v in ipairs(list) do
+					if type(v) == 'string' and v ~= '' and v ~= 'none' then
+						clean[#clean + 1] = v
+					end
+				end
+				normalized[uid] = clean
+			end
+		end
+		return normalized
+	end
+	
+	local KitHistory = getgenv().LarpKitHistory
+	if not KitHistory or not KitHistory.__loaded then
+		KitHistory = loadHistory()
+		KitHistory.__loaded = true
+		getgenv().LarpKitHistory = KitHistory
+	end
+	
+	local saveScheduled = false
+	local function scheduleSave()
+		if saveScheduled or not writefile or not isfolder then return end
+		saveScheduled = true
+		task.delay(2, function()
+			saveScheduled = false
+			pcall(function()
+				if not isfolder('LarpV4/profiles') then pcall(makefolder, 'LarpV4/profiles') end
+				local serial = {}
+				for uid, list in pairs(KitHistory) do
+					if type(uid) == 'number' and type(list) == 'table' and #list > 0 then
+						serial[tostring(uid)] = list
+					end
+				end
+				writefile(HISTORY_FILE, httpService:JSONEncode(serial))
+			end)
+		end)
+	end
 	
 	local function recordKit(player, kit)
 		if not player or type(kit) ~= 'string' or kit == '' or kit == 'none' then return end
@@ -6546,12 +6595,22 @@ run(function()
 		if list[#list] == kit then return end
 		list[#list + 1] = kit
 		if #list > MAX_HISTORY then table.remove(list, 1) end
+		scheduleSave()
 	end
 	
-	-- Session-wide listener: record every kit switch for every player
-	-- so history is populated the moment the module renders anything.
-	if not getgenv()._larpKitListenerInstalled then
-		getgenv()._larpKitListenerInstalled = true
+	-- Snapshot every player's current kit into history. Called on module
+	-- inject AND on Bedwars round-state transitions, so a kit that never
+	-- fired a mid-round attribute change is still captured.
+	local function snapshotAll()
+		for _, p in playersService:GetPlayers() do
+			pcall(function() recordKit(p, p:GetAttribute('PlayingAsKits')) end)
+		end
+	end
+	
+	-- Always register a fresh per-player listener. Old connections from
+	-- previous injects are already dead; duplicates would be deduped by
+	-- recordKit anyway.
+	do
 		local function hook(player)
 			if type(player) ~= 'userdata' or not player:IsA('Player') then return end
 			recordKit(player, player:GetAttribute('PlayingAsKits'))
@@ -6562,6 +6621,17 @@ run(function()
 		for _, p in playersService:GetPlayers() do task.spawn(hook, p) end
 		playersService.PlayerAdded:Connect(hook)
 	end
+	
+	-- Bedwars round transitions: workspace and ReplicatedStorage set
+	-- match/game state attributes on round boundaries. Snapshot on each.
+	for _, target in ipairs({workspace, replicatedStorage}) do
+		for _, name in ipairs({'MatchState', 'GameState', 'RoundState', 'MatchStatus'}) do
+			pcall(function()
+				target:GetAttributeChangedSignal(name):Connect(snapshotAll)
+			end)
+		end
+	end
+	snapshotAll()
 	
 	local function waitForChild(start, ...)
 	    local parent = start

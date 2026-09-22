@@ -5190,7 +5190,18 @@ run(function()
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
 	
-	local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
+	local velSamples = setmetatable({}, {__mode = 'k'})
+	local function smoothVel(part, raw)
+		if not part then return raw or Vector3.zero end
+		local buf = velSamples[part]
+		if not buf then buf = {}; velSamples[part] = buf end
+		buf[#buf + 1] = raw
+		if #buf > 3 then table.remove(buf, 1) end
+		local sum = Vector3.zero
+		for _, v in ipairs(buf) do sum = sum + v end
+		return sum / #buf
+	end
+		local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
 			if callback then
@@ -5281,12 +5292,17 @@ run(function()
 						local candidateNames
 						do
 							local tp = TargetPart.Value
-							if tp == 'RootPart' then
-								candidateNames = {'RootPart', 'Head', 'HumanoidRootPart'}
-							elseif tp == 'Head' then
-								candidateNames = {'Head', 'RootPart', 'HumanoidRootPart'}
-							else
-								candidateNames = {tp, 'RootPart', 'Head', 'HumanoidRootPart'}
+							-- Wider hitbox sweep: solver picks the fastest cleared arc across
+							-- any of these, so a shot that would fall to bestBlocked or old()
+							-- for the primary part still lands if a nearby part clears LOS.
+							local extras = {'RootPart', 'Head', 'HumanoidRootPart', 'UpperTorso', 'LowerTorso', 'Torso', 'LeftUpperArm', 'RightUpperArm', 'LeftUpperLeg', 'RightUpperLeg'}
+							candidateNames = {tp}
+							local seenParts = {[tp] = true}
+							for _, name in ipairs(extras) do
+								if not seenParts[name] then
+									candidateNames[#candidateNames + 1] = name
+									seenParts[name] = true
+								end
 							end
 						end
 						
@@ -5296,7 +5312,8 @@ run(function()
 							local tpart = plr[name]
 							if tpart and tpart.Position then
 								local tpos = tpart.Position
-								local realVel = isPearl and Vector3.zero or (tpart.AssemblyLinearVelocity or tpart.Velocity or (rootPart and (rootPart.AssemblyLinearVelocity or rootPart.Velocity)) or Vector3.zero)
+								local rawVel = isPearl and Vector3.zero or (tpart.AssemblyLinearVelocity or tpart.Velocity or (rootPart and (rootPart.AssemblyLinearVelocity or rootPart.Velocity)) or Vector3.zero)
+								local realVel = isPearl and Vector3.zero or smoothVel(tpart, rawVel)
 								local resolvedRootPos = rootPos or tpos
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
@@ -5330,7 +5347,7 @@ run(function()
 								-- Prediction slider or the learned latency bias still lands.
 								if not best then
 								local savedScale = speedScaled
-								for _, mul in ipairs({0.92, 1.08}) do
+								for _, mul in ipairs({0.94, 1.06, 0.85, 1.15}) do
 									speedScaled = fireSpeed * Prediction.Value * mul
 									tryOne(prediction.SolveTrajectory, realVel, airborne)
 									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, realVel, airborne) end

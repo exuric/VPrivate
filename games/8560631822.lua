@@ -5211,7 +5211,16 @@ run(function()
 					if not plr then
 						local held = lockedTarget
 						local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
-						if held and heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, heldRoot.Position)) and tick() - lockedTime < 3 then
+						local cursorOk = false
+						if held and heldRoot and heldRoot.Parent then
+							local screen, vis = gameCamera:WorldToViewportPoint(heldRoot.Position)
+							if vis then
+								local mouseLoc = inputService.TouchEnabled and (gameCamera.ViewportSize * 0.5) or inputService:GetMouseLocation()
+								local dist = (Vector2.new(screen.X, screen.Y) - mouseLoc).Magnitude
+								cursorOk = dist <= FOV.Value * 1.4
+							end
+						end
+						if cursorOk and held and heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, heldRoot.Position)) and tick() - lockedTime < 3 then
 							plr = held
 						else
 							lockedTarget = nil
@@ -5330,7 +5339,10 @@ run(function()
 							end
 						end
 						
-						if not best and bestBlocked then
+						-- Only take a wall-blocked solve if the user explicitly disabled
+						-- wallcheck. Otherwise a fireball would curve through walls when
+						-- the target is behind cover.
+						if not best and bestBlocked and not Targets.Walls.Enabled then
 							best = bestBlocked
 						end
 						if not best then

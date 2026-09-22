@@ -4005,9 +4005,11 @@ run(function()
 	
 	local ESPLoop = {
 		Drawing2D = function()
+			local alive = entitylib.isAlive
+			local selfPos = alive and entitylib.character.RootPart.Position or nil
 			for ent, EntityESP in Reference do
 				if Distance.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					local distance = selfPos and (selfPos - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
 						for _, obj in EntityESP do
 							obj.Visible = false
@@ -4055,9 +4057,11 @@ run(function()
 			end
 		end,
 		Drawing3D = function()
+			local alive = entitylib.isAlive
+			local selfPos = alive and entitylib.character.RootPart.Position or nil
 			for ent, EntityESP in Reference do
 				if Distance.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					local distance = selfPos and (selfPos - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
 						for _, obj in EntityESP do
 							obj.Visible = false
@@ -4107,9 +4111,11 @@ run(function()
 			end
 		end,
 		DrawingSkeleton = function()
+			local alive = entitylib.isAlive
+			local selfPos = alive and entitylib.character.RootPart.Position or nil
 			for ent, EntityESP in Reference do
 				if Distance.Enabled then
-					local distance = entitylib.isAlive and (entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude or math.huge
+					local distance = selfPos and (selfPos - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
 						for _, obj in EntityESP do
 							obj.Visible = false

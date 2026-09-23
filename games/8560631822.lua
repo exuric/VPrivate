@@ -5251,16 +5251,22 @@ run(function()
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
 	local old
 	
-	local velSamples = setmetatable({}, {__mode = 'k'})
+	local velEMA = setmetatable({}, {__mode = 'k'})
+	local arcMode = setmetatable({}, {__mode = 'k'})
+	local aimSmooth = setmetatable({}, {__mode = 'k'})
 	local function smoothVel(part, raw)
 		if not part then return raw or Vector3.zero end
-		local buf = velSamples[part]
-		if not buf then buf = {}; velSamples[part] = buf end
-		buf[#buf + 1] = raw
-		if #buf > 3 then table.remove(buf, 1) end
-		local sum = Vector3.zero
-		for _, v in ipairs(buf) do sum = sum + v end
-		return sum / #buf
+		raw = raw or Vector3.zero
+		local prev = velEMA[part]
+		if not prev then velEMA[part] = raw return raw end
+		-- Exponential smoothing. Raw AssemblyLinearVelocity jitters frame to frame
+		-- (animation, network, knockback) and the ballistic solver uses it linearly,
+		-- so feeding it raw made the arc wobble. Heavy smoothing normally; snap when
+		-- the reading genuinely jumps so a real direction change still leads.
+		local alpha = (raw - prev).Magnitude > 28 and 0.6 or 0.28
+		local out = prev:Lerp(raw, alpha)
+		velEMA[part] = out
+		return out
 	end
 		local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
@@ -5377,115 +5383,101 @@ run(function()
 						local speedScaled = fireSpeed * Prediction.Value
 						local hasHighArc = typeof(prediction.SolveTrajectoryHigh) == 'function'
 						
-						local candidateNames
+						-- Stable solve. The old version fed RAW velocity to a solver that does no
+						-- smoothing, swept ~10 body parts + a prediction ladder + both arcs, and kept
+						-- the shortest-flight hit each frame -- so the winning part/arc flipped every
+						-- frame and the trajectory line wobbled and missed. Now: smoothed velocity, one
+						-- part (first that clears), flat arc preferred with per-target hysteresis, and a
+						-- low-pass on the final aim. A steady line is what actually lands.
+						local partOrder
 						do
 							local tp = TargetPart.Value
-							-- Wider hitbox sweep: solver picks the fastest cleared arc across
-							-- any of these, so a shot that would fall to bestBlocked or old()
-							-- for the primary part still lands if a nearby part clears LOS.
-							local extras = {'RootPart', 'Head', 'HumanoidRootPart', 'UpperTorso', 'LowerTorso', 'Torso', 'LeftUpperArm', 'RightUpperArm', 'LeftUpperLeg', 'RightUpperLeg'}
-							candidateNames = {tp}
-							local seenParts = {[tp] = true}
-							for _, name in ipairs(extras) do
-								if not seenParts[name] then
-									candidateNames[#candidateNames + 1] = name
-									seenParts[name] = true
-								end
+							partOrder = {tp}
+							for _, name in ipairs({'Head', 'RootPart', 'HumanoidRootPart', 'UpperTorso', 'Torso'}) do
+								if name ~= tp then partOrder[#partOrder + 1] = name end
 							end
 						end
-						
+
 						local best
 						local bestBlocked
-						for _, name in ipairs(candidateNames) do
+						local wantHigh = arcMode[plr] == 'high'
+						local function evaluate(origin3, tpos, vel, resolvedRootPos, resolvedRoot, solver, useAirborne)
+							if not solver then return nil end
+							local okSolve, calc, impact, travelTime = pcall(solver, origin3, speedScaled, gravity, tpos, vel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, useAirborne, resolvedRootPos, resolvedRoot, nil, true)
+							if not okSolve or not calc or not travelTime then return nil end
+							if travelTime <= 0 or travelTime > lifetime * 1.1 then return nil end
+							local dir = CFrame.new(origin3, calc).LookVector * fireSpeed
+							local okClear, clear = pcall(prediction.IsTrajectoryClear, origin3, dir, gravity, travelTime, rayCheck, impact or tpos)
+							return { dir = dir, from = origin3, travelTime = travelTime }, ((not okClear) or clear)
+						end
+						for _, name in ipairs(partOrder) do
 							local tpart = plr[name]
 							if tpart and tpart.Position then
 								local tpos = tpart.Position
 								local rawVel = isPearl and Vector3.zero or (tpart.AssemblyLinearVelocity or tpart.Velocity or (rootPart and (rootPart.AssemblyLinearVelocity or rootPart.Velocity)) or Vector3.zero)
-								-- prediction.lua runs its own motion estimator (position-sample blend,
-								-- turn/strafe/knockback detection) and wants the raw assembly reading:
-								-- it derives velocityChange from state.assembly, so a pre-averaged input
-								-- corrupted that delta and lagged the lead on direction changes. Feed raw
-								-- to the solver; keep the boxcar fed so the smoothed vector stays warm
-								-- for the jitter-guard fallback below.
-								local smoothedVel = isPearl and Vector3.zero or smoothVel(tpart, rawVel)
-								local realVel = isPearl and Vector3.zero or rawVel
+								local vel = isPearl and Vector3.zero or smoothVel(tpart, rawVel)
 								local resolvedRootPos = rootPos or tpos
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
 								local origin3 = newlook.Position
-								local function record(calc, travelTime, cleared)
-									local dir = CFrame.new(origin3, calc).LookVector * fireSpeed
-									if cleared then
-										if not best or travelTime < best.travelTime then
-											best = { dir = dir, from = origin3, travelTime = travelTime }
-										end
-									else
-										if not bestBlocked or travelTime < bestBlocked.travelTime then
-											bestBlocked = { dir = dir, from = origin3, travelTime = travelTime }
+								-- prefer last frame's arc for this target so a direct shot and a lob
+								-- do not alternate every frame
+								local order = wantHigh and {'high', 'flat'} or {'flat', 'high'}
+								local chosen, chosenMode
+								for _, mode in ipairs(order) do
+									local solver = (mode == 'high') and (hasHighArc and prediction.SolveTrajectoryHigh) or prediction.SolveTrajectory
+									local sol, cleared = evaluate(origin3, tpos, vel, resolvedRootPos, resolvedRoot, solver, airborne)
+									if sol then
+										if cleared then
+											chosen, chosenMode = sol, mode
+											break
+										elseif not bestBlocked or sol.travelTime < bestBlocked.travelTime then
+											bestBlocked = sol
 										end
 									end
 								end
-								local function tryOne(solver, vel, useAirborne)
-									if not solver then return end
-									local okSolve, calc, impact, travelTime = pcall(solver, origin3, speedScaled, gravity, tpos, vel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, useAirborne, resolvedRootPos, resolvedRoot, nil, true)
-									if not okSolve or not calc or not travelTime then return end
-									if travelTime <= 0 or travelTime > lifetime * 1.1 then return end
-									local dir = CFrame.new(origin3, calc).LookVector * fireSpeed
-									-- Clear the path only up to the predicted impact point, so the block
-									-- the target stands on/against is not mistaken for cover in the way.
-									local okClear, clear = pcall(prediction.IsTrajectoryClear, origin3, dir, gravity, travelTime, rayCheck, impact or tpos)
-									record(calc, travelTime, (not okClear) or clear)
-								end
-								-- primary pass: raw velocity + real airborne, both arcs
-								tryOne(prediction.SolveTrajectory, realVel, airborne)
-								if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, realVel, airborne) end
-								-- jitter guard: if the raw reading spiked this frame and cleared
-								-- nothing, retry once with the boxcar-smoothed velocity before
-								-- falling back to the simplified target models.
-								if not best and not isPearl and (smoothedVel - realVel).Magnitude > 1 then
-									tryOne(prediction.SolveTrajectory, smoothedVel, airborne)
-									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, smoothedVel, airborne) end
-								end
-								-- micro-Prediction sweep for moving targets. Denser near 1.0 where
-								-- the true lead sits, wider tails so a heavier residual mistune in
-								-- the Prediction slider or the learned latency bias still lands.
-								if not best then
-								local savedScale = speedScaled
-								for _, mul in ipairs({0.97, 1.03, 0.94, 1.06, 0.88, 1.12, 0.8, 1.2}) do
-									speedScaled = fireSpeed * Prediction.Value * mul
-									tryOne(prediction.SolveTrajectory, realVel, airborne)
-									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, realVel, airborne) end
-									if best then break end
-								end
-								speedScaled = savedScale
-								end
-								-- if nothing cleared, try zero-Y velocity (bridging: target hovers, doesn't fall)
-								if not best and (airborne or math.abs(realVel.Y) > 3) then
-									local flat = Vector3.new(realVel.X, 0, realVel.Z)
-									tryOne(prediction.SolveTrajectory, flat, false)
-									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, flat, false) end
-								end
-								-- last-ditch: completely stationary target model
-								if not best then
-									tryOne(prediction.SolveTrajectory, Vector3.zero, false)
-									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, Vector3.zero, false) end
+								if chosen then
+									best = chosen
+									arcMode[plr] = chosenMode
+									break
 								end
 							end
 						end
-						
-						-- Only take a wall-blocked solve if the user explicitly disabled
-						-- wallcheck. Otherwise a fireball would curve through walls when
-						-- the target is behind cover.
+						-- stationary-target fallback (primary part) when a moving model cleared
+						-- nothing -- guards against a briefly-garbage velocity reading
+						if not best then
+							local tpart = plr[TargetPart.Value] or plr.RootPart or plr.Head
+							if tpart and tpart.Position then
+								local tpos = tpart.Position
+								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
+								local origin3 = newlook.Position
+								local sol, cleared = evaluate(origin3, tpos, Vector3.zero, rootPos or tpos, rootPart or tpart, prediction.SolveTrajectory, false)
+								if sol then
+									if cleared then best = sol elseif not bestBlocked then bestBlocked = sol end
+								end
+							end
+						end
+
 						if not best and bestBlocked and not Targets.Walls.Enabled then
 							best = bestBlocked
 						end
 						if not best then
 							local cached = getgenv()._larpProjAimCache
-							if cached and cached.plr == plr and tick() - cached.at < 0.6 then
+							if cached and cached.plr == plr and tick() - cached.at < 0.4 then
 								best = cached.best
 							end
 						end
-						
+						-- low-pass the final aim so residual solver jitter does not wobble the
+						-- trajectory line; snap when it jumps (target relocated / arc switched) so
+						-- fast movement is still tracked
+						if best then
+							local prevDir = aimSmooth[plr]
+							if prevDir and (best.dir - prevDir).Magnitude < fireSpeed * 0.5 then
+								best = { dir = prevDir:Lerp(best.dir, 0.4), from = best.from, travelTime = best.travelTime }
+							end
+							aimSmooth[plr] = best.dir
+						end
+
 						if best then
 							getgenv()._larpProjAimCache = { plr = plr, at = tick(), best = best }
 							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end

@@ -5304,6 +5304,7 @@ run(function()
 	local lockedTime
 	local Aim = {}
 	local OtherProjectiles
+	local PingMode
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map')}
@@ -5325,6 +5326,17 @@ run(function()
 		local out = prev:Lerp(raw, alpha)
 		velEMA[part] = out
 		return out
+	end
+	local function pingLatency()
+		local mode = PingMode and PingMode.Value or 'Automatic'
+		if mode == 'Low' then return 0.03
+		elseif mode == 'Medium' then return 0.08
+		elseif mode == 'High' then return 0.16 end
+		-- Automatic: GetNetworkPing is seconds; lead by the perceived position lag
+		-- (one-way ping + a small interpolation buffer), clamped to a sane range.
+		local ok, ping = pcall(function() return lplr:GetNetworkPing() end)
+		local p = (ok and tonumber(ping)) or 0.05
+		return math.clamp(p + 0.03, 0.02, 0.3)
 	end
 		local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
@@ -5439,6 +5451,7 @@ run(function()
 						local effectiveMult = (AutoCharge.Enabled or not Aim.Enabled) and 1 or (projmeta.velocityMultiplier or 1)
 						local fireSpeed = projSpeed * effectiveMult
 						local speedScaled = fireSpeed * Prediction.Value
+						local latency = pingLatency()
 						local hasHighArc = typeof(prediction.SolveTrajectoryHigh) == 'function'
 						
 						-- Stable solve. The old version fed RAW velocity to a solver that does no
@@ -5474,6 +5487,12 @@ run(function()
 								local tpos = tpart.Position
 								local rawVel = isPearl and Vector3.zero or (tpart.AssemblyLinearVelocity or tpart.Velocity or (rootPart and (rootPart.AssemblyLinearVelocity or rootPart.Velocity)) or Vector3.zero)
 								local vel = isPearl and Vector3.zero or smoothVel(tpart, rawVel)
+								if latency > 0 and not isPearl then
+									-- latency compensation: the position we see is stale by ~ping, so
+									-- advance the aim target forward along its path before solving. This
+									-- is ~0 for a still target, so it never over-leads a standing one.
+									tpos = tpos + Vector3.new(vel.X, airborne and vel.Y or 0, vel.Z) * latency
+								end
 								local resolvedRootPos = rootPos or tpos
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
@@ -5588,6 +5607,12 @@ run(function()
 		Min = 1,
 		Max = 1000,
 		Default = 1000
+	})
+	PingMode = ProjectileAimbot:CreateDropdown({
+		Name = 'Ping mode',
+		List = {'Automatic', 'Low', 'Medium', 'High'},
+		Default = 'Automatic',
+		Tooltip = 'Latency compensation. Automatic reads your ping and leads by the right amount; Low/Medium/High force a preset.'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',

@@ -354,7 +354,7 @@ run(function()
 	local RankTitle
 	local RankRP
 	local RankPos
-	local TopRow
+	local myThumb
 	local gen = 0
 	local originals = {}
 
@@ -398,28 +398,34 @@ run(function()
 		if posLabel then
 			if originals[posLabel] == nil then originals[posLabel] = posLabel.Text end
 			posLabel.Text = '<b>YOUR POSITION:</b> <font color="rgb(185, 188, 255)">' .. comma(RankPos.Value) .. '</font>'
-			local sibs = {}
-			if posLabel.Parent then
-				for _, s in posLabel.Parent:GetChildren() do
-					if s:IsA('TextLabel') then
-						sibs[#sibs + 1] = s
+			for _, d in board:GetDescendants() do
+				if d:IsA('TextLabel') then
+					local ok, t = pcall(function() return d.Text end)
+					if ok and t == 'YOUR RANK:' and d.Parent then
+						local sibs = {}
+						for _, s in d.Parent:GetChildren() do
+							if s:IsA('TextLabel') then
+								sibs[#sibs + 1] = s
+							end
+						end
+						for i, s in sibs do
+							if s == d and sibs[i + 1] then
+								local rv = sibs[i + 1]
+								if originals[rv] == nil then originals[rv] = rv.Text end
+								rv.Text = RankTitle.Value
+							end
+						end
+						break
 					end
 				end
 			end
-			for i, s in sibs do
-				local ok, t = pcall(function() return s.Text end)
-				if ok and t == 'YOUR RANK:' and sibs[i + 1] then
-					local rv = sibs[i + 1]
-					if originals[rv] == nil then originals[rv] = rv.Text end
-					rv.Text = RankTitle.Value
-				end
-			end
 		end
-		if TopRow.Enabled then
+		if posLabel then
+			local rows = {}
 			for _, d in board:GetDescendants() do
 				if d:IsA('TextLabel') and d.Name == 'LeaderboardRank' then
 					local ok, t = pcall(function() return d.Text end)
-					if ok and t == '1' then
+					if ok and tonumber(t) then
 						local row = d.Parent
 						while row and row ~= board do
 							local un
@@ -429,15 +435,44 @@ run(function()
 								if x:IsA('TextLabel') and x.Name == 'StatValue' then sv = sv or x end
 							end
 							if un and sv then
-								if originals[un] == nil then originals[un] = un.Text end
-								un.Text = '<b><font color="rgb(185, 188, 255)">@</font></b>' .. lplr.Name
-								if originals[sv] == nil then originals[sv] = sv.Text end
-								sv.Text = comma(RankRP.Value) .. ' RP'
+								local tier
+								for _, x in row:GetDescendants() do
+									if x:IsA('TextLabel') and x ~= un and x ~= sv and x ~= d then
+										local ok2, tt = pcall(function() return x.Text end)
+										if ok2 and type(tt) == 'string' and tt ~= '' and not tt:find('<') then
+											tier = tier or x
+										end
+									end
+								end
+								rows[#rows + 1] = {un = un, sv = sv, tier = tier}
 								break
 							end
 							row = row.Parent
 						end
-						break
+					end
+				end
+			end
+			if #rows > 0 then
+				local idx = math.clamp(math.floor(RankPos.Value), 1, #rows)
+				local r = rows[idx]
+				if originals[r.un] == nil then originals[r.un] = r.un.Text end
+				r.un.Text = '<b><font color="rgb(185, 188, 255)">@</font></b>' .. lplr.Name
+				if originals[r.sv] == nil then originals[r.sv] = r.sv.Text end
+				r.sv.Text = comma(RankRP.Value) .. ' RP'
+				if r.tier then
+					if originals[r.tier] == nil then originals[r.tier] = r.tier.Text end
+					r.tier.Text = RankTitle.Value:upper()
+				end
+				if myThumb and myThumb ~= '' then
+					local scope = r.un.Parent and r.un.Parent.Parent or r.un.Parent
+					if scope then
+						for _, x in scope:GetDescendants() do
+							if x:IsA('ImageLabel') and x.Name == 'PlayerAvatar' then
+								if originals[x] == nil then originals[x] = x.Image end
+								x.Image = myThumb
+								break
+							end
+						end
 					end
 				end
 			end
@@ -448,7 +483,11 @@ run(function()
 		for label, text in originals do
 			pcall(function()
 				if label and label.Parent then
-					label.Text = text
+					if label:IsA('ImageLabel') then
+						label.Image = text
+					else
+						label.Text = text
+					end
 				end
 			end)
 		end
@@ -475,6 +514,15 @@ run(function()
 		Name = 'Fake Rank',
 		Function = function(callback)
 			if callback then
+				myThumb = nil
+				task.spawn(function()
+					pcall(function()
+						local img = playersService:GetUserThumbnailAsync(lplr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+						if type(img) == 'string' and img ~= '' then
+							myThumb = img
+						end
+					end)
+				end)
 				for _, b in boards() do
 					applyBoard(b)
 				end
@@ -501,10 +549,5 @@ run(function()
 		Min = 1,
 		Max = 10000,
 		Default = 1
-	})
-	TopRow = FakeRank:CreateToggle({
-		Name = 'Top Row',
-		Default = true,
-		Tooltip = 'Puts your name at #1 with your fake RP'
 	})
 end)

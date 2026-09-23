@@ -7212,9 +7212,10 @@ run(function()
 					Icon.BackgroundTransparency = 1
 				Icon.Image = store.rank[ent.Player]:async() and bedwars.RankMeta[store.rank[ent.Player]:async()].image or ''
 				if FakeRank.Value ~= 'None' and ent.Player == lplr then
-					for _, k in rankKeys do
-						if tostring(k) == FakeRank.Value then
-							local fake = bedwars.RankMeta[k]
+					for i, n in rankNames do
+						if n == FakeRank.Value then
+							local k = rankKeys[i]
+							local fake = bedwars.RankMeta[k] or bedwars.RankMeta[FakeRank.Value]
 							if fake then
 								Icon.Image = fake.image or ''
 							end
@@ -7689,20 +7690,10 @@ run(function()
 			end
 		end
 	})
-	local rankKeys = {}
+	local rankNames = {'Nightmare', 'Emerald 4', 'Emerald 3', 'Emerald 2', 'Emerald 1', 'Diamond 4', 'Diamond 3', 'Diamond 2', 'Diamond 1', 'Platinum 4', 'Platinum 3', 'Platinum 2', 'Platinum 1', 'Gold 4', 'Gold 3', 'Gold 2', 'Gold 1', 'Silver 4', 'Silver 3', 'Silver 2', 'Silver 1', 'Bronze 4', 'Bronze 3', 'Bronze 2', 'Bronze 1'}
+	local rankKeys = {24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
 	local rankList = {'None'}
-	pcall(function()
-		local meta = bedwars.RankMeta
-		if type(meta) == 'table' then
-			local tmp = {}
-			for k in pairs(meta) do tmp[#tmp + 1] = k end
-			table.sort(tmp, function(a, b) return tostring(a) < tostring(b) end)
-			for _, k in tmp do
-				rankKeys[#rankKeys + 1] = k
-				rankList[#rankList + 1] = tostring(k)
-			end
-		end
-	end)
+	for _, n in rankNames do rankList[#rankList + 1] = n end
 	FakeRank = NameTags:CreateDropdown({
 		Name = 'Fake Rank',
 		List = rankList,

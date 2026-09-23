@@ -272,11 +272,26 @@ ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targ
 	return origin + vel.Unit * speed, tp, tof
 end
 
-ballistic.IsTrajectoryClear = function(origin, velocity, gravity, maxTime, rayCheck)
+ballistic.IsTrajectoryClear = function(origin, velocity, gravity, maxTime, rayCheck, targetPos, hitTol)
 	origin = origin or Vector3.zero
 	velocity = velocity or Vector3.zero
 	gravity = gravity or 196.2
 	maxTime = maxTime or 1
+	-- The path only has to be clear UP TO the target. Past it the arc plunges
+	-- into whatever the target stands on or against: the block under a player on
+	-- a wall face, the lip of a ledge. The character is not in the ray filter, so
+	-- the ray sails through the target and reports that footing as a wall in the
+	-- way -- which is why a fully visible, hittable target on a wall face never
+	-- locked. Progress is measured by horizontal distance to the target: a hit
+	-- before that distance is real cover in front and blocks; a hit at or beyond
+	-- it (minus a small tolerance for the target's own footprint) is the target's
+	-- own footing and is treated as clear.
+	local horizGoal
+	if targetPos then
+		local d = targetPos - origin
+		horizGoal = bsqrt(d.X * d.X + d.Z * d.Z)
+	end
+	hitTol = hitTol or 3
 	local pos = origin
 	local vel = velocity
 	local step = 0.08
@@ -285,9 +300,21 @@ ballistic.IsTrajectoryClear = function(origin, velocity, gravity, maxTime, rayCh
 		local nextPos = pos + vel * step
 		local ray = workspace:Raycast(pos, nextPos - pos, rayCheck)
 		if ray then
+			if horizGoal then
+				local hd = ray.Position - origin
+				if bsqrt(hd.X * hd.X + hd.Z * hd.Z) >= horizGoal - hitTol then
+					return true
+				end
+			end
 			return false
 		end
 		pos = nextPos
+		if horizGoal then
+			local pd = pos - origin
+			if bsqrt(pd.X * pd.X + pd.Z * pd.Z) >= horizGoal then
+				return true
+			end
+		end
 		vel = vel - Vector3.new(0, gravity * step, 0)
 		t = t + step
 	end
@@ -2703,10 +2730,10 @@ run(function()
 		local pearl = projType == 'telepearl'
 		local targetVelocity = pearl and Vector3.zero or plr.RootPart.AssemblyLinearVelocity
 		local targetAirborne = not pearl and plr.Humanoid.FloorMaterial == Enum.Material.Air or math.abs(targetVelocity.Y) > 0.01
-local calc, _, travelTime = prediction.SolveTrajectory(origin, speed * Prediction.Value, gravity, targetpos, targetVelocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, targetAirborne, plr.RootPart.Position, plr.RootPart, nil, true)
+local calc, impact, travelTime = prediction.SolveTrajectory(origin, speed * Prediction.Value, gravity, targetpos, targetVelocity, playerGravity, plr.HipHeight, plr.Jumping and 42.6 or nil, rayCheck, targetAirborne, plr.RootPart.Position, plr.RootPart, nil, true)
 		if not calc or not travelTime or travelTime > (meta.lifetimeSec or 3) then return end
 		local aimDir = CFrame.lookAt(origin, calc).LookVector * speed
-		if not prediction.IsTrajectoryClear(origin, aimDir, gravity, travelTime, rayCheck) then return end
+		if not prediction.IsTrajectoryClear(origin, aimDir, gravity, travelTime, rayCheck, impact or targetpos) then return end
 
 		targetinfo.Targets[plr] = tick() + 1
 		return aimDir
@@ -5396,11 +5423,13 @@ run(function()
 								end
 								local function tryOne(solver, vel, useAirborne)
 									if not solver then return end
-									local okSolve, calc, _s2, travelTime = pcall(solver, origin3, speedScaled, gravity, tpos, vel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, useAirborne, resolvedRootPos, resolvedRoot, nil, true)
+									local okSolve, calc, impact, travelTime = pcall(solver, origin3, speedScaled, gravity, tpos, vel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, useAirborne, resolvedRootPos, resolvedRoot, nil, true)
 									if not okSolve or not calc or not travelTime then return end
 									if travelTime <= 0 or travelTime > lifetime * 1.1 then return end
 									local dir = CFrame.new(origin3, calc).LookVector * fireSpeed
-									local okClear, clear = pcall(prediction.IsTrajectoryClear, origin3, dir, gravity, travelTime, rayCheck, plr.Character)
+									-- Clear the path only up to the predicted impact point, so the block
+									-- the target stands on/against is not mistaken for cover in the way.
+									local okClear, clear = pcall(prediction.IsTrajectoryClear, origin3, dir, gravity, travelTime, rayCheck, impact or tpos)
 									record(calc, travelTime, (not okClear) or clear)
 								end
 								-- primary pass: raw velocity + real airborne, both arcs

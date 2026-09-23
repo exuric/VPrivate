@@ -118,7 +118,11 @@ local function predictAt(pos, vel, gravity, airborne, st, t)
 		local toRev = st.half - elapsed
 		leadT = bclamp(t, 0, math.max(toRev, 0.04))
 	end
-	local horiz = hv * leadT
+	-- far-horizon damping: over a long flight a moving target rarely holds a
+	-- straight line, so trust the lead a little less as t grows. Close/fast
+	-- shots (t < ~0.5s) are untouched; this trims wild over-lead at range.
+	local trust = t > 0.5 and bclamp(1 - (t - 0.5) * 0.12, 0.72, 1) or 1
+	local horiz = hv * (leadT * trust)
 	local y
 	if airborne and gravity > 0 then
 		y = pos.Y + vy * t - 0.5 * gravity * t * t
@@ -330,49 +334,49 @@ ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targ
 	return origin + vel.Unit * speed, tp, tof
 end
 
-ballistic.IsTrajectoryClear = function(origin, velocity, gravity, maxTime, rayCheck, targetPos, hitTol)
+ballistic.IsTrajectoryClear = function(origin, velocity, gravity, maxTime, rayCheck, targetPos, hitRadius)
 	origin = origin or Vector3.zero
 	velocity = velocity or Vector3.zero
 	gravity = gravity or 196.2
 	maxTime = maxTime or 1
-	-- The path only has to be clear UP TO the target. Past it the arc plunges
-	-- into whatever the target stands on or against: the block under a player on
-	-- a wall face, the lip of a ledge. The character is not in the ray filter, so
-	-- the ray sails through the target and reports that footing as a wall in the
-	-- way -- which is why a fully visible, hittable target on a wall face never
-	-- locked. Progress is measured by horizontal distance to the target: a hit
-	-- before that distance is real cover in front and blocks; a hit at or beyond
-	-- it (minus a small tolerance for the target's own footprint) is the target's
-	-- own footing and is treated as clear.
-	local horizGoal
+	-- Clear the path only UP TO the target. A hit BEFORE the target at roughly its
+	-- height is real cover and blocks -- this is what stops firing through walls.
+	-- A hit that is at/behind the target, clearly below it (the block it stands on
+	-- or the ground), or within its own hitbox is the target's own footing and
+	-- does NOT block, so a target on a wall face / ledge still locks.
+	hitRadius = hitRadius or 3.5
+	local axisLen, axisUnit
 	if targetPos then
-		local d = targetPos - origin
-		horizGoal = bsqrt(d.X * d.X + d.Z * d.Z)
+		local axis = targetPos - origin
+		axisLen = axis.Magnitude
+		if axisLen > 0.001 then axisUnit = axis / axisLen end
 	end
-	hitTol = hitTol or 3
 	local pos = origin
 	local vel = velocity
-	local step = 0.08
+	local step = 0.05
 	local t = 0
 	while t < maxTime do
 		local nextPos = pos + vel * step
+		-- stop once we have reached the target's distance along the shot; footing
+		-- past that point must never count as cover
+		if axisUnit and (nextPos - origin):Dot(axisUnit) >= axisLen - 0.5 then
+			return true
+		end
 		local ray = workspace:Raycast(pos, nextPos - pos, rayCheck)
 		if ray then
-			if horizGoal then
-				local hd = ray.Position - origin
-				if bsqrt(hd.X * hd.X + hd.Z * hd.Z) >= horizGoal - hitTol then
+			if targetPos then
+				local hit = ray.Position
+				local along = axisUnit and (hit - origin):Dot(axisUnit) or 0
+				if (axisLen and along >= axisLen - 1.5)
+					or hit.Y <= targetPos.Y - 3
+					or (hit - targetPos).Magnitude <= hitRadius
+				then
 					return true
 				end
 			end
 			return false
 		end
 		pos = nextPos
-		if horizGoal then
-			local pd = pos - origin
-			if bsqrt(pd.X * pd.X + pd.Z * pd.Z) >= horizGoal then
-				return true
-			end
-		end
 		vel = vel - Vector3.new(0, gravity * step, 0)
 		t = t + step
 	end
@@ -5328,14 +5332,15 @@ run(function()
 	end
 	local function pingLatency()
 		local mode = PingMode and PingMode.Value or 'Automatic'
-		if mode == 'Low' then return 0.03
-		elseif mode == 'Medium' then return 0.08
-		elseif mode == 'High' then return 0.16 end
-		-- Automatic: GetNetworkPing is seconds; lead by the perceived position lag
-		-- (one-way ping + a small interpolation buffer), clamped to a sane range.
+		if mode == 'Low' then return 0.02
+		elseif mode == 'Medium' then return 0.06
+		elseif mode == 'High' then return 0.12 end
+		-- Automatic: GetNetworkPing is seconds. Lead by a conservative fraction of
+		-- it -- over-leading (too much latency) is what pushes shots past a moving
+		-- target, especially with a slow projectile at range.
 		local ok, ping = pcall(function() return lplr:GetNetworkPing() end)
 		local p = (ok and tonumber(ping)) or 0.05
-		return math.clamp(p + 0.03, 0.02, 0.3)
+		return math.clamp(p * 0.5 + 0.02, 0.015, 0.16)
 	end
 		local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
@@ -5538,9 +5543,18 @@ run(function()
 							best = bestBlocked
 						end
 						if not best then
+							-- serve a very recent cached solve only if it STILL clears to the
+							-- target's current position, so a target that just ducked behind
+							-- cover is never shot through the wall.
 							local cached = getgenv()._larpProjAimCache
-							if cached and cached.plr == plr and tick() - cached.at < 0.4 then
-								best = cached.best
+							if cached and cached.plr == plr and tick() - cached.at < 0.25 then
+								local cb = cached.best
+								local aimRoot = plr.RootPart or plr.HumanoidRootPart
+								local aimPos = aimRoot and aimRoot.Position or cb.from
+								local okClear, clear = pcall(prediction.IsTrajectoryClear, cb.from, cb.dir, gravity, cb.travelTime, rayCheck, aimPos)
+								if (not Targets.Walls.Enabled) or ((not okClear) or clear) then
+									best = cb
+								end
 							end
 						end
 						-- low-pass the final aim so residual solver jitter does not wobble the

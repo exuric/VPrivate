@@ -5339,7 +5339,14 @@ run(function()
 							if tpart and tpart.Position then
 								local tpos = tpart.Position
 								local rawVel = isPearl and Vector3.zero or (tpart.AssemblyLinearVelocity or tpart.Velocity or (rootPart and (rootPart.AssemblyLinearVelocity or rootPart.Velocity)) or Vector3.zero)
-								local realVel = isPearl and Vector3.zero or smoothVel(tpart, rawVel)
+								-- prediction.lua runs its own motion estimator (position-sample blend,
+								-- turn/strafe/knockback detection) and wants the raw assembly reading:
+								-- it derives velocityChange from state.assembly, so a pre-averaged input
+								-- corrupted that delta and lagged the lead on direction changes. Feed raw
+								-- to the solver; keep the boxcar fed so the smoothed vector stays warm
+								-- for the jitter-guard fallback below.
+								local smoothedVel = isPearl and Vector3.zero or smoothVel(tpart, rawVel)
+								local realVel = isPearl and Vector3.zero or rawVel
 								local resolvedRootPos = rootPos or tpos
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
@@ -5365,15 +5372,22 @@ run(function()
 									local okClear, clear = pcall(prediction.IsTrajectoryClear, origin3, dir, gravity, travelTime, rayCheck, plr.Character)
 									record(calc, travelTime, (not okClear) or clear)
 								end
-								-- primary pass: real velocity + real airborne, both arcs
+								-- primary pass: raw velocity + real airborne, both arcs
 								tryOne(prediction.SolveTrajectory, realVel, airborne)
 								if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, realVel, airborne) end
-								-- micro-Prediction sweep for moving targets. Widen search over
-								-- the lead multiplier by +/- 8% so a small residual mistune in the
-								-- Prediction slider or the learned latency bias still lands.
+								-- jitter guard: if the raw reading spiked this frame and cleared
+								-- nothing, retry once with the boxcar-smoothed velocity before
+								-- falling back to the simplified target models.
+								if not best and not isPearl and (smoothedVel - realVel).Magnitude > 1 then
+									tryOne(prediction.SolveTrajectory, smoothedVel, airborne)
+									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, smoothedVel, airborne) end
+								end
+								-- micro-Prediction sweep for moving targets. Denser near 1.0 where
+								-- the true lead sits, wider tails so a heavier residual mistune in
+								-- the Prediction slider or the learned latency bias still lands.
 								if not best then
 								local savedScale = speedScaled
-								for _, mul in ipairs({0.94, 1.06, 0.85, 1.15}) do
+								for _, mul in ipairs({0.97, 1.03, 0.94, 1.06, 0.88, 1.12, 0.8, 1.2}) do
 									speedScaled = fireSpeed * Prediction.Value * mul
 									tryOne(prediction.SolveTrajectory, realVel, airborne)
 									if hasHighArc then tryOne(prediction.SolveTrajectoryHigh, realVel, airborne) end

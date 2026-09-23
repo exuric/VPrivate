@@ -65,6 +65,69 @@ local bsqrt = math.sqrt
 local bclamp = math.clamp
 local babs = math.abs
 
+-- Shared target-motion model for both arcs. Tracks each target's horizontal
+-- direction to detect strafing, and predicts a future position that (a) does
+-- not lead a standing target at all, (b) never leads PAST a strafe reversal
+-- (where the target turns around -- leading past it is the classic strafe
+-- miss), and (c) keeps the gravity arc for genuinely airborne targets.
+local strafeState = setmetatable({}, {__mode = 'k'})
+local function updateStrafe(root, targetVel)
+	if not root then return nil end
+	local now = os.clock()
+	local st = strafeState[root]
+	if not st then st = {} strafeState[root] = st end
+	-- one sample per frame: the solver calls targetAt many times per solve and is
+	-- itself called several times per frame, so gate on a small real-time delta.
+	if st.sampledAt and now - st.sampledAt < 0.01 then return st end
+	st.sampledAt = now
+	local hv = Vector3.new(targetVel.X, 0, targetVel.Z)
+	local speed = hv.Magnitude
+	if speed > 3 then
+		local dir = hv.Unit
+		if st.dir and st.dir:Dot(dir) < -0.2 then
+			if st.lastRev then
+				local half = now - st.lastRev
+				if half > 0.08 and half < 2 then
+					st.half = st.half and (st.half * 0.5 + half * 0.5) or half
+					st.seen = math.min((st.seen or 0) + 1, 6)
+				end
+			end
+			st.lastRev = now
+		end
+		st.dir = dir
+		st.moveAt = now
+	elseif st.moveAt and now - st.moveAt > 0.4 then
+		st.half, st.seen, st.lastRev = nil, 0, nil
+	end
+	return st
+end
+local function predictAt(pos, vel, gravity, airborne, st, t)
+	local hv = Vector3.new(vel.X, 0, vel.Z)
+	local speed = hv.Magnitude
+	local vy = vel.Y
+	-- standing still (or nearly): do not invent a lead -- that is what made
+	-- still targets get missed.
+	if speed < 2 and babs(vy) < 2 then
+		return pos
+	end
+	local leadT = t
+	if st and st.half and (st.seen or 0) >= 2 and st.lastRev then
+		-- strafing: cap the lead at the next reversal so we aim at the turnaround
+		-- instead of sailing past where they will actually be.
+		local elapsed = (os.clock() - st.lastRev) % st.half
+		local toRev = st.half - elapsed
+		leadT = bclamp(t, 0, math.max(toRev, 0.04))
+	end
+	local horiz = hv * leadT
+	local y
+	if airborne and gravity > 0 then
+		y = pos.Y + vy * t - 0.5 * gravity * t * t
+	else
+		y = pos.Y + vy * t
+	end
+	return Vector3.new(pos.X + horiz.X, y, pos.Z + horiz.Z)
+end
+
 ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVel, targetGravity, hipHeight, jumpSpeed, rayCheck, targetAirborne, targetRootPos, targetRoot, extraA, extraB)
 	origin = origin or Vector3.zero
 	targetPos = targetPos or origin
@@ -73,12 +136,9 @@ ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVe
 	gravity = gravity or 196.2
 	targetGravity = targetGravity or workspace.Gravity or 196.2
 
+	local strafe = updateStrafe(targetRoot, targetVel)
 	local function targetAt(t)
-		if targetAirborne and targetGravity > 0 then
-			-- target's own ballistic motion under its gravity
-			return targetPos + targetVel * t - Vector3.new(0, 0.5 * targetGravity * t * t, 0)
-		end
-		return targetPos + targetVel * t
+		return predictAt(targetPos, targetVel, targetGravity, targetAirborne, strafe, t)
 	end
 
 	local function closedForm(target)
@@ -176,11 +236,9 @@ ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targ
 	gravity = gravity or 196.2
 	targetGravity = targetGravity or workspace.Gravity or 196.2
 
+	local strafe = updateStrafe(targetRoot, targetVel)
 	local function targetAt(t)
-		if targetAirborne and targetGravity > 0 then
-			return targetPos + targetVel * t - Vector3.new(0, 0.5 * targetGravity * t * t, 0)
-		end
-		return targetPos + targetVel * t
+		return predictAt(targetPos, targetVel, targetGravity, targetAirborne, strafe, t)
 	end
 
 	local function closedFormHigh(target)

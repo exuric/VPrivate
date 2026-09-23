@@ -5235,12 +5235,19 @@ run(function()
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local self, projmeta, worldmeta, origin, shootpos = ...
 					local originPos = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero
+					-- Acquire without the straight-line wallcheck. For a lobbed projectile the
+					-- real reachability test is the ballistic arc (IsTrajectoryClear, per part,
+					-- high arc included), not line of sight to the root. A target on a ledge or
+					-- behind low cover fails the straight ray but is cleanly cleared by an arc
+					-- over it, so gating acquisition on LOS was why ledge targets never locked.
+					-- Walls-enabled intent still holds below: a genuinely blocked arc falls to
+					-- bestBlocked, which is only taken when Walls is disabled.
 					local plr = entitylib.EntityMouse({
 						Part = 'RootPart',
 						Range = FOV.Value,
 						Players = Targets.Players.Enabled,
 						NPCs = Targets.NPCs.Enabled,
-						Wallcheck = Targets.Walls.Enabled,
+						Wallcheck = false,
 						Origin = originPos,
 						Sort = sortmethods[Sort.Value]
 					})
@@ -5306,7 +5313,27 @@ run(function()
 						local rootPart = plr.RootPart or plr.HumanoidRootPart
 						local rootPos = rootPart and rootPart.Position
 						local hipH = plr.HipHeight or 2
-						local airborne = (plr.Humanoid and plr.Humanoid.FloorMaterial == Enum.Material.Air) or (rootPart and math.abs(rootPart.Velocity.Y) > 0.01) or false
+						-- FloorMaterial lags a frame or two when a target walks off a ledge, and
+						-- their downward velocity is still ~0 on that frame, so both of the usual
+						-- airborne signals read "grounded" while they have in fact started to
+						-- fall -- the solver then aims at ledge height and the shot sails over as
+						-- they drop. A short downward probe against the map is the ground truth:
+						-- no floor within reach below the root means treat them as airborne now,
+						-- so gravity is modelled from this frame instead of after the flag catches
+						-- up. Grounded/standing targets always have floor directly below, so this
+						-- never latches on a stationary player.
+						local groundBelow
+						if rootPos then
+							local okProbe, probe = pcall(function()
+								return workspace:Raycast(rootPos, Vector3.new(0, -(hipH * 2 + 6), 0), rayCheck)
+							end)
+							groundBelow = okProbe and probe or nil
+						end
+						local airborne = (plr.Humanoid and plr.Humanoid.FloorMaterial == Enum.Material.Air)
+							or (rootPart and math.abs(rootPart.Velocity.Y) > 0.01)
+							or (plr.Jumping == true)
+							or (rootPos ~= nil and groundBelow == nil)
+							or false
 						local isArrow = type(projmeta.projectile) == 'string' and projmeta.projectile:find('arrow') and true or false
 						local relOffset = isArrow and Vector3.new(bedwars.BowConstantsTable.RelX, bedwars.BowConstantsTable.RelY, bedwars.BowConstantsTable.RelZ) or Vector3.zero
 						local isPearl = projmeta.projectile == 'telepearl'

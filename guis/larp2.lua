@@ -152,6 +152,7 @@ local getcustomassets = {
 	['LarpV4/assets/larp/blurnotif.png'] = 'rbxassetid://16738720137',
 	['LarpV4/assets/larp/close.png'] = 'rbxassetid://14368309446',
 	['LarpV4/assets/larp/closemini.png'] = 'rbxassetid://14368310467',
+	['LarpV4/assets/larp/publish.png'] = '',
 	['LarpV4/assets/larp/colorpreview.png'] = 'rbxassetid://14368311578',
 	['LarpV4/assets/larp/combaticon.png'] = 'rbxassetid://14368312652',
 	['LarpV4/assets/larp/customsettings.png'] = 'rbxassetid://14403726449',
@@ -7918,22 +7919,68 @@ do
 	local function pubUploadShare(payload)
 		local ok, encoded = pcall(httpService.JSONEncode, httpService, payload)
 		if not ok or not encoded then return nil, 'Could not encode profile.' end
-		local ok2, res = pcall(request, {Url = 'https://paste.rs/', Method = 'POST', Body = encoded, Headers = {['Content-Type'] = 'text/plain'}})
-		if not ok2 or type(res) ~= 'table' then return nil, 'Upload failed (no network?). Profile saved locally anyway.' end
-		local code = tostring(res.Body or ''):gsub('%s+', '')
-		if (res.StatusCode or 0) < 200 or (res.StatusCode or 0) > 299 or code == '' then
-			return nil, 'Upload rejected. Profile saved locally anyway.'
+		-- paste.rs is a free public paste host: it rate-limits (429) and 5xxs under
+		-- load, so a single POST is unreliable. Retry with backoff and accept any
+		-- 2xx (it returns 201 with the paste URL in the body).
+		local lastErr = 'Upload failed (no network?). Profile saved locally anyway.'
+		for attempt = 1, 4 do
+			local ok2, res = pcall(request, {
+				Url = 'https://paste.rs/',
+				Method = 'POST',
+				Body = encoded,
+				Headers = {['Content-Type'] = 'text/plain', ['User-Agent'] = 'LarpV4'}
+			})
+			if ok2 and type(res) == 'table' then
+				local status = res.StatusCode or res.Status or 0
+				local code = tostring(res.Body or ''):gsub('%s+', '')
+				if status >= 200 and status <= 299 and code ~= '' then
+					code = code:match('([^/]+)$') or code
+					return 'LARP-'..code, nil
+				end
+				if status == 429 or status >= 500 then
+					lastErr = 'Upload rate-limited, retrying...'
+				else
+					lastErr = 'Upload rejected ('..tostring(status)..'). Profile saved locally anyway.'
+				end
+			end
+			task.wait(0.6 * attempt)
 		end
-		code = code:match('([^/]+)$') or code
-		return 'LARP-'..code, nil
+		return nil, lastErr
 	end
 	local function pubDownloadShare(code)
 		code = tostring(code or ''):gsub('%s+', '')
 		code = code:gsub('^LARP%-', ''):gsub('^https?://paste%.rs/', ''):gsub('/$', '')
 		if code == '' then return nil, 'Empty share code.' end
-		local ok, res = pcall(game.HttpGet, game, 'https://paste.rs/'..code, true)
-		if not ok or not res or res == '' then return nil, 'Could not fetch that share code. Check it and try again.' end
-		local ok2, data = pcall(httpService.JSONDecode, httpService, res)
+		-- Retry the fetch (paste.rs rate-limits), read the status so a 404 reports
+		-- "expired/wrong" instead of a generic failure, and fall back to HttpGet on
+		-- executors that gate request GET.
+		local body, lastErr
+		for attempt = 1, 4 do
+			local ok, res = pcall(request, {Url = 'https://paste.rs/'..code, Method = 'GET', Headers = {['User-Agent'] = 'LarpV4'}})
+			if ok and type(res) == 'table' then
+				local status = res.StatusCode or res.Status or 0
+				if status >= 200 and status <= 299 and res.Body and res.Body ~= '' then
+					body = res.Body
+					break
+				elseif status == 404 then
+					return nil, 'Share code not found (expired or wrong).'
+				elseif status == 429 or status >= 500 then
+					lastErr = 'Rate-limited, retrying...'
+				else
+					lastErr = 'Could not fetch that share code ('..tostring(status)..').'
+				end
+			else
+				local okg, resg = pcall(game.HttpGet, game, 'https://paste.rs/'..code, true)
+				if okg and resg and resg ~= '' and resg ~= '404: Not Found' then
+					body = resg
+					break
+				end
+				lastErr = 'Could not fetch that share code. Check it and try again.'
+			end
+			task.wait(0.5 * attempt)
+		end
+		if not body then return nil, lastErr or 'Could not fetch that share code.' end
+		local ok2, data = pcall(httpService.JSONDecode, httpService, body)
 		if not ok2 or type(data) ~= 'table' then return nil, 'Share code did not contain a valid profile.' end
 		return data, nil
 	end
@@ -8055,16 +8102,7 @@ do
 		addBlur(win)
 		makeDraggable(win)
 		pubMkLabel(win, 'Public Profiles', 15, false, 16, 10, 300, 20).FontFace = uipallet.FontSemiBold
-		local close = Instance.new('TextButton')
-		close.Size = UDim2.fromOffset(28, 28)
-		close.Position = UDim2.new(1, -36, 0, 8)
-		close.BackgroundTransparency = 1
-		close.AutoButtonColor = false
-		close.Text = 'x'
-		close.TextColor3 = color.Dark(uipallet.Text, 0.29)
-		close.TextSize = 15
-		close.FontFace = uipallet.Font
-		close.Parent = win
+		local close = addCloseButton(win, 8)
 		close.MouseButton1Click:Connect(function() win.Visible = false end)
 		pubMkLabel(win, 'YOUR PROFILES', 11, true, 12, 44, 160, 14)
 		local createBtn = pubMkButton(win, '+ CREATE NEW', 12, 62, 151, 30, true, 12)
@@ -8782,6 +8820,19 @@ pubShowDetails = function(ref)
 			end
 		end
 		local go = pubMkButton(sc, mode == 'edit' and 'SAVE CHANGES' or 'PUBLISH PROFILE', 0, 0, 300, 30, true, 13)
+		-- Vape-style publish glyph. Guarded by tryAsset (a single request) so a
+		-- missing publish.png shows no icon instead of triggering downloadFile's
+		-- multi-retry hang; drop assets/larp/publish.png in and it appears.
+		if mode ~= 'edit' and tryAsset('LarpV4/assets/larp/publish.png') then
+			local goIcon = Instance.new('ImageLabel')
+			goIcon.Name = 'PublishIcon'
+			goIcon.Size = UDim2.fromOffset(16, 16)
+			goIcon.Position = UDim2.fromOffset(12, 7)
+			goIcon.BackgroundTransparency = 1
+			goIcon.Image = getcustomasset('LarpV4/assets/larp/publish.png')
+			goIcon.ImageColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			goIcon.Parent = go
+		end
 		put(go, 30)
 		go.MouseButton1Click:Connect(function()
 			local nm = tostring(nameBox.Text or ''):gsub('^%s+', ''):gsub('%s+$', '')
@@ -8848,11 +8899,15 @@ pubShowDetails = function(ref)
 					local idx = pubLoadIndex()
 					idx[id] = meta2
 					pubSaveIndex(idx)
-					status.Text = 'Published!'
+					status.Text = 'Published! Uploading share code...'
 					mainapi:CreateNotification('Public Profiles', "Published '"..nm.."'", 4)
 					pubRefreshYours()
 					pubRefreshCards()
 					pubShowDetails({kind = 'local', id = id})
+					-- Publishing used to only save locally, so nobody else could see it.
+					-- Upload immediately and copy the share code so publish = a code the
+					-- user can hand to anyone, who loads it via Import.
+					pubDoShare({kind = 'local', id = id}, false)
 				end)
 			end
 		end)

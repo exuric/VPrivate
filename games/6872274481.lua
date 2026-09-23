@@ -99,9 +99,9 @@ ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVe
 		end
 		local sqrtDisc = bsqrt(disc)
 		local u = (horiz - sqrtDisc) / (2 * A)
-		if u ~= u or u < -2 or u > 2 then
+		if u ~= u or u < -12 or u > 12 then
 			u = (horiz + sqrtDisc) / (2 * A)
-			if u ~= u or u < -2 or u > 2 then
+			if u ~= u or u < -12 or u > 12 then
 				return nil, nil
 			end
 		end
@@ -201,10 +201,14 @@ ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targ
 		end
 		local sqrtDisc = bsqrt(disc)
 		-- steep arc: pick the LARGER u (higher launch angle)
+		-- u is tan(theta); the bound allows up to ~85 degrees so the lob can
+		-- rise over a wall and drop onto a target on a ledge/roof. The old +/-2
+		-- (~63 deg) cap rejected exactly those arcs, returned nil, and left the
+		-- aimbot with no cleared solution -- why wall/ledge targets never locked.
 		local u = (horiz + sqrtDisc) / (2 * A)
-		if u ~= u or u < -2 or u > 2 then
+		if u ~= u or u < -12 or u > 12 then
 			u = (horiz - sqrtDisc) / (2 * A)
-			if u ~= u or u < -2 or u > 2 then
+			if u ~= u or u < -12 or u > 12 then
 				return nil, nil
 			end
 		end

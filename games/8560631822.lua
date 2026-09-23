@@ -7210,8 +7210,19 @@ run(function()
 					Icon.Size = UDim2.fromOffset(30, 30)
 					Icon.Position = UDim2.fromOffset(size.X + 10, -4)
 					Icon.BackgroundTransparency = 1
-					Icon.Image = store.rank[ent.Player]:async() and bedwars.RankMeta[store.rank[ent.Player]:async()].image or ''
-					Icon.Parent = nametag
+				Icon.Image = store.rank[ent.Player]:async() and bedwars.RankMeta[store.rank[ent.Player]:async()].image or ''
+				if FakeRank.Value ~= 'None' and ent.Player == lplr then
+					for _, k in rankKeys do
+						if tostring(k) == FakeRank.Value then
+							local fake = bedwars.RankMeta[k]
+							if fake then
+								Icon.Image = fake.image or ''
+							end
+							break
+						end
+					end
+				end
+				Icon.Parent = nametag
 				end
 			end)
 
@@ -7677,6 +7688,31 @@ run(function()
 				NameTags:Toggle()
 			end
 		end
+	})
+	local rankKeys = {}
+	local rankList = {'None'}
+	pcall(function()
+		local meta = bedwars.RankMeta
+		if type(meta) == 'table' then
+			local tmp = {}
+			for k in pairs(meta) do tmp[#tmp + 1] = k end
+			table.sort(tmp, function(a, b) return tostring(a) < tostring(b) end)
+			for _, k in tmp do
+				rankKeys[#rankKeys + 1] = k
+				rankList[#rankList + 1] = tostring(k)
+			end
+		end
+	end)
+	FakeRank = NameTags:CreateDropdown({
+		Name = 'Fake Rank',
+		List = rankList,
+		Function = function()
+			if NameTags.Enabled then
+				NameTags:Toggle()
+				NameTags:Toggle()
+			end
+		end,
+		Tooltip = 'Overrides YOUR nametag rank icon (everyone else keeps theirs)'
 	})
 	DisplayName = NameTags:CreateToggle({
 		Name = 'Use Displayname',

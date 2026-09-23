@@ -348,3 +348,165 @@ run(function()
 		end
 	})
 end)
+
+run(function()
+	local FakeRank
+	local RankTitle
+	local RankRP
+	local RankPos
+	local TopRow
+	local gen = 0
+	local originals = {}
+
+	local function comma(n)
+		n = math.floor(tonumber(n) or 0)
+		local neg = n < 0
+		local s = tostring(math.abs(n))
+		local out = ''
+		while #s > 3 do
+			out = ',' .. s:sub(-3) .. out
+			s = s:sub(1, -4)
+		end
+		return (neg and '-' or '') .. s .. out
+	end
+
+	local function boards()
+		local list = {}
+		local lobby = workspace:FindFirstChild('Lobby')
+		local bs = lobby and lobby:FindFirstChild('Boards')
+		if bs then
+			for _, b in bs:GetChildren() do
+				if b:IsA('Model') then
+					list[#list + 1] = b
+				end
+			end
+		end
+		return list
+	end
+
+	local function applyBoard(board)
+		local posLabel
+		for _, d in board:GetDescendants() do
+			if d:IsA('TextLabel') then
+				local ok, t = pcall(function() return d.Text end)
+				if ok and type(t) == 'string' and t:find('YOUR POSITION:') then
+					posLabel = d
+					break
+				end
+			end
+		end
+		if posLabel then
+			if originals[posLabel] == nil then originals[posLabel] = posLabel.Text end
+			posLabel.Text = '<b>YOUR POSITION:</b> <font color="rgb(185, 188, 255)">' .. comma(RankPos.Value) .. '</font>'
+			local sibs = {}
+			if posLabel.Parent then
+				for _, s in posLabel.Parent:GetChildren() do
+					if s:IsA('TextLabel') then
+						sibs[#sibs + 1] = s
+					end
+				end
+			end
+			for i, s in sibs do
+				local ok, t = pcall(function() return s.Text end)
+				if ok and t == 'YOUR RANK:' and sibs[i + 1] then
+					local rv = sibs[i + 1]
+					if originals[rv] == nil then originals[rv] = rv.Text end
+					rv.Text = RankTitle.Value
+				end
+			end
+		end
+		if TopRow.Enabled then
+			for _, d in board:GetDescendants() do
+				if d:IsA('TextLabel') and d.Name == 'LeaderboardRank' then
+					local ok, t = pcall(function() return d.Text end)
+					if ok and t == '1' then
+						local row = d.Parent
+						while row and row ~= board do
+							local un
+							local sv
+							for _, x in row:GetDescendants() do
+								if x:IsA('TextLabel') and x.Name == 'PlayerUsername' then un = x end
+								if x:IsA('TextLabel') and x.Name == 'StatValue' then sv = sv or x end
+							end
+							if un then
+								if originals[un] == nil then originals[un] = un.Text end
+								un.Text = '<b><font color="rgb(185, 188, 255)">@</font></b>' .. lplr.Name
+								if sv then
+									if originals[sv] == nil then originals[sv] = sv.Text end
+									sv.Text = comma(RankRP.Value) .. ' RP'
+								end
+								break
+							end
+							row = row.Parent
+						end
+						break
+					end
+				end
+			end
+		end
+	end
+
+	local function restore()
+		for label, text in originals do
+			pcall(function()
+				if label and label.Parent then
+					label.Text = text
+				end
+			end)
+		end
+		table.clear(originals)
+	end
+
+	local function enforce()
+		gen += 1
+		local g = gen
+		task.spawn(function()
+			while FakeRank.Enabled and g == gen do
+				task.wait(1)
+				if not (FakeRank.Enabled and g == gen) then break end
+				pcall(function()
+					for _, b in boards() do
+						applyBoard(b)
+					end
+				end)
+			end
+		end)
+	end
+
+	FakeRank = larp.Categories.Utility:CreateModule({
+		Name = 'Fake Rank',
+		Function = function(callback)
+			if callback then
+				for _, b in boards() do
+					applyBoard(b)
+				end
+				enforce()
+			else
+				gen += 1
+				restore()
+			end
+		end,
+		Tooltip = 'Fakes your rank, RP and position on the lobby leaderboards (only you see it)'
+	})
+	RankTitle = FakeRank:CreateDropdown({
+		Name = 'Rank Title',
+		List = {'Grandmaster', 'Diamond 1', 'Emerald 1', 'Platinum 1', 'Gold 1', 'Silver 1', 'Bronze 1'}
+	})
+	RankRP = FakeRank:CreateSlider({
+		Name = 'RP',
+		Min = 0,
+		Max = 99999,
+		Default = 99999
+	})
+	RankPos = FakeRank:CreateSlider({
+		Name = 'Position',
+		Min = 1,
+		Max = 10000,
+		Default = 1
+	})
+	TopRow = FakeRank:CreateToggle({
+		Name = 'Top Row',
+		Default = true,
+		Tooltip = 'Puts your name at #1 with your fake RP'
+	})
+end)

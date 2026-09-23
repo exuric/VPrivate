@@ -3987,15 +3987,15 @@ run(function()
 	end
 
 	local function getAttackInterval()
-		local _, sword = getHandSword()
-		local speed = sword and sword.attackSpeed
-		local weapon = math.max((speed and speed > 0 and speed) or 0.3, 0.05)
 		local hits = tonumber(getgenv().LarpHitRegOverride) or tonumber(HitReg.Value) or 34
-		-- overshoot: fire at target+2 rate so ghosts still leave `hits` landing per 10s
-		local fireRate = hits + 3
-		local base = 10 / fireRate - 0.002
-		local floor = math.max(weapon - 0.02, 0.05)
-		return math.max(base, floor)
+		if hits <= 0 then hits = 34 end
+		-- Send cadence is exactly `hits` swings per 10s. The bedwars server gates the
+		-- LANDED rate per weapon; within that ceiling every evenly spaced swing
+		-- registers, so the number set is the number that lands. No weapon-animation
+		-- floor here: the swing packet is not bound by the local attack animation, and
+		-- flooring the interval at the animation speed throttled sends BELOW the
+		-- server's accept rate -- which is why 34 (and 33/35) never reached its number.
+		return math.max(10 / hits, 0.05)
 	end
 
 	local lastSwing = 0
@@ -4410,6 +4410,7 @@ run(function()
 					return realCanSee(self, ent)
 				end
 
+			local nextFire = os.clock()
 			repeat
 				local target
 				local iv = getAttackInterval()
@@ -4418,9 +4419,11 @@ run(function()
 					if target then
 						store.KillauraTarget = target[1]
 						if not SwingOnly.Enabled then
-							if os.clock() - loopLastFire >= iv then
+							if os.clock() >= nextFire then
 								swingMulti()
 								loopLastFire = os.clock()
+								nextFire = nextFire + iv
+								if nextFire < loopLastFire then nextFire = loopLastFire + iv end
 							end
 						end
 						-- SwingOnly: the hit + animation happen in the
@@ -4431,10 +4434,11 @@ run(function()
 				end
 				if not target then
 					store.KillauraTarget = nil
+					nextFire = os.clock() + iv
 					task.wait(math.min(iv, 0.15))
 				else
-					local wait = iv - (os.clock() - loopLastFire)
-					if wait > 0.005 then task.wait(wait) else task.wait(0.01) end
+					local waitFor = nextFire - os.clock()
+					if waitFor > 0.004 then task.wait(waitFor) elseif SwingOnly.Enabled then task.wait(0.01) else task.wait() end
 				end
 			until not Killaura.Enabled
 			else

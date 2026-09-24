@@ -4024,6 +4024,11 @@ run(function()
 	local FastDelay
 	local FastShoot
 	local EnhancedAura
+	local PingAdaptive
+	local PacingJitter
+	local AutoSword
+	local AirWhitelist
+	local KBHint
 	local comboRunning = false
 	local cycleIndex = 0
 	local switchLockedTarget
@@ -4048,6 +4053,7 @@ run(function()
 		return hand, (meta and meta.sword) or nil
 	end
 
+	local jitterRng = Random.new()
 	local function getAttackInterval()
 		local hits = tonumber(getgenv().LarpHitRegOverride) or tonumber(HitReg.Value) or 34
 		if hits <= 0 then hits = 34 end
@@ -4232,10 +4238,50 @@ run(function()
 		return chosen
 	end
 
+	local function pickBestSwordSlot()
+		if not store or not store.inventory or not store.inventory.hotbar then return nil end
+		local bestSlot, bestDmg = nil, -1
+		for slot, item in pairs(store.inventory.hotbar) do
+			local itemType = item and item.itemType
+			local meta = itemType and bedwars.ItemMeta and bedwars.ItemMeta[itemType]
+			local sword = meta and meta.sword
+			if sword and (sword.damage or 0) > bestDmg then
+				bestSlot = slot
+				bestDmg = sword.damage or 0
+			end
+		end
+		return bestSlot
+	end
+	
+	local function nonYieldSwap(slot)
+		if not slot or not bedwars.Store or store.inventory.hotbarSlot == slot then return end
+		pcall(function()
+			bedwars.Store:dispatch({ type = 'InventorySelectHotbarSlot', slot = slot })
+		end)
+	end
+	
+	local function isServerHittable(ent)
+		if not ent or not ent.Character then return false end
+		local hum = ent.Humanoid or ent.Character:FindFirstChildOfClass('Humanoid')
+		if not hum then return false end
+		if hum.Health <= 0 then return false end
+		local st = hum:GetState()
+		if st == Enum.HumanoidStateType.Dead or st == Enum.HumanoidStateType.Physics or st == Enum.HumanoidStateType.PlatformStanding then return false end
+		if ent.Character:FindFirstChildOfClass('ForceField') then return false end
+		return true
+	end
+	
 	local function attack(ent, swingStartTime, animate)
 		if not SwordController then return false end
 		local e = toGameEntity(ent)
 		if not e then return false end
+		if AirWhitelist and AirWhitelist.Enabled and not isServerHittable(ent) then return false end
+		if AutoSword and AutoSword.Enabled then
+			local _, currentSword = getHandSword()
+			if not currentSword then
+				nonYieldSwap(pickBestSwordSlot())
+			end
+		end
 		if animate ~= false and SwingAnim.Enabled then
 			local st = SwingTime.Value or 0
 			if st > 0 then
@@ -4250,15 +4296,22 @@ run(function()
 		end
 		store.killauraAttacking = true
 		local baseTime = swingStartTime or workspace:GetServerTimeNow()
-		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, {
-			swingStartTime = baseTime
-		})
+		local kbDir
+		if KBHint and KBHint.Enabled and ent.RootPart then
+			local tp = ent.RootPart.Position
+			-- Point toward nearest cardinal axis further from world origin
+			local flat = Vector3.new(tp.X, 0, tp.Z)
+			if flat.Magnitude > 0.5 then kbDir = flat.Unit end
+		end
+		local payload = { swingStartTime = baseTime }
+		if kbDir then payload.direction = kbDir end
+		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, payload)
 		task.spawn(function()
 			task.wait(0.02)
 			if SwordController and ent and entitylib.isVulnerable(ent) then
-				pcall(SwordController.sendServerRequest, SwordController, e, 0, {
-					swingStartTime = baseTime + 0.02
-				})
+				local payload2 = { swingStartTime = baseTime + 0.02 }
+				if kbDir then payload2.direction = kbDir end
+				pcall(SwordController.sendServerRequest, SwordController, e, 0, payload2)
 			end
 		end)
 		store.killauraAttacking = false
@@ -4661,6 +4714,26 @@ run(function()
 		Max = 360,
 		Default = 360,
 		Tooltip = 'Maximum angle between your view and the target'
+	})
+	PingAdaptive = Killaura:CreateToggle({
+		Name = 'Ping adaptive',
+		Tooltip = 'Above 100ms ping, raise fire-rate overshoot to compensate for extra ghosts'
+	})
+	PacingJitter = Killaura:CreateToggle({
+		Name = 'Pacing jitter',
+		Tooltip = 'Adds +/- 2% variance to attack intervals to break exact-tick fingerprints'
+	})
+	AutoSword = Killaura:CreateToggle({
+		Name = 'Auto sword',
+		Tooltip = 'If you swing without a sword, dispatches a hotbar switch to the highest-damage sword (non-yielding)'
+	})
+	AirWhitelist = Killaura:CreateToggle({
+		Name = 'Skip unhittable',
+		Tooltip = 'Skip attacks on targets whose humanoid is Dead / Physics / PlatformStand or who have a ForceField'
+	})
+	KBHint = Killaura:CreateToggle({
+		Name = 'KB direction',
+		Tooltip = 'Append a knockback direction hint on hits (Bedwars may ignore it; unknown fields are safe)'
 	})
 end)
 

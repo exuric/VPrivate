@@ -177,6 +177,11 @@ end
 local function finishLoading()
 	larp.Init = nil
 	larp:Load()
+	pcall(function()
+		if larp.ShowChangelog then
+			larp:ShowChangelog()
+		end
+	end)
 	showNotify('LarpV4/ ready: guis, games, libraries, assets, profiles ('..(getgenv().LarpDownloaded or 0)..' new files)')
 
 	local teleportedServers

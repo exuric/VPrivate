@@ -9399,6 +9399,284 @@ function mainapi:ShowLanguagePicker(onPick)
 		if onPick then onPick(selected) end
 	end)
 end
+--[[
+	Changelogs (Whats New popup, Vape-style version list)
+]]
+local CHANGELOG_VERSION = 4
+local CHANGELOG = {
+	{ver = '1.4', date = 'Sep 24 · 26', title = 'Released version 1.4', entries = {
+		'Improved projectile aimbot',
+		'Fixed KillAura slow swings and ghost hits',
+		'Added Fake Rank boards and nametag icons',
+		'Fixed Larp Skins in third person',
+		'Fixed Legit tab keybinds',
+		'Added new KillAura options',
+	}},
+	{ver = '1.3', date = 'Sep 22 · 26', title = 'Released version 1.3', entries = {
+		'better aimbot target checks',
+		'Fixed device icons on nametags',
+		'Faster script downloads',
+		'Fixed KillAura swing timing',
+	}},
+}
+
+local function changelogSeen()
+	local ok, v = pcall(readfile, 'LarpV4/profiles/changelog_seen.txt')
+	return (ok and tonumber(v)) or 0
+end
+local function changelogSetSeen(v)
+	pcall(writefile, 'LarpV4/profiles/changelog_seen.txt', tostring(v))
+end
+
+local changelogWindow
+local changelogSelected = 1
+local changelogTypeGen = 0
+local changelogDontShow
+local changelogEntryList
+local changelogTitle
+local changelogVer
+local changelogVerButtons = {}
+
+local function changelogRenderVersion(idx)
+	changelogSelected = idx
+	changelogTypeGen += 1
+	local gen = changelogTypeGen
+	for _, c in changelogEntryList:GetChildren() do
+		if c:IsA('Frame') then
+			c:Destroy()
+		end
+	end
+	for i, b in changelogVerButtons do
+		b.BackgroundColor3 = (i == idx) and color.Light(uipallet.Main, 0.1) or color.Light(uipallet.Main, 0.02)
+	end
+	local v = CHANGELOG[idx]
+	if not v then return end
+	changelogTitle.Text = v.title
+	changelogVer.Text = v.date .. '  ·  Ver ' .. v.ver
+	changelogEntryList.CanvasSize = UDim2.fromOffset(0, 60 + (#v.entries * 26))
+	task.spawn(function()
+		for ei, entry in v.entries do
+			if gen ~= changelogTypeGen then break end
+			local row = Instance.new('Frame')
+			row.Name = 'Entry' .. ei
+			row.Size = UDim2.new(1, -8, 0, 24)
+			row.BackgroundTransparency = 1
+			row.LayoutOrder = ei
+			row.Parent = changelogEntryList
+			local bullet = Instance.new('ImageLabel')
+			bullet.Size = UDim2.fromOffset(11, 11)
+			bullet.Position = UDim2.fromOffset(4, 6)
+			bullet.BackgroundTransparency = 1
+			bullet.Image = getcustomasset('LarpV4/assets/larp/star.png')
+			bullet.ImageColor3 = color.Dark(uipallet.Text, 0.1)
+			bullet.Parent = row
+			local label = Instance.new('TextLabel')
+			label.Size = UDim2.new(1, -26, 1, 0)
+			label.Position = UDim2.fromOffset(22, 0)
+			label.BackgroundTransparency = 1
+			label.Text = ''
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.TextColor3 = uipallet.Text
+			label.TextSize = 13
+			label.FontFace = uipallet.Font
+			label.Parent = row
+			for i = 1, #entry do
+				if gen ~= changelogTypeGen then break end
+				label.Text = entry:sub(1, i)
+				task.wait(0.012)
+			end
+			if gen ~= changelogTypeGen then break end
+			label.Text = entry
+		end
+	end)
+end
+
+local function changelogBuild()
+	if changelogWindow then return end
+	local window = Instance.new('Frame')
+	window.Name = 'ChangelogGUI'
+	window.Size = UDim2.fromOffset(620, 450)
+	window.Position = UDim2.new(0.5, -310, 0.5, -225)
+	window.BackgroundColor3 = uipallet.Main
+	window.Visible = false
+	window.Parent = scaledgui
+	addBlur(window)
+	addCorner(window)
+	makeDraggable(window)
+	local modal = Instance.new('TextButton')
+	modal.BackgroundTransparency = 1
+	modal.Text = ''
+	modal.Modal = true
+	modal.Parent = window
+	local icon = Instance.new('ImageLabel')
+	icon.Size = UDim2.fromOffset(16, 16)
+	icon.Position = UDim2.fromOffset(18, 13)
+	icon.BackgroundTransparency = 1
+	icon.Image = getcustomasset('LarpV4/assets/larp/info.png')
+	icon.ImageColor3 = uipallet.Text
+	icon.Parent = window
+	local header = Instance.new('TextLabel')
+	header.Size = UDim2.new(1, -100, 0, 22)
+	header.Position = UDim2.fromOffset(44, 10)
+	header.BackgroundTransparency = 1
+	header.Text = 'Changelogs'
+	header.TextXAlignment = Enum.TextXAlignment.Left
+	header.TextColor3 = uipallet.Text
+	header.TextSize = 14
+	header.FontFace = uipallet.FontSemiBold
+	header.Parent = window
+	local headerdim = Instance.new('TextLabel')
+	headerdim.Size = UDim2.new(1, -100, 0, 13)
+	headerdim.Position = UDim2.fromOffset(44, 28)
+	headerdim.BackgroundTransparency = 1
+	headerdim.Text = 'What is new in Larp'
+	headerdim.TextXAlignment = Enum.TextXAlignment.Left
+	headerdim.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	headerdim.TextSize = 11
+	headerdim.FontFace = uipallet.Font
+	headerdim.Parent = window
+	addCloseButton(window)
+	local divider = Instance.new('Frame')
+	divider.Size = UDim2.new(1, -28, 0, 1)
+	divider.Position = UDim2.fromOffset(14, 47)
+	divider.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
+	divider.BorderSizePixel = 0
+	divider.Parent = window
+	local verlist = Instance.new('ScrollingFrame')
+	verlist.Name = 'Versions'
+	verlist.Size = UDim2.fromOffset(150, 330)
+	verlist.Position = UDim2.fromOffset(14, 57)
+	verlist.BackgroundTransparency = 1
+	verlist.BorderSizePixel = 0
+	verlist.ScrollBarThickness = 2
+	verlist.ScrollBarImageTransparency = 0.75
+	verlist.CanvasSize = UDim2.new()
+	verlist.Parent = window
+	local verlayout = Instance.new('UIListLayout')
+	verlayout.SortOrder = Enum.SortOrder.LayoutOrder
+	verlayout.Padding = UDim.new(0, 4)
+	verlayout.Parent = verlist
+	verlayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+		verlist.CanvasSize = UDim2.fromOffset(0, verlayout.AbsoluteContentSize.Y + 4)
+	end)
+	local entries = Instance.new('ScrollingFrame')
+	entries.Name = 'Entries'
+	entries.Size = UDim2.new(1, -188, 0, 330)
+	entries.Position = UDim2.fromOffset(174, 57)
+	entries.BackgroundTransparency = 1
+	entries.BorderSizePixel = 0
+	entries.ScrollBarThickness = 2
+	entries.ScrollBarImageTransparency = 0.75
+	entries.CanvasSize = UDim2.new()
+	entries.Parent = window
+	local entrylayout = Instance.new('UIListLayout')
+	entrylayout.SortOrder = Enum.SortOrder.LayoutOrder
+	entrylayout.Padding = UDim.new(0, 2)
+	entrylayout.Parent = entries
+	changelogEntryList = entries
+	local title = Instance.new('TextLabel')
+	title.Size = UDim2.new(1, -8, 0, 22)
+	title.BackgroundTransparency = 1
+	title.Text = ''
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextColor3 = uipallet.Text
+	title.TextSize = 14
+	title.FontFace = uipallet.FontSemiBold
+	title.LayoutOrder = 0
+	title.Parent = entries
+	changelogTitle = title
+	local ver = Instance.new('TextLabel')
+	ver.Size = UDim2.new(1, -8, 0, 16)
+	ver.BackgroundTransparency = 1
+	ver.Text = ''
+	ver.TextXAlignment = Enum.TextXAlignment.Left
+	ver.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	ver.TextSize = 11
+	ver.FontFace = uipallet.Font
+	ver.LayoutOrder = 0
+	ver.Parent = entries
+	changelogVer = ver
+	for i, v in CHANGELOG do
+		local b = Instance.new('TextButton')
+		b.Size = UDim2.new(1, -4, 0, 40)
+		b.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		b.Text = v.date .. '\nVer ' .. v.ver
+		b.TextColor3 = uipallet.Text
+		b.TextSize = 12
+		b.FontFace = uipallet.Font
+		b.AutoButtonColor = false
+		b.LayoutOrder = i
+		b.Parent = verlist
+		addCorner(b, UDim.new(0, 4))
+		changelogVerButtons[i] = b
+		b.MouseButton1Click:Connect(function()
+			changelogRenderVersion(i)
+		end)
+	end
+	verlist.CanvasSize = UDim2.fromOffset(0, verlayout.AbsoluteContentSize.Y)
+	entries.CanvasSize = UDim2.fromOffset(0, 60 + (#CHANGELOG[1].entries * 26))
+	local checkrow = Instance.new('TextButton')
+	checkrow.Size = UDim2.new(1, -28, 0, 24)
+	checkrow.Position = UDim2.fromOffset(14, 392)
+	checkrow.BackgroundTransparency = 1
+	checkrow.Text = ''
+	checkrow.AutoButtonColor = false
+	checkrow.Parent = window
+	local checkbox = Instance.new('Frame')
+	checkbox.Size = UDim2.fromOffset(14, 14)
+	checkbox.Position = UDim2.fromOffset(0, 5)
+	checkbox.BackgroundColor3 = color.Light(uipallet.Main, 0.1)
+	checkbox.Parent = checkrow
+	addCorner(checkbox, UDim.new(0, 3))
+	local checkfill = Instance.new('Frame')
+	checkfill.Size = UDim2.fromOffset(8, 8)
+	checkfill.Position = UDim2.fromOffset(3, 3)
+	checkfill.BackgroundColor3 = uipallet.Text
+	checkfill.Visible = false
+	checkfill.Parent = checkbox
+	addCorner(checkfill, UDim.new(0, 2))
+	local checklabel = Instance.new('TextLabel')
+	checklabel.Size = UDim2.new(1, -24, 1, 0)
+	checklabel.Position = UDim2.fromOffset(22, 0)
+	checklabel.BackgroundTransparency = 1
+	checklabel.Text = 'Do not show again until the next update'
+	checklabel.TextXAlignment = Enum.TextXAlignment.Left
+	checklabel.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	checklabel.TextSize = 12
+	checklabel.FontFace = uipallet.Font
+	checklabel.Parent = checkrow
+	changelogDontShow = checkfill
+	checkfill.Visible = changelogSeen() >= CHANGELOG_VERSION
+	checkrow.MouseButton1Click:Connect(function()
+		local on = not checkfill.Visible
+		checkfill.Visible = on
+		changelogSetSeen(on and CHANGELOG_VERSION or 0)
+	end)
+	local closebtn = Instance.new('TextButton')
+	closebtn.Size = UDim2.fromOffset(80, 24)
+	closebtn.Position = UDim2.new(1, -94, 0, 392)
+	closebtn.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
+	closebtn.Text = 'Close'
+	closebtn.TextColor3 = uipallet.Text
+	closebtn.TextSize = 12
+	closebtn.FontFace = uipallet.Font
+	closebtn.AutoButtonColor = false
+	closebtn.Parent = window
+	addCorner(closebtn, UDim.new(0, 4))
+	closebtn.MouseButton1Click:Connect(function()
+		window.Visible = false
+	end)
+	changelogWindow = window
+	table.insert(mainapi.Windows, window)
+end
+
+function mainapi:ShowChangelog(force)
+	if not force and changelogSeen() >= CHANGELOG_VERSION then return end
+	changelogBuild()
+	changelogRenderVersion(1)
+	changelogWindow.Visible = true
+end
+
 	local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})
 mainapi.MultiKeybind = general:CreateToggle({
 	Name = 'Enable Multi-Keybinding',
@@ -9410,6 +9688,13 @@ mainapi.MultiKeybind = general:CreateToggle({
 			mainapi:Uninject()
 		end,
 		Tooltip = 'Removes larp from the current game'
+	})
+	general:CreateButton({
+		Name = 'Changelogs',
+		Function = function()
+			mainapi:ShowChangelog(true)
+		end,
+		Tooltip = 'See what is new in Larp'
 	})
 	mainapi.AutoExecute = general:CreateToggle({
 		Name = 'Auto Execute',

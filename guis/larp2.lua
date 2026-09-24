@@ -4203,9 +4203,11 @@ function mainapi:CreateCategory(categorysettings)
  		padding.PaddingBottom = UDim.new(0, 3)
  		padding.Parent = children
 		windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-			children.CanvasSize = UDim2.fromOffset(0, windowlist.AbsoluteContentSize.Y / scale.Scale)
+			local contentH = windowlist.AbsoluteContentSize.Y / scale.Scale
+			children.CanvasSize = UDim2.fromOffset(0, contentH)
 			if categoryapi.Expanded then
-				window.Size = UDim2.fromOffset(220, math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601))
+				local viewH = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 900
+				window.Size = UDim2.fromOffset(220, math.min(41 + contentH, 601, math.max(200, viewH - 80)))
 			end
 		end)
 
@@ -4268,7 +4270,7 @@ function mainapi:CreateCategory(categorysettings)
 		bind.Position = UDim2.new(1, -27, 0, 9)
 		bind.AnchorPoint = Vector2.new(1, 0)
 		bind.BackgroundColor3 = Color3.new(1, 1, 1)
-		bind.BackgroundTransparency = 0.92
+		bind.BackgroundTransparency = 1
 		bind.BorderSizePixel = 0
 		bind.AutoButtonColor = false
 		bind.Visible = false
@@ -4716,6 +4718,16 @@ function mainapi:CreateCategory(categorysettings)
 				dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 			end
 		end)
+		local function scrollToModule()
+			task.delay(0.05, function()
+				pcall(function()
+					if not modulechildren.Visible then return end
+					local top = (modulebutton.AbsolutePosition.Y - children.AbsolutePosition.Y) / scale.Scale
+					local maxScroll = math.max(0, children.CanvasSize.Y.Offset - children.AbsoluteSize.Y)
+					children.CanvasPosition = Vector2.new(0, math.clamp(top - 60, 0, maxScroll))
+				end)
+			end)
+		end
 		dotsbutton.MouseButton1Click:Connect(function()
 			if modulechildren:GetChildren() == 0 then return end
 			if modulechildren.Parent ~= moduleapi.ChildrenParent then
@@ -4723,6 +4735,9 @@ function mainapi:CreateCategory(categorysettings)
 				modulechildren.Visible = not modulechildren.Visible
 			else
 				modulechildren.Visible = not modulechildren.Visible
+			end
+			if modulechildren.Visible then
+				scrollToModule()
 			end
 		end)
 		dotsbutton.MouseButton2Click:Connect(function()
@@ -4732,6 +4747,9 @@ function mainapi:CreateCategory(categorysettings)
 				modulechildren.Visible = not modulechildren.Visible
 			else
 				modulechildren.Visible = not modulechildren.Visible
+			end
+			if modulechildren.Visible then
+				scrollToModule()
 			end
 		end)
 		modulebutton.MouseEnter:Connect(function()
@@ -4844,12 +4862,18 @@ function mainapi:CreateCategory(categorysettings)
 			if moduleapi._hideClicked then moduleapi._hideClicked = false return end
 			if categoryapi.Editing then
 				modulechildren.Visible = not modulechildren.Visible
+				if modulechildren.Visible then
+					scrollToModule()
+				end
 			else
 				moduleapi:Toggle()
 			end
 		end)
 		modulebutton.MouseButton2Click:Connect(function()
 			modulechildren.Visible = not modulechildren.Visible
+			if modulechildren.Visible then
+				scrollToModule()
+			end
 		end)
 		if inputService.TouchEnabled then
 			local heldbutton = false
@@ -4946,7 +4970,8 @@ function mainapi:CreateCategory(categorysettings)
 
 	function categoryapi:Expand()
 		self.Expanded = not self.Expanded
-		local target = self.Expanded and math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601) or 41
+		local viewH = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y or 900
+		local target = self.Expanded and math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601, math.max(200, viewH - 80)) or 41
 		if self.Expanded then
 			children.Visible = true
 		end
@@ -6307,7 +6332,7 @@ function mainapi:CreateLegit()
 		bindbtn.Size = UDim2.fromOffset(20, 20)
 		bindbtn.Position = UDim2.new(1, -81, 0, 10)
 		bindbtn.BackgroundColor3 = Color3.new(1, 1, 1)
-		bindbtn.BackgroundTransparency = 0.92
+		bindbtn.BackgroundTransparency = 1
 		bindbtn.Text = ''
 		bindbtn.AutoButtonColor = false
 		bindbtn.Parent = module
@@ -6368,7 +6393,7 @@ function mainapi:CreateLegit()
 			bindbtn.BackgroundTransparency = 0.75
 		end)
 		bindbtn.MouseLeave:Connect(function()
-			bindbtn.BackgroundTransparency = 0.92
+			bindbtn.BackgroundTransparency = 1
 		end)
 		if modulesettings.Icon then
 			local modicon = Instance.new('ImageLabel')

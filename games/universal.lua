@@ -7782,9 +7782,17 @@ run(function()
 		Function = function(callback)
 			if callback then
 				Xray:Clean(workspace.DescendantAdded:Connect(modifyPart))
-				for _, v in workspace:GetDescendants() do
-					modifyPart(v)
-				end
+				task.spawn(function()
+					local batch = workspace:GetDescendants()
+					for i, v in batch do
+						if i % 150 == 0 then
+							task.wait()
+						end
+						if not Xray.Enabled then break end
+						modifyPart(v)
+					end
+					table.clear(batch)
+				end)
 			else
 				for i in modified do
 					i.LocalTransparencyModifier = 0

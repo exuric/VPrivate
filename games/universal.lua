@@ -8310,6 +8310,7 @@ run(function()
 	local TwentyFourHour
 	local ClockType
 	local RenderBG
+	local clockGen = 0
 	local label
 	local face
 	local bg
@@ -8320,26 +8321,32 @@ run(function()
 	Clock = larp.Legit:CreateModule({
 		Name = 'Clock',
 		Function = function(callback)
+			clockGen += 1
 			if callback then
-				repeat
-					local t = os.date('*t')
-					local mode = ClockType.Value
-					local isAnalog = mode == 'Analog'
-					label.Visible = not isAnalog
-					face.Visible = isAnalog
-					if isAnalog then
-						hourhand.Rotation = (t.hour % 12) * 30 + t.min * 0.5
-						minhand.Rotation = t.min * 6 + t.sec * 0.1
-						sechand.Rotation = t.sec * 6
-					else
-						local ts = DateTime.now():FormatLocalTime('LT', TwentyFourHour.Enabled and 'zh-cn' or 'en-us')
-						if mode == 'Date' then
-							ts = ts .. '  ' .. ('%02d/%02d/%04d'):format(t.month, t.day, t.year)
-						end
-						label.Text = ts
+				local g = clockGen
+				task.spawn(function()
+					while Clock.Enabled and g == clockGen do
+						pcall(function()
+							local t = os.date('*t')
+							local mode = ClockType.Value
+							local isAnalog = mode == 'Analog'
+							label.Visible = not isAnalog
+							face.Visible = isAnalog
+							if isAnalog then
+								hourhand.Rotation = (t.hour % 12) * 30 + t.min * 0.5
+								minhand.Rotation = t.min * 6 + t.sec * 0.1
+								sechand.Rotation = t.sec * 6
+							else
+								local ts = DateTime.now():FormatLocalTime('LT', TwentyFourHour.Enabled and 'zh-cn' or 'en-us')
+								if mode == 'Date' then
+									ts = ts .. '  ' .. ('%02d/%02d/%04d'):format(t.month, t.day, t.year)
+								end
+								label.Text = ts
+							end
+						end)
+						task.wait(1)
 					end
-					task.wait(1)
-				until not Clock.Enabled
+				end)
 			end
 		end,
 		Size = UDim2.fromOffset(150, 104),
@@ -8398,8 +8405,8 @@ run(function()
 	label = Instance.new('TextLabel')
 	label.Size = UDim2.fromOffset(150, 52)
 	label.BackgroundTransparency = 1
-	label.TextSize = 16
-	label.Font = Enum.Font.Gotham
+	label.TextSize = 20
+	label.Font = Enum.Font.GothamBold
 	label.Text = '0:00 PM'
 	label.TextColor3 = Color3.new(1, 1, 1)
 	label.Parent = Clock.Children

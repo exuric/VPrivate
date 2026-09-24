@@ -3162,7 +3162,7 @@ function mainapi:CreateGUI()
 			})
 		end)
 		profilebutton.MouseButton1Click:Connect(function()
-			mainapi:OpenPublicProfiles()
+			mainapi:TogglePublicProfiles()
 		end)
 		local shadow = Instance.new('TextButton')
 		shadow.Name = 'Shadow'
@@ -6100,6 +6100,13 @@ end
 
 function mainapi:CreateLegit()
 	local legitapi = {Modules = {}}
+	legitapi.Tab = 'All'
+	legitapi.Query = ''
+	local legitHUD = {
+		Clock = true, FPS = true, Ping = true, Keystrokes = true, Speedmeter = true,
+		Breadcrumbs = true, ReachDisplay = true, Crosshair = true, DamageIndicator = true,
+		Memory = true, HitColor = true,
+	}
 
 	local window = Instance.new('Frame')
 	window.Name = 'LegitGUI'
@@ -6151,10 +6158,67 @@ function mainapi:CreateLegit()
 	legitdivider.BackgroundColor3 = color.Light(uipallet.Main, 0.03)
 	legitdivider.BorderSizePixel = 0
 	legitdivider.Parent = window
+	local legitTabButtons = {}
+	local tabbar = Instance.new('Frame')
+	tabbar.Size = UDim2.new(1, -28, 0, 24)
+	tabbar.Position = UDim2.fromOffset(14, 54)
+	tabbar.BackgroundTransparency = 1
+	tabbar.Parent = window
+	local tabx = 0
+	for _, tabname in {'Favorite', 'All', 'HUD', 'Game'} do
+		local tb = Instance.new('TextButton')
+		tb.Size = UDim2.fromOffset(62, 24)
+		tb.Position = UDim2.fromOffset(tabx, 0)
+		tb.BackgroundTransparency = 1
+		tb.Text = tabname:upper()
+		tb.TextColor3 = color.Dark(uipallet.Text, 0.29)
+		tb.TextSize = 12
+		tb.FontFace = uipallet.Font
+		tb.AutoButtonColor = false
+		tb.Parent = tabbar
+		local under = Instance.new('Frame')
+		under.Name = 'Underline'
+		under.Size = UDim2.fromOffset(40, 2)
+		under.Position = UDim2.new(0.5, -20, 1, -4)
+		under.BackgroundColor3 = Color3.new(1, 1, 1)
+		under.BorderSizePixel = 0
+		under.Visible = false
+		under.Parent = tb
+		legitTabButtons[tabname] = tb
+		tb.MouseButton1Click:Connect(function()
+			legitapi.Tab = tabname
+			refreshLegitTabs()
+		end)
+		tabx += 68
+	end
+	local legitsearch = Instance.new('TextBox')
+	legitsearch.Size = UDim2.fromOffset(160, 24)
+	legitsearch.Position = UDim2.new(1, -174, 0, 54)
+	legitsearch.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+	legitsearch.PlaceholderText = 'Search mods'
+	legitsearch.Text = ''
+	legitsearch.TextXAlignment = Enum.TextXAlignment.Left
+	legitsearch.TextColor3 = uipallet.Text
+	legitsearch.TextSize = 12
+	legitsearch.FontFace = uipallet.Font
+	legitsearch.ClearTextOnFocus = false
+	legitsearch.Parent = window
+	addCorner(legitsearch, UDim.new(0, 4))
+	local searchicon = Instance.new('ImageLabel')
+	searchicon.Size = UDim2.fromOffset(14, 14)
+	searchicon.Position = UDim2.new(1, -20, 0.5, -7)
+	searchicon.BackgroundTransparency = 1
+	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
+	searchicon.ImageColor3 = color.Dark(uipallet.Text, 0.29)
+	searchicon.Parent = legitsearch
+	legitsearch:GetPropertyChangedSignal('Text'):Connect(function()
+		legitapi.Query = legitsearch.Text:lower()
+		refreshLegitTabs()
+	end)
 	local children = Instance.new('ScrollingFrame')
 	children.Name = 'Children'
-	children.Size = UDim2.new(1, -28, 0, 320)
-	children.Position = UDim2.fromOffset(14, 57)
+	children.Size = UDim2.new(1, -28, 0, 293)
+	children.Position = UDim2.fromOffset(14, 84)
 	children.BackgroundTransparency = 1
 	children.BorderSizePixel = 0
 	children.ScrollBarThickness = 2
@@ -6170,6 +6234,33 @@ function mainapi:CreateLegit()
 	windowlist.Parent = children
 	legitapi.Window = window
 	table.insert(mainapi.Windows, window)
+
+	local function refreshLegitTabs()
+		for _, v in legitapi.Modules do
+			local show = true
+			if legitapi.Tab == 'Favorite' and not v.Favourite then
+				show = false
+			elseif legitapi.Tab == 'HUD' and not legitHUD[v.Name] then
+				show = false
+			elseif legitapi.Tab == 'Game' and legitHUD[v.Name] then
+				show = false
+			end
+			if show and legitapi.Query ~= '' and not v.Name:lower():find(legitapi.Query, 1, true) then
+				show = false
+			end
+			if v.Object then
+				v.Object.Visible = show
+			end
+		end
+		for name, btn in legitTabButtons do
+			local sel = name == legitapi.Tab
+			btn.TextColor3 = sel and Color3.new(1, 1, 1) or color.Dark(uipallet.Text, 0.29)
+			local under = btn:FindFirstChild('Underline')
+			if under then
+				under.Visible = sel
+			end
+		end
+	end
 
 	function legitapi:CreateModule(modulesettings)
 		mainapi:Remove(modulesettings.Name)
@@ -6232,6 +6323,31 @@ function mainapi:CreateLegit()
 		dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		dots.Parent = moduledotsbutton
+		local favstar = Instance.new('TextButton')
+		favstar.Name = 'Fav'
+		favstar.Size = UDim2.fromOffset(12, 12)
+		favstar.Position = UDim2.fromOffset(2, 2)
+		favstar.BackgroundTransparency = 1
+		favstar.Text = ''
+		favstar.AutoButtonColor = false
+		favstar.Parent = module
+		addTooltip(favstar, 'Favorite')
+		local favicon = Instance.new('ImageLabel')
+		favicon.Size = UDim2.fromOffset(10, 10)
+		favicon.Position = UDim2.fromOffset(1, 1)
+		favicon.BackgroundTransparency = 1
+		favicon.Image = getcustomasset('LarpV4/assets/larp/star.png')
+		favicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+		favicon.Parent = favstar
+		function moduleapi:SetFavourite(on)
+			moduleapi.Favourite = on and true or nil
+			favicon.ImageColor3 = on and Color3.fromRGB(255, 184, 31) or color.Dark(uipallet.Text, 0.43)
+			mainapi:QueueSave()
+			refreshLegitTabs()
+		end
+		favstar.MouseButton1Click:Connect(function()
+			moduleapi:SetFavourite(not moduleapi.Favourite)
+		end)
 		local setbindtext
 		local bindbtn = Instance.new('TextButton')
 		bindbtn.Name = 'Bind'
@@ -6543,6 +6659,7 @@ moduleapi.Children = modulechildren
 
 		moduleapi.Object = module
 		legitapi.Modules[modulesettings.Name] = moduleapi
+		refreshLegitTabs()
 
 		local sorting = {}
 		for _, v in legitapi.Modules do
@@ -6983,6 +7100,9 @@ function mainapi:Load(skipgui, profile)
 				if v.Bind and object.SetBind then
 					object:SetBind(v.Bind)
 				end
+				if v.Favourite and object.SetFavourite then
+					object:SetFavourite(true)
+				end
 				if v.Position and object.Children then
 					object.Children.Position = UDim2.fromOffset(v.Position.X, v.Position.Y)
 				end
@@ -7148,6 +7268,7 @@ function mainapi:BuildSaveData()
 		savedata.Legit[i:gsub(' ', '')] = {
 			Enabled = v.Enabled,
 			Bind = v.Bind,
+			Favourite = v.Favourite or nil,
 			Position = v.Children and {X = v.Children.Position.X.Offset, Y = v.Children.Position.Y.Offset} or nil,
 			Options = mainapi:SaveOptions(v, v.Options)
 		}
@@ -8100,7 +8221,8 @@ do
 		local win = Instance.new('Frame')
 		win.Name = 'PublicProfiles'
 		win.Size = UDim2.fromOffset(580, 430)
-		win.Position = UDim2.new(0.5, -290, 0.5, -215)
+		local pubView = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+		win.Position = UDim2.fromOffset(math.floor(pubView.X / 2 - 290), math.floor(pubView.Y / 2 - 215))
 		win.BackgroundColor3 = uipallet.Main
 		win.BorderSizePixel = 0
 		win.Visible = false
@@ -8932,6 +9054,13 @@ pubShowDetails = function(ref)
 		pubShowBrowse()
 		pubSys.win.Visible = true
 	end
+	function mainapi:TogglePublicProfiles()
+		if pubSys.win and pubSys.win.Visible then
+			pubSys.win.Visible = false
+		else
+			mainapi:OpenPublicProfiles()
+		end
+	end
 	task.spawn(function()
 		local waited = 0
 		while not mainapi.Loaded and waited < 60 do
@@ -9420,7 +9549,7 @@ local CHANGELOG = {
 		'Fixed Legit tab keybinds',
 		'Added new KillAura options',
 	}, removed = {
-		'Random and Random All skin buttons',
+		'Random and Random All settings in Larp Skins',
 	}},
 	{ver = '1.3', date = 'Sep 22 · 26', title = 'Released version 1.3', added = {
 		'Better aimbot target checks',
@@ -9482,7 +9611,7 @@ local function changelogRenderVersion(idx)
 			signlabel.BackgroundTransparency = 1
 			signlabel.Text = sign
 			signlabel.TextColor3 = signColor
-			signlabel.TextSize = 15
+			signlabel.TextSize = 16
 			signlabel.FontFace = uipallet.FontSemiBold
 			signlabel.Parent = row
 			local label = Instance.new('TextLabel')
@@ -9504,10 +9633,10 @@ local function changelogRenderVersion(idx)
 			label.Text = text
 		end
 		for _, text in v.added do
-			addRow('+', text, Color3.fromRGB(90, 255, 90))
+			addRow('+', text, Color3.fromRGB(80, 255, 80))
 		end
 		for _, text in v.removed do
-			addRow('x', text, Color3.fromRGB(255, 90, 90))
+			addRow('x', text, Color3.fromRGB(255, 70, 70))
 		end
 	end)
 end
@@ -9558,6 +9687,12 @@ local function changelogBuild()
 	headerdim.FontFace = uipallet.Font
 	headerdim.Parent = window
 	addCloseButton(window)
+	local changelogClose = window:FindFirstChild('Close')
+	if changelogClose then
+		changelogClose.MouseButton1Click:Connect(function()
+			window.Visible = false
+		end)
+	end
 	local divider = Instance.new('Frame')
 	divider.Size = UDim2.new(1, -28, 0, 1)
 	divider.Position = UDim2.fromOffset(14, 47)
@@ -9597,12 +9732,12 @@ local function changelogBuild()
 	entrylayout.Parent = entries
 	changelogEntryList = entries
 	local title = Instance.new('TextLabel')
-	title.Size = UDim2.new(1, -8, 0, 22)
+	title.Size = UDim2.new(1, -8, 0, 24)
 	title.BackgroundTransparency = 1
 	title.Text = ''
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.TextColor3 = uipallet.Text
-	title.TextSize = 14
+	title.TextColor3 = Color3.new(1, 1, 1)
+	title.TextSize = 15
 	title.FontFace = uipallet.FontSemiBold
 	title.LayoutOrder = 0
 	title.Parent = entries
@@ -9622,7 +9757,8 @@ local function changelogBuild()
 		local b = Instance.new('TextButton')
 		b.Size = UDim2.new(1, -4, 0, 40)
 		b.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
-		b.Text = v.date .. '\nVer ' .. v.ver
+		b.RichText = true
+		b.Text = '<b><font color="#FFFFFF">' .. v.date .. '</font></b>\nVer ' .. v.ver
 		b.TextColor3 = uipallet.Text
 		b.TextSize = 12
 		b.FontFace = uipallet.Font

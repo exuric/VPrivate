@@ -4270,7 +4270,7 @@ function mainapi:CreateCategory(categorysettings)
 		bind.Position = UDim2.new(1, -27, 0, 9)
 		bind.AnchorPoint = Vector2.new(1, 0)
 		bind.BackgroundColor3 = Color3.new(1, 1, 1)
-		bind.BackgroundTransparency = 1
+		bind.BackgroundTransparency = 0.92
 		bind.BorderSizePixel = 0
 		bind.AutoButtonColor = false
 		bind.Visible = false
@@ -4718,7 +4718,7 @@ function mainapi:CreateCategory(categorysettings)
 				dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 			end
 		end)
-		local function scrollToModule()
+		local function sizeSettings()
 			if not modulechildren.Visible then
 				modulechildren.Size = UDim2.new(1, 0, 0, 0)
 				return
@@ -4729,10 +4729,6 @@ function mainapi:CreateCategory(categorysettings)
 					if wl then
 						modulechildren.Size = UDim2.new(1, 0, 0, wl.AbsoluteContentSize.Y / scale.Scale + 6)
 					end
-					if not modulechildren.Visible then return end
-					local top = (modulebutton.AbsolutePosition.Y - children.AbsolutePosition.Y) / scale.Scale
-					local maxScroll = math.max(0, children.CanvasSize.Y.Offset - children.AbsoluteSize.Y)
-					children.CanvasPosition = Vector2.new(0, math.clamp(top - 60, 0, maxScroll))
 				end)
 			end)
 		end
@@ -4744,7 +4740,7 @@ function mainapi:CreateCategory(categorysettings)
 			else
 				modulechildren.Visible = not modulechildren.Visible
 			end
-			scrollToModule()
+			sizeSettings()
 		end)
 		dotsbutton.MouseButton2Click:Connect(function()
 			if modulechildren:GetChildren() == 0 then return end
@@ -4754,13 +4750,12 @@ function mainapi:CreateCategory(categorysettings)
 			else
 				modulechildren.Visible = not modulechildren.Visible
 			end
-			scrollToModule()
+			sizeSettings()
 		end)
 		modulebutton.MouseEnter:Connect(function()
 			hovered = true
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = uipallet.Text
-				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 			pcall(updateFav)
@@ -4770,7 +4765,6 @@ function mainapi:CreateCategory(categorysettings)
 			hovered = false
 			if not moduleapi.Enabled and not modulechildren.Visible then
 				modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
-				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
 			favicon.Visible = hovered or modulechildren.Visible or favstate
@@ -4866,14 +4860,14 @@ function mainapi:CreateCategory(categorysettings)
 			if moduleapi._hideClicked then moduleapi._hideClicked = false return end
 			if categoryapi.Editing then
 				modulechildren.Visible = not modulechildren.Visible
-				scrollToModule()
+				sizeSettings()
 			else
 				moduleapi:Toggle()
 			end
 		end)
 		modulebutton.MouseButton2Click:Connect(function()
 			modulechildren.Visible = not modulechildren.Visible
-			scrollToModule()
+			sizeSettings()
 		end)
 		if inputService.TouchEnabled then
 			local heldbutton = false
@@ -6332,7 +6326,7 @@ function mainapi:CreateLegit()
 		bindbtn.Size = UDim2.fromOffset(20, 20)
 		bindbtn.Position = UDim2.new(1, -81, 0, 10)
 		bindbtn.BackgroundColor3 = Color3.new(1, 1, 1)
-		bindbtn.BackgroundTransparency = 1
+		bindbtn.BackgroundTransparency = 0.92
 		bindbtn.Text = ''
 		bindbtn.AutoButtonColor = false
 		bindbtn.Parent = module
@@ -6393,7 +6387,7 @@ function mainapi:CreateLegit()
 			bindbtn.BackgroundTransparency = 0.75
 		end)
 		bindbtn.MouseLeave:Connect(function()
-			bindbtn.BackgroundTransparency = 1
+			bindbtn.BackgroundTransparency = 0.92
 		end)
 		if modulesettings.Icon then
 			local modicon = Instance.new('ImageLabel')
@@ -6586,7 +6580,6 @@ moduleapi.Children = modulechildren
 			legitHovered = true
 			bindbtn.Visible = true
 			if not moduleapi.Enabled then
-				module.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
 				title.TextColor3 = uipallet.Text
 			end
 		end)
@@ -6594,7 +6587,6 @@ moduleapi.Children = modulechildren
 			legitHovered = false
 			bindbtn.Visible = #moduleapi.Bind > 0
 			if not moduleapi.Enabled then
-				module.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 				title.TextColor3 = color.Dark(uipallet.Text, 0.31)
 			end
 		end)

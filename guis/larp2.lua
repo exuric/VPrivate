@@ -4719,8 +4719,16 @@ function mainapi:CreateCategory(categorysettings)
 			end
 		end)
 		local function scrollToModule()
+			if not modulechildren.Visible then
+				modulechildren.Size = UDim2.new(1, 0, 0, 0)
+				return
+			end
 			task.delay(0.05, function()
 				pcall(function()
+					local wl = modulechildren:FindFirstChildOfClass('UIListLayout')
+					if wl then
+						modulechildren.Size = UDim2.new(1, 0, 0, wl.AbsoluteContentSize.Y / scale.Scale + 6)
+					end
 					if not modulechildren.Visible then return end
 					local top = (modulebutton.AbsolutePosition.Y - children.AbsolutePosition.Y) / scale.Scale
 					local maxScroll = math.max(0, children.CanvasSize.Y.Offset - children.AbsoluteSize.Y)
@@ -4736,9 +4744,7 @@ function mainapi:CreateCategory(categorysettings)
 			else
 				modulechildren.Visible = not modulechildren.Visible
 			end
-			if modulechildren.Visible then
-				scrollToModule()
-			end
+			scrollToModule()
 		end)
 		dotsbutton.MouseButton2Click:Connect(function()
 			if modulechildren:GetChildren() == 0 then return end
@@ -4748,9 +4754,7 @@ function mainapi:CreateCategory(categorysettings)
 			else
 				modulechildren.Visible = not modulechildren.Visible
 			end
-			if modulechildren.Visible then
-				scrollToModule()
-			end
+			scrollToModule()
 		end)
 		modulebutton.MouseEnter:Connect(function()
 			hovered = true
@@ -4862,18 +4866,14 @@ function mainapi:CreateCategory(categorysettings)
 			if moduleapi._hideClicked then moduleapi._hideClicked = false return end
 			if categoryapi.Editing then
 				modulechildren.Visible = not modulechildren.Visible
-				if modulechildren.Visible then
-					scrollToModule()
-				end
+				scrollToModule()
 			else
 				moduleapi:Toggle()
 			end
 		end)
 		modulebutton.MouseButton2Click:Connect(function()
 			modulechildren.Visible = not modulechildren.Visible
-			if modulechildren.Visible then
-				scrollToModule()
-			end
+			scrollToModule()
 		end)
 		if inputService.TouchEnabled then
 			local heldbutton = false

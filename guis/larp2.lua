@@ -4362,8 +4362,8 @@ function mainapi:CreateCategory(categorysettings)
 		local fav
 		local favicon = Instance.new('ImageButton')
 		favicon.Name = 'Favourite'
-		favicon.Size = UDim2.fromOffset(16, 16)
-		favicon.Position = UDim2.new(1, -49, 0, 12)
+		favicon.Size = UDim2.fromOffset(12, 12)
+		favicon.Position = UDim2.new(1, -47, 0, 14)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
 		local favRowIcon = getcustomasset('LarpV4/assets/larp/star.png')

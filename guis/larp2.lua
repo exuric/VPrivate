@@ -9399,6 +9399,7 @@ function mainapi:ShowLanguagePicker(onPick)
 		if onPick then onPick(selected) end
 	end)
 end
+do
 --[[
 	Changelogs (Whats New popup, Vape-style version list)
 ]]
@@ -9675,6 +9676,7 @@ function mainapi:ShowChangelog(force)
 	changelogBuild()
 	changelogRenderVersion(1)
 	changelogWindow.Visible = true
+end
 end
 
 	local general = mainapi.Categories.Main:CreateSettingsPane({Name = 'General'})

@@ -6544,167 +6544,150 @@ end)
 run(function()
 	local ItemESP
 	local Distance
+	local GroupItems
+	local AutoScale
 	local Transparency
 	local Scale
 	local WhitelistOnly
 	local Whitelist = {}
-	
+
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
-	
-	local Reference, Strings, Sizes = {}, {}, {}
+
+	local Reference = {}
+	local drops = {}
+	local attrConns = {}
+	local groups = {}
+
+	local function displayName(itemType)
+		local meta = bedwars.ItemMeta[itemType]
+		return meta and meta.displayName or itemType
+	end
+
+	local function itemImage(itemType)
+		local meta = bedwars.ItemMeta[itemType]
+		return meta and meta.image or ''
+	end
+
+	local function allowed(itemType)
+		if not WhitelistOnly.Enabled then
+			return true
+		end
+		local dn = displayName(itemType):lower()
+		return table.find(Whitelist.ListEnabled, itemType:lower()) or table.find(Whitelist.ListEnabled, dn)
+	end
+
+	local function groupKey(itemType, pos)
+		return itemType .. '@' .. math.floor(pos.X / 8) .. ',' .. math.floor(pos.Y / 8) .. ',' .. math.floor(pos.Z / 8)
+	end
+
+	local function tagText(itemType, total, dist)
+		local base = displayName(itemType) .. (total >= 2 and ' x' .. total or '')
+		if Distance.Enabled and dist then
+			return '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">' .. dist .. '</font><font color="rgb(85, 255, 85)">]</font> ' .. base
+		end
+		return base
+	end
+
+	local function applyScale(tag, img, dist)
+		local s = Scale.Value
+		if not AutoScale.Enabled and dist and dist > 0 then
+			s = s * math.clamp(25 / dist, 0.35, 1)
+		end
+		tag.TextSize = math.max(8, 14 * s)
+		local isize = math.max(14, math.floor(28 * (s)))
+		img.Size = UDim2.fromOffset(isize, isize)
+		return s
+	end
+
+	local function destroyTag(g)
+		if g.tag then
+			pcall(function() g.tag:Destroy() end)
+			g.tag = nil
+		end
+		if g.img then
+			pcall(function() g.img:Destroy() end)
+			g.img = nil
+		end
+	end
+
+	local function refreshGroups()
+		for _, g in groups do
+			destroyTag(g)
+		end
+		table.clear(groups)
+		local seen = {}
+		for ent in drops do
+			if ent.Parent then
+				local ok, pos = pcall(function() return ent.Position end)
+				if ok and typeof(pos) == 'Vector3' and pos.Y > -200 then
+					local itemType = ent.Name
+					local key = GroupItems.Enabled and groupKey(itemType, pos) or ('solo@' .. tostring(ent:GetDebugId()))
+					local g = seen[key]
+					if not g then
+						g = {itemType = itemType, ents = {}, total = 0, pos = pos, dist = nil}
+						seen[key] = g
+					end
+					if allowed(itemType) then
+						g.ents[#g.ents + 1] = ent
+						g.total += ent:GetAttribute('Amount') or 1
+						g.pos = pos
+					end
+				end
+			end
+		end
+		for key, g in seen do
+			if #g.ents > 0 then
+				local tag = Instance.new('TextLabel')
+				tag.Name = g.itemType
+				tag.BackgroundColor3 = Color3.new()
+				tag.BackgroundTransparency = Transparency.Value
+				tag.BorderSizePixel = 0
+				tag.AnchorPoint = Vector2.new(0, 0.5)
+				tag.Font = Enum.Font.Arial
+				tag.TextColor3 = Color3.new(1, 1, 1)
+				tag.RichText = true
+				tag.Visible = false
+				tag.Parent = Folder
+				local img = Instance.new('ImageLabel')
+				img.Name = 'Icon'
+				img.BackgroundTransparency = 1
+				img.Image = itemImage(g.itemType)
+				img.Visible = false
+				img.Parent = Folder
+				g.tag = tag
+				g.img = img
+				g.dist = nil
+				groups[key] = g
+			end
+		end
+		table.clear(seen)
+	end
+
+	local function layoutTag(g, headPos, dist)
+		local s = applyScale(g.tag, g.img, dist)
+		g.tag.Text = tagText(g.itemType, g.total, Distance.Enabled and dist or nil)
+		local size = getfontsize(removeTags(g.tag.Text), g.tag.TextSize, g.tag.FontFace, Vector2.new(100000, 100000))
+		local w = size.X + 8
+		g.tag.Size = UDim2.fromOffset(w, size.Y + 7)
+		local iw = g.img.Size.X.Offset
+		local totalW = w + 6 + iw
+		g.tag.ZIndex = 2
+		g.img.ZIndex = 1
+		g.tag.Position = UDim2.fromOffset(headPos.X - totalW / 2 + iw + 6, headPos.Y)
+		g.img.Position = UDim2.fromOffset(headPos.X - totalW / 2, headPos.Y - iw / 2)
+		g.img.ImageTransparency = Transparency.Value
+		g.dist = dist
+	end
+
 	local function Added(ent)
-		local Name = bedwars.ItemMeta[ent.Name] and bedwars.ItemMeta[ent.Name].displayName or ent.Name
-		if WhitelistOnly.Enabled and not table.find(Whitelist.ListEnabled, Name:lower()) then
+		if drops[ent] then
 			return
 		end
-	
-		Strings[ent] = Name .. '%s'
-		if Distance.Enabled then
-			Strings[ent] = '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> '.. Strings[ent]
-		end
-	
-		local nametag = Instance.new('TextLabel')
-		nametag.TextSize = 14 * Scale.Value
-		nametag.Font = Enum.Font.Arial
-		local size = getfontsize(removeTags(ent.Name), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-		nametag.Name = ent.Name
-		nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
-		nametag.AnchorPoint = Vector2.new(0.5, 1)
-		nametag.BackgroundColor3 = Color3.new()
-		nametag.BackgroundTransparency = 0.5
-		nametag.BorderSizePixel = 0
-		nametag.Visible = false
-		nametag.Text = string.format(Strings[ent], '', ent:GetAttribute('Amount') >= 2 and ' x' .. tostring(ent:GetAttribute('Amount')) or '')
-		nametag.TextColor3 = Color3.new(1, 1, 1)
-		nametag.RichText = true
-		nametag.Parent = Folder
-		Reference[ent] = nametag
-	end
-	local function Updated(ent)
-		if Reference[ent] then
-			Reference[ent].TextSize = 14 * Scale.Value
-			Reference[ent].BackgroundTransparency = Transparency.Value
-		end
-	end
-	local function Removing(ent)
-		if Reference[ent] then
-			Reference[ent]:Destroy()
-			Reference[ent] = nil
-		end
-	end
-	
-	ItemESP = larp.Categories.Render:CreateModule({
-		Name = 'ItemESP',
-		Function = function(call)
-			if call then
-				ItemESP:Clean(collectionService:GetInstanceAddedSignal('ItemDrop'):Connect(Added))
-				ItemESP:Clean(collectionService:GetInstanceRemovedSignal('ItemDrop'):Connect(Removing))
-				ItemESP:Clean(runService.PreRender:Connect(function()
-					for ent, nametag in Reference do
-						local headPos, headVis = gameCamera:WorldToViewportPoint(ent.Position + Vector3.new(0, 1, 0))
-						nametag.Visible = headVis
-						if not headVis then
-							continue
-						end
-	
-						if ent.Position.Y > -200 then
-							if Distance.Enabled then
-								local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.Position).Magnitude) or 0
-								if Sizes[ent] ~= mag then
-									nametag.Text = string.format(Strings[ent], mag, ent:GetAttribute('Amount') >= 2 and ' x' .. tostring(ent:GetAttribute('Amount')) or '')
-									local size = getfontsize(removeTags(nametag.Text), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-									nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
-									Sizes[ent] = mag
-								end
-							else
-								nametag.Text = string.format(Strings[ent], '')
-								local size = getfontsize(removeTags(nametag.Text), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-								nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
-							end
-							nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
-						else
-							nametag.Visible = false
-						end
-					end
-				end))
-	
-				for _, v in collectionService:GetTagged('ItemDrop') do
-					Added(v)
-				end
-			else
-				for i in Reference do
-					Removing(i)
-				end
-			end
-		end,
-		Tooltip = 'Renders tags dropped items'
-	})
-	Distance = ItemESP:CreateToggle({
-		Name = 'Distance',
-		Function = function(callback)
-			if ItemESP.Enabled then
-				for ent in Reference do
-					local Name = bedwars.ItemMeta[ent.Name] and bedwars.ItemMeta[ent.Name].displayName or ent.Name
-					Strings[ent] = callback and '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> '.. Strings[ent] or Name.. '%s'
-				end
-			end
-		end,
-	    Tooltip = 'Shows the distance of the item'
-	})
-	Transparency = ItemESP:CreateSlider({
-		Name = 'Transparency',
-		Min = 0,
-		Max = 1,
-		Decimal = 100,
-	    Function = function()
-			if ItemESP.Enabled then
-				for ent in Reference do
-					Updated(ent)
-				end
-			end
-		end,
-	    Default = 0.5
-	})
-	Scale = ItemESP:CreateSlider({
-		Name = 'Scale',
-		Default = 1,
-		Min = 0.1,
-		Max = 1.5,
-		Decimal = 10,
-		Function = function()
-			if ItemESP.Enabled then
-				for ent in Reference do
-					Updated(ent)
-				end
-			end
-		end
-	})
-	WhitelistOnly = ItemESP:CreateToggle({
-		Name = 'Whitelist Only',
-		Function = function(callback)
-			if Whitelist.Object then
-				Whitelist.Object.Visible = callback
-			end
-	        if ItemESP.Enabled then
-	            ItemESP:Toggle()
-	            ItemESP:Toggle()
-	        end
-		end,
-	    Tooltip = 'Only renders whitelisted items'
-	})
-	Whitelist = ItemESP:CreateTextList({
-		Name = 'Allowed items',
-		Function = function()
-			if ItemESP.Enabled then
-				ItemESP:Toggle()
-				ItemESP:Toggle()
-			end
-		end,
-Darker = true,
-		Visible = false
-	})
-end)
+		drops[ent] = true
+		attrConns[ent] = ent:GetAttributeChangedSignal('Amount'):Connect(function()
+			refreshGroups()
+		end)
 
 run(function()
 	local ItemPlates

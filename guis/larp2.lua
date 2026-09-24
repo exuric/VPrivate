@@ -4640,7 +4640,6 @@ function mainapi:CreateCategory(categorysettings)
 			divider.Visible = self.Enabled
 			gradient.Enabled = self.Enabled
 			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
-			modulebutton.BackgroundColor3 = (hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.02) or uipallet.Main
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
@@ -4664,6 +4663,7 @@ function mainapi:CreateCategory(categorysettings)
 					mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
 				end
 			else
+				modulebutton.BackgroundColor3 = uipallet.Main
 				modulebutton.UIGradient.Enabled = false
 			end
 			if not self.Enabled then

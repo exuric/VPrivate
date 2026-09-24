@@ -6180,6 +6180,7 @@ function mainapi:CreateLegit()
 			Bind = {},
 			Legit = true
 		}
+		local legitHovered = false
 
 		local module = Instance.new('TextButton')
 		module.Name = modulesettings.Name
@@ -6241,6 +6242,7 @@ function mainapi:CreateLegit()
 		bindbtn.Text = ''
 		bindbtn.AutoButtonColor = false
 		bindbtn.Parent = module
+		bindbtn.Visible = false
 		addCorner(bindbtn, UDim.new(0, 4))
 		addTooltip(bindbtn, 'Click to bind')
 		local bindicon = Instance.new('ImageLabel')
@@ -6263,6 +6265,7 @@ function mainapi:CreateLegit()
 		bindtext.Parent = bindbtn
 		local function refreshLegitBind()
 			local tab = moduleapi.Bind or {}
+			bindbtn.Visible = #tab > 0 or legitHovered
 			if #tab > 0 then
 				bindtext.Text = table.concat(tab, '+'):upper()
 				bindtext.Visible = true
@@ -6495,12 +6498,16 @@ moduleapi.Children = modulechildren
 			dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 		end)
 		module.MouseEnter:Connect(function()
+			legitHovered = true
+			bindbtn.Visible = true
 			if not moduleapi.Enabled then
 				module.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
 				title.TextColor3 = uipallet.Text
 			end
 		end)
 		module.MouseLeave:Connect(function()
+			legitHovered = false
+			bindbtn.Visible = #moduleapi.Bind > 0
 			if not moduleapi.Enabled then
 				module.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 				title.TextColor3 = color.Dark(uipallet.Text, 0.4)
@@ -9405,20 +9412,22 @@ do
 ]]
 local CHANGELOG_VERSION = 4
 local CHANGELOG = {
-	{ver = '1.4', date = 'Sep 24 · 26', title = 'Released version 1.4', entries = {
+	{ver = '1.4', date = 'Sep 24 · 26', title = 'Released version 1.4', added = {
 		'Improved projectile aimbot',
 		'Fixed KillAura slow swings and ghost hits',
 		'Added Fake Rank boards and nametag icons',
 		'Fixed Larp Skins in third person',
 		'Fixed Legit tab keybinds',
 		'Added new KillAura options',
+	}, removed = {
+		'Random and Random All skin buttons',
 	}},
-	{ver = '1.3', date = 'Sep 22 · 26', title = 'Released version 1.3', entries = {
-		'better aimbot target checks',
+	{ver = '1.3', date = 'Sep 22 · 26', title = 'Released version 1.3', added = {
+		'Better aimbot target checks',
 		'Fixed device icons on nametags',
 		'Faster script downloads',
 		'Fixed KillAura swing timing',
-	}},
+	}, removed = {}},
 }
 
 local function changelogSeen()
@@ -9439,6 +9448,7 @@ local changelogVer
 local changelogVerButtons = {}
 
 local function changelogRenderVersion(idx)
+	if idx == changelogSelected and changelogWindow and changelogWindow.Visible then return end
 	changelogSelected = idx
 	changelogTypeGen += 1
 	local gen = changelogTypeGen
@@ -9454,23 +9464,27 @@ local function changelogRenderVersion(idx)
 	if not v then return end
 	changelogTitle.Text = v.title
 	changelogVer.Text = v.date .. '  ·  Ver ' .. v.ver
-	changelogEntryList.CanvasSize = UDim2.fromOffset(0, 60 + (#v.entries * 26))
+	changelogEntryList.CanvasSize = UDim2.fromOffset(0, 60 + ((#v.added + #v.removed) * 26))
 	task.spawn(function()
-		for ei, entry in v.entries do
-			if gen ~= changelogTypeGen then break end
+		local order = 0
+		local function addRow(sign, text, signColor)
+			if gen ~= changelogTypeGen then return end
+			order += 1
 			local row = Instance.new('Frame')
-			row.Name = 'Entry' .. ei
+			row.Name = 'Entry' .. order
 			row.Size = UDim2.new(1, -8, 0, 24)
 			row.BackgroundTransparency = 1
-			row.LayoutOrder = ei
+			row.LayoutOrder = order
 			row.Parent = changelogEntryList
-			local bullet = Instance.new('ImageLabel')
-			bullet.Size = UDim2.fromOffset(11, 11)
-			bullet.Position = UDim2.fromOffset(4, 6)
-			bullet.BackgroundTransparency = 1
-			bullet.Image = getcustomasset('LarpV4/assets/larp/star.png')
-			bullet.ImageColor3 = color.Dark(uipallet.Text, 0.1)
-			bullet.Parent = row
+			local signlabel = Instance.new('TextLabel')
+			signlabel.Size = UDim2.fromOffset(14, 24)
+			signlabel.Position = UDim2.fromOffset(4, 0)
+			signlabel.BackgroundTransparency = 1
+			signlabel.Text = sign
+			signlabel.TextColor3 = signColor
+			signlabel.TextSize = 15
+			signlabel.FontFace = uipallet.FontSemiBold
+			signlabel.Parent = row
 			local label = Instance.new('TextLabel')
 			label.Size = UDim2.new(1, -26, 1, 0)
 			label.Position = UDim2.fromOffset(22, 0)
@@ -9481,13 +9495,19 @@ local function changelogRenderVersion(idx)
 			label.TextSize = 13
 			label.FontFace = uipallet.Font
 			label.Parent = row
-			for i = 1, #entry do
+			for i = 1, #text do
 				if gen ~= changelogTypeGen then break end
-				label.Text = entry:sub(1, i)
+				label.Text = text:sub(1, i)
 				task.wait(0.012)
 			end
-			if gen ~= changelogTypeGen then break end
-			label.Text = entry
+			if gen ~= changelogTypeGen then return end
+			label.Text = text
+		end
+		for _, text in v.added do
+			addRow('+', text, Color3.fromRGB(90, 255, 90))
+		end
+		for _, text in v.removed do
+			addRow('x', text, Color3.fromRGB(255, 90, 90))
 		end
 	end)
 end
@@ -9497,7 +9517,8 @@ local function changelogBuild()
 	local window = Instance.new('Frame')
 	window.Name = 'ChangelogGUI'
 	window.Size = UDim2.fromOffset(620, 450)
-	window.Position = UDim2.new(0.5, -310, 0.5, -225)
+	local changelogView = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+	window.Position = UDim2.fromOffset(math.floor(changelogView.X / 2 - 310), math.floor(changelogView.Y / 2 - 225))
 	window.BackgroundColor3 = uipallet.Main
 	window.Visible = false
 	window.Parent = scaledgui
@@ -9615,7 +9636,7 @@ local function changelogBuild()
 		end)
 	end
 	verlist.CanvasSize = UDim2.fromOffset(0, verlayout.AbsoluteContentSize.Y)
-	entries.CanvasSize = UDim2.fromOffset(0, 60 + (#CHANGELOG[1].entries * 26))
+	entries.CanvasSize = UDim2.fromOffset(0, 60 + ((#CHANGELOG[1].added + #CHANGELOG[1].removed) * 26))
 	local checkrow = Instance.new('TextButton')
 	checkrow.Size = UDim2.new(1, -28, 0, 24)
 	checkrow.Position = UDim2.fromOffset(14, 392)
@@ -9653,6 +9674,14 @@ local function changelogBuild()
 		checkfill.Visible = on
 		changelogSetSeen(on and CHANGELOG_VERSION or 0)
 	end)
+	checkrow.MouseEnter:Connect(function()
+		checklabel.TextColor3 = uipallet.Text
+		checkbox.BackgroundColor3 = color.Light(uipallet.Main, 0.16)
+	end)
+	checkrow.MouseLeave:Connect(function()
+		checklabel.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		checkbox.BackgroundColor3 = color.Light(uipallet.Main, 0.1)
+	end)
 	local closebtn = Instance.new('TextButton')
 	closebtn.Size = UDim2.fromOffset(80, 24)
 	closebtn.Position = UDim2.new(1, -94, 0, 392)
@@ -9666,6 +9695,16 @@ local function changelogBuild()
 	addCorner(closebtn, UDim.new(0, 4))
 	closebtn.MouseButton1Click:Connect(function()
 		window.Visible = false
+	end)
+	closebtn.MouseEnter:Connect(function()
+		tween:Tween(closebtn, uipallet.Tween, {
+			BackgroundColor3 = color.Light(uipallet.Main, 0.14)
+		})
+	end)
+	closebtn.MouseLeave:Connect(function()
+		tween:Tween(closebtn, uipallet.Tween, {
+			BackgroundColor3 = color.Light(uipallet.Main, 0.06)
+		})
 	end)
 	changelogWindow = window
 	table.insert(mainapi.Windows, window)

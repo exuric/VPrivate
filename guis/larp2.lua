@@ -6195,7 +6195,7 @@ function mainapi:CreateLegit()
 	local legitsearch = Instance.new('TextBox')
 	legitsearch.Size = UDim2.fromOffset(160, 24)
 	legitsearch.Position = UDim2.new(1, -174, 0, 54)
-	legitsearch.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+	legitsearch.BackgroundColor3 = Color3.new(0, 0, 0)
 	legitsearch.PlaceholderText = 'Search mods'
 	legitsearch.Text = ''
 	legitsearch.TextXAlignment = Enum.TextXAlignment.Left
@@ -6211,10 +6211,10 @@ function mainapi:CreateLegit()
 	searchpad.Parent = legitsearch
 	local searchicon = Instance.new('ImageLabel')
 	searchicon.Size = UDim2.fromOffset(14, 14)
-	searchicon.Position = UDim2.new(1, -20, 0.5, -7)
+	searchicon.Position = UDim2.new(1, -21, 0.5, -7)
 	searchicon.BackgroundTransparency = 1
 	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
-	searchicon.ImageColor3 = color.Dark(uipallet.Text, 0.29)
+	searchicon.ImageColor3 = uipallet.Text
 	searchicon.Parent = legitsearch
 	legitsearch:GetPropertyChangedSignal('Text'):Connect(function()
 		legitapi.Query = legitsearch.Text:lower()
@@ -9544,8 +9544,15 @@ do
 --[[
 	Changelogs (Whats New popup, Vape-style version list)
 ]]
-local CHANGELOG_VERSION = 4
+local CHANGELOG_VERSION = 5
 local CHANGELOG = {
+	{ver = '1.5', date = 'Sep 24 · 26', title = 'Released version 1.5', added = {
+		'Added tabs and search to the Legit tab',
+		'Added favorite modules in the Legit tab',
+		'Fixed Clock widget',
+		'Fixed Profiles window dragging and toggle',
+		'Fixed changelog popup close and dragging',
+	}, removed = {}},
 	{ver = '1.4', date = 'Sep 24 · 26', title = 'Released version 1.4', added = {
 		'Improved projectile aimbot',
 		'Fixed KillAura slow swings and ghost hits',

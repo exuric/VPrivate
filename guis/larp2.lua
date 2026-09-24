@@ -3074,8 +3074,8 @@ function mainapi:CreateGUI()
 		addTooltip(button, T('OpenOverlays'))
 		local favbutton = Instance.new('ImageButton')
 		favbutton.Name = 'Favorites'
-		favbutton.Size = UDim2.fromOffset(22, 22)
-		favbutton.Position = UDim2.new(1, -55, 0, 8)
+		favbutton.Size = UDim2.fromOffset(16, 16)
+		favbutton.Position = UDim2.new(1, -52, 0, 11)
 		favbutton.BackgroundTransparency = 1
 		favbutton.AutoButtonColor = false
 		local favStarYellow = Color3.fromRGB(255, 184, 31)
@@ -4362,8 +4362,8 @@ function mainapi:CreateCategory(categorysettings)
 		local fav
 		local favicon = Instance.new('ImageButton')
 		favicon.Name = 'Favourite'
-		favicon.Size = UDim2.fromOffset(12, 12)
-		favicon.Position = UDim2.new(1, -47, 0, 14)
+		favicon.Size = UDim2.fromOffset(16, 16)
+		favicon.Position = UDim2.new(1, -49, 0, 12)
 		favicon.AnchorPoint = Vector2.new(1, 0)
 		favicon.BackgroundTransparency = 1
 		local favRowIcon = getcustomasset('LarpV4/assets/larp/star.png')

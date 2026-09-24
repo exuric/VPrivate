@@ -6291,9 +6291,14 @@ run(function()
 							continue
 						end
 	
-	                    nametag.Text = string.format(Strings[ent], tostring(ent:GetAttribute('Level') or 0), (ent:GetAttribute('Level') or 0) >= 2 and 's' or '')
-	                    local size = getfontsize(removeTags(nametag.Text), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-	                    nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
+	                    -- only re-measure text bounds when the text actually changes;
+	                    -- getfontsize per entity per frame is the expensive part.
+	                    local newText = string.format(Strings[ent], tostring(ent:GetAttribute('Level') or 0), (ent:GetAttribute('Level') or 0) >= 2 and 's' or '')
+	                    if nametag.Text ~= newText then
+	                        nametag.Text = newText
+	                        local size = getfontsize(removeTags(newText), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
+	                        nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
+	                    end
 						nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
 					end
 				end))
@@ -6444,9 +6449,14 @@ run(function()
 							continue
 						end
 						
-						nametag.Text = string.format(Strings[ent], `| T{ent:GetAttribute('GeneratorLevel')}`, Cooldown[ent] and ` | {getNumber(Cooldown[ent].Text)}s` or '')
-						local size = getfontsize(removeTags(nametag.Text), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-						nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
+						-- only re-measure when the text changes (the countdown ticks ~1/s,
+						-- so this skips getfontsize on the other ~59 frames each second).
+						local newText = string.format(Strings[ent], `| T{ent:GetAttribute('GeneratorLevel')}`, Cooldown[ent] and ` | {getNumber(Cooldown[ent].Text)}s` or '')
+						if nametag.Text ~= newText then
+							nametag.Text = newText
+							local size = getfontsize(removeTags(newText), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
+							nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
+						end
 						nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
 					end
 				end))

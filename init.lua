@@ -78,13 +78,14 @@ end
 local loaderAssets = {
 	['Larp.png'] = 423638,
 	['Textv4.png'] = 10107,
+	['star.png'] = 482,
 }
 do
 	local pending = 0
 	for png, size in loaderAssets do
 		local path = 'LarpV4/assets/larp/'..png
 		local ok, content = pcall(readfile, path)
-		if not ok or not content or #content < 100 or #content < size * 0.9 then
+		if not ok or not content or #content < 100 or #content < size * 0.85 or #content > size * 1.5 then
 			pending = pending + 1
 			task.spawn(function()
 				pcall(function()

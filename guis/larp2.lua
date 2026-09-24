@@ -6159,6 +6159,7 @@ function mainapi:CreateLegit()
 	legitdivider.BorderSizePixel = 0
 	legitdivider.Parent = window
 	local legitTabButtons = {}
+	local refreshLegitTabs
 	local tabbar = Instance.new('Frame')
 	tabbar.Size = UDim2.new(1, -28, 0, 24)
 	tabbar.Position = UDim2.fromOffset(14, 54)
@@ -6204,6 +6205,10 @@ function mainapi:CreateLegit()
 	legitsearch.ClearTextOnFocus = false
 	legitsearch.Parent = window
 	addCorner(legitsearch, UDim.new(0, 4))
+	local searchpad = Instance.new('UIPadding')
+	searchpad.PaddingLeft = UDim.new(0, 8)
+	searchpad.PaddingRight = UDim.new(0, 26)
+	searchpad.Parent = legitsearch
 	local searchicon = Instance.new('ImageLabel')
 	searchicon.Size = UDim2.fromOffset(14, 14)
 	searchicon.Position = UDim2.new(1, -20, 0.5, -7)
@@ -6235,7 +6240,7 @@ function mainapi:CreateLegit()
 	legitapi.Window = window
 	table.insert(mainapi.Windows, window)
 
-	local function refreshLegitTabs()
+	refreshLegitTabs = function()
 		for _, v in legitapi.Modules do
 			local show = true
 			if legitapi.Tab == 'Favorite' and not v.Favourite then

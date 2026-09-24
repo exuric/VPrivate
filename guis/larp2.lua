@@ -3075,7 +3075,7 @@ function mainapi:CreateGUI()
 		local favbutton = Instance.new('ImageButton')
 		favbutton.Name = 'Favorites'
 		favbutton.Size = UDim2.fromOffset(16, 16)
-		favbutton.Position = UDim2.new(1, -52, 0, 14)
+		favbutton.Position = UDim2.new(1, -52, 0, 12)
 		favbutton.BackgroundTransparency = 1
 		favbutton.AutoButtonColor = false
 		local favStarYellow = Color3.fromRGB(255, 184, 31)
@@ -3121,7 +3121,7 @@ function mainapi:CreateGUI()
 			tween:Tween(favbutton, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 				ImageColor3 = favStarYellow,
 				Size = UDim2.fromOffset(20, 20),
-				Position = UDim2.new(1, -54, 0, 12),
+				Position = UDim2.new(1, -54, 0, 10),
 				Rotation = 0
 			})
 		end)
@@ -3129,7 +3129,7 @@ function mainapi:CreateGUI()
 			tween:Tween(favbutton, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
 				ImageColor3 = favOpen and favStarYellow or color.Light(uipallet.Main, 0.37),
 				Size = UDim2.fromOffset(16, 16),
-				Position = UDim2.new(1, -52, 0, 14),
+				Position = UDim2.new(1, -52, 0, 12),
 				Rotation = 0
 			})
 		end)

@@ -4637,9 +4637,27 @@ function mainapi:CreateCategory(categorysettings)
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
-			if self.RowAccent then
-				modulebutton.BackgroundColor3 = self.RowAccent
-				modulebutton.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			if self.Enabled then
+				local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
+				local hue, sat, val = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
+				modulebutton.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1)) or self.RowAccent or Color3.fromHSV(hue, sat, val)
+				modulebutton.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+				modulebutton.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
+				if modulebutton.UIGradient.Enabled then
+					modulebutton.BackgroundColor3 = Color3.new(1, 1, 1)
+					modulebutton.UIGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1))),
+						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((self.Index + 1) * 0.025)) % 1)))
+					})
+				end
+				dots.ImageColor3 = modulebutton.TextColor3
+				bindicon.ImageColor3 = modulebutton.TextColor3
+				bindtext.TextColor3 = modulebutton.TextColor3
+				if mainapi.Loaded ~= nil then
+					mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
+				end
+			else
+				modulebutton.UIGradient.Enabled = false
 			end
 			if not self.Enabled then
 				for _, v in self.Connections do
@@ -11116,26 +11134,15 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 
 	for _, button in mainapi.Modules do
 		if button.Enabled then
-			if rainbow then
-				button.Object.BackgroundColor3 = Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))
-				button.Object.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
-				button.Object.UIGradient.Enabled = mainapi.RainbowMode.Value == 'Gradient'
-				if button.Object.UIGradient.Enabled then
-					button.Object.BackgroundColor3 = Color3.new(1, 1, 1)
-					button.Object.UIGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))),
-						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((button.Index + 1) * 0.025)) % 1)))
-					})
-				end
-			elseif button.RowAccent then
-				button.Object.BackgroundColor3 = button.RowAccent
-				button.Object.TextColor3 = mainapi:TextColor(hue, sat, val)
-			else
-				button.Object.BackgroundColor3 = uipallet.Main
-				button.Object.TextColor3 = uipallet.Text
-			end
-			if not rainbow then
-				button.Object.UIGradient.Enabled = false
+			button.Object.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or button.RowAccent or Color3.fromHSV(hue, sat, val)
+			button.Object.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+			button.Object.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
+			if button.Object.UIGradient.Enabled then
+				button.Object.BackgroundColor3 = Color3.new(1, 1, 1)
+				button.Object.UIGradient.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))),
+					ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((button.Index + 1) * 0.025)) % 1)))
+				})
 			end
 			button.Object.Bind.Icon.ImageColor3 = button.Object.TextColor3
 			button.Object.Bind.TextLabel.TextColor3 = button.Object.TextColor3
@@ -11143,16 +11150,8 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			if button.FavouriteClone then
 				local fav = button.FavouriteClone
 				if button.Enabled then
-					if rainbow then
-						fav.BackgroundColor3 = Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))
-						fav.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
-					elseif button.RowAccent then
-						fav.BackgroundColor3 = button.RowAccent
-						fav.TextColor3 = mainapi:TextColor(hue, sat, val)
-					else
-						fav.BackgroundColor3 = uipallet.Main
-						fav.TextColor3 = uipallet.Text
-					end
+					fav.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+					fav.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
 				end
 			end
 		end

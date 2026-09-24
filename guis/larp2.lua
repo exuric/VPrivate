@@ -4250,51 +4250,6 @@ function mainapi:CreateCategory(categorysettings)
 		hiddenmark.Visible = false
 		hiddenmark.Parent = modulebutton
 		addCorner(hiddenmark, UDim.new(1, 0))
-		local indicatorholder = Instance.new('Frame')
-		indicatorholder.Parent = modulebutton
-		indicatorholder.Size = UDim2.fromOffset(0, 21)
-		indicatorholder.AnchorPoint = Vector2.new(0, 0.5)
-		indicatorholder.Name = 'Indicators'
-		indicatorholder.BackgroundTransparency = 1
-		indicatorholder.Position = UDim2.fromScale(0.85, 0.5)
-		local layout = Instance.new('UIListLayout')
-		layout.Parent = indicatorholder
-		layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-		layout.VerticalAlignment = Enum.VerticalAlignment.Center
-		layout.FillDirection = Enum.FillDirection.Horizontal
-		layout.Padding = UDim.new(0, 5)
-		modulesettings.Tags = modulesettings.Tags or {}
-		task.spawn(function()
-			for i, tag in modulesettings.Tags do
-				tag = tag:upper()
-				modulesettings.Tags[i] = tag:lower()
-			local size = getfontsizeCached(removeTags(tag), 12, uipallet.FontSemiBold, Vector2.new(100000, 100000))
-			local indicator = Instance.new('TextLabel')
-			indicator.LayoutOrder = i - 1
-			indicator.Size = UDim2.new(0, size.X + 12, 0, 18)
-			indicator.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-			indicator.TextSize = 12
-			indicator.TextTransparency = 1
-			indicator.Text = tag
-			indicator.Name = tag
-			indicator.Position = UDim2.new()
-			indicator.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-			indicator.FontFace = uipallet.FontSemiBold
-				indicator.Parent = indicatorholder
-				addCorner(indicator, UDim.new(0, 5))
-				local text = indicator:Clone()
-				text.Position = UDim2.new()
-				text.Size = UDim2.fromScale(1, 1)
-				text.BackgroundTransparency = 1
-				text.Name = 'Text'
-				text.AnchorPoint = Vector2.new()
-				text.TextSize = 12
-				text.TextTransparency = 0
-				text.Parent = indicator
-				table.insert(moduleapi.Tags, indicator)
-				indicator.Visible = tag ~= 'MATCHED'
-			end
-		end)
 		local gradient = Instance.new('UIGradient')
 		gradient.Rotation = 90
 		gradient.Enabled = false
@@ -4678,10 +4633,14 @@ function mainapi:CreateCategory(categorysettings)
 			divider.Visible = self.Enabled
 			gradient.Enabled = self.Enabled
 			modulebutton.TextColor3 = (hovered or modulechildren.Visible) and uipallet.Text or color.Dark(uipallet.Text, 0.16)
-			modulebutton.BackgroundColor3 = self.Enabled and ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.07) or color.Light(uipallet.Main, 0.05)) or ((hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.045) or color.Light(uipallet.Main, 0.02))
+			modulebutton.BackgroundColor3 = (hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.02) or uipallet.Main
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
+			if self.RowAccent then
+				modulebutton.BackgroundColor3 = self.RowAccent
+				modulebutton.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			end
 			if not self.Enabled then
 				for _, v in self.Connections do
 					v:Disconnect()
@@ -4696,37 +4655,7 @@ function mainapi:CreateCategory(categorysettings)
 			if mainapi.UpdateFavourites then
 				mainapi:UpdateFavourites()
 			end
-		if self.Enabled then
-			local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
-			local hue, sat, val = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
-			if rainbow then
-				modulebutton.BackgroundColor3 = Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1))
-				modulebutton.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
-				modulebutton.UIGradient.Enabled = mainapi.RainbowMode.Value == 'Gradient'
-				if modulebutton.UIGradient.Enabled then
-					modulebutton.BackgroundColor3 = Color3.new(1, 1, 1)
-					modulebutton.UIGradient.Color = ColorSequence.new({
-						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1))),
-						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((self.Index + 1) * 0.025)) % 1)))
-					})
-				end
-				if mainapi.Loaded ~= nil then
-					mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
-				end
-			elseif self.RowAccent then
-				modulebutton.BackgroundColor3 = self.RowAccent
-				modulebutton.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-			else
-				modulebutton.BackgroundColor3 = (hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.02) or uipallet.Main
-				modulebutton.TextColor3 = uipallet.Text
-			end
-			dots.ImageColor3 = modulebutton.TextColor3
-			bindicon.ImageColor3 = modulebutton.TextColor3
-			bindtext.TextColor3 = modulebutton.TextColor3
-		else
-			modulebutton.UIGradient.Enabled = false
 		end
-	end
 
 		for i, v in components do
 			moduleapi['Create'..i] = function(_, optionsettings)
@@ -11187,15 +11116,26 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 
 	for _, button in mainapi.Modules do
 		if button.Enabled then
-			button.Object.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or button.RowAccent or Color3.fromHSV(hue, sat, val)
-			button.Object.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
-			button.Object.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
-			if button.Object.UIGradient.Enabled then
-				button.Object.BackgroundColor3 = Color3.new(1, 1, 1)
-				button.Object.UIGradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))),
-					ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((button.Index + 1) * 0.025)) % 1)))
-				})
+			if rainbow then
+				button.Object.BackgroundColor3 = Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))
+				button.Object.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+				button.Object.UIGradient.Enabled = mainapi.RainbowMode.Value == 'Gradient'
+				if button.Object.UIGradient.Enabled then
+					button.Object.BackgroundColor3 = Color3.new(1, 1, 1)
+					button.Object.UIGradient.Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))),
+						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((button.Index + 1) * 0.025)) % 1)))
+					})
+				end
+			elseif button.RowAccent then
+				button.Object.BackgroundColor3 = button.RowAccent
+				button.Object.TextColor3 = mainapi:TextColor(hue, sat, val)
+			else
+				button.Object.BackgroundColor3 = uipallet.Main
+				button.Object.TextColor3 = uipallet.Text
+			end
+			if not rainbow then
+				button.Object.UIGradient.Enabled = false
 			end
 			button.Object.Bind.Icon.ImageColor3 = button.Object.TextColor3
 			button.Object.Bind.TextLabel.TextColor3 = button.Object.TextColor3
@@ -11203,8 +11143,16 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			if button.FavouriteClone then
 				local fav = button.FavouriteClone
 				if button.Enabled then
-					fav.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
-					fav.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+					if rainbow then
+						fav.BackgroundColor3 = Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1))
+						fav.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
+					elseif button.RowAccent then
+						fav.BackgroundColor3 = button.RowAccent
+						fav.TextColor3 = mainapi:TextColor(hue, sat, val)
+					else
+						fav.BackgroundColor3 = uipallet.Main
+						fav.TextColor3 = uipallet.Text
+					end
 				end
 			end
 		end

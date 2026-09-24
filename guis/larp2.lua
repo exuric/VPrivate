@@ -4191,17 +4191,23 @@ function mainapi:CreateCategory(categorysettings)
 	divider.BorderSizePixel = 0
 	divider.Visible = false
 	divider.Parent = window
-	local windowlist = Instance.new('UIListLayout')
-	windowlist.SortOrder = Enum.SortOrder.LayoutOrder
-	windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		windowlist.Padding = UDim.new(0, 3)
-		windowlist.Parent = children
-		local padding = Instance.new('UIPadding')
-		padding.PaddingLeft = UDim.new(0, 4)
-		padding.PaddingRight = UDim.new(0, 4)
-		padding.PaddingTop = UDim.new(0, 3)
-		padding.PaddingBottom = UDim.new(0, 3)
-		padding.Parent = children
+		local windowlist = Instance.new('UIListLayout')
+		windowlist.SortOrder = Enum.SortOrder.LayoutOrder
+		windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ 		windowlist.Padding = UDim.new(0, 3)
+ 		windowlist.Parent = children
+ 		local padding = Instance.new('UIPadding')
+ 		padding.PaddingLeft = UDim.new(0, 4)
+ 		padding.PaddingRight = UDim.new(0, 4)
+ 		padding.PaddingTop = UDim.new(0, 3)
+ 		padding.PaddingBottom = UDim.new(0, 3)
+ 		padding.Parent = children
+		windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+			children.CanvasSize = UDim2.fromOffset(0, windowlist.AbsoluteContentSize.Y / scale.Scale)
+			if categoryapi.Expanded then
+				window.Size = UDim2.fromOffset(220, math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601))
+			end
+		end)
 
 		function categoryapi:CreateModule(modulesettings)
 		mainapi:Remove(modulesettings.Name)
@@ -7716,6 +7722,19 @@ function mainapi:UpdateFavourites()
 							mainapi.Binding = moduleapi
 						end)
 					end
+					if bind then
+						bind.Visible = #moduleapi.Bind > 0
+					end
+					clone.MouseEnter:Connect(function()
+						if bind then
+							bind.Visible = true
+						end
+					end)
+					clone.MouseLeave:Connect(function()
+						if bind then
+							bind.Visible = #moduleapi.Bind > 0
+						end
+					end)
 				end
 				end)
 			end

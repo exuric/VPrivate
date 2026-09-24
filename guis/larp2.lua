@@ -4229,7 +4229,6 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.TextSize = 14
 		modulebutton.FontFace = uipallet.Font
 		modulebutton.Parent = children
-		addCorner(modulebutton, UDim.new(0, 6))
 		if modulesettings.Icon then
 			local modicon = Instance.new('ImageLabel')
 			modicon.Name = 'ModuleIcon'
@@ -6240,14 +6239,14 @@ function mainapi:CreateLegit()
 		title.BackgroundTransparency = 1
 		title.Text = modulesettings.Name
 		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.TextColor3 = color.Dark(uipallet.Text, 0.4)
+		title.TextColor3 = color.Dark(uipallet.Text, 0.31)
 		title.TextSize = 13
 		title.FontFace = uipallet.Font
 		title.Parent = module
 		local knob = Instance.new('Frame')
 		knob.Name = 'Knob'
 		knob.Size = UDim2.fromOffset(22, 12)
-		knob.Position = UDim2.new(1, -57, 0, 14)
+		knob.Position = UDim2.new(1, -57, 0, 15)
 		knob.BackgroundColor3 = color.Light(uipallet.Main, 0.14)
 		knob.Parent = module
 		addCorner(knob, UDim.new(1, 0))
@@ -6259,7 +6258,7 @@ function mainapi:CreateLegit()
 		local moduledotsbutton = Instance.new('TextButton')
 		moduledotsbutton.Name = 'Dots'
 		moduledotsbutton.Size = UDim2.fromOffset(14, 24)
-		moduledotsbutton.Position = UDim2.new(1, -27, 0, 8)
+		moduledotsbutton.Position = UDim2.new(1, -27, 0, 9)
 		moduledotsbutton.BackgroundTransparency = 1
 		moduledotsbutton.Text = ''
 		moduledotsbutton.Parent = module
@@ -6502,17 +6501,8 @@ moduleapi.Children = modulechildren
 			if moduleapi.Children then
 				moduleapi.Children.Visible = moduleapi.Enabled
 			end
-			title.TextColor3 = moduleapi.Enabled and color.Light(uipallet.Text, 0.2) or color.Dark(uipallet.Text, 0.4)
-			module.BackgroundColor3 = moduleapi.Enabled and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.02)
-			if moduleapi.Enabled then
-				title.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-				module.TextColor3 = title.TextColor3
-				modulegradient.Enabled = false
-			else
-				title.TextColor3 = color.Dark(uipallet.Text, 0.4)
-				module.TextColor3 = color.Dark(uipallet.Text, 0.4)
-				modulegradient.Enabled = false
-			end
+			title.TextColor3 = moduleapi.Enabled and color.Light(uipallet.Text, 0.2) or color.Dark(uipallet.Text, 0.31)
+			module.BackgroundColor3 = moduleapi.Enabled and color.Light(uipallet.Main, 0.05) or color.Light(uipallet.Main, 0.02)
 			tween:Tween(knob, uipallet.Tween, {
 				BackgroundColor3 = moduleapi.Enabled and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.14)
 			})
@@ -6574,7 +6564,7 @@ moduleapi.Children = modulechildren
 			bindbtn.Visible = #moduleapi.Bind > 0
 			if not moduleapi.Enabled then
 				module.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
-				title.TextColor3 = color.Dark(uipallet.Text, 0.4)
+				title.TextColor3 = color.Dark(uipallet.Text, 0.31)
 			end
 		end)
 		module.MouseButton1Click:Connect(function()

@@ -4220,7 +4220,7 @@ function mainapi:CreateCategory(categorysettings)
 		local modulebutton = Instance.new('TextButton')
 		modulebutton.Name = modulesettings.Name
 		modulebutton.Size = UDim2.fromOffset(220, 40)
-		modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		modulebutton.BackgroundColor3 = uipallet.Main
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
 		modulebutton.Text = '            '..T(modulesettings.Name)
@@ -4241,14 +4241,6 @@ function mainapi:CreateCategory(categorysettings)
 			modicon.ImageColor3 = uipallet.Text
 			modicon.Parent = modulebutton
 		end
-		local activebar = Instance.new('Frame')
-		activebar.Name = 'ActiveBar'
-		activebar.Size = UDim2.fromOffset(0, 20)
-		activebar.Position = UDim2.fromOffset(6, 10)
-		activebar.BackgroundColor3 = modulebutton.TextColor3
-		activebar.BorderSizePixel = 0
-		activebar.Parent = modulebutton
-		addCorner(activebar, UDim.new(1, 0))
 		local hiddenmark = Instance.new('Frame')
 		hiddenmark.Name = 'HiddenMark'
 		hiddenmark.Size = UDim2.fromOffset(3, 34)
@@ -4704,12 +4696,13 @@ function mainapi:CreateCategory(categorysettings)
 			if mainapi.UpdateFavourites then
 				mainapi:UpdateFavourites()
 			end
-			if self.Enabled then
-				local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
-				local hue, sat, val = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
-				modulebutton.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1)) or self.RowAccent or Color3.fromHSV(hue, sat, val)
+		if self.Enabled then
+			local rainbow = mainapi.GUIColor.Rainbow and mainapi.RainbowMode.Value ~= 'Retro'
+			local hue, sat, val = mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value
+			if rainbow then
+				modulebutton.BackgroundColor3 = Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.025)) % 1))
 				modulebutton.TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
-				modulebutton.UIGradient.Enabled = rainbow and mainapi.RainbowMode.Value == 'Gradient'
+				modulebutton.UIGradient.Enabled = mainapi.RainbowMode.Value == 'Gradient'
 				if modulebutton.UIGradient.Enabled then
 					modulebutton.BackgroundColor3 = Color3.new(1, 1, 1)
 					modulebutton.UIGradient.Color = ColorSequence.new({
@@ -4717,20 +4710,23 @@ function mainapi:CreateCategory(categorysettings)
 						ColorSequenceKeypoint.new(1, Color3.fromHSV(mainapi:Color((hue - ((self.Index + 1) * 0.025)) % 1)))
 					})
 				end
-				dots.ImageColor3 = modulebutton.TextColor3
-				bindicon.ImageColor3 = modulebutton.TextColor3
-				bindtext.TextColor3 = modulebutton.TextColor3
 				if mainapi.Loaded ~= nil then
 					mainapi:UpdateGUI(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value, true)
 				end
+			elseif self.RowAccent then
+				modulebutton.BackgroundColor3 = self.RowAccent
+				modulebutton.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 			else
-				modulebutton.UIGradient.Enabled = false
+				modulebutton.BackgroundColor3 = (hovered or modulechildren.Visible) and color.Light(uipallet.Main, 0.02) or uipallet.Main
+				modulebutton.TextColor3 = uipallet.Text
 			end
-			tween:Tween(activebar, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Size = UDim2.fromOffset(self.Enabled and 3 or 0, 20)
-			})
-			activebar.BackgroundColor3 = modulebutton.TextColor3
+			dots.ImageColor3 = modulebutton.TextColor3
+			bindicon.ImageColor3 = modulebutton.TextColor3
+			bindtext.TextColor3 = modulebutton.TextColor3
+		else
+			modulebutton.UIGradient.Enabled = false
 		end
+	end
 
 		for i, v in components do
 			moduleapi['Create'..i] = function(_, optionsettings)

@@ -7759,17 +7759,59 @@ function mainapi:UpdateFavourites()
 			if clone and clone.Parent then
 				clone.LayoutOrder = count
 				moduleapi.FavOrder = count
+				local object = moduleapi.Object
 				local hue, sat, val = self.GUIColor.Hue, self.GUIColor.Sat, self.GUIColor.Value
 				local rainbow = self.GUIColor.Rainbow and self.RainbowMode.Value ~= 'Retro'
+				if object then
+					clone.Text = object.Text
+				end
 				if moduleapi.Enabled then
-					clone.BackgroundColor3 = rainbow and Color3.fromHSV(self:Color((hue - (moduleapi.Index * 0.025)) % 1)) or Color3.fromHSV(hue, sat, val)
+					clone.BackgroundColor3 = rainbow and Color3.fromHSV(self:Color((hue - (moduleapi.Index * 0.025)) % 1)) or moduleapi.RowAccent or Color3.fromHSV(hue, sat, val)
 					clone.TextColor3 = self.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or self:TextColor(hue, sat, val)
 				else
-					clone.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+					clone.BackgroundColor3 = uipallet.Main
 					clone.TextColor3 = color.Dark(uipallet.Text, 0.16)
+				end
+				local cgrad = clone:FindFirstChildOfClass('UIGradient')
+				if cgrad then
+					cgrad.Enabled = moduleapi.Enabled and rainbow and self.RainbowMode.Value == 'Gradient'
+				end
+				local cdiv = clone:FindFirstChild('Divider')
+				if cdiv then
+					cdiv.Visible = moduleapi.Enabled
+				end
+				local cdots = clone:FindFirstChild('Dots')
+				if cdots then
+					local cdi = cdots:FindFirstChild('Dots')
+					if cdi then
+						cdi.ImageColor3 = clone.TextColor3
+					end
+				end
+				local cbind = clone:FindFirstChild('Bind')
+				if cbind and object then
+					local obind = object:FindFirstChild('Bind')
+					local ot = obind and obind:FindFirstChild('TextLabel')
+					local oi = obind and obind:FindFirstChild('Icon')
+					local ct = cbind:FindFirstChild('TextLabel')
+					local ci = cbind:FindFirstChild('Icon')
+					if ct and ot then
+						ct.Text = ot.Text
+						ct.Visible = #moduleapi.Bind > 0
+						ct.TextColor3 = clone.TextColor3
+					end
+					if ci and oi then
+						ci.Image = oi.Image
+						ci.Visible = #moduleapi.Bind <= 0
+						ci.ImageColor3 = clone.TextColor3
+					end
+					cbind.Visible = #moduleapi.Bind > 0
+					if obind then
+						cbind.Size = obind.Size
+					end
 				end
 				local cloneFav = clone:FindFirstChild('Favourite')
 				if cloneFav then
+					cloneFav.Visible = true
 					cloneFav.ImageColor3 = Color3.fromRGB(255, 184, 31)
 				end
 			end
@@ -11186,12 +11228,6 @@ function mainapi:UpdateGUI(hue, sat, val, default)
 			if option.Color then
 				option:Color(hue, sat, val, rainbow)
 			end
-		end
-
-		for _, v in button.Tags do
-			v.BackgroundColor3 = rainbow and Color3.fromHSV(mainapi:Color((hue - (button.Index * 0.025)) % 1)) or button.Enabled and Color3.new(1, 1, 1) or Color3.fromHSV(hue, sat, val)
-			v.BackgroundTransparency = (rainbow or not button.Enabled) and 0 or 0.85
-			v:FindFirstChild('Text').TextColor3 = mainapi.GUIColor.Rainbow and Color3.new(0.19, 0.19, 0.19) or mainapi:TextColor(hue, sat, val)
 		end
 	end
 

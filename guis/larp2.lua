@@ -213,7 +213,7 @@ end
 -- Refresh cached copies when a repo asset is replaced (update expected size).
 pcall(function()
 	local logoPath = 'LarpV4/assets/larp/Larp.png'
-	if isfile(logoPath) and #readfile(logoPath) ~= 578918 then
+	if isfile(logoPath) and #readfile(logoPath) ~= 423638 then
 		delfile(logoPath)
 	end
 end)
@@ -2708,7 +2708,7 @@ function mainapi:CreateGUI()
 	makeDraggable(window)
 	local logo = Instance.new('ImageLabel')
 	logo.Name = 'LarpLogo'
-	logo.Size = UDim2.fromOffset(62, 21)
+	logo.Size = UDim2.fromOffset(62, 18)
 	logo.Position = UDim2.fromOffset(11, 10)
 	logo.BackgroundTransparency = 1
 	logo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
@@ -9199,7 +9199,7 @@ perfStamp.Parent = perfCategory.Children
 
 local perfLogo = Instance.new('ImageLabel')
 perfLogo.Name = 'PerfLogo'
-perfLogo.Size = UDim2.fromOffset(80, 28)
+perfLogo.Size = UDim2.fromOffset(80, 21)
 perfLogo.Position = UDim2.new(1, -92, 0, 3)
 perfLogo.BackgroundTransparency = 1
 perfLogo.BorderSizePixel = 0
@@ -10375,7 +10375,7 @@ textguicolorcustom = textgui:CreateColorSlider({
 local LarpLabels = {}
 local LarpLogo = Instance.new('ImageLabel')
 LarpLogo.Name = 'Logo'
-LarpLogo.Size = UDim2.fromOffset(80, 28)
+LarpLogo.Size = UDim2.fromOffset(80, 21)
 LarpLogo.Position = UDim2.new(1, -142, 0, 3)
 LarpLogo.BackgroundTransparency = 1
 LarpLogo.BorderSizePixel = 0

@@ -20399,3 +20399,790 @@ run(function()
 	placeWTap()
 	larp:QueueSave()
 end)
+
+run(function()
+	local Indicators
+	local Arrows
+	local Boxes
+	local Projectiles
+	local Targets
+	local Color
+	local ProjColor
+	local Teammates
+	local Distance
+	local DistanceLimit
+	local ProjRange
+	local refArrows = {}
+	local refBoxes = {}
+	local refProj = {}
+	getgenv().LarpIndicators = {arrows = 0, boxes = 0, projs = 0}
+
+	local function entColor(ent)
+		return entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+	end
+
+	local function removeArrow(ent)
+		local tri = refArrows[ent]
+		if tri then
+			refArrows[ent] = nil
+			pcall(function() tri.Visible = false tri:Remove() end)
+		end
+	end
+
+	local function addArrow(ent)
+		if not Arrows.Enabled then return end
+		if not Targets.Players.Enabled and ent.Player then return end
+		if not Targets.NPCs.Enabled and ent.NPC then return end
+		if Teammates.Enabled and not ent.Targetable then return end
+		if not ent.RootPart then return end
+		removeArrow(ent)
+		local tri = Drawing.new('Triangle')
+		tri.Filled = true
+		tri.Visible = false
+		tri.ZIndex = 5
+		tri.Color = entColor(ent)
+		refArrows[ent] = tri
+	end
+
+	local function removeBox(ent)
+		local sq = refBoxes[ent]
+		if sq then
+			refBoxes[ent] = nil
+			pcall(function() sq.Visible = false sq:Remove() end)
+		end
+	end
+
+	local function addBox(ent)
+		if not Boxes.Enabled then return end
+		if not Targets.Players.Enabled and ent.Player then return end
+		if not Targets.NPCs.Enabled and ent.NPC then return end
+		if Teammates.Enabled and not ent.Targetable then return end
+		if not ent.RootPart then return end
+		removeBox(ent)
+		local sq = Drawing.new('Square')
+		sq.Filled = false
+		sq.Thickness = 1.5
+		sq.Visible = false
+		sq.ZIndex = 4
+		sq.Color = entColor(ent)
+		refBoxes[ent] = sq
+	end
+
+	local function removeProj(inst)
+		local d = refProj[inst]
+		if d then
+			refProj[inst] = nil
+			pcall(function() d.tri.Visible = false d.tri:Remove() end)
+			pcall(function() d.txt.Visible = false d.txt:Remove() end)
+		end
+	end
+
+	local function projRoot(inst)
+		if inst:IsA('BasePart') then return inst end
+		if inst:IsA('Model') then return inst.PrimaryPart end
+		return nil
+	end
+
+	local function addProj(inst)
+		if not Projectiles.Enabled then return end
+		if refProj[inst] then return end
+		if not (bedwars.ProjectileMeta[inst.Name] or inst.Name == 'tnt') then return end
+		if inst:GetAttribute('ProjectileShooter') == lplr.UserId then return end
+		local root = projRoot(inst)
+		if not root then return end
+		local tri = Drawing.new('Triangle')
+		tri.Filled = true
+		tri.Visible = false
+		tri.ZIndex = 6
+		tri.Color = Color3.fromHSV(ProjColor.Hue, ProjColor.Sat, ProjColor.Value)
+		local txt = Drawing.new('Text')
+		txt.Size = 14
+		txt.Center = true
+		txt.Outline = true
+		txt.Visible = false
+		txt.ZIndex = 6
+		txt.Color = Color3.fromHSV(ProjColor.Hue, ProjColor.Sat, ProjColor.Value)
+		txt.Text = '[!] ' .. inst.Name
+		refProj[inst] = {tri = tri, txt = txt, root = root}
+		inst.Destroying:Once(function() removeProj(inst) end)
+	end
+
+	local function retoggle()
+		if Indicators.Enabled then
+			Indicators:Toggle()
+			Indicators:Toggle()
+		end
+	end
+
+	Indicators = larp.Categories.Render:CreateModule({
+		Name = 'Indicators',
+		Function = function(callback)
+			if callback then
+				for _, ent in entitylib.List do
+					addArrow(ent)
+					addBox(ent)
+				end
+				for _, inst in workspace:GetChildren() do
+					pcall(addProj, inst)
+				end
+				Indicators:Clean(entitylib.Events.EntityAdded:Connect(function(ent)
+					addArrow(ent)
+					addBox(ent)
+				end))
+				Indicators:Clean(entitylib.Events.EntityRemoved:Connect(function(ent)
+					removeArrow(ent)
+					removeBox(ent)
+				end))
+				Indicators:Clean(workspace.ChildAdded:Connect(function(inst)
+					pcall(addProj, inst)
+				end))
+				Indicators:Clean(runService.RenderStepped:Connect(function()
+					if not Indicators.Enabled then return end
+					local selfpos = entitylib.isAlive and entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position or nil
+					local vs = gameCamera.ViewportSize
+					local cx, cy = vs.X / 2, vs.Y / 2
+					local acount, bcount, pcount = 0, 0, 0
+					for ent, tri in refArrows do
+						local rp = ent.RootPart
+						if not rp or not rp.Parent then
+							tri.Visible = false
+						else
+							local dist = selfpos and (selfpos - rp.Position).Magnitude or math.huge
+							if Distance.Enabled and (dist < DistanceLimit.ValueMin or dist > DistanceLimit.ValueMax) then
+								tri.Visible = false
+							else
+								local sp, vis = gameCamera:WorldToScreenPoint(rp.Position)
+								if vis then
+									tri.Visible = false
+								else
+									local ang = math.atan2(sp.Y - cy, sp.X - cx)
+									local ex = cx + math.cos(ang) * (vs.X / 2 - 40)
+									local ey = cy + math.sin(ang) * (vs.Y / 2 - 40)
+									local s = 12
+									tri.PointA = Vector2.new(ex + math.cos(ang) * s, ey + math.sin(ang) * s)
+									tri.PointB = Vector2.new(ex + math.cos(ang + 2.5) * s, ey + math.sin(ang + 2.5) * s)
+									tri.PointC = Vector2.new(ex + math.cos(ang - 2.5) * s, ey + math.sin(ang - 2.5) * s)
+									tri.Color = entColor(ent)
+									tri.Visible = true
+									acount += 1
+								end
+							end
+						end
+					end
+					for ent, sq in refBoxes do
+						local rp = ent.RootPart
+						if not rp or not rp.Parent then
+							sq.Visible = false
+						else
+							local dist = selfpos and (selfpos - rp.Position).Magnitude or math.huge
+							if dist > 220 then
+								sq.Visible = false
+							else
+								local sp, vis = gameCamera:WorldToScreenPoint(rp.Position)
+								if not vis then
+									sq.Visible = false
+								else
+									local h = math.clamp(1200 / math.max(1, dist), 12, 180)
+									local w = h * 0.62
+									sq.Size = Vector2.new(w, h)
+									sq.Position = Vector2.new(sp.X - w / 2, sp.Y - h / 2)
+									sq.Color = entColor(ent)
+									sq.Visible = true
+									bcount += 1
+								end
+							end
+						end
+					end
+					for inst, d in refProj do
+						local root = d.root
+						if not inst.Parent or not root or not root.Parent then
+							removeProj(inst)
+						else
+							local dist = selfpos and (selfpos - root.Position).Magnitude or math.huge
+							if dist > ProjRange.Value then
+								d.tri.Visible = false
+								d.txt.Visible = false
+							else
+								local sp, vis = gameCamera:WorldToScreenPoint(root.Position)
+								if vis then
+									d.tri.Visible = false
+									d.txt.Position = Vector2.new(sp.X, sp.Y - 20)
+									d.txt.Text = '[!] ' .. inst.Name .. ' ' .. math.floor(dist)
+									d.txt.Visible = true
+								else
+									local ang = math.atan2(sp.Y - cy, sp.X - cx)
+									local ex = cx + math.cos(ang) * (vs.X / 2 - 60)
+									local ey = cy + math.sin(ang) * (vs.Y / 2 - 60)
+									local s = 10
+									d.tri.PointA = Vector2.new(ex + math.cos(ang) * s, ey + math.sin(ang) * s)
+									d.tri.PointB = Vector2.new(ex + math.cos(ang + 2.5) * s, ey + math.sin(ang + 2.5) * s)
+									d.tri.PointC = Vector2.new(ex + math.cos(ang - 2.5) * s, ey + math.sin(ang - 2.5) * s)
+									d.tri.Visible = true
+									d.txt.Visible = false
+								end
+								pcount += 1
+							end
+						end
+					end
+					getgenv().LarpIndicators.arrows = acount
+					getgenv().LarpIndicators.boxes = bcount
+					getgenv().LarpIndicators.projs = pcount
+				end))
+			else
+				for ent in refArrows do removeArrow(ent) end
+				for ent in refBoxes do removeBox(ent) end
+				for inst in refProj do removeProj(inst) end
+				getgenv().LarpIndicators.arrows = 0
+				getgenv().LarpIndicators.boxes = 0
+				getgenv().LarpIndicators.projs = 0
+			end
+		end,
+		Tooltip = 'Off-screen arrows, 2D boxes and incoming\nprojectile warnings.'
+	})
+	Arrows = Indicators:CreateToggle({
+		Name = 'Arrows',
+		Default = true,
+		Function = retoggle,
+		Tooltip = 'Arrows pointing to off-screen players'
+	})
+	Boxes = Indicators:CreateToggle({
+		Name = '2D Boxes',
+		Default = true,
+		Function = retoggle,
+		Tooltip = 'Boxes around on-screen players'
+	})
+	Projectiles = Indicators:CreateToggle({
+		Name = 'Projectile Warning',
+		Default = true,
+		Function = retoggle,
+		Tooltip = 'Warns about incoming enemy projectiles'
+	})
+	Targets = Indicators:CreateTargets({
+		Players = true,
+		Function = retoggle
+	})
+	Teammates = Indicators:CreateToggle({
+		Name = 'Priority Only',
+		Default = true,
+		Function = retoggle,
+		Tooltip = 'Hides teammates'
+	})
+	Distance = Indicators:CreateToggle({
+		Name = 'Distance Check',
+		Function = function(callback)
+			if DistanceLimit then
+				DistanceLimit.Object.Visible = callback
+			end
+		end
+	})
+	DistanceLimit = Indicators:CreateTwoSlider({
+		Name = 'Player Distance',
+		Min = 0,
+		Max = 256,
+		DefaultMin = 0,
+		DefaultMax = 64,
+		Darker = true,
+		Visible = false
+	})
+	ProjRange = Indicators:CreateSlider({
+		Name = 'Projectile Range',
+		Min = 20,
+		Max = 300,
+		Default = 120,
+		Suffix = 'studs',
+		Darker = true,
+		Tooltip = 'Max range for projectile warnings'
+	})
+	Color = Indicators:CreateColorSlider({
+		Name = 'Player Color',
+		Function = function()
+			if Indicators.Enabled then retoggle() end
+		end
+	})
+	ProjColor = Indicators:CreateColorSlider({
+		Name = 'Projectile Color',
+		Darker = true
+	})
+
+	local function placeUnder(cat, anchor, name)
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == cat and m.Name ~= name and m.Object then
+				list[#list + 1] = m
+			end
+		end
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == anchor then
+				order[#order + 1] = name
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = name
+		end
+		larp:ApplyModuleOrder(cat, order)
+	end
+	placeUnder('Render', 'StorageESP', 'Indicators')
+	larp:QueueSave()
+end)
+
+run(function()
+	local Explosions
+	local TNT
+	local Fireballs
+	local Radius
+	local Opacity
+	local Color
+	local spheres = {}
+	getgenv().LarpExplosions = {tnts = 0}
+
+	local function removeSphere(inst)
+		local d = spheres[inst]
+		if d then
+			spheres[inst] = nil
+			pcall(function() d.part:Destroy() end)
+		end
+	end
+
+	local function track(inst)
+		if spheres[inst] then return end
+		local isTNT = inst.Name == 'tnt'
+		local isFB = inst.Name == 'fireball' and bedwars.ProjectileMeta[inst.Name] ~= nil
+		if isTNT and not TNT.Enabled then return end
+		if isFB and not Fireballs.Enabled then return end
+		if not (isTNT or isFB) then return end
+		if isFB and inst:GetAttribute('ProjectileShooter') == lplr.UserId then return end
+		local root = inst:IsA('BasePart') and inst or (inst:IsA('Model') and inst.PrimaryPart or nil)
+		if not root then return end
+		removeSphere(inst)
+		local d = Radius.Value * 2
+		local s = Instance.new('Part')
+		s.Shape = Enum.PartType.Ball
+		s.Size = Vector3.new(d, d, d)
+		s.Position = root.Position
+		s.Anchored = true
+		s.CanCollide = false
+		s.CanQuery = false
+		s.Transparency = 1 - Opacity.Value
+		s.Color = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+		s.Material = Enum.Material.ForceField
+		s.Parent = workspace
+		spheres[inst] = {part = s, root = root}
+		inst.Destroying:Once(function() removeSphere(inst) end)
+	end
+
+	local function retoggle()
+		if Explosions.Enabled then
+			Explosions:Toggle()
+			Explosions:Toggle()
+		end
+	end
+
+	Explosions = larp.Categories.Render:CreateModule({
+		Name = 'Explosions',
+		Function = function(callback)
+			if callback then
+				for _, inst in workspace:GetChildren() do
+					pcall(track, inst)
+				end
+				Explosions:Clean(workspace.ChildAdded:Connect(function(inst)
+					pcall(track, inst)
+				end))
+				Explosions:Clean(runService.Heartbeat:Connect(function()
+					if not Explosions.Enabled then return end
+					local n = 0
+					for inst, d in spheres do
+						if not inst.Parent or not d.root or not d.root.Parent then
+							removeSphere(inst)
+						else
+							d.part.Position = d.root.Position
+							n += 1
+						end
+					end
+					getgenv().LarpExplosions.tnts = n
+				end))
+			else
+				for inst in spheres do removeSphere(inst) end
+				getgenv().LarpExplosions.tnts = 0
+			end
+		end,
+		Tooltip = 'Shows the blast radius of primed TNT\nand incoming fireballs.'
+	})
+	TNT = Explosions:CreateToggle({
+		Name = 'TNT',
+		Default = true,
+		Function = retoggle,
+		Tooltip = 'Shows blast radius around primed TNT'
+	})
+	Fireballs = Explosions:CreateToggle({
+		Name = 'Fireballs',
+		Default = true,
+		Function = retoggle,
+		Tooltip = 'Shows blast radius around enemy fireballs'
+	})
+	Radius = Explosions:CreateSlider({
+		Name = 'Blast Radius',
+		Min = 2,
+		Max = 20,
+		Default = 8,
+		Suffix = 'studs',
+		Tooltip = 'Radius of the danger sphere'
+	})
+	Opacity = Explosions:CreateSlider({
+		Name = 'Opacity',
+		Min = 0,
+		Max = 1,
+		Default = 0.4,
+		Decimal = 100,
+		Darker = true
+	})
+	Color = Explosions:CreateColorSlider({
+		Name = 'Danger Color'
+	})
+
+	local function placeUnder(cat, anchor, name)
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == cat and m.Name ~= name and m.Object then
+				list[#list + 1] = m
+			end
+		end
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == anchor then
+				order[#order + 1] = name
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = name
+		end
+		larp:ApplyModuleOrder(cat, order)
+	end
+	placeUnder('Render', 'Indicators', 'Explosions')
+	larp:QueueSave()
+end)
+
+run(function()
+	local Clutch
+	local FallSpeed
+	local PlaceDelay
+	local MaxBlocks
+	local VoidCheck
+	local VoidHeight
+	local adjacent = {}
+	for x = -3, 3, 3 do
+		for y = -3, 3, 3 do
+			for z = -3, 3, 3 do
+				local vec = Vector3.new(x, y, z)
+				if vec ~= Vector3.zero then
+					table.insert(adjacent, vec)
+				end
+			end
+		end
+	end
+	getgenv().LarpClutch = {attempts = 0}
+
+	local rayCheck = RaycastParams.new()
+	rayCheck.RespectCanCollide = true
+
+	local function nearCorner(poscheck, pos)
+		local startpos = poscheck - Vector3.new(3, 3, 3)
+		local endpos = poscheck + Vector3.new(3, 3, 3)
+		local check = poscheck + (pos - poscheck).Unit * 100
+		return Vector3.new(math.clamp(check.X, startpos.X, endpos.X), math.clamp(check.Y, startpos.Y, endpos.Y), math.clamp(check.Z, startpos.Z, endpos.Z))
+	end
+
+	local function blockProximity(pos)
+		local mag, returned = 60
+		local bp = bedwars.BlockController:getBlockPosition(pos)
+		local tab = getBlocksInPoints(bp - Vector3.new(7, 7, 7), bp + Vector3.new(7, 7, 7))
+		for _, v in tab do
+			local blockpos = nearCorner(v, pos)
+			local newmag = (pos - blockpos).Magnitude
+			if newmag < mag then
+				mag, returned = newmag, blockpos
+			end
+		end
+		table.clear(tab)
+		return returned
+	end
+
+	local function checkAdjacent(pos)
+		for _, v in adjacent do
+			if getPlacedBlock(pos + v) then
+				return true
+			end
+		end
+		return false
+	end
+
+	local function getClutchBlock()
+		if store.hand and store.hand.toolType == 'block' then
+			return store.hand.tool.Name
+		end
+		local wool = getWool()
+		if wool then
+			return wool
+		end
+		for _, item in store.inventory.inventory.items do
+			local meta = bedwars.ItemMeta[item.itemType]
+			if meta and meta.block then
+				return item.itemType
+			end
+		end
+		return nil
+	end
+
+	Clutch = larp.Categories.Utility:CreateModule({
+		Name = 'Clutch',
+		Function = function(callback)
+			if callback then
+				local placed = {}
+				local airCount = 0
+				task.spawn(function()
+					repeat
+						for pos, exp in placed do
+							if exp <= tick() then
+								placed[pos] = nil
+							end
+						end
+						if entitylib.isAlive then
+							local char = entitylib.character
+							local root = char and char.HumanoidRootPart
+							local model = char and char.Character
+							local hum = model and model:FindFirstChildOfClass('Humanoid')
+							if root and hum then
+								if hum.FloorMaterial ~= Enum.Material.Air then
+									airCount = 0
+								else
+									rayCheck.FilterDescendantsInstances = {model, gameCamera}
+									rayCheck.CollisionGroup = root.CollisionGroup
+									local vy = root.Velocity.Y
+									local noGround = not workspace:Raycast(root.Position, Vector3.new(0, -200, 0), rayCheck)
+									local voidOk = not VoidCheck.Enabled or root.Position.Y < VoidHeight.Value
+									if vy < -FallSpeed.Value and noGround and voidOk and airCount < MaxBlocks.Value then
+										local block = getClutchBlock()
+										if block then
+											local feet = roundPos(root.Position - Vector3.new(0, char.HipHeight + 1.5, 0))
+											local b, bp = getPlacedBlock(feet)
+											if not b then
+												bp = checkAdjacent(bp * 3) and bp * 3 or blockProximity(feet)
+												if bp and not placed[bp] then
+													placed[bp] = tick() + 2
+													airCount += 1
+													getgenv().LarpClutch.attempts += 1
+													task.spawn(bedwars.placeBlock, bp, block, false)
+													task.wait(PlaceDelay.Value)
+												end
+											end
+										end
+									end
+								end
+							end
+						end
+						task.wait(0.05)
+					until not Clutch.Enabled
+				end)
+			end
+		end,
+		Tooltip = 'Places a block under you when falling\ninto the void.'
+	})
+	FallSpeed = Clutch:CreateSlider({
+		Name = 'Fall Speed',
+		Min = 10,
+		Max = 120,
+		Default = 50,
+		Suffix = 'studs/s',
+		Tooltip = 'How fast you need to fall before clutching'
+	})
+	PlaceDelay = Clutch:CreateSlider({
+		Name = 'Place Delay',
+		Min = 0,
+		Max = 1,
+		Default = 0.15,
+		Decimal = 100,
+		Darker = true,
+		Tooltip = 'Delay between clutch placements'
+	})
+	MaxBlocks = Clutch:CreateSlider({
+		Name = 'Max Blocks',
+		Min = 1,
+		Max = 10,
+		Default = 3,
+		Darker = true,
+		Tooltip = 'Max blocks placed per fall'
+	})
+	VoidCheck = Clutch:CreateToggle({
+		Name = 'Void Check',
+		Default = true,
+		Tooltip = 'Only clutches below the void height'
+	})
+	VoidHeight = Clutch:CreateSlider({
+		Name = 'Void Height',
+		Min = -50,
+		Max = 60,
+		Default = 5,
+		Darker = true,
+		Tooltip = 'Y level considered void'
+	})
+
+	local function placeUnder(cat, anchor, name)
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == cat and m.Name ~= name and m.Object then
+				list[#list + 1] = m
+			end
+		end
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == anchor then
+				order[#order + 1] = name
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = name
+		end
+		larp:ApplyModuleOrder(cat, order)
+	end
+	placeUnder('Utility', 'Scaffold', 'Clutch')
+	larp:QueueSave()
+end)
+
+run(function()
+	local MLG
+	local Pearl
+	local Fireball
+	local FallSpeed
+	local Cooldown
+	getgenv().LarpMLG = {pearls = 0, fireballs = 0}
+
+	local rayCheck = RaycastParams.new()
+	rayCheck.RespectCanCollide = true
+
+	local function throwPearl(pos, spot, item)
+		switchItem(item.tool)
+		local meta = bedwars.ProjectileMeta.telepearl
+		local calc = prediction.SolveTrajectory(pos, meta.launchVelocity, meta.gravitationalAcceleration, spot, Vector3.zero, workspace.Gravity, 0, 0)
+		if not calc then return false end
+		local dir = CFrame.lookAt(pos, calc).LookVector * meta.launchVelocity
+		bedwars.ProjectileController:createLocalProjectile(meta, 'telepearl', 'telepearl', pos, nil, dir, {drawDurationSeconds = 1})
+		bedwars.Handler:Get('ProjectileFire'):Fire('CallServer', item.tool, 'telepearl', 'telepearl', pos, pos, dir, httpService:GenerateGUID(true), {drawDurationSeconds = 1, shotId = httpService:GenerateGUID(false)}, workspace:GetServerTimeNow() - 0.045)
+		getgenv().LarpMLG.pearls += 1
+		return true
+	end
+
+	local function throwFireball(pos, item)
+		switchItem(item.tool)
+		local meta = bedwars.ProjectileMeta.fireball
+		local dir = Vector3.new(0, -60, 0)
+		bedwars.ProjectileController:createLocalProjectile(meta, 'fireball', 'fireball', pos, nil, dir, {drawDurationSeconds = 1})
+		bedwars.Handler:Get('ProjectileFire'):Fire('CallServer', item.tool, 'fireball', 'fireball', pos, pos, dir, httpService:GenerateGUID(true), {drawDurationSeconds = 1, shotId = httpService:GenerateGUID(false)}, workspace:GetServerTimeNow() - 0.045)
+		getgenv().LarpMLG.fireballs += 1
+		return true
+	end
+
+	MLG = larp.Categories.World:CreateModule({
+		Name = 'MLG',
+		Function = function(callback)
+			if callback then
+				local check, lastUse = false, 0
+				task.spawn(function()
+					repeat
+						if entitylib.isAlive then
+							local char = entitylib.character
+							local root = char and char.HumanoidRootPart
+							if root then
+								rayCheck.FilterDescendantsInstances = {char.Character, gameCamera}
+								rayCheck.CollisionGroup = root.CollisionGroup
+								local vy = root.Velocity.Y
+								local noGround = not workspace:Raycast(root.Position, Vector3.new(0, -200, 0), rayCheck)
+								if vy < -FallSpeed.Value and noGround then
+									if not check and tick() > lastUse then
+										check = true
+										local pearl = Pearl.Enabled and getItem('telepearl') or nil
+										local fb = Fireball.Enabled and getItem('fireball') or nil
+										local ground = pearl and getNearGround(7) or nil
+										if pearl and ground then
+											lastUse = tick() + Cooldown.Value
+											throwPearl(root.Position, ground, pearl)
+										elseif fb then
+											lastUse = tick() + Cooldown.Value
+											throwFireball(root.Position - Vector3.new(0, 2, 0), fb)
+										end
+									end
+								else
+									check = false
+								end
+							end
+						end
+						task.wait(0.1)
+					until not MLG.Enabled
+				end)
+			end
+		end,
+		Tooltip = 'Saves you from falling into the void\nwith a pearl or fireball.'
+	})
+	Pearl = MLG:CreateToggle({
+		Name = 'Pearl',
+		Default = true,
+		Tooltip = 'Throws a pearl onto nearby ground'
+	})
+	Fireball = MLG:CreateToggle({
+		Name = 'Fireball',
+		Default = true,
+		Tooltip = 'Throws a fireball below you when no pearl'
+	})
+	FallSpeed = MLG:CreateSlider({
+		Name = 'Fall Speed',
+		Min = 10,
+		Max = 200,
+		Default = 80,
+		Suffix = 'studs/s',
+		Tooltip = 'How fast you need to fall before MLG'
+	})
+	Cooldown = MLG:CreateSlider({
+		Name = 'Cooldown',
+		Min = 1,
+		Max = 15,
+		Default = 5,
+		Suffix = 's',
+		Darker = true
+	})
+
+	local function placeUnder(cat, anchor, name)
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == cat and m.Name ~= name and m.Object then
+				list[#list + 1] = m
+			end
+		end
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == anchor then
+				order[#order + 1] = name
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = name
+		end
+		larp:ApplyModuleOrder(cat, order)
+	end
+	placeUnder('World', 'BedProtector', 'MLG')
+	larp:QueueSave()
+end)

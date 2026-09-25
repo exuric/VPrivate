@@ -20926,7 +20926,7 @@ run(function()
 	end
 
 	local function getClutchBlock()
-		if store.hand and store.hand.toolType == 'block' then
+		if store.hand and store.hand.toolType == 'block' and store.hand.tool then
 			return store.hand.tool.Name
 		end
 		if LegitSwitch.Enabled then

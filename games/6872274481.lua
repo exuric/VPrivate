@@ -394,6 +394,7 @@ local store = {
 	attackReach = 0,
 	killauraAttacking = false,
 	lastHit = 0,
+	meleeHit = 0,
 	attackReachUpdate = tick(),
 	damageBlockFail = tick(),
 	hand = {},
@@ -4318,6 +4319,7 @@ run(function()
 		if ok then
 			if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 			store.lastHit = os.clock()
+			store.meleeHit = os.clock()
 		end
 		return ok
 	end
@@ -19871,6 +19873,7 @@ run(function()
 		end)
 		if ok then
 			store.lastHit = os.clock()
+			store.meleeHit = os.clock()
 			getgenv().LarpSilentAura.fires += 1
 			getgenv().LarpSilentAura.last = ent.Player and ent.Player.Name or (ent.Character and ent.Character.Name or '?')
 		end
@@ -20240,5 +20243,159 @@ run(function()
 		larp:ApplyModuleOrder(cat, order)
 	end
 	placeUnder('Combat', 'Reach', 'SilentAura')
+	larp:QueueSave()
+end)
+
+run(function()
+	local WTap
+	local Chance
+	local ReleaseDelay
+	local RepressDelay
+	local SelectHits
+
+	local rand = Random.new()
+	local phase = 'idle'
+	local phaseUntil = 0
+	local lastCycle = 0
+	getgenv().LarpWTap = {cycles = 0, phase = 'idle'}
+
+	local function engaged(maxdist)
+		local char = entitylib.character
+		local hrp = char and char.HumanoidRootPart
+		if not hrp then
+			return false
+		end
+		local selfpos = hrp.Position
+		for _, ent in entitylib.List do
+			if ent.Targetable and entitylib.isVulnerable(ent) then
+				local rp = ent.RootPart
+				if rp and rp.Position and (rp.Position - selfpos).Magnitude <= (maxdist or 20) then
+					return true
+				end
+			end
+		end
+		return false
+	end
+
+	WTap = larp.Categories.Combat:CreateModule({
+		Name = 'WTap',
+		Function = function(callback)
+			if callback then
+				phase = 'idle'
+				getgenv().LarpWTap.phase = 'idle'
+				WTap:Clean(runService.Heartbeat:Connect(function()
+					if not WTap.Enabled then
+						return
+					end
+					if not entitylib.isAlive or not entitylib.character then
+						return
+					end
+					local now = os.clock()
+					if phase == 'idle' then
+						if now - (store.meleeHit or 0) > 0.15 then
+							return
+						end
+						if now - lastCycle < 0.25 then
+							return
+						end
+						if rand:NextNumber(0, 100) > Chance.Value then
+							return
+						end
+						if SelectHits.Enabled and not engaged(20) then
+							return
+						end
+						phase = 'wait-release'
+						phaseUntil = now + ReleaseDelay.Value
+						lastCycle = now
+						getgenv().LarpWTap.cycles += 1
+						getgenv().LarpWTap.phase = 'wait-release'
+					elseif phase == 'wait-release' then
+						if now >= phaseUntil then
+							phase = 'released'
+							phaseUntil = now + RepressDelay.Value
+							getgenv().LarpWTap.phase = 'released'
+						end
+					elseif phase == 'released' then
+						local char = entitylib.character and entitylib.character.Character
+						local hum = char and char:FindFirstChildOfClass('Humanoid')
+						if hum then
+							local move = hum.MoveDirection
+							local camLook = gameCamera.CFrame.LookVector
+							local fwd = Vector3.new(camLook.X, 0, camLook.Z)
+							local strafe = Vector3.zero
+							if fwd.Magnitude > 0.01 and move.Magnitude > 0.01 then
+								strafe = move - fwd.Unit * move:Dot(fwd.Unit)
+							end
+							hum:Move(strafe, false)
+						end
+						if now >= phaseUntil then
+							phase = 'idle'
+							lastCycle = now
+							getgenv().LarpWTap.phase = 'idle'
+						end
+					end
+				end))
+			else
+				phase = 'idle'
+				getgenv().LarpWTap.phase = 'idle'
+			end
+		end,
+		Tooltip = 'Automates the "w-tapping" PVP strategy, useful in 1v1 combat scenarios.'
+	})
+	Chance = WTap:CreateSlider({
+		Name = 'Chance',
+		Min = 0,
+		Max = 100,
+		Default = 100,
+		Suffix = '%',
+		Tooltip = 'The chance of activating WTap when possible or beneficial.'
+	})
+	ReleaseDelay = WTap:CreateSlider({
+		Name = 'Release Delay',
+		Min = 0,
+		Max = 0.5,
+		Default = 0.1,
+		Decimal = 100,
+		Darker = true,
+		Tooltip = 'Delay before releasing W after hitting a target.'
+	})
+	RepressDelay = WTap:CreateSlider({
+		Name = 'Re-press Delay',
+		Min = 0,
+		Max = 0.5,
+		Default = 0.1,
+		Decimal = 100,
+		Darker = true,
+		Tooltip = 'Delay after releasing W before pressing it again.'
+	})
+	SelectHits = WTap:CreateToggle({
+		Name = 'Select Hits',
+		Darker = true,
+		Tooltip = 'Activates WTap only when a vulnerable target is close, helping close the distance.'
+	})
+
+	local function placeWTap()
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == 'Combat' and m.Name ~= 'WTap' and m.Object then
+				list[#list + 1] = m
+			end
+		end
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == 'Velocity' then
+				order[#order + 1] = 'WTap'
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = 'WTap'
+		end
+		larp:ApplyModuleOrder('Combat', order)
+	end
+	placeWTap()
 	larp:QueueSave()
 end)

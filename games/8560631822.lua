@@ -6688,6 +6688,160 @@ run(function()
 		attrConns[ent] = ent:GetAttributeChangedSignal('Amount'):Connect(function()
 			refreshGroups()
 		end)
+		refreshGroups()
+	end
+
+	local function Removing(ent)
+		drops[ent] = nil
+		if attrConns[ent] then
+			pcall(function() attrConns[ent]:Disconnect() end)
+			attrConns[ent] = nil
+		end
+		refreshGroups()
+	end
+
+	ItemESP = larp.Categories.Render:CreateModule({
+		Name = 'ItemESP',
+		Function = function(call)
+			if call then
+				ItemESP:Clean(collectionService:GetInstanceAddedSignal('ItemDrop'):Connect(Added))
+				ItemESP:Clean(collectionService:GetInstanceRemovedSignal('ItemDrop'):Connect(Removing))
+				ItemESP:Clean(runService.PreRender:Connect(function()
+					local selfpos
+					if entitylib.isAlive and entitylib.character then
+						local hrp = entitylib.character.HumanoidRootPart
+						selfpos = hrp and hrp.Position or nil
+					end
+					for _, g in groups do
+						if g.tag and g.pos then
+							local headPos, headVis = gameCamera:WorldToViewportPoint(g.pos + Vector3.new(0, 1, 0))
+							if headVis then
+								g.tag.Visible = true
+								g.img.Visible = g.img.Image ~= ''
+								local dist = selfpos and math.floor((selfpos - g.pos).Magnitude) or nil
+								if g.dist ~= dist then
+									layoutTag(g, headPos, dist)
+								else
+									local w = g.tag.Size.X.Offset
+									local iw = g.img.Size.X.Offset
+									local totalW = w + 6 + iw
+									g.tag.Position = UDim2.fromOffset(headPos.X - totalW / 2 + iw + 6, headPos.Y)
+									g.img.Position = UDim2.fromOffset(headPos.X - totalW / 2, headPos.Y - iw / 2)
+								end
+							else
+								g.tag.Visible = false
+								g.img.Visible = false
+							end
+						end
+					end
+				end))
+
+				for _, v in collectionService:GetTagged('ItemDrop') do
+					Added(v)
+				end
+			else
+				for _, g in groups do
+					destroyTag(g)
+				end
+				table.clear(groups)
+				for ent in drops do
+					if attrConns[ent] then
+						pcall(function() attrConns[ent]:Disconnect() end)
+						attrConns[ent] = nil
+					end
+				end
+				table.clear(drops)
+			end
+		end,
+		Tooltip = 'Renders tags on dropped items'
+	})
+	Distance = ItemESP:CreateToggle({
+		Name = 'Distance',
+		Function = function()
+			if ItemESP.Enabled then
+				refreshGroups()
+			end
+		end,
+	    Tooltip = 'Shows the distance of the item'
+	})
+	GroupItems = ItemESP:CreateToggle({
+		Name = 'Group Items',
+		Default = true,
+		Function = function()
+			if ItemESP.Enabled then
+				refreshGroups()
+			end
+		end,
+	    Tooltip = 'Merges nearby drops of the same item into one tag'
+	})
+	AutoScale = ItemESP:CreateToggle({
+		Name = 'Auto Scale',
+		Default = true,
+		Function = function()
+			if ItemESP.Enabled then
+				for _, g in groups do
+					g.dist = nil
+				end
+			end
+		end,
+	    Tooltip = 'Keeps tag size constant regardless of distance'
+	})
+	Transparency = ItemESP:CreateSlider({
+		Name = 'Transparency',
+		Min = 0,
+		Max = 1,
+		Decimal = 100,
+	    Function = function()
+			if ItemESP.Enabled then
+				for _, g in groups do
+					if g.tag then
+						g.tag.BackgroundTransparency = Transparency.Value
+					end
+					g.dist = nil
+				end
+			end
+		end,
+	    Default = 0.5
+	})
+	Scale = ItemESP:CreateSlider({
+		Name = 'Scale',
+		Default = 1,
+		Min = 0.1,
+		Max = 1.5,
+		Decimal = 10,
+		Function = function()
+			if ItemESP.Enabled then
+				for _, g in groups do
+					g.dist = nil
+				end
+			end
+		end
+	})
+	WhitelistOnly = ItemESP:CreateToggle({
+		Name = 'Whitelist Only',
+		Function = function(callback)
+			if Whitelist.Object then
+				Whitelist.Object.Visible = callback
+			end
+	        if ItemESP.Enabled then
+	            ItemESP:Toggle()
+	            ItemESP:Toggle()
+	        end
+		end,
+	    Tooltip = 'Only renders whitelisted items'
+	})
+	Whitelist = ItemESP:CreateTextList({
+		Name = 'Allowed items',
+		Function = function()
+			if ItemESP.Enabled then
+				ItemESP:Toggle()
+				ItemESP:Toggle()
+			end
+		end,
+	Darker = true,
+		Visible = false
+	})
+end)
 
 run(function()
 	local ItemPlates
@@ -19400,4 +19554,343 @@ run(function()
 			end
 		end
 	})
+end)
+run(function()
+	local SilentAura
+	local Targets
+	local AimSpeed
+	local ClickMode
+	local APS
+	local ExtraDelay
+	local MouseOverDelay
+	local SelectFirstHit
+	local IgnoreActivationClick
+	local AirCrits
+	local ShieldCheck
+	local TargetMissChance
+	local EarlyHitChance
+	local ExtraSwingDistance
+	local MaxAngle
+	local TargetMode
+	local TargetArea
+	local BreakBlocks
+	local BreakDelay
+	local BreakWhitelist = {}
+	local RequireMouseDown
+	local DisableOnDeath
+	local ShowTarget
+	local TargetColor
+	local AttackColor
+	local LimitToItems = {}
+	local AttackRange
+
+	local SwordController = bedwars.SwordController
+	local EntityUtil = (function()
+		local ok, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
+		if ok and mod and mod.EntityUtil then
+			return mod.EntityUtil
+		end
+		for _, v in getgc(true) do
+			if type(v) == 'table' and rawget(v, 'getLocalPlayerEntity') then
+				return v
+			end
+		end
+	end)()
+
+	local Folder = Instance.new('Folder')
+	Folder.Parent = larp.gui
+	local highlight
+	local lastFire = 0
+	local hoverStart = 0
+	local hoverKey = nil
+	local beenHit = false
+	local lastHp = nil
+	local armedRMD = false
+	local wasAlive = false
+	local smoothDir = nil
+	local pauseUntil = 0
+	local rand = Random.new()
+	local HOVER_ANGLE = math.rad(4)
+	getgenv().LarpSilentAura = {fires = 0, swings = 0, seen = 0, last = 'none'}
+
+	local function getHandItem()
+		if not SwordController or not SwordController.getHandItem then
+			return nil
+		end
+		return SwordController:getHandItem()
+	end
+
+	local function toGameEntity(ent)
+		if not EntityUtil or not ent then
+			return
+		end
+		local e = ent.Character and EntityUtil:getEntity(ent.Character)
+		if not e then
+			e = ent.RootPart and ent.RootPart.Parent and EntityUtil:getEntity(ent.RootPart.Parent)
+		end
+		return e
+	end
+
+	local function isServerHittable(ent)
+		if not ent or not ent.Character then
+			return false
+		end
+		local hum = ent.Humanoid or ent.Character:FindFirstChildOfClass('Humanoid')
+		if not hum then
+			return false
+		end
+		if hum.Health <= 0 then
+			return false
+		end
+		local st = hum:GetState()
+		if st == Enum.HumanoidStateType.Dead or st == Enum.HumanoidStateType.Physics or st == Enum.HumanoidStateType.PlatformStanding then
+			return false
+		end
+		if ent.Character:FindFirstChildOfClass('ForceField') then
+			return false
+		end
+		return true
+	end
+
+	local function validTarget(ent, selfpos, camLook, halfangle, reach)
+		if ent.Player and not Targets.Players.Enabled then
+			return false
+		end
+		if ent.NPC and not Targets.NPCs.Enabled then
+			return false
+		end
+		if not ent.Targetable then
+			return false
+		end
+		if not entitylib.isVulnerable(ent) then
+			return false
+		end
+		if ShieldCheck.Enabled and ent.Character and ent.Character:FindFirstChildOfClass('ForceField') then
+			return false
+		end
+		local rp = ent.RootPart
+		if not rp or not rp.Position then
+			return false
+		end
+		local delta = rp.Position - selfpos
+		if delta.Magnitude > reach then
+			return false
+		end
+		if halfangle < math.pi * 2 then
+			local flat = Vector3.new(delta.X, 0, delta.Z)
+			if flat.Magnitude > 0.01 then
+				local look = Vector3.new(camLook.X, 0, camLook.Z)
+				if look.Magnitude < 0.01 then
+					return false
+				end
+				if math.acos(math.clamp(look.Unit:Dot(flat.Unit), -1, 1)) > halfangle then
+					return false
+				end
+			end
+		end
+		if Targets.Walls.Enabled and entitylib.Wallcheck(selfpos, rp.Position) then
+			return false
+		end
+		return true
+	end
+
+	local function aimPoint(ent, selfpos)
+		local rp = ent.RootPart
+		if not rp then
+			return
+		end
+		if TargetArea.Value == 'Closest' and ent.Character then
+			local best, bestd = rp.Position, (rp.Position - selfpos).Magnitude
+			local head = ent.Character:FindFirstChild('Head')
+			if head and head:IsA('BasePart') then
+				local d = (head.Position - selfpos).Magnitude
+				if d < bestd then
+					best, bestd = head.Position, d
+				end
+			end
+			return best
+		end
+		return rp.Position
+	end
+
+	local function armorScore(ent)
+		local score = 0
+		if ent.Player then
+			local ok, inv = pcall(bedwars.getInventory, ent.Player)
+			if ok and inv and inv.items then
+				for _, item in inv.items do
+					local m = item.itemType and bedwars.ItemMeta and bedwars.ItemMeta[item.itemType]
+					if m and m.armor and m.armor.damageReductionMultiplier then
+						score = score + m.armor.damageReductionMultiplier
+					end
+				end
+			end
+		end
+		return score
+	end
+
+	local function threatScore(ent)
+		local score = 0
+		if ent.Character then
+			for _, t in ent.Character:GetChildren() do
+				if t:IsA('Tool') then
+					local itemType = t.itemType or t.Name
+					local m = bedwars.ItemMeta and bedwars.ItemMeta[itemType]
+					if m and m.sword and m.sword.damage then
+						score = score + m.sword.damage
+					end
+				end
+			end
+		end
+		return score + armorScore(ent) * 100
+	end
+
+	local function pickTarget(selfpos, camLook)
+		if not entitylib.character then
+			return
+		end
+		local halfangle = MaxAngle.Value >= 360 and math.pi * 2 or math.rad(MaxAngle.Value) / 2
+		local reach = AttackRange.Value
+		local cands = {}
+		for _, ent in entitylib.List do
+			if validTarget(ent, selfpos, camLook, halfangle, reach) then
+				local ap = aimPoint(ent, selfpos)
+				if ap then
+					cands[#cands + 1] = {ent = ent, pos = ap}
+				end
+			end
+		end
+		if #cands == 0 then
+			getgenv().LarpSilentAura.seen = 0
+			return
+		end
+		getgenv().LarpSilentAura.seen = #cands
+		local mode = TargetMode.Value
+		if mode == 'Yaw' then
+			local best, bestd = nil, math.huge
+			for _, c in cands do
+				local d = (c.pos - selfpos)
+				local flat = Vector3.new(d.X, 0, d.Z)
+				local look = Vector3.new(camLook.X, 0, camLook.Z)
+				local ang = 0
+				if flat.Magnitude > 0.01 and look.Magnitude > 0.01 then
+					ang = math.acos(math.clamp(look.Unit:Dot(flat.Unit), -1, 1))
+				end
+				if ang < bestd then
+					best, bestd = c, ang
+				end
+			end
+			return best
+		elseif mode == 'Armor' then
+			local best, bestd = nil, math.huge
+			for _, c in cands do
+				local s = armorScore(c.ent)
+				if s < bestd then
+					best, bestd = c, s
+				end
+			end
+			return best
+		elseif mode == 'Threat' then
+			local best, bestd = nil, -math.huge
+			for _, c in cands do
+				local s = threatScore(c.ent)
+				if s > bestd then
+					best, bestd = c, s
+				end
+			end
+			return best
+		elseif mode == 'Health' then
+			local best, bestd = nil, math.huge
+			for _, c in cands do
+				local h = c.ent.Health or math.huge
+				if h < bestd then
+					best, bestd = c, h
+				end
+			end
+			return best
+		end
+		local best, bestd = nil, math.huge
+		for _, c in cands do
+			local d = (c.pos - selfpos).Magnitude
+			if d < bestd then
+				best, bestd = c, d
+			end
+		end
+		return best
+	end
+
+	local function playSwing()
+		getgenv().LarpSilentAura.swings += 1
+		local hand = getHandItem()
+		if not hand or not hand.itemType then
+			return
+		end
+		local meta = bedwars.ItemMeta and bedwars.ItemMeta[hand.itemType]
+		if not meta or not SwordController then
+			return
+		end
+		pcall(SwordController.playSwordEffect, SwordController, meta, false, {
+			playAnimation = true,
+			playSound = true
+		})
+	end
+
+	local function itemAllowed()
+		if #LimitToItems.ListEnabled == 0 then
+			return true
+		end
+		local hand = getHandItem()
+		local itemType = hand and hand.itemType
+		if not itemType then
+			return false
+		end
+		for _, v in LimitToItems.ListEnabled do
+			if tostring(v):lower() == tostring(itemType):lower() then
+				return true
+			end
+		end
+		return false
+	end
+
+	local function dealDamage(ent)
+		if not SwordController then
+			return false
+		end
+		local e = toGameEntity(ent)
+		if not e then
+			return false
+		end
+		local baseTime = workspace:GetServerTimeNow()
+		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, {swingStartTime = baseTime})
+		task.spawn(function()
+			task.wait(0.02)
+			if SwordController and ent and entitylib.isVulnerable(ent) then
+				pcall(SwordController.sendServerRequest, SwordController, e, 0, {swingStartTime = baseTime + 0.02})
+			end
+		end)
+run(function()
+	local function placeUnder(cat, anchor, name)
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == cat and m.Name ~= name and m.Object then
+				list[#list + 1] = m
+			end
+		end
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == anchor then
+				order[#order + 1] = name
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = name
+		end
+		larp:ApplyModuleOrder(cat, order)
+	end
+	placeUnder('Combat', 'Reach', 'SilentAura')
+	larp:QueueSave()
 end)

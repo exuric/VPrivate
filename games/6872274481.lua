@@ -21025,7 +21025,7 @@ run(function()
 		Default = true,
 		Tooltip = 'Only clutches below the void height'
 	})
-	VoidHeight = 	Clutch:CreateSlider({
+	VoidHeight = Clutch:CreateSlider({
 		Name = 'Void Height',
 		Min = -50,
 		Max = 60,

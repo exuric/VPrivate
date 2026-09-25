@@ -6708,8 +6708,8 @@ run(function()
 				ItemESP:Clean(runService.PreRender:Connect(function()
 					local selfpos
 					if entitylib.isAlive and entitylib.character then
-						local rp = entitylib.character:FindFirstChild('HumanoidRootPart')
-						selfpos = rp and rp.Position or nil
+						local hrp = entitylib.character.HumanoidRootPart
+						selfpos = hrp and hrp.Position or nil
 					end
 					for _, g in groups do
 						if g.tag and g.pos then
@@ -19554,4 +19554,691 @@ run(function()
 			end
 		end
 	})
+end)
+
+run(function()
+	local SilentAura
+	local Targets
+	local AimSpeed
+	local ClickMode
+	local APS
+	local ExtraDelay
+	local MouseOverDelay
+	local SelectFirstHit
+	local IgnoreActivationClick
+	local AirCrits
+	local ShieldCheck
+	local TargetMissChance
+	local EarlyHitChance
+	local ExtraSwingDistance
+	local MaxAngle
+	local TargetMode
+	local TargetArea
+	local BreakBlocks
+	local BreakDelay
+	local BreakWhitelist = {}
+	local RequireMouseDown
+	local DisableOnDeath
+	local ShowTarget
+	local TargetColor
+	local AttackColor
+	local LimitToItems = {}
+	local AttackRange
+
+	local SwordController = bedwars.SwordController
+	local EntityUtil = (function()
+		local ok, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
+		if ok and mod and mod.EntityUtil then
+			return mod.EntityUtil
+		end
+		for _, v in getgc(true) do
+			if type(v) == 'table' and rawget(v, 'getLocalPlayerEntity') then
+				return v
+			end
+		end
+	end)()
+
+	local Folder = Instance.new('Folder')
+	Folder.Parent = larp.gui
+	local highlight
+	local lastFire = 0
+	local hoverStart = 0
+	local hoverKey = nil
+	local beenHit = false
+	local lastHp = nil
+	local armedRMD = false
+	local wasAlive = false
+	local smoothDir = nil
+	local pauseUntil = 0
+	local rand = Random.new()
+	local HOVER_ANGLE = math.rad(4)
+	getgenv().LarpSilentAura = {fires = 0, swings = 0, seen = 0, last = 'none'}
+
+	local function getHandItem()
+		if not SwordController or not SwordController.getHandItem then
+			return nil
+		end
+		return SwordController:getHandItem()
+	end
+
+	local function toGameEntity(ent)
+		if not EntityUtil or not ent then
+			return
+		end
+		local e = ent.Character and EntityUtil:getEntity(ent.Character)
+		if not e then
+			e = ent.RootPart and ent.RootPart.Parent and EntityUtil:getEntity(ent.RootPart.Parent)
+		end
+		return e
+	end
+
+	local function isServerHittable(ent)
+		if not ent or not ent.Character then
+			return false
+		end
+		local hum = ent.Humanoid or ent.Character:FindFirstChildOfClass('Humanoid')
+		if not hum then
+			return false
+		end
+		if hum.Health <= 0 then
+			return false
+		end
+		local st = hum:GetState()
+		if st == Enum.HumanoidStateType.Dead or st == Enum.HumanoidStateType.Physics or st == Enum.HumanoidStateType.PlatformStanding then
+			return false
+		end
+		if ent.Character:FindFirstChildOfClass('ForceField') then
+			return false
+		end
+		return true
+	end
+
+	local function validTarget(ent, selfpos, camLook, halfangle, reach)
+		if ent.Player and not Targets.Players.Enabled then
+			return false
+		end
+		if ent.NPC and not Targets.NPCs.Enabled then
+			return false
+		end
+		if not ent.Targetable then
+			return false
+		end
+		if not entitylib.isVulnerable(ent) then
+			return false
+		end
+		if ShieldCheck.Enabled and ent.Character and ent.Character:FindFirstChildOfClass('ForceField') then
+			return false
+		end
+		local rp = ent.RootPart
+		if not rp or not rp.Position then
+			return false
+		end
+		local delta = rp.Position - selfpos
+		if delta.Magnitude > reach then
+			return false
+		end
+		if halfangle < math.pi * 2 then
+			local flat = Vector3.new(delta.X, 0, delta.Z)
+			if flat.Magnitude > 0.01 then
+				local look = Vector3.new(camLook.X, 0, camLook.Z)
+				if look.Magnitude < 0.01 then
+					return false
+				end
+				if math.acos(math.clamp(look.Unit:Dot(flat.Unit), -1, 1)) > halfangle then
+					return false
+				end
+			end
+		end
+		if Targets.Walls.Enabled and entitylib.Wallcheck(selfpos, rp.Position) then
+			return false
+		end
+		return true
+	end
+
+	local function aimPoint(ent, selfpos)
+		local rp = ent.RootPart
+		if not rp then
+			return
+		end
+		if TargetArea.Value == 'Closest' and ent.Character then
+			local best, bestd = rp.Position, (rp.Position - selfpos).Magnitude
+			local head = ent.Character:FindFirstChild('Head')
+			if head and head:IsA('BasePart') then
+				local d = (head.Position - selfpos).Magnitude
+				if d < bestd then
+					best, bestd = head.Position, d
+				end
+			end
+			return best
+		end
+		return rp.Position
+	end
+
+	local function armorScore(ent)
+		local score = 0
+		if ent.Player then
+			local ok, inv = pcall(bedwars.getInventory, ent.Player)
+			if ok and inv and inv.items then
+				for _, item in inv.items do
+					local m = item.itemType and bedwars.ItemMeta and bedwars.ItemMeta[item.itemType]
+					if m and m.armor and m.armor.damageReductionMultiplier then
+						score = score + m.armor.damageReductionMultiplier
+					end
+				end
+			end
+		end
+		return score
+	end
+
+	local function threatScore(ent)
+		local score = 0
+		if ent.Character then
+			for _, t in ent.Character:GetChildren() do
+				if t:IsA('Tool') then
+					local itemType = t.itemType or t.Name
+					local m = bedwars.ItemMeta and bedwars.ItemMeta[itemType]
+					if m and m.sword and m.sword.damage then
+						score = score + m.sword.damage
+					end
+				end
+			end
+		end
+		return score + armorScore(ent) * 100
+	end
+
+	local function pickTarget(selfpos, camLook)
+		if not entitylib.character then
+			return
+		end
+		local halfangle = MaxAngle.Value >= 360 and math.pi * 2 or math.rad(MaxAngle.Value) / 2
+		local reach = AttackRange.Value
+		local cands = {}
+		for _, ent in entitylib.List do
+			if validTarget(ent, selfpos, camLook, halfangle, reach) then
+				local ap = aimPoint(ent, selfpos)
+				if ap then
+					cands[#cands + 1] = {ent = ent, pos = ap}
+				end
+			end
+		end
+		if #cands == 0 then
+			getgenv().LarpSilentAura.seen = 0
+			return
+		end
+		getgenv().LarpSilentAura.seen = #cands
+		local mode = TargetMode.Value
+		if mode == 'Yaw' then
+			local best, bestd = nil, math.huge
+			for _, c in cands do
+				local d = (c.pos - selfpos)
+				local flat = Vector3.new(d.X, 0, d.Z)
+				local look = Vector3.new(camLook.X, 0, camLook.Z)
+				local ang = 0
+				if flat.Magnitude > 0.01 and look.Magnitude > 0.01 then
+					ang = math.acos(math.clamp(look.Unit:Dot(flat.Unit), -1, 1))
+				end
+				if ang < bestd then
+					best, bestd = c, ang
+				end
+			end
+			return best
+		elseif mode == 'Armor' then
+			local best, bestd = nil, math.huge
+			for _, c in cands do
+				local s = armorScore(c.ent)
+				if s < bestd then
+					best, bestd = c, s
+				end
+			end
+			return best
+		elseif mode == 'Threat' then
+			local best, bestd = nil, -math.huge
+			for _, c in cands do
+				local s = threatScore(c.ent)
+				if s > bestd then
+					best, bestd = c, s
+				end
+			end
+			return best
+		elseif mode == 'Health' then
+			local best, bestd = nil, math.huge
+			for _, c in cands do
+				local h = c.ent.Health or math.huge
+				if h < bestd then
+					best, bestd = c, h
+				end
+			end
+			return best
+		end
+		local best, bestd = nil, math.huge
+		for _, c in cands do
+			local d = (c.pos - selfpos).Magnitude
+			if d < bestd then
+				best, bestd = c, d
+			end
+		end
+		return best
+	end
+
+	local function playSwing()
+		getgenv().LarpSilentAura.swings += 1
+		local hand = getHandItem()
+		if not hand or not hand.itemType then
+			return
+		end
+		local meta = bedwars.ItemMeta and bedwars.ItemMeta[hand.itemType]
+		if not meta or not SwordController then
+			return
+		end
+		pcall(SwordController.playSwordEffect, SwordController, meta, false, {
+			playAnimation = true,
+			playSound = true
+		})
+	end
+
+	local function itemAllowed()
+		if #LimitToItems.ListEnabled == 0 then
+			return true
+		end
+		local hand = getHandItem()
+		local itemType = hand and hand.itemType
+		if not itemType then
+			return false
+		end
+		for _, v in LimitToItems.ListEnabled do
+			if tostring(v):lower() == tostring(itemType):lower() then
+				return true
+			end
+		end
+		return false
+	end
+
+	local function dealDamage(ent)
+		if not SwordController then
+			return false
+		end
+		local e = toGameEntity(ent)
+		if not e then
+			return false
+		end
+		local baseTime = workspace:GetServerTimeNow()
+		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, {swingStartTime = baseTime})
+		task.spawn(function()
+			task.wait(0.02)
+			if SwordController and ent and entitylib.isVulnerable(ent) then
+				pcall(SwordController.sendServerRequest, SwordController, e, 0, {swingStartTime = baseTime + 0.02})
+			end
+		end)
+		if ok then
+			store.lastHit = os.clock()
+			getgenv().LarpSilentAura.fires += 1
+			getgenv().LarpSilentAura.last = ent.Player and ent.Player.Name or (ent.Character and ent.Character.Name or '?')
+		end
+		return ok
+	end
+
+	local function setHighlight(ent, attack)
+		if not ShowTarget.Enabled then
+			return
+		end
+		if not highlight then
+			highlight = Instance.new('Highlight')
+			highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			highlight.FillTransparency = 0.6
+			highlight.OutlineTransparency = 0
+			highlight.Parent = Folder
+		end
+		if ent and ent.Character then
+			highlight.Adornee = ent.Character
+			local c = attack and AttackColor or TargetColor
+			highlight.FillColor = Color3.fromHSV(c.Hue, c.Sat, c.Value)
+			highlight.Enabled = true
+		else
+			highlight.Enabled = false
+		end
+	end
+
+	SilentAura = larp.Categories.Combat:CreateModule({
+		Name = 'SilentAura',
+		Function = function(callback)
+			if callback then
+				lastFire = 0
+				hoverStart = 0
+				hoverKey = nil
+				beenHit = false
+				armedRMD = false
+				wasAlive = entitylib.isAlive
+				smoothDir = nil
+				pauseUntil = 0
+				lastHp = nil
+				SilentAura:Clean(runService.Heartbeat:Connect(function(dt)
+					if not SilentAura.Enabled then
+						return
+					end
+					if not entitylib.isAlive or not entitylib.character then
+						if wasAlive and DisableOnDeath.Enabled then
+							wasAlive = false
+							task.spawn(function()
+								if SilentAura.Enabled then
+									SilentAura:Toggle()
+								end
+							end)
+						end
+						setHighlight(nil, false)
+						return
+					end
+					wasAlive = true
+					local char = entitylib.character.Character
+					local hrp = entitylib.character.HumanoidRootPart
+					if not char or not hrp then
+						return
+					end
+					local selfpos = hrp.Position
+					local camLook = gameCamera.CFrame.LookVector
+					if RequireMouseDown.Enabled then
+						if not inputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+							armedRMD = false
+							setHighlight(nil, false)
+							return
+						end
+						if not armedRMD then
+							armedRMD = true
+							if IgnoreActivationClick.Enabled then
+								hoverStart = 0
+								hoverKey = nil
+								setHighlight(nil, false)
+								return
+							end
+						end
+					end
+					local hum = char:FindFirstChildOfClass('Humanoid')
+					if hum then
+						if lastHp and hum.Health < lastHp then
+							beenHit = true
+						end
+						lastHp = hum.Health
+					end
+					if os.clock() < pauseUntil then
+						return
+					end
+					if BreakBlocks.Enabled then
+						local pressing = inputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+						if pressing and #BreakWhitelist.ListEnabled > 0 then
+							local hand = getHandItem()
+							local ht = hand and hand.itemType
+							pressing = ht and table.find(BreakWhitelist.ListEnabled, ht) ~= nil
+						end
+						if pressing then
+							local m = lplr:GetMouse()
+							local t = m and m.Target
+							if t and t:IsA('BasePart') then
+								pauseUntil = os.clock() + BreakDelay.Value
+								setHighlight(nil, false)
+								return
+							end
+						end
+					end
+					local pick = pickTarget(selfpos, camLook)
+					if not pick then
+						hoverKey = nil
+						setHighlight(nil, false)
+						return
+					end
+					local toAim = pick.pos - selfpos
+					if smoothDir == nil then
+						smoothDir = toAim.Unit
+					else
+						local k = math.clamp(AimSpeed.Value * dt, 0, 1)
+						smoothDir = (smoothDir * (1 - k) + toAim.Unit * k).Unit
+					end
+					local ang = math.acos(math.clamp(camLook.Unit:Dot(toAim.Unit), -1, 1))
+					local hovering = ang <= HOVER_ANGLE
+					local key = pick.ent.Player and pick.ent.Player.UserId or tostring(pick.ent.Character)
+					if not (hovering and hoverKey == key) then
+						hoverKey = hovering and key or nil
+						hoverStart = hovering and os.clock() or 0
+					end
+					setHighlight(pick.ent, false)
+					local dist = toAim.Magnitude
+					if dist > AttackRange.Value + ExtraSwingDistance.Value then
+						return
+					end
+					if dist > AttackRange.Value then
+						playSwing()
+						return
+					end
+					if not itemAllowed() then
+						return
+					end
+					local now = os.clock()
+					if ClickMode.Value == 'Trigger' then
+						local interval = math.max(0.05, (10 / math.max(1, tonumber(getgenv().LarpHitRegOverride) or 34)) + ExtraDelay.Value)
+						if SelectFirstHit.Enabled and not beenHit then
+							return
+						end
+						if AirCrits.Enabled then
+							local hv = hrp.Velocity
+							local falling = hv.Y < -15
+							if not falling and hum and hum.FloorMaterial == Enum.Material.Air then
+								return
+							end
+						end
+						local ready = (now - lastFire) >= interval
+						if not ready and not (EarlyHitChance.Value > 0 and rand:NextNumber(0, 100) <= EarlyHitChance.Value) then
+							return
+						end
+						if not hovering or (now - hoverStart) < MouseOverDelay.Value then
+							return
+						end
+					else
+						local aps = APS.ValueMin + rand:NextNumber(0, math.max(0, APS.ValueMax - APS.ValueMin))
+						if now - lastFire < 1 / math.max(1, aps) then
+							return
+						end
+					end
+					lastFire = now
+					if TargetMissChance.Value > 0 and rand:NextNumber(0, 100) <= TargetMissChance.Value then
+						playSwing()
+						return
+					end
+					playSwing()
+					if dealDamage(pick.ent) then
+						setHighlight(pick.ent, true)
+					end
+				end))
+			else
+				setHighlight(nil, false)
+				smoothDir = nil
+			end
+		end,
+		Tooltip = 'Silent melee aura: attacks without moving your camera. Uses direct damage calls like KillAura.'
+	})
+	Targets = SilentAura:CreateTargets({
+		Players = true,
+		NPCs = true
+	})
+	AimSpeed = SilentAura:CreateSlider({
+		Name = 'Aim Speed',
+		Min = 1,
+		Max = 20,
+		Default = 10,
+		Tooltip = 'How fast the internal aim point tracks the target'
+	})
+	ClickMode = SilentAura:CreateDropdown({
+		Name = 'Click Mode',
+		List = {'CPS', 'Trigger'},
+		Tooltip = 'CPS attacks at a steady rate. Trigger waits for cooldown plus hover.'
+	})
+	APS = SilentAura:CreateTwoSlider({
+		Name = 'Attacks per Second',
+		Min = 1,
+		Max = 20,
+		DefaultMin = 8,
+		DefaultMax = 12,
+		Tooltip = 'CPS mode attack rate range'
+	})
+	ExtraDelay = SilentAura:CreateSlider({
+		Name = 'Extra Delay',
+		Min = -0.25,
+		Max = 0.5,
+		Default = 0,
+		Decimal = 100,
+		Darker = true,
+		Tooltip = 'Added to the Trigger cooldown. Negative attacks early.'
+	})
+	MouseOverDelay = SilentAura:CreateSlider({
+		Name = 'Mouse Over Delay',
+		Min = 0,
+		Max = 1,
+		Default = 0.1,
+		Decimal = 100,
+		Darker = true,
+		Tooltip = 'Trigger mode: how long the crosshair must hover first'
+	})
+	SelectFirstHit = SilentAura:CreateToggle({
+		Name = 'Select First Hit',
+		Darker = true,
+		Tooltip = 'Trigger mode: waits until an enemy hits you first'
+	})
+	IgnoreActivationClick = SilentAura:CreateToggle({
+		Name = 'Ignore Activation Click',
+		Default = true,
+		Darker = true,
+		Tooltip = 'With Require Mouse Down: first click only arms, does not fire'
+	})
+	AirCrits = SilentAura:CreateToggle({
+		Name = 'Air Crits',
+		Darker = true,
+		Tooltip = 'Skips attacks while airborne unless falling fast (BedWars has no crits; this is the closest match)'
+	})
+	ShieldCheck = SilentAura:CreateToggle({
+		Name = 'Shield Check',
+		Default = true,
+		Darker = true,
+		Tooltip = 'Skips targets with forcefields (BedWars shield equivalent)'
+	})
+	TargetMissChance = SilentAura:CreateSlider({
+		Name = 'Target Miss Chance',
+		Min = 0,
+		Max = 100,
+		Default = 0,
+		Darker = true,
+		Suffix = '%',
+		Tooltip = 'Chance to swing without dealing damage'
+	})
+	EarlyHitChance = SilentAura:CreateSlider({
+		Name = 'Early Hit Chance',
+		Min = 0,
+		Max = 100,
+		Default = 0,
+		Darker = true,
+		Suffix = '%',
+		Tooltip = 'Trigger mode: chance to fire before cooldown is ready'
+	})
+	ExtraSwingDistance = SilentAura:CreateSlider({
+		Name = 'Extra Swing Distance',
+		Min = 0,
+		Max = 10,
+		Default = 0,
+		Tooltip = 'Swing animation range beyond attack range'
+	})
+	MaxAngle = SilentAura:CreateSlider({
+		Name = 'Max Angle',
+		Min = 1,
+		Max = 360,
+		Default = 120,
+		Tooltip = 'How far off crosshair a target can be'
+	})
+	TargetMode = SilentAura:CreateDropdown({
+		Name = 'Target Mode',
+		List = {'Distance', 'Yaw', 'Armor', 'Threat', 'Health'},
+		Tooltip = 'How targets are prioritized'
+	})
+	TargetArea = SilentAura:CreateDropdown({
+		Name = 'Target Area',
+		List = {'Center', 'Closest'},
+		Tooltip = 'Center aims RootPart. Closest aims the nearest part.'
+	})
+	BreakBlocks = SilentAura:CreateToggle({
+		Name = 'Break Blocks',
+		Tooltip = 'Pauses while you are breaking blocks'
+	})
+	BreakDelay = SilentAura:CreateSlider({
+		Name = 'Break Blocks Delay',
+		Min = 0,
+		Max = 1,
+		Default = 0.3,
+		Decimal = 100,
+		Darker = true,
+		Tooltip = 'Wait after releasing before attacking again'
+	})
+	BreakWhitelist = SilentAura:CreateTextList({
+		Name = 'Break Blocks Whitelist',
+		Darker = true,
+		Visible = false,
+		Tooltip = 'Only pauses while holding these items (empty = always pause)'
+	})
+	RequireMouseDown = SilentAura:CreateToggle({
+		Name = 'Require Mouse Down',
+		Tooltip = 'Only attacks while holding left mouse'
+	})
+	DisableOnDeath = SilentAura:CreateToggle({
+		Name = 'Disable on Death',
+		Default = true,
+		Tooltip = 'Turns off when you die'
+	})
+	ShowTarget = SilentAura:CreateToggle({
+		Name = 'Show Target',
+		Tooltip = 'Highlights the current target'
+	})
+	TargetColor = SilentAura:CreateColorSlider({
+		Name = 'Target Color',
+		Darker = true,
+		Visible = false
+	})
+	AttackColor = SilentAura:CreateColorSlider({
+		Name = 'Attack Color',
+		Darker = true,
+		Visible = false
+	})
+	LimitToItems = SilentAura:CreateTextList({
+		Name = 'Limit to Items',
+		Darker = true,
+		Visible = false,
+		Tooltip = 'Only attacks while holding these items (empty = any)'
+	})
+	AttackRange = SilentAura:CreateSlider({
+		Name = 'Attack Range',
+		Min = 1,
+		Max = 30,
+		Default = 18,
+		Tooltip = 'Melee reach in studs'
+	})
+end)
+
+run(function()
+	local function placeUnder(cat, anchor, name)
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == cat and m.Name ~= name and m.Object then
+				list[#list + 1] = m
+			end
+		end
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == anchor then
+				order[#order + 1] = name
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = name
+		end
+		larp:ApplyModuleOrder(cat, order)
+	end
+	placeUnder('Combat', 'Reach', 'SilentAura')
+	larp:QueueSave()
 end)

@@ -20877,6 +20877,7 @@ run(function()
 	local MaxBlocks
 	local VoidCheck
 	local VoidHeight
+	local LegitSwitch
 	local adjacent = {}
 	for x = -3, 3, 3 do
 		for y = -3, 3, 3 do
@@ -20927,6 +20928,9 @@ run(function()
 	local function getClutchBlock()
 		if store.hand and store.hand.toolType == 'block' then
 			return store.hand.tool.Name
+		end
+		if LegitSwitch.Enabled then
+			return nil
 		end
 		local wool = getWool()
 		if wool then
@@ -21033,6 +21037,10 @@ run(function()
 		Darker = true,
 		Tooltip = 'Y level considered void'
 	})
+	LegitSwitch = Clutch:CreateToggle({
+		Name = 'Legit Switch',
+		Tooltip = 'Only places while holding blocks'
+	})
 
 	local function placeUnder(cat, anchor, name)
 		local list = {}
@@ -21066,6 +21074,8 @@ run(function()
 	local Fireball
 	local FallSpeed
 	local Cooldown
+	local PearlTiming
+	local FireballTiming
 	getgenv().LarpMLG = {pearls = 0, fireballs = 0}
 
 	local rayCheck = RaycastParams.new()
@@ -21106,13 +21116,15 @@ run(function()
 							if root then
 								rayCheck.FilterDescendantsInstances = {char.Character, gameCamera}
 								rayCheck.CollisionGroup = root.CollisionGroup
-								local vy = root.Velocity.Y
-								local noGround = not workspace:Raycast(root.Position, Vector3.new(0, -200, 0), rayCheck)
-								if vy < -FallSpeed.Value and noGround then
-									if not check and tick() > lastUse then
+							local vy = root.Velocity.Y
+							local down = workspace:Raycast(root.Position, Vector3.new(0, -300, 0), rayCheck)
+							local noGround = not down or down.Distance > 200
+							if vy < -FallSpeed.Value then
+								if not check and tick() > lastUse then
+									local pearl = Pearl.Enabled and getItem('telepearl') or nil
+									local fb = Fireball.Enabled and getItem('fireball') or nil
+									if noGround then
 										check = true
-										local pearl = Pearl.Enabled and getItem('telepearl') or nil
-										local fb = Fireball.Enabled and getItem('fireball') or nil
 										local ground = pearl and getNearGround(7) or nil
 										if pearl and ground then
 											lastUse = tick() + Cooldown.Value
@@ -21121,10 +21133,22 @@ run(function()
 											lastUse = tick() + Cooldown.Value
 											throwFireball(root.Position - Vector3.new(0, 2, 0), fb)
 										end
+									elseif down then
+										local t = down.Distance / math.max(1, -vy)
+										if pearl and t <= PearlTiming.Value then
+											check = true
+											lastUse = tick() + Cooldown.Value
+											throwPearl(root.Position, down.Position, pearl)
+										elseif fb and t <= FireballTiming.Value then
+											check = true
+											lastUse = tick() + Cooldown.Value
+											throwFireball(root.Position - Vector3.new(0, 2, 0), fb)
+										end
 									end
-								else
-									check = false
 								end
+							else
+								check = false
+							end
 							end
 						end
 						task.wait(0.1)
@@ -21132,17 +21156,37 @@ run(function()
 				end)
 			end
 		end,
-		Tooltip = 'Saves you from falling into the void\nwith a pearl or fireball.'
+		Tooltip = 'Saves you from void falls and negates\nfall damage with a timed pearl or fireball.'
 	})
 	Pearl = MLG:CreateToggle({
 		Name = 'Pearl',
 		Default = true,
-		Tooltip = 'Throws a pearl onto nearby ground'
+		Tooltip = 'Pearls onto the ground to stop your fall'
 	})
 	Fireball = MLG:CreateToggle({
 		Name = 'Fireball',
 		Default = true,
-		Tooltip = 'Throws a fireball below you when no pearl'
+		Tooltip = 'Fireballs yourself to negate fall damage'
+	})
+	PearlTiming = MLG:CreateSlider({
+		Name = 'Pearl Timing',
+		Min = 0.1,
+		Max = 1.5,
+		Default = 0.6,
+		Decimal = 100,
+		Suffix = 's',
+		Darker = true,
+		Tooltip = 'Throw the pearl this long before impact'
+	})
+	FireballTiming = MLG:CreateSlider({
+		Name = 'Fireball Timing',
+		Min = 0.05,
+		Max = 1,
+		Default = 0.3,
+		Decimal = 100,
+		Suffix = 's',
+		Darker = true,
+		Tooltip = 'Throw the fireball this long before impact'
 	})
 	FallSpeed = MLG:CreateSlider({
 		Name = 'Fall Speed',

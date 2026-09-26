@@ -32,15 +32,32 @@ local function downloadFile(path, func)
 end
 
 larp.Place = 6872274481
-if isfile('LarpV4/games/'..larp.Place..'.lua') then
-	loadstring(readfile('LarpV4/games/'..larp.Place..'.lua'), 'bedwars')()
-else
-	if not shared.LarpDeveloper then
+do
+	local gamePath = 'LarpV4/games/'..larp.Place..'.lua'
+	if isfile(gamePath) then
+		local okRead, cached = pcall(readfile, gamePath)
+		if not okRead or not cached or #cached < 100 or cached:sub(1, #LARPWATER) ~= LARPWATER then
+			pcall(delfile, gamePath)
+		end
+	end
+	local ok = false
+	if isfile(gamePath) then
+		ok = pcall(function()
+			loadstring(readfile(gamePath), 'bedwars')()
+		end)
+		if not ok then
+			pcall(delfile, gamePath)
+		end
+	end
+	if not ok and not shared.LarpDeveloper then
 		local suc, res = pcall(function()
 			return game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..LARPCOMMIT..'/games/'..larp.Place..'.lua?v='..LARPCOMMIT, true)
 		end)
 		if suc and res ~= '404: Not Found' then
-			loadstring(downloadFile('LarpV4/games/'..larp.Place..'.lua'), 'bedwars')()
+			pcall(writefile, gamePath, LARPWATER..res)
+			pcall(function()
+				loadstring(LARPWATER..res, 'bedwars')()
+			end)
 		end
 	end
 end

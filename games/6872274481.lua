@@ -4752,6 +4752,323 @@ run(function()
 end)
 
 run(function()
+	local Aura
+	local Targets
+	local IgnoreInvis
+	local LimitItems
+	local SwingOnly
+	local SwingRange
+	local AttackRange
+	local HitReg
+	local SwingAnim
+	local MaxAngle
+	local SwingTime
+	local AFKCheck
+
+	local SwordController, EntityUtil
+	local realSwing
+	local lastInput = os.clock()
+	local lastAnim = 0
+	local lastSwing = 0
+	local inputConns = {}
+
+	local function resolveEntityUtil()
+		local ok, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
+		if ok and mod and mod.EntityUtil then
+			return mod.EntityUtil
+		end
+		for _, v in getgc(true) do
+			if type(v) == 'table' and rawget(v, 'getLocalPlayerEntity') and rawget(v, 'getAliveEnemyEntityInstances') then
+				return v
+			end
+		end
+	end
+
+	local function toGameEntity(ent)
+		if not EntityUtil or not ent then return end
+		local e = ent.Character and EntityUtil:getEntity(ent.Character)
+		if not e then
+			e = ent.RootPart and ent.RootPart.Parent and EntityUtil:getEntity(ent.RootPart.Parent)
+		end
+		return e
+	end
+
+	local function getHandSword()
+		if not SwordController or not SwordController.getHandItem then return nil, nil end
+		local hand = SwordController:getHandItem()
+		if not hand or not hand.itemType then return nil, nil end
+		local meta = bedwars.ItemMeta and bedwars.ItemMeta[hand.itemType]
+		return hand, (meta and meta.sword) or nil
+	end
+
+	local function getInterval()
+		local hits = tonumber(getgenv().LarpHitRegOverride) or tonumber(HitReg.Value) or 34
+		if hits <= 0 then hits = 34 end
+		return math.max(10 / hits, 0.05)
+	end
+
+	local function stopSwingTracks(char, adjust)
+		local hum = char and char:FindFirstChildOfClass('Humanoid')
+		local animator = hum and hum:FindFirstChildOfClass('Animator')
+		if not animator then return end
+		for _, tr in ipairs(animator:GetPlayingAnimationTracks()) do
+			local n = (tr.Name or ''):lower()
+			if n:find('swing') or n:find('attack') or n:find('slash') then
+				if adjust then
+					pcall(tr.AdjustSpeed, tr, 1.6)
+				else
+					pcall(tr.Stop, tr, 0)
+				end
+			end
+		end
+	end
+
+	local function playSwing()
+		if not SwordController then return end
+		local hand = SwordController.getHandItem and SwordController:getHandItem()
+		local meta = hand and hand.itemType and bedwars.ItemMeta and bedwars.ItemMeta[hand.itemType]
+		if not meta then return end
+		local char = entitylib.character and entitylib.character.Character
+		stopSwingTracks(char, false)
+		pcall(SwordController.playSwordEffect, SwordController, meta, false, {
+			playAnimation = true,
+			playSound = true
+		})
+		stopSwingTracks(char, true)
+	end
+
+	local function isInvisible(ent)
+		local char = ent.Character
+		if not char then return false end
+		local total, hidden = 0, 0
+		for _, part in char:GetChildren() do
+			if part:IsA('BasePart') and part.Name ~= 'HumanoidRootPart' then
+				total += 1
+				if part.Transparency >= 0.9 or part.LocalTransparencyModifier >= 0.9 then
+					hidden += 1
+				end
+			end
+		end
+		return total > 0 and hidden >= total * 0.6
+	end
+
+	local function valid(ent, selfpos, facing, halfangle, range)
+		if ent.Player and not Targets.Players.Enabled then return false end
+		if ent.NPC and not Targets.NPCs.Enabled then return false end
+		if not ent.Targetable then return false end
+		if not entitylib.isVulnerable(ent) then return false end
+		local rp = ent.RootPart
+		if not rp or not rp.Position then return false end
+		local delta = rp.Position - selfpos
+		if delta.Magnitude > range then return false end
+		local flat = delta * Vector3.new(1, 0, 1)
+		if halfangle < math.pi * 2 and flat.Magnitude > 0.01 then
+			if math.acos(math.clamp(facing:Dot(flat.Unit), -1, 1)) > halfangle then return false end
+		end
+		if Targets.Walls.Enabled and entitylib.Wallcheck(selfpos, rp.Position) then return false end
+		if IgnoreInvis.Enabled and isInvisible(ent) then return false end
+		return true
+	end
+
+	local function pickTarget(range)
+		local char = entitylib.character
+		if not char or not char.HumanoidRootPart or not char.RootPart then return nil end
+		local selfpos = char.HumanoidRootPart.Position
+		local facing = char.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+		local halfangle = MaxAngle.Value >= 360 and math.pi * 2 or math.rad(MaxAngle.Value) / 2
+		local best, bestDist
+		for _, ent in entitylib.List do
+			if valid(ent, selfpos, facing, halfangle, range) then
+				local d = (ent.RootPart.Position - selfpos).Magnitude
+				if not bestDist or d < bestDist then
+					best, bestDist = ent, d
+				end
+			end
+		end
+		return best
+	end
+
+	local function attack(ent, base)
+		if not SwordController then return end
+		local e = toGameEntity(ent)
+		if not e then return end
+		if SwingAnim.Enabled then
+			local st = SwingTime.Value or 0
+			if st <= 0 or os.clock() - lastAnim >= st then
+				lastAnim = os.clock()
+				playSwing()
+			end
+		end
+		store.killauraAttacking = true
+		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = base })
+		task.spawn(function()
+			task.wait(0.02)
+			if SwordController and ent and entitylib.isVulnerable(ent) then
+				pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = base + 0.02 })
+			end
+			store.killauraAttacking = false
+		end)
+		if ok then
+			if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
+			store.lastHit = os.clock()
+			store.meleeHit = os.clock()
+		end
+	end
+
+	local function canAttack()
+		if not entitylib.isAlive then return false end
+		if bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then return false end
+		if AFKCheck.Enabled and os.clock() - lastInput >= 30 then return false end
+		if LimitItems.Enabled then
+			local _, sword = getHandSword()
+			if not sword then return false end
+		end
+		return true
+	end
+
+	Aura = larp.Categories.Blatant:CreateModule({
+		Name = 'Kill Aura (Rewrite)',
+		Function = function(callback)
+			if callback then
+				SwordController = bedwars.SwordController
+				EntityUtil = resolveEntityUtil()
+				lastInput = os.clock()
+				lastSwing = 0
+				for _, c in inputConns do pcall(function() c:Disconnect() end) end
+				table.clear(inputConns)
+				inputConns[1] = inputService.InputBegan:Connect(function() lastInput = os.clock() end)
+				inputConns[2] = inputService.InputChanged:Connect(function() lastInput = os.clock() end)
+				realSwing = SwordController.swingSwordInRegion
+				SwordController.swingSwordInRegion = function(self, ...)
+					if SwingOnly.Enabled and canAttack() then
+						local target = pickTarget(SwingRange.Value)
+						if target then
+							store.KillauraTarget = target
+							if os.clock() - lastSwing >= getInterval() then
+								lastSwing = os.clock()
+								attack(target, workspace:GetServerTimeNow())
+							end
+							return true
+						end
+					end
+					return realSwing(self, ...)
+				end
+				local nextFire = os.clock()
+				repeat
+					local iv = getInterval()
+					if canAttack() then
+						if SwingOnly.Enabled then
+							store.KillauraTarget = pickTarget(SwingRange.Value)
+							task.wait(0.01)
+						else
+							local target = pickTarget(AttackRange.Value)
+							if target then
+								store.KillauraTarget = target
+								if os.clock() >= nextFire then
+									attack(target, workspace:GetServerTimeNow())
+									nextFire = nextFire + iv
+									if nextFire < os.clock() then nextFire = os.clock() + iv end
+								end
+								local waitFor = nextFire - os.clock()
+								if waitFor > 0.004 then task.wait(waitFor) else task.wait() end
+							else
+								store.KillauraTarget = nil
+								nextFire = os.clock() + iv
+								task.wait(math.min(iv, 0.15))
+							end
+						end
+					else
+						store.KillauraTarget = nil
+						nextFire = os.clock() + iv
+						task.wait(math.min(iv, 0.15))
+					end
+				until not Aura.Enabled
+			else
+				store.KillauraTarget = nil
+				store.killauraAttacking = false
+				for _, c in inputConns do pcall(function() c:Disconnect() end) end
+				table.clear(inputConns)
+				if realSwing and SwordController then
+					SwordController.swingSwordInRegion = realSwing
+				end
+				realSwing = nil
+				SwordController = nil
+				EntityUtil = nil
+			end
+		end,
+		Tooltip = 'Attack players around you, without aiming at them.'
+	})
+	Targets = Aura:CreateTargets({
+		Players = true,
+		NPCs = true
+	})
+	IgnoreInvis = Aura:CreateToggle({
+		Name = 'Ignore invisible',
+		Tooltip = 'Skips players hidden by an invisibility potion'
+	})
+	LimitItems = Aura:CreateToggle({
+		Name = 'Limit to items',
+		Tooltip = 'Only attacks while a sword is held'
+	})
+	SwingOnly = Aura:CreateToggle({
+		Name = 'Swing only',
+		Tooltip = 'Only hits when you swing, redirecting the swing onto nearby targets'
+	})
+	SwingRange = Aura:CreateSlider({
+		Name = 'Swing range',
+		Min = 1,
+		Max = 45,
+		Default = 18,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Range where a swing redirects onto a target'
+	})
+	AttackRange = Aura:CreateSlider({
+		Name = 'Attack range',
+		Min = 1,
+		Max = 60,
+		Default = 30,
+		Decimal = 10,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end,
+		Tooltip = 'Range where hits land. Reach is spoofed to the weapon max so the highest values still register'
+	})
+	HitReg = Aura:CreateDropdown({
+		Name = 'Hit reg',
+		List = {'33', '34', '35'},
+		Default = '34',
+		Tooltip = 'Landed hits per 10 seconds. Auto 34, or set 33 / 35'
+	})
+	SwingAnim = Aura:CreateToggle({
+		Name = 'Swing animation',
+		Default = true,
+		Tooltip = 'Plays a fast sword swing so it looks legit'
+	})
+	MaxAngle = Aura:CreateSlider({
+		Name = 'Max angle',
+		Min = 1,
+		Max = 360,
+		Default = 360,
+		Tooltip = 'Maximum angle between your view and the target'
+	})
+	SwingTime = Aura:CreateSlider({
+		Name = 'Swing time',
+		Min = 0,
+		Max = 0.6,
+		Default = 0,
+		Decimal = 100,
+		Suffix = 'seconds',
+		Tooltip = 'Minimum seconds between swing visuals. 0 = auto (best)'
+	})
+	AFKCheck = Aura:CreateToggle({
+		Name = 'AFK check',
+		Tooltip = 'Stops swinging after 30 seconds without input'
+	})
+end)
+
+run(function()
 	local HitRegAdjuster
 	local Amount
 	HitRegAdjuster = larp.Categories.Combat:CreateModule({

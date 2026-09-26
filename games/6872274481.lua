@@ -1313,8 +1313,17 @@ run(function()
 		BlockEngine = require(lplr.PlayerScripts.TS.lib['block-engine']['client-block-engine']).ClientBlockEngine,
 		BlockPlacer = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['block-engine'].out.client.placement['block-placer']).BlockPlacer,
 		BowConstantsTable = (function()
-			local ok, v = pcall(debug.getupvalue, Knit.Controllers.ProjectileController.enableBeam, 8)
-			if ok and type(v) == 'table' then return v end
+			local ok, tbl = pcall(function()
+				local pcs = lplr.PlayerScripts.TS.controllers.global.combat.projectile['projectile-controller']
+				return {
+					RelX = pcs:GetAttribute('ConstantManager_RelX') or 0,
+					RelY = pcs:GetAttribute('ConstantManager_RelY') or 0,
+					RelZ = pcs:GetAttribute('ConstantManager_RelZ') or 0,
+				}
+			end)
+			if ok and type(tbl) == 'table' then return tbl end
+			local ok2, v = pcall(debug.getupvalue, Knit.Controllers.ProjectileController.enableBeam, 8)
+			if ok2 and type(v) == 'table' then return v end
 			return {RelX = 0, RelY = 0, RelZ = 0}
 		end)(),
 		BlockSelector = require(replicatedStorage.rbxts_include.node_modules['@easy-games']['block-engine'].out.client.select['block-selector']).BlockSelector,

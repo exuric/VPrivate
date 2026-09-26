@@ -4672,6 +4672,7 @@ run(function()
 	local DistanceLimit
 	local Device
 	local HealthBar
+	local Armor
 	local Strings, Sizes, Reference = {}, {}, {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
@@ -4757,6 +4758,18 @@ run(function()
 		DeviceCache[userId] = {icon = icon, at = tick()}
 		return icon
 	end
+
+	local function armorCount(ent)
+		local model = ent.Character
+		if not model then return 0 end
+		local folder = model:FindFirstChild('Armor')
+		if not folder then return 0 end
+		local n = 0
+		for _, c in folder:GetChildren() do
+			if c:IsA('Model') then n += 1 end
+		end
+		return n
+	end
 	
 	local Added = {
 		Normal = function(ent)
@@ -4772,6 +4785,13 @@ run(function()
 		if Health.Enabled then
 			local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
 			Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(healthColor.R * 255))..','..tostring(math.floor(healthColor.G * 255))..','..tostring(math.floor(healthColor.B * 255))..')">'..math.round(ent.Health)..'</font>'
+		end
+
+		if Armor.Enabled then
+			local ac = armorCount(ent)
+			if ac > 0 then
+				Strings[ent] = Strings[ent]..' <font color="rgb(150,200,255)">[A'..ac..'/6]</font>'
+			end
 		end
 	
 			if Distance.Enabled then
@@ -4844,11 +4864,18 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 		if Health.Enabled then
 			Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
 		end
-	
+
+		if Armor.Enabled then
+			local ac = armorCount(ent)
+			if ac > 0 then
+				Strings[ent] = Strings[ent]..' [A'..ac..'/6]'
+			end
+		end
+
 			if Distance.Enabled then
 				Strings[ent] = '[%s] '..Strings[ent]
 			end
-	
+
 			nametag.Text.Text = Strings[ent]
 			nametag.Text.Color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
@@ -4912,6 +4939,13 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayNa
 					local color = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
 					Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(color.R * 255))..','..tostring(math.floor(color.G * 255))..','..tostring(math.floor(color.B * 255))..')">'..math.round(ent.Health)..'</font>'
 				end
+
+				if Armor.Enabled then
+					local ac = armorCount(ent)
+					if ac > 0 then
+						Strings[ent] = Strings[ent]..' <font color="rgb(150,200,255)">[A'..ac..'/6]</font>'
+					end
+				end
 	
 				if Distance.Enabled then
 					Strings[ent] = '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> '..Strings[ent]
@@ -4934,7 +4968,14 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 				if Health.Enabled then
 					Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
 				end
-	
+
+				if Armor.Enabled then
+					local ac = armorCount(ent)
+					if ac > 0 then
+						Strings[ent] = Strings[ent]..' [A'..ac..'/6]'
+					end
+				end
+
 				if Distance.Enabled then
 					Strings[ent] = '[%s] '..Strings[ent]
 					nametag.Text.Text = entitylib.isAlive and string.format(Strings[ent], math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude)) or Strings[ent]
@@ -5185,6 +5226,16 @@ Strings[ent] = (ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Ena
 			end
 		end,
 		Tooltip = 'Vertical health bar to the left of the name'
+	})
+	Armor = NameTags:CreateToggle({
+		Name = 'Armor',
+		Function = function()
+			if NameTags.Enabled then
+				NameTags:Toggle()
+				NameTags:Toggle()
+			end
+		end,
+		Tooltip = 'Shows equipped armor pieces'
 	})
 	Distance = NameTags:CreateToggle({
 		Name = 'Distance',

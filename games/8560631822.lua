@@ -20185,6 +20185,10 @@ run(function()
 				pcall(SwordController.sendServerRequest, SwordController, e, 0, {swingStartTime = baseTime + 0.02})
 			end
 		end)
+		return ok
+	end
+end)
+
 run(function()
 	local function placeUnder(cat, anchor, name)
 		local list = {}

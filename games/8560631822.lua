@@ -4793,36 +4793,6 @@ run(function()
 		return math.max(10 / hits, 0.05)
 	end
 
-	local function stopSwingTracks(char, adjust)
-		local hum = char and char:FindFirstChildOfClass('Humanoid')
-		local animator = hum and hum:FindFirstChildOfClass('Animator')
-		if not animator then return end
-		for _, tr in ipairs(animator:GetPlayingAnimationTracks()) do
-			local n = (tr.Name or ''):lower()
-			if n:find('swing') or n:find('attack') or n:find('slash') then
-				if adjust then
-					pcall(tr.AdjustSpeed, tr, 1.6)
-				else
-					pcall(tr.Stop, tr, 0)
-				end
-			end
-		end
-	end
-
-	local function playSwing()
-		if not SwordController then return end
-		local hand = SwordController.getHandItem and SwordController:getHandItem()
-		local meta = hand and hand.itemType and bedwars.ItemMeta and bedwars.ItemMeta[hand.itemType]
-		if not meta then return end
-		local char = entitylib.character and entitylib.character.Character
-		stopSwingTracks(char, false)
-		pcall(SwordController.playSwordEffect, SwordController, meta, false, {
-			playAnimation = true,
-			playSound = true
-		})
-		stopSwingTracks(char, true)
-	end
-
 	local function isInvisible(ent)
 		local char = ent.Character
 		if not char then return false end
@@ -4874,26 +4844,32 @@ run(function()
 		return best
 	end
 
-	local function attack(ent, base)
+	local function attack(ent)
 		if not SwordController then return end
 		local e = toGameEntity(ent)
 		if not e then return end
-		if SwingAnim.Enabled then
+		local animate = SwingAnim.Enabled
+		if animate then
 			local st = SwingTime.Value or 0
-			if st <= 0 or os.clock() - lastAnim >= st then
+			if st > 0 and os.clock() - lastAnim < st then
+				animate = false
+			else
 				lastAnim = os.clock()
-				playSwing()
 			end
 		end
 		store.killauraAttacking = true
-		local ok = pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = base })
-		task.spawn(function()
-			task.wait(0.02)
-			if SwordController and ent and entitylib.isVulnerable(ent) then
-				pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = base + 0.02 })
-			end
-			store.killauraAttacking = false
+		local constants = bedwars.CombatConstant
+		local prevReach = constants and constants.RAYCAST_SWORD_CHARACTER_DISTANCE
+		if constants then
+			constants.RAYCAST_SWORD_CHARACTER_DISTANCE = math.max(prevReach or 14.4, AttackRange.Value + 2)
+		end
+		local ok = pcall(function()
+			return SwordController:attackEntity(e, nil, nil, { playAnimation = animate, playSound = animate })
 		end)
+		if constants then
+			constants.RAYCAST_SWORD_CHARACTER_DISTANCE = prevReach
+		end
+		store.killauraAttacking = false
 		if ok then
 			if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 			store.lastHit = os.clock()
@@ -4932,7 +4908,7 @@ run(function()
 							store.KillauraTarget = target
 							if os.clock() - lastSwing >= getInterval() then
 								lastSwing = os.clock()
-								attack(target, workspace:GetServerTimeNow())
+								attack(target)
 							end
 							return true
 						end
@@ -4951,7 +4927,7 @@ run(function()
 							if target then
 								store.KillauraTarget = target
 								if os.clock() >= nextFire then
-									attack(target, workspace:GetServerTimeNow())
+									attack(target)
 									nextFire = nextFire + iv
 									if nextFire < os.clock() then nextFire = os.clock() + iv end
 								end

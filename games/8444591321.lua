@@ -40,12 +40,14 @@ do
 			pcall(delfile, gamePath)
 		end
 	end
-	local ok = false
+	local ok, errm = false, 'no cache'
 	if isfile(gamePath) then
-		ok = pcall(function()
+		local pok, perr = pcall(function()
 			loadstring(readfile(gamePath), 'bedwars')()
 		end)
-		if not ok then
+		ok = pok
+		if not pok then
+			errm = 'cache load: '..tostring(perr)
 			pcall(delfile, gamePath)
 		end
 	end
@@ -55,9 +57,18 @@ do
 		end)
 		if suc and res ~= '404: Not Found' then
 			pcall(writefile, gamePath, LARPWATER..res)
-			pcall(function()
+			local pok, perr = pcall(function()
 				loadstring(LARPWATER..res, 'bedwars')()
 			end)
+			ok = pok
+			errm = pok and '' or 'fresh load: '..tostring(perr)
+		else
+			errm = 'download: '..tostring(res):sub(1, 60)
 		end
+	end
+	if not ok then
+		pcall(function()
+			larp:CreateNotification('Larp', 'BedWars script failed: '..tostring(errm):sub(1, 90), 30, 'alert')
+		end)
 	end
 end

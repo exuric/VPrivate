@@ -120,6 +120,23 @@ local function downloadFile(path, func)
 			if not ok or type(fn) ~= 'function' then outdated = true end
 		end
 	end
+	-- Stale watermark (commit bumped) but the bytes on disk may be identical to the
+	-- new release. Hash the stripped body against the fresh manifest; on a match,
+	-- rewrite only the watermark locally and skip the network entirely. This is what
+	-- stops a commit bump from redownloading files that never actually changed.
+	if outdated and hash and isfile(path) and path:find('%.lua$') then
+		local relative = select(1, path:gsub('LarpV4/', ''))
+		local expected = MANIFEST[relative]
+		if expected then
+			local okh, digest = pcall(fileDigest, path)
+			if okh and digest == expected then
+				local cached = readfile(path)
+				local i = cached:find('\n')
+				pcall(writefile, path, LARPWATER..(i and cached:sub(i + 1) or cached))
+				outdated = false
+			end
+		end
+	end
 	if outdated then
 		if not license.Closet then
 			downloader.Text = 'Downloading '.. select(1, path:gsub('LarpV4/', ''))
@@ -423,21 +440,6 @@ end
 
 downloader.Text = ''
 
-local function wipeFolder(path)
-	if not isfolder(path) then return end
-	for _, file in listfiles(path) do
-		if file:find('init') then continue end
-		if file:find('profile') then continue end
-		if file:find('assets') then continue end
-		if isfile(file) then
-			delfile(file)
-		elseif isfolder(file) then
-			wipeFolder(file)
-		end
-	end
-end
-
-
 for _, folder in {'LarpV4', 'LarpV4/games', 'LarpV4/profiles', 'LarpV4/assets', 'LarpV4/libraries', 'LarpV4/guis'} do
 	if not isfolder(folder) then
 		downloader.Text = 'Downloading '.. (folder:gsub('^LarpV4/', 'LarpV4/'))
@@ -452,18 +454,17 @@ if not (shared.LarpDeveloper and ISOWNER) then
 			shared.updated = stored
 		end
 		writefile('LarpV4/profiles/commit.txt', COMMIT)
-		pcall(delfile, 'LarpV4/main.lua')
-		pcall(delfile, 'LarpV4/guis/larp.lua')
-		pcall(delfile, 'LarpV4/guis/larp2.lua')
+		-- Legacy flat-layout files from old releases -- one-time cleanup only. We do
+		-- NOT wipe the current subfolder layout on a commit bump anymore: verifyFiles()
+		-- and downloadFile() hash every file against the fresh manifest, so an unchanged
+		-- file persists across the bump instead of being redownloaded, while a genuinely
+		-- changed file fails the hash and is refetched. The new commit invalidates every
+		-- watermark, so an update always reaches the hash check -- nothing caches stale.
 		for _, file in {'LarpV4/6872274481.lua', 'LarpV4/8444591321.lua', 'LarpV4/100702124803290.lua', 'LarpV4/universal.lua', 'LarpV4/entity.lua', 'LarpV4/prediction.lua', 'LarpV4/hash.lua', 'LarpV4/larp2.lua', 'LarpV4/larp.lua'} do
 			if isfile(file) then
 				pcall(delfile, file)
 			end
 		end
-		wipeFolder('LarpV4/games')
-		wipeFolder('LarpV4/guis')
-		wipeFolder('LarpV4/libraries')
-		wipeFolder('LarpV4/assets')
 	end
 	writefile('LarpV4/.version', '122')
 	if #listfiles('LarpV4/profiles') < 4 then

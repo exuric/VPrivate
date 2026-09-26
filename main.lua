@@ -296,14 +296,20 @@ task.spawn(function()
 				local ok, err = pcall(function()
 					loadstring(downloadFile(gamePath), tostring(game.PlaceId))(license)
 				end)
-				if not ok then
-					local msg = tostring(err or '')
-					if msg:find('404') or msg:find('Not Found') then
-						pcall(function()
-							larp:CreateNotification('LarpV4', 'No script for this game (PlaceId '..game.PlaceId..')', 6, 'alert')
-						end)
-					end
+			if not ok then
+				local msg = tostring(err or '')
+				local loaded = false
+				if game.GameId == 2619619496 and game.PlaceId ~= 6872274481 then
+					loaded = pcall(function()
+						loadstring(downloadFile('LarpV4/games/6872274481.lua'), 'bedwars')(license)
+					end)
 				end
+				if not loaded then
+					pcall(function()
+						larp:CreateNotification('LarpV4', 'No script for this game (PlaceId '..game.PlaceId..')', 6, 'alert')
+					end)
+				end
+			end
 			end
 			task.wait()
 			finishLoading()

@@ -12,6 +12,7 @@ local larp = shared.larp or getgenv().larp or _G.larp
 local entitylib = larp.Libraries.entity
 
 local AttackRemote = replicatedStorage:WaitForChild('Remotes'):WaitForChild('Attack')
+local PlaySoundRemote = replicatedStorage:WaitForChild('Remotes'):WaitForChild('PlaySound')
 getgenv().LarpSFP = {swings = 0, reachHooks = 0}
 
 local function currentHitMod()
@@ -42,6 +43,35 @@ run(function()
 	local CPS
 	local Range
 	local Targets
+	local swingTracks, swingChar, swingSide = nil, nil, 0
+	local function playSwing()
+		local char = entitylib.character and entitylib.character.Character
+		if not char then return end
+		local hum = char:FindFirstChildOfClass('Humanoid')
+		local animator = hum and hum:FindFirstChildOfClass('Animator')
+		if not animator then return end
+		if swingChar ~= char or not swingTracks then
+			swingChar = char
+			swingTracks = {}
+			local inp = lplr.PlayerGui:FindFirstChild('InputHandling')
+			local scr = inp and inp:FindFirstChild('Input')
+			for _, nm in {'Hit', 'HitLeft'} do
+				local src = scr and scr:FindFirstChild(nm)
+				if src and src:IsA('Animation') then
+					local ok, t = pcall(animator.LoadAnimation, animator, src)
+					if ok and t then
+						t.Priority = Enum.AnimationPriority.Action
+						t.Looped = false
+						swingTracks[nm] = t
+					end
+				end
+			end
+		end
+		swingSide = 1 - swingSide
+		local t = swingSide == 1 and swingTracks.Hit or swingTracks.HitLeft
+		if t then pcall(function() t:Stop(0) t:Play(0, 1, 1) end) end
+		pcall(function() PlaySoundRemote:Fire('SwordSwing', 1) end)
+	end
 	KillAura = larp.Categories.Combat:CreateModule({
 		Name = 'KillAura',
 		Function = function(callback)
@@ -71,6 +101,7 @@ run(function()
 											local okH, _, part = pcall(hm.GetHit, selfpos, unit, {model}, Range.Value)
 											if okH and part then
 												getgenv().LarpSFP.swings += 1
+												playSwing()
 												pcall(function() AttackRemote:FireServer(unit, part) end)
 											end
 										end
@@ -89,7 +120,7 @@ run(function()
 		Name = 'CPS',
 		Min = 1,
 		Max = 15,
-		Default = 7,
+		Default = 5,
 		Tooltip = 'Attacks per second'
 	})
 	Range = KillAura:CreateSlider({

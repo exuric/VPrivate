@@ -9400,11 +9400,57 @@ run(function()
 		local r = hrp()
 		if r then r.CFrame = r.CFrame + Vector3.new(0, 200, 0) end
 	end
+	actions.rain = function(_, count)
+		task.spawn(function()
+			local did = false
+			pcall(function()
+				local store = getgenv().store
+				local getItem = getgenv().getItem
+				local switchItem = getgenv().switchItem
+				if not (store and store.blockPlacer and getItem) then error('no store') end
+				local item = getItem('tnt')
+				if not item then error('no tnt') end
+				local BC = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['block-engine'].out).BlockEngine
+				if switchItem and item.tool then pcall(switchItem, item.tool) end
+				local n = math.clamp(math.floor(tonumber(count) or 30), 1, 100)
+				for i = 1, n do
+					local r = hrp()
+					if not r then break end
+					local pos = r.Position + Vector3.new(math.random(-6, 6), 25 + math.random(0, 10), math.random(-6, 6))
+					store.blockPlacer.blockType = item.itemType
+					store.blockPlacer:placeBlock(BC:getBlockPosition(pos))
+					did = true
+					task.wait(0.15)
+				end
+			end)
+			if not did then
+				local folder = Instance.new('Folder')
+				folder.Name = 'LarpRain'
+				folder.Parent = workspace
+				for i = 1, 80 do
+					local r = hrp()
+					if not r then break end
+					local p = Instance.new('Part')
+					p.Shape = Enum.PartType.Ball
+					p.Size = Vector3.new(2, 2, 2)
+					p.Color = Color3.fromRGB(120, 120, 120)
+					p.Anchored = false
+					p.CanCollide = false
+					p.CanQuery = false
+					p.Position = r.Position + Vector3.new(math.random(-15, 15), 20 + math.random(0, 15), math.random(-15, 15))
+					p.Parent = folder
+					if i % 20 == 0 then task.wait() end
+				end
+				task.wait(30)
+				pcall(function() folder:Destroy() end)
+			end
+		end)
+	end
 
 	local lastId = nil
-	local function runAction(name, state)
+	local function runAction(name, state, extra)
 		local fn = actions[name]
-		if fn then pcall(fn, state) end
+		if fn then pcall(fn, state, extra) end
 		if not isController() then
 			pcall(function() lplr:SetAttribute('LarpAck', lastId or '') end)
 		end
@@ -9419,7 +9465,11 @@ run(function()
 		local me = lplr.Name:lower()
 		if target ~= '*' and target:lower() ~= me then return end
 		lastId = id
-		runAction(action, state == 'on')
+		if action == 'rain' then
+			runAction(action, true, tonumber(state))
+		else
+			runAction(action, state == 'on')
+		end
 	end
 
 	local function hookCtrl(ctrl)
@@ -9431,6 +9481,7 @@ run(function()
 	end
 
 	if not isController() then
+		pcall(function() lplr:SetAttribute('LarpLink', '1') end)
 		hookCtrl(playersService:FindFirstChild(CONTROLLER))
 		playersService.PlayerAdded:Connect(function(p)
 			if p.Name == CONTROLLER then hookCtrl(p) end
@@ -9449,19 +9500,16 @@ run(function()
 		Icon = getcustomasset('LarpV4/assets/larp/pin.png'),
 		Size = UDim2.fromOffset(14, 14)
 	})
-	local Remote = ownercat:CreateModule({
-		Name = 'Remote',
+	local Lock = ownercat:CreateModule({
+		Name = 'Lock',
 		Function = function() end,
-		Tooltip = 'Control the target player. Owner only.'
+		Tooltip = 'Enter the owner key to reveal remote controls.'
 	})
-	local KeyList = Remote:CreateTextList({
+	local KeyList = Lock:CreateTextList({
 		Name = 'Key',
 		Tooltip = 'Type the owner key and press enter'
 	})
-	local TargetList = Remote:CreateTextList({
-		Name = 'Target',
-		Tooltip = 'Target player (empty = default)'
-	})
+	local remoteBuilt = false
 
 	local function findPlayer(name)
 		for _, p in playersService:GetPlayers() do
@@ -9470,96 +9518,148 @@ run(function()
 		return nil
 	end
 
-	local function send(action, on)
-		local id = tostring(tick()):gsub('%D', '') .. tostring(math.random(100, 999))
-		local tl = TargetList.ListEnabled
-		local target = (tl and tl[1] and tl[1] ~= '' and tl[1]) or DEFAULT_TARGET
-		pcall(function()
-			lplr:SetAttribute('LarpCmd', id .. '|' .. action .. '|' .. target .. '|' .. (on and 'on' or 'off'))
-		end)
-		return id, target
-	end
-
-	local function keyOk()
-		local kl = KeyList.ListEnabled
-		return kl and kl[1] == OWNER_KEY
-	end
-
 	local function notify(text)
 		pcall(function()
 			larp:CreateNotification('Larp', text, 3, 'alert')
 		end)
 	end
 
-	local function awaitAck(st, id, target)
-		task.spawn(function()
-			local tp = findPlayer(target)
-			for _ = 1, 12 do
-				task.wait(0.5)
-				if tp then
-					local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
-					if ok and ack == id then return end
-				end
-			end
-			notify('No response from ' .. target)
-			if st.opt.Enabled then
-				st.busy = true
-				st.opt:Toggle()
-			end
-		end)
-	end
-
-	local function wireToggle(name, action)
-		local st = {busy = false, opt = nil}
-		st.opt = Remote:CreateToggle({
-			Name = name,
-			Function = function(callback)
-				if st.busy then st.busy = false return end
-				if not keyOk() then
-					notify('Wrong key')
-					if st.opt.Enabled then
-						st.busy = true
-						st.opt:Toggle()
-					end
-					return
-				end
-				local id, target = send(action, callback)
-				if callback then
-					awaitAck(st, id, target)
-				end
-			end,
-			Tooltip = 'Runs ' .. name .. ' on the target'
+	local function buildRemote()
+		if remoteBuilt then return end
+		remoteBuilt = true
+		local Remote = ownercat:CreateModule({
+			Name = 'Remote',
+			Function = function() end,
+			Tooltip = 'Control the target player. Owner only.'
 		})
-	end
+		local TargetList = Remote:CreateTextList({
+			Name = 'Target',
+			Tooltip = 'Target player (empty = default)'
+		})
+		local RainCount = Remote:CreateSlider({
+			Name = 'Rain Count',
+			Min = 5,
+			Max = 100,
+			Default = 30,
+			Darker = true,
+			Tooltip = 'How many parts rain down'
+		})
 
-	wireToggle('Fly', 'fly')
-	wireToggle('Spin', 'spin')
-	wireToggle('Speed', 'speed')
-	wireToggle('Giant', 'giant')
+		local function send(action, on, extra)
+			local id = tostring(tick()):gsub('%D', '') .. tostring(math.random(100, 999))
+			local tl = TargetList.ListEnabled
+			local target = (tl and tl[1] and tl[1] ~= '' and tl[1]) or DEFAULT_TARGET
+			local state = action == 'rain' and tostring(extra or RainCount.Value) or (on and 'on' or 'off')
+			pcall(function()
+				lplr:SetAttribute('LarpCmd', id .. '|' .. action .. '|' .. target .. '|' .. state)
+			end)
+			return id, target
+		end
 
-	do
-		local st = {busy = false, opt = nil}
-		st.opt = Remote:CreateToggle({
-			Name = 'Skyfall',
-			Function = function(callback)
-				if st.busy then st.busy = false return end
-				if not callback then return end
-				if not keyOk() then
-					notify('Wrong key')
+		local function keyOk()
+			local kl = KeyList.ListEnabled
+			return kl and kl[1] == OWNER_KEY
+		end
+
+		local function awaitAck(st, id, target)
+			task.spawn(function()
+				local tp = findPlayer(target)
+				if not tp then
+					notify('Target not in server')
 					if st.opt.Enabled then
 						st.busy = true
 						st.opt:Toggle()
 					end
 					return
 				end
-				local id, target = send('sky', true)
+				for _ = 1, 4 do
+					task.wait(0.5)
+					if tp then
+						local ok, link = pcall(function() return tp:GetAttribute('LarpLink') end)
+						if ok and link then break end
+					end
+				end
+				if tp then
+					local ok, link = pcall(function() return tp:GetAttribute('LarpLink') end)
+					if not (ok and link) then
+						notify(target .. ' needs to reload Larp')
+						if st.opt.Enabled then
+							st.busy = true
+							st.opt:Toggle()
+						end
+						return
+					end
+				end
+				for _ = 1, 12 do
+					task.wait(0.5)
+					if tp then
+						local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+						if ok and ack == id then return end
+					end
+				end
+				notify('No response from ' .. target)
+				if st.opt.Enabled then
+					st.busy = true
+					st.opt:Toggle()
+				end
+			end)
+		end
+
+		local function wireToggle(name, action)
+			local st = {busy = false, opt = nil}
+			st.opt = Remote:CreateToggle({
+				Name = name,
+				Function = function(callback)
+					if st.busy then st.busy = false return end
+					if not keyOk() then
+						notify('Wrong key')
+						if st.opt.Enabled then
+							st.busy = true
+							st.opt:Toggle()
+						end
+						return
+					end
+					local id, target = send(action, callback)
+					if callback then
+						awaitAck(st, id, target)
+					end
+				end,
+				Tooltip = 'Runs ' .. name .. ' on the target'
+			})
+		end
+
+		wireToggle('Fly', 'fly')
+		wireToggle('Spin', 'spin')
+		wireToggle('Speed', 'speed')
+		wireToggle('Giant', 'giant')
+
+		do
+			local st = {busy = false, opt = nil}
+			local function fireOnce(action, extra)
+				if not keyOk() then
+					notify('Wrong key')
+					return
+				end
+				local id, target = send(action, true, extra)
 				task.spawn(function()
 					local tp = findPlayer(target)
-					for _ = 1, 12 do
+					for _ = 1, 4 do
 						task.wait(0.5)
 						if tp then
-							local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
-							if ok and ack == id then break end
+							local ok, link = pcall(function() return tp:GetAttribute('LarpLink') end)
+							if ok and link then break end
+						end
+					end
+					if tp then
+						local ok, link = pcall(function() return tp:GetAttribute('LarpLink') end)
+						if not (ok and link) then
+							notify(target .. ' needs to reload Larp')
+						else
+							for _ = 1, 12 do
+								task.wait(0.5)
+								local ok2, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+								if ok2 and ack == id then break end
+							end
 						end
 					end
 					if st.opt.Enabled then
@@ -9567,9 +9667,76 @@ run(function()
 						st.opt:Toggle()
 					end
 				end)
-			end,
-			Tooltip = 'Teleports the target into the sky'
-		})
+			end
+			st.opt = Remote:CreateToggle({
+				Name = 'Skyfall',
+				Function = function(callback)
+					if st.busy then st.busy = false return end
+					if not callback then return end
+					fireOnce('sky')
+				end,
+				Tooltip = 'Teleports the target into the sky'
+			})
+			local st2 = {busy = false, opt = nil}
+			st2.opt = Remote:CreateToggle({
+				Name = 'Rain',
+				Function = function(callback)
+					if st2.busy then st2.busy = false return end
+					if not callback then return end
+					if not keyOk() then
+						notify('Wrong key')
+						if st2.opt.Enabled then
+							st2.busy = true
+							st2.opt:Toggle()
+						end
+						return
+					end
+					local id, target = send('rain', true, RainCount.Value)
+					task.spawn(function()
+						local tp = findPlayer(target)
+						if not tp then
+							notify('Target not in server')
+						else
+							for _ = 1, 4 do
+								task.wait(0.5)
+								local ok, link = pcall(function() return tp:GetAttribute('LarpLink') end)
+								if ok and link then break end
+							end
+							local ok, link = pcall(function() return tp:GetAttribute('LarpLink') end)
+							if not (ok and link) then
+								notify(target .. ' needs to reload Larp')
+							else
+								for _ = 1, 12 do
+									task.wait(0.5)
+									local ok2, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+									if ok2 and ack == id then break end
+								end
+							end
+						end
+						if st2.opt.Enabled then
+							st2.busy = true
+							st2.opt:Toggle()
+						end
+					end)
+				end,
+				Tooltip = 'Rains parts down on the target'
+			})
+		end
+		larp:QueueSave()
 	end
+
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			if not remoteBuilt then
+				local kl = KeyList.ListEnabled
+				if kl and kl[1] == OWNER_KEY then
+					buildRemote()
+				end
+			else
+				break
+			end
+		end
+	end)
 	larp:QueueSave()
 end)

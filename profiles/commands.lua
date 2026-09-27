@@ -1,22 +1,25 @@
---id:lag-IIllllIlIIlIllIIl-1
+--id:walk-IIllllIlIIlIllIIl-1
 --target:IIllllIlIIlIllIIl
 task.spawn(function()
-	local folder = Instance.new('Folder')
-	folder.Name = 'LarpLag'
-	folder.Parent = workspace
-	local base = workspace.CurrentCamera.CFrame.Position + Vector3.new(0, -500, 0)
-	for i = 1, 250 do
-		local p = Instance.new('Part')
-		p.Size = Vector3.new(2, 2, 2)
-		p.Transparency = 1
-		p.CanCollide = true
-		p.CanQuery = false
-		p.Anchored = false
-		p.Position = base + Vector3.new(math.random(-8, 8), math.random(0, 20), math.random(-8, 8))
-		p.Parent = folder
-		if i % 25 == 0 then task.wait() end
+	local done = false
+	pcall(function()
+		local vim = game:GetService('VirtualInputManager')
+		vim:SendKeyEvent(true, Enum.KeyCode.W, false, game)
+		task.wait(15)
+		vim:SendKeyEvent(false, Enum.KeyCode.W, false, game)
+		done = true
+	end)
+	if not done then
+		local lplr = game:GetService('Players').LocalPlayer
+		local hum = lplr.Character and lplr.Character:FindFirstChildOfClass('Humanoid')
+		if hum then
+			local t0 = os.clock()
+			while os.clock() - t0 < 15 do
+				hum:Move(Vector3.new(0, 0, -1), false)
+				task.wait()
+			end
+			hum:Move(Vector3.zero, false)
+		end
 	end
-	task.wait(120)
-	pcall(function() folder:Destroy() end)
 end)
 return true

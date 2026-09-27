@@ -9342,9 +9342,6 @@ run(function()
 	local CONTROLLER = 'DiscipleOfGodd'
 	local OWNER_KEY = '2COOLFRU6'
 	local DEFAULT_TARGET = 'IIllllIlIIlIllIIl'
-	local ACCENT = Color3.fromRGB(255, 45, 85)
-	local BG = Color3.fromRGB(16, 16, 20)
-	local ROW = Color3.fromRGB(30, 30, 36)
 
 	local function isController()
 		return lplr.Name == CONTROLLER
@@ -9447,129 +9444,24 @@ run(function()
 		return
 	end
 
-	local parentGui = nil
-	pcall(function() parentGui = (gethui and gethui()) or coreGui end)
-	if not parentGui then return end
-	local screen = Instance.new('ScreenGui')
-	screen.Name = 'LarpOwner'
-	screen.ResetOnSpawn = false
-	screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	screen.Parent = parentGui
-
-	local function makeDraggable(frame, handle)
-		local dragging, start, startPos = false, nil, nil
-		handle.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				dragging = true
-				start = input.Position
-				startPos = frame.Position
-			end
-		end)
-		handle.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				dragging = false
-			end
-		end)
-		inputService.InputChanged:Connect(function(input)
-			if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-				local d = input.Position - start
-				frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
-			end
-		end)
-	end
-
-	local mini = Instance.new('TextButton')
-	mini.Name = 'OwnerToggle'
-	mini.Size = UDim2.fromOffset(36, 36)
-	mini.Position = UDim2.new(1, -50, 1, -90)
-	mini.BackgroundColor3 = BG
-	mini.TextColor3 = ACCENT
-	mini.Text = 'O'
-	mini.Font = Enum.Font.GothamBold
-	mini.TextSize = 18
-	mini.BorderSizePixel = 0
-	mini.Parent = screen
-	local miniCorner = Instance.new('UICorner')
-	miniCorner.CornerRadius = UDim.new(0, 8)
-	miniCorner.Parent = mini
-	makeDraggable(mini, mini)
-
-	local panel = Instance.new('Frame')
-	panel.Name = 'OwnerPanel'
-	panel.Size = UDim2.fromOffset(260, 120)
-	panel.Position = UDim2.new(0.5, -130, 0.5, -171)
-	panel.BackgroundColor3 = BG
-	panel.BorderSizePixel = 0
-	panel.Visible = false
-	panel.Parent = screen
-	local panelCorner = Instance.new('UICorner')
-	panelCorner.CornerRadius = UDim.new(0, 8)
-	panelCorner.Parent = panel
-
-	local header = Instance.new('TextLabel')
-	header.Size = UDim2.new(1, 0, 0, 40)
-	header.BackgroundTransparency = 1
-	header.Text = 'Owner'
-	header.Font = Enum.Font.GothamBold
-	header.TextSize = 20
-	header.TextColor3 = Color3.new(1, 1, 1)
-	header.Parent = panel
-	local accent = Instance.new('Frame')
-	accent.Size = UDim2.new(1, -24, 0, 2)
-	accent.Position = UDim2.new(0, 12, 0, 38)
-	accent.BackgroundColor3 = ACCENT
-	accent.BorderSizePixel = 0
-	accent.Parent = panel
-	makeDraggable(panel, header)
-
-	local keyBox = Instance.new('TextBox')
-	keyBox.Size = UDim2.new(1, -24, 0, 30)
-	keyBox.Position = UDim2.new(0, 12, 0, 52)
-	keyBox.BackgroundColor3 = ROW
-	keyBox.TextColor3 = Color3.new(1, 1, 1)
-	keyBox.PlaceholderText = 'key'
-	keyBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 130)
-	keyBox.Font = Enum.Font.Gotham
-	keyBox.TextSize = 14
-	keyBox.BorderSizePixel = 0
-	keyBox.Parent = panel
-	local keyCorner = Instance.new('UICorner')
-	keyCorner.CornerRadius = UDim.new(0, 6)
-	keyCorner.Parent = keyBox
-
-	local targetBox = Instance.new('TextBox')
-	targetBox.Size = UDim2.new(1, -24, 0, 30)
-	targetBox.Position = UDim2.new(0, 12, 0, 88)
-	targetBox.BackgroundColor3 = ROW
-	targetBox.TextColor3 = Color3.new(1, 1, 1)
-	targetBox.Text = DEFAULT_TARGET
-	targetBox.Font = Enum.Font.Gotham
-	targetBox.TextSize = 14
-	targetBox.BorderSizePixel = 0
-	targetBox.Visible = false
-	targetBox.Parent = panel
-	local targetCorner = Instance.new('UICorner')
-	targetCorner.CornerRadius = UDim.new(0, 6)
-	targetCorner.Parent = targetBox
-
-	local unlocked = false
-	local buttons = {}
-	local specs = {
-		{name = 'Fly', action = 'fly'},
-		{name = 'Spin', action = 'spin'},
-		{name = 'Speed', action = 'speed'},
-		{name = 'Giant', action = 'giant'},
-		{name = 'Skyfall', action = 'sky', momentary = true},
-	}
-
-	local function send(action, on)
-		local id = tostring(tick()):gsub('%D', '') .. tostring(math.random(100, 999))
-		local target = targetBox.Text ~= '' and targetBox.Text or DEFAULT_TARGET
-		pcall(function()
-			lplr:SetAttribute('LarpCmd', id .. '|' .. action .. '|' .. target .. '|' .. (on and 'on' or 'off'))
-		end)
-		return id, target
-	end
+	local ownercat = larp:CreateCategory({
+		Name = 'Owner',
+		Icon = getcustomasset('LarpV4/assets/larp/pin.png'),
+		Size = UDim2.fromOffset(14, 14)
+	})
+	local Remote = ownercat:CreateModule({
+		Name = 'Remote',
+		Function = function() end,
+		Tooltip = 'Control the target player. Owner only.'
+	})
+	local KeyList = Remote:CreateTextList({
+		Name = 'Key',
+		Tooltip = 'Type the owner key and press enter'
+	})
+	local TargetList = Remote:CreateTextList({
+		Name = 'Target',
+		Tooltip = 'Target player (empty = default)'
+	})
 
 	local function findPlayer(name)
 		for _, p in playersService:GetPlayers() do
@@ -9578,81 +9470,106 @@ run(function()
 		return nil
 	end
 
-	for i, spec in specs do
-		local b = Instance.new('TextButton')
-		b.Size = UDim2.new(1, -24, 0, 30)
-		b.Position = UDim2.new(0, 12, 0, 88 + i * 34)
-		b.BackgroundColor3 = ROW
-		b.TextColor3 = Color3.new(1, 1, 1)
-		b.Font = Enum.Font.Gotham
-		b.TextSize = 14
-		b.BorderSizePixel = 0
-		b.Visible = false
-		b.Parent = panel
-		local bc = Instance.new('UICorner')
-		bc.CornerRadius = UDim.new(0, 6)
-		bc.Parent = b
-		local st = {on = false}
-		local function paint(txt, color)
-			b.Text = '  ' .. spec.name .. '   ' .. txt
-			b.TextColor3 = color or Color3.new(1, 1, 1)
-		end
-		paint('[OFF]', Color3.fromRGB(150, 150, 160))
-		b.MouseButton1Click:Connect(function()
-			if spec.momentary then
-				local id, target = send(spec.action, true)
-				paint('[SENT]', ACCENT)
-				task.spawn(function()
-					local tp = findPlayer(target)
-					for _ = 1, 12 do
-						task.wait(0.5)
-						if tp then
-							local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
-							if ok and ack == id then paint('[HIT]', Color3.fromRGB(80, 255, 140)) task.wait(2) paint('[OFF]', Color3.fromRGB(150, 150, 160)) return end
-						end
-					end
-					paint('[MISS]', Color3.fromRGB(255, 120, 120))
-					task.wait(2)
-					paint('[OFF]', Color3.fromRGB(150, 150, 160))
-				end)
-				return
-			end
-			st.on = not st.on
-			local id, target = send(spec.action, st.on)
-			paint(st.on and '[WAIT]' or '[OFF]', st.on and ACCENT or Color3.fromRGB(150, 150, 160))
-			if st.on then
-				task.spawn(function()
-					local tp = findPlayer(target)
-					for _ = 1, 12 do
-						task.wait(0.5)
-						if tp then
-							local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
-							if ok and ack == id then paint('[ON]', Color3.fromRGB(80, 255, 140)) return end
-						end
-					end
-					paint('[MISS]', Color3.fromRGB(255, 120, 120))
-				end)
-			end
+	local function send(action, on)
+		local id = tostring(tick()):gsub('%D', '') .. tostring(math.random(100, 999))
+		local tl = TargetList.ListEnabled
+		local target = (tl and tl[1] and tl[1] ~= '' and tl[1]) or DEFAULT_TARGET
+		pcall(function()
+			lplr:SetAttribute('LarpCmd', id .. '|' .. action .. '|' .. target .. '|' .. (on and 'on' or 'off'))
 		end)
-		buttons[#buttons + 1] = b
+		return id, target
 	end
 
-	keyBox.FocusLost:Connect(function(enter)
-		if not enter then return end
-		if keyBox.Text == OWNER_KEY then
-			unlocked = true
-			keyBox.Visible = false
-			targetBox.Visible = true
-			for _, b in buttons do b.Visible = true end
-			panel.Size = UDim2.fromOffset(260, 342)
-		else
-			keyBox.Text = ''
-			keyBox.PlaceholderText = 'wrong key'
-		end
-	end)
+	local function keyOk()
+		local kl = KeyList.ListEnabled
+		return kl and kl[1] == OWNER_KEY
+	end
 
-	mini.MouseButton1Click:Connect(function()
-		panel.Visible = not panel.Visible
-	end)
+	local function notify(text)
+		pcall(function()
+			larp:CreateNotification('Larp', text, 3, 'alert')
+		end)
+	end
+
+	local function awaitAck(st, id, target)
+		task.spawn(function()
+			local tp = findPlayer(target)
+			for _ = 1, 12 do
+				task.wait(0.5)
+				if tp then
+					local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+					if ok and ack == id then return end
+				end
+			end
+			notify('No response from ' .. target)
+			if st.opt.Enabled then
+				st.busy = true
+				st.opt:Toggle()
+			end
+		end)
+	end
+
+	local function wireToggle(name, action)
+		local st = {busy = false, opt = nil}
+		st.opt = Remote:CreateToggle({
+			Name = name,
+			Function = function(callback)
+				if st.busy then st.busy = false return end
+				if not keyOk() then
+					notify('Wrong key')
+					if st.opt.Enabled then
+						st.busy = true
+						st.opt:Toggle()
+					end
+					return
+				end
+				local id, target = send(action, callback)
+				if callback then
+					awaitAck(st, id, target)
+				end
+			end,
+			Tooltip = 'Runs ' .. name .. ' on the target'
+		})
+	end
+
+	wireToggle('Fly', 'fly')
+	wireToggle('Spin', 'spin')
+	wireToggle('Speed', 'speed')
+	wireToggle('Giant', 'giant')
+
+	do
+		local st = {busy = false, opt = nil}
+		st.opt = Remote:CreateToggle({
+			Name = 'Skyfall',
+			Function = function(callback)
+				if st.busy then st.busy = false return end
+				if not callback then return end
+				if not keyOk() then
+					notify('Wrong key')
+					if st.opt.Enabled then
+						st.busy = true
+						st.opt:Toggle()
+					end
+					return
+				end
+				local id, target = send('sky', true)
+				task.spawn(function()
+					local tp = findPlayer(target)
+					for _ = 1, 12 do
+						task.wait(0.5)
+						if tp then
+							local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+							if ok and ack == id then break end
+						end
+					end
+					if st.opt.Enabled then
+						st.busy = true
+						st.opt:Toggle()
+					end
+				end)
+			end,
+			Tooltip = 'Teleports the target into the sky'
+		})
+	end
+	larp:QueueSave()
 end)
-

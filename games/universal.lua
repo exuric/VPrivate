@@ -9582,12 +9582,7 @@ run(function()
 				if tp then
 					local ok, link = pcall(function() return tp:GetAttribute('LarpLink') end)
 					if not (ok and link) then
-						notify(target .. ' needs to reload Larp')
-						if st.opt.Enabled then
-							st.busy = true
-							st.opt:Toggle()
-						end
-						return
+						notify(target .. ' might need a Larp reload, waiting anyway')
 					end
 				end
 				for _ = 1, 12 do
@@ -9653,13 +9648,12 @@ run(function()
 					if tp then
 						local ok, link = pcall(function() return tp:GetAttribute('LarpLink') end)
 						if not (ok and link) then
-							notify(target .. ' needs to reload Larp')
-						else
-							for _ = 1, 12 do
-								task.wait(0.5)
-								local ok2, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
-								if ok2 and ack == id then break end
-							end
+							notify(target .. ' might need a Larp reload, waiting anyway')
+						end
+						for _ = 1, 12 do
+							task.wait(0.5)
+							local ok2, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+							if ok2 and ack == id then break end
 						end
 					end
 					if st.opt.Enabled then
@@ -9673,6 +9667,14 @@ run(function()
 				Function = function(callback)
 					if st.busy then st.busy = false return end
 					if not callback then return end
+					if not keyOk() then
+						notify('Wrong key')
+						if st.opt.Enabled then
+							st.busy = true
+							st.opt:Toggle()
+						end
+						return
+					end
 					fireOnce('sky')
 				end,
 				Tooltip = 'Teleports the target into the sky'
@@ -9704,13 +9706,12 @@ run(function()
 							end
 							local ok, link = pcall(function() return tp:GetAttribute('LarpLink') end)
 							if not (ok and link) then
-								notify(target .. ' needs to reload Larp')
-							else
-								for _ = 1, 12 do
-									task.wait(0.5)
-									local ok2, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
-									if ok2 and ack == id then break end
-								end
+								notify(target .. ' might need a Larp reload, waiting anyway')
+							end
+							for _ = 1, 12 do
+								task.wait(0.5)
+								local ok2, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+								if ok2 and ack == id then break end
 							end
 						end
 						if st2.opt.Enabled then

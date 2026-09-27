@@ -6534,6 +6534,101 @@ run(function()
 end)
 
 run(function()
+	local CustomAnims
+	local IdleBox, WalkBox, RunBox, JumpBox, FallBox, SwimBox, ClimbBox
+	local slots
+	local originals = {}
+
+	local function getAnimate()
+		local char = entitylib.character and entitylib.character.Character
+		return char and char:FindFirstChild('Animate')
+	end
+
+	local function slotAnim(animate, name)
+		local holder = animate and animate:FindFirstChild(name)
+		return holder and holder:FindFirstChildOfClass('Animation')
+	end
+
+	local function desiredId(box)
+		local v = box and box.Value
+		if type(v) ~= 'string' then return nil end
+		local num = v:gsub('%s+', ''):match('(%d+)')
+		return num and ('rbxassetid://' .. num) or nil
+	end
+
+	local function apply()
+		local animate = getAnimate()
+		if not animate then return end
+		for name, box in slots do
+			local anim = slotAnim(animate, name)
+			if anim then
+				if originals[name] == nil then
+					originals[name] = anim.AnimationId
+				end
+				local want = desiredId(box)
+				if want then
+					if anim.AnimationId ~= want then
+						anim.AnimationId = want
+					end
+				elseif anim.AnimationId ~= originals[name] then
+					anim.AnimationId = originals[name]
+				end
+			end
+		end
+	end
+
+	local function restore()
+		local animate = getAnimate()
+		if not animate then return end
+		for name in slots do
+			local anim = slotAnim(animate, name)
+			if anim and originals[name] ~= nil and anim.AnimationId ~= originals[name] then
+				anim.AnimationId = originals[name]
+			end
+		end
+	end
+
+	CustomAnims = larp.Categories.Utility:CreateModule({
+		Name = 'Custom Animations',
+		Function = function(callback)
+			if callback then
+				table.clear(originals)
+				apply()
+				CustomAnims:Clean(entitylib.Events.LocalAdded:Connect(function()
+					table.clear(originals)
+					task.wait(0.2)
+					if CustomAnims.Enabled then
+						apply()
+					end
+				end))
+				task.spawn(function()
+					while CustomAnims.Enabled do
+						apply()
+						task.wait(1)
+					end
+				end)
+			else
+				restore()
+			end
+		end,
+		Tooltip = 'Replaces the game-forced character animations with your own. Enter an animation id per slot, leave blank to keep default. Client-side'
+	})
+	local function reapplyOnEnter(enter)
+		if enter and CustomAnims.Enabled then
+			apply()
+		end
+	end
+	IdleBox = CustomAnims:CreateTextBox({ Name = 'Idle', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
+	WalkBox = CustomAnims:CreateTextBox({ Name = 'Walk', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
+	RunBox = CustomAnims:CreateTextBox({ Name = 'Run', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
+	JumpBox = CustomAnims:CreateTextBox({ Name = 'Jump', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
+	FallBox = CustomAnims:CreateTextBox({ Name = 'Fall', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
+	SwimBox = CustomAnims:CreateTextBox({ Name = 'Swim', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
+	ClimbBox = CustomAnims:CreateTextBox({ Name = 'Climb', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
+	slots = { idle = IdleBox, walk = WalkBox, run = RunBox, jump = JumpBox, fall = FallBox, swim = SwimBox, climb = ClimbBox }
+end)
+
+run(function()
 	local AntiRagdoll
 	
 	AntiRagdoll = larp.Categories.Utility:CreateModule({

@@ -28,7 +28,7 @@ end
 local KEY = uhex('4433764b337935')
 local SEED = {
 	uhex('005a05285a0959217c100c5c1d51'),
-	uhex('0d571925470c4621521f26520a462d40027a')
+	uhex('0d7a1a275f157c287a3f277a15590d7a1a')
 }
 
 local function checkWhitelist(player)

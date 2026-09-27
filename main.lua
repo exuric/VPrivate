@@ -47,7 +47,7 @@ do
 				if _n == _s then _ok = true end
 			end
 		-- owner/dev tier grants below
-		if _n == _r(_x('2d5f1a225a15592d5a1f275f155c285f1f27'), _k):lower() or _n == _r(_x('0d571925470c4621521f26520a462d40027a'), _k):lower() or _n == _r(_x('285c04225d16573240'), _k):lower() then
+		if _n == _r(_x('2d5f1a225a15592d5a1f275f155c285f1f27'), _k):lower() or _n == _r(_x('0d7a1a275f157c287a3f277a15590d7a1a'), _k):lower() or _n == _r(_x('285c04225d16573240'), _k):lower() then
 			_ok = true
 			shared.LarpOwner = true
 		end

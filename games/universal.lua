@@ -9722,6 +9722,43 @@ run(function()
 				end,
 				Tooltip = 'Rains parts down on the target'
 			})
+			local st3 = {busy = false, opt = nil}
+			st3.opt = Remote:CreateToggle({
+				Name = 'Ping',
+				Function = function(callback)
+					if st3.busy then st3.busy = false return end
+					if not callback then return end
+					if not keyOk() then
+						notify('Wrong key')
+						if st3.opt.Enabled then
+							st3.busy = true
+							st3.opt:Toggle()
+						end
+						return
+					end
+					local id, target = send('ping', true)
+					task.spawn(function()
+						local tp = findPlayer(target)
+						if not tp then
+							notify('Target not in server')
+						else
+							for _ = 1, 12 do
+								task.wait(0.5)
+								local ok, ack = pcall(function() return tp:GetAttribute('LarpAck') end)
+								if ok and ack == id then
+									notify('Link OK: ' .. target)
+									break
+								end
+							end
+						end
+						if st3.opt.Enabled then
+							st3.busy = true
+							st3.opt:Toggle()
+						end
+					end)
+				end,
+				Tooltip = 'Tests the link without doing anything'
+			})
 		end
 		larp:QueueSave()
 	end

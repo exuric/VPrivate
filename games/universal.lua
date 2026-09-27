@@ -6535,9 +6535,14 @@ end)
 
 run(function()
 	local CustomAnims
-	local IdleBox, WalkBox, RunBox, JumpBox, FallBox, SwimBox, ClimbBox
-	local slots
+	local Preset
+	local boxes = {}
 	local originals = {}
+	local SLOTS = {'idle', 'walk', 'run', 'jump', 'fall', 'swim', 'swimidle', 'climb'}
+	local PRESETS = {
+		Toy = { idle = '782845736', walk = '782843345', run = '782841498', jump = '782847020', fall = '782846423', swim = '782848147', swimidle = '782849102', climb = '782843869' },
+		Ninja = { idle = '656113148', walk = '656118341', run = '656118852', jump = '656117878', fall = '656115606', swim = '656161374', swimidle = '656162865', climb = '656114359' },
+	}
 
 	local function getAnimate()
 		local char = entitylib.character and entitylib.character.Character
@@ -6549,23 +6554,30 @@ run(function()
 		return holder and holder:FindFirstChildOfClass('Animation')
 	end
 
-	local function desiredId(box)
-		local v = box and box.Value
+	local function parseId(v)
 		if type(v) ~= 'string' then return nil end
 		local num = v:gsub('%s+', ''):match('(%d+)')
 		return num and ('rbxassetid://' .. num) or nil
 	end
 
+	local function desiredFor(name)
+		local manual = boxes[name] and parseId(boxes[name].Value)
+		if manual then return manual end
+		local pack = Preset and Preset.Value and PRESETS[Preset.Value]
+		if pack and pack[name] then return 'rbxassetid://' .. pack[name] end
+		return nil
+	end
+
 	local function apply()
 		local animate = getAnimate()
 		if not animate then return end
-		for name, box in slots do
+		for _, name in SLOTS do
 			local anim = slotAnim(animate, name)
 			if anim then
 				if originals[name] == nil then
 					originals[name] = anim.AnimationId
 				end
-				local want = desiredId(box)
+				local want = desiredFor(name)
 				if want then
 					if anim.AnimationId ~= want then
 						anim.AnimationId = want
@@ -6580,7 +6592,7 @@ run(function()
 	local function restore()
 		local animate = getAnimate()
 		if not animate then return end
-		for name in slots do
+		for _, name in SLOTS do
 			local anim = slotAnim(animate, name)
 			if anim and originals[name] ~= nil and anim.AnimationId ~= originals[name] then
 				anim.AnimationId = originals[name]
@@ -6611,21 +6623,31 @@ run(function()
 				restore()
 			end
 		end,
-		Tooltip = 'Replaces the game-forced character animations with your own. Enter an animation id per slot, leave blank to keep default. Client-side'
+		Tooltip = 'Replaces the game-forced character animations with your own. Pick a preset (Toy / Ninja) or enter ids per slot; a filled slot overrides the preset. Client-side'
+	})
+	Preset = CustomAnims:CreateDropdown({
+		Name = 'Preset',
+		List = {'None', 'Toy', 'Ninja'},
+		Default = 'None',
+		Function = function()
+			if CustomAnims.Enabled then
+				apply()
+			end
+		end,
+		Tooltip = 'Full Roblox animation packs: Toy or Ninja'
 	})
 	local function reapplyOnEnter(enter)
 		if enter and CustomAnims.Enabled then
 			apply()
 		end
 	end
-	IdleBox = CustomAnims:CreateTextBox({ Name = 'Idle', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
-	WalkBox = CustomAnims:CreateTextBox({ Name = 'Walk', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
-	RunBox = CustomAnims:CreateTextBox({ Name = 'Run', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
-	JumpBox = CustomAnims:CreateTextBox({ Name = 'Jump', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
-	FallBox = CustomAnims:CreateTextBox({ Name = 'Fall', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
-	SwimBox = CustomAnims:CreateTextBox({ Name = 'Swim', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
-	ClimbBox = CustomAnims:CreateTextBox({ Name = 'Climb', Placeholder = 'anim id (num)', Function = reapplyOnEnter })
-	slots = { idle = IdleBox, walk = WalkBox, run = RunBox, jump = JumpBox, fall = FallBox, swim = SwimBox, climb = ClimbBox }
+	for _, name in SLOTS do
+		boxes[name] = CustomAnims:CreateTextBox({
+			Name = name:sub(1, 1):upper() .. name:sub(2),
+			Placeholder = 'anim id (num)',
+			Function = reapplyOnEnter
+		})
+	end
 end)
 
 run(function()

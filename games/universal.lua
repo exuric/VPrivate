@@ -8557,6 +8557,218 @@ run(function()
 end)
 
 run(function()
+	local PotionStatus
+	local RenderBg, Apples, ShowPositive, ShowNegative, Blur, RemoveGame
+	local update
+	local FONT = Enum.Font.TitilliumWeb
+	local EFFECTS = {
+		{ value = 'speed', name = 'Speed', icon = 'rbxassetid://84756147306261', positive = true },
+		{ value = 'jump', name = 'Jump', icon = getcustomasset('LarpV4/assets/larp/jump.png'), positive = true },
+		{ value = 'serpents_touch_potion', name = "Serpent's Touch", icon = 'rbxassetid://121585940885682', positive = true },
+		{ value = 'golden_apple', name = 'Golden Apple', icon = 'rbxassetid://105548207289958', positive = true, apple = true },
+		{ value = 'invisibility', name = 'Invisibility', icon = 'rbxassetid://89826029859930', positive = true },
+		{ value = 'shrink', name = 'Shrink', icon = 'rbxassetid://115999424942960', positive = false },
+	}
+	local rows = {}
+	local holder, blurObj
+
+	local function fmt(sec)
+		sec = math.max(0, math.floor(sec + 0.5))
+		return string.format('%02d:%02d', math.floor(sec / 60), sec % 60)
+	end
+
+	local function makeRing(parent, D, thick)
+		local c = Instance.new('Frame')
+		c.Size = UDim2.fromOffset(D, D)
+		c.BackgroundTransparency = 1
+		c.LayoutOrder = 1
+		c.Parent = parent
+		local trk = Instance.new('Frame')
+		trk.Size = UDim2.fromScale(1, 1)
+		trk.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+		trk.BackgroundTransparency = 0.3
+		trk.BorderSizePixel = 0
+		trk.Parent = c
+		Instance.new('UICorner', trk).CornerRadius = UDim.new(1, 0)
+		local discs = {}
+		for _, side in {'R', 'L'} do
+			local clip = Instance.new('Frame')
+			clip.BackgroundTransparency = 1
+			clip.ClipsDescendants = true
+			clip.Size = UDim2.new(0.5, 0, 1, 0)
+			clip.Position = side == 'R' and UDim2.fromScale(0.5, 0) or UDim2.fromScale(0, 0)
+			clip.Parent = c
+			local disc = Instance.new('Frame')
+			disc.Size = UDim2.fromOffset(D, D)
+			disc.Position = side == 'R' and UDim2.fromOffset(-math.floor(D / 2), 0) or UDim2.fromOffset(0, 0)
+			disc.BackgroundColor3 = Color3.fromRGB(95, 225, 130)
+			disc.BorderSizePixel = 0
+			disc.Parent = clip
+			Instance.new('UICorner', disc).CornerRadius = UDim.new(1, 0)
+			local g = Instance.new('UIGradient')
+			g.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.499, 0), NumberSequenceKeypoint.new(0.5, 1), NumberSequenceKeypoint.new(1, 1) })
+			g.Parent = disc
+			discs[side] = { disc = disc, g = g }
+		end
+		local cut = Instance.new('Frame')
+		cut.AnchorPoint = Vector2.new(0.5, 0.5)
+		cut.Position = UDim2.fromScale(0.5, 0.5)
+		cut.Size = UDim2.fromOffset(D - thick * 2, D - thick * 2)
+		cut.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+		cut.BorderSizePixel = 0
+		cut.Parent = c
+		Instance.new('UICorner', cut).CornerRadius = UDim.new(1, 0)
+		return {
+			container = c,
+			cut = cut,
+			setProgress = function(_, frac, col)
+				frac = math.clamp(frac, 0, 1)
+				discs.R.g.Rotation = math.min(frac * 360, 180)
+				discs.L.g.Rotation = math.max(frac * 360 - 180, 0) + 180
+				discs.R.disc.BackgroundColor3 = col
+				discs.L.disc.BackgroundColor3 = col
+			end
+		}
+	end
+
+	local function buildContent()
+		holder = Instance.new('Frame')
+		holder.Name = 'PotionContent'
+		holder.AutomaticSize = Enum.AutomaticSize.XY
+		holder.BackgroundColor3 = Color3.new()
+		holder.BackgroundTransparency = 0.4
+		holder.BorderSizePixel = 0
+		holder.Position = UDim2.fromOffset(0, 4)
+		holder.Parent = PotionStatus.Children
+		Instance.new('UICorner', holder).CornerRadius = UDim.new(0, 6)
+		blurObj = addBlur(holder)
+		blurObj.Visible = false
+		local pad = Instance.new('UIPadding')
+		pad.PaddingLeft = UDim.new(0, 8)
+		pad.PaddingRight = UDim.new(0, 8)
+		pad.PaddingTop = UDim.new(0, 6)
+		pad.PaddingBottom = UDim.new(0, 6)
+		pad.Parent = holder
+		local list = Instance.new('UIListLayout')
+		list.SortOrder = Enum.SortOrder.LayoutOrder
+		list.Padding = UDim.new(0, 6)
+		list.Parent = holder
+		for i, def in EFFECTS do
+			local row = Instance.new('Frame')
+			row.LayoutOrder = i
+			row.AutomaticSize = Enum.AutomaticSize.XY
+			row.BackgroundTransparency = 1
+			row.Visible = false
+			row.Parent = holder
+			local rList = Instance.new('UIListLayout')
+			rList.FillDirection = Enum.FillDirection.Horizontal
+			rList.VerticalAlignment = Enum.VerticalAlignment.Center
+			rList.SortOrder = Enum.SortOrder.LayoutOrder
+			rList.Padding = UDim.new(0, 8)
+			rList.Parent = row
+			local ring = makeRing(row, 38, 4)
+			local icon = Instance.new('ImageLabel')
+			icon.AnchorPoint = Vector2.new(0.5, 0.5)
+			icon.Position = UDim2.fromScale(0.5, 0.5)
+			icon.Size = UDim2.fromScale(0.72, 0.72)
+			icon.BackgroundTransparency = 1
+			icon.Image = def.icon
+			icon.ScaleType = Enum.ScaleType.Fit
+			icon.Parent = ring.cut
+			local textCol = Instance.new('Frame')
+			textCol.LayoutOrder = 2
+			textCol.AutomaticSize = Enum.AutomaticSize.XY
+			textCol.BackgroundTransparency = 1
+			textCol.Parent = row
+			local tList = Instance.new('UIListLayout')
+			tList.SortOrder = Enum.SortOrder.LayoutOrder
+			tList.Parent = textCol
+			local nameL = Instance.new('TextLabel')
+			nameL.LayoutOrder = 1
+			nameL.AutomaticSize = Enum.AutomaticSize.XY
+			nameL.BackgroundTransparency = 1
+			nameL.Font = FONT
+			nameL.TextColor3 = Color3.new(1, 1, 1)
+			nameL.TextSize = 15
+			nameL.TextXAlignment = Enum.TextXAlignment.Left
+			nameL.Text = def.name
+			nameL.Parent = textCol
+			local timeL = Instance.new('TextLabel')
+			timeL.LayoutOrder = 2
+			timeL.AutomaticSize = Enum.AutomaticSize.XY
+			timeL.BackgroundTransparency = 1
+			timeL.Font = FONT
+			timeL.TextColor3 = Color3.fromRGB(95, 225, 130)
+			timeL.TextSize = 13
+			timeL.TextXAlignment = Enum.TextXAlignment.Left
+			timeL.Text = '00:00'
+			timeL.Parent = textCol
+			rows[def.value] = { def = def, row = row, ring = ring, timeL = timeL, total = nil }
+		end
+	end
+
+	local function setGameHud(state)
+		local pg = playersService.LocalPlayer:FindFirstChild('PlayerGui')
+		if not pg then return end
+		for _, g in pg:GetChildren() do
+			if g:IsA('ScreenGui') and g.Name:find('StatusEffectHud') then
+				g.Enabled = state
+			end
+		end
+	end
+
+	update = function()
+		if not (holder and RenderBg) then return end
+		local char = playersService.LocalPlayer.Character
+		local now = workspace:GetServerTimeNow()
+		for _, r in rows do
+			local def = r.def
+			local allowed = (def.positive and ShowPositive.Enabled) or ((not def.positive) and ShowNegative.Enabled)
+			if def.apple and not Apples.Enabled then allowed = false end
+			local expire = (allowed and char) and char:GetAttribute('StatusEffect_' .. def.value) or nil
+			local rem
+			if expire and expire ~= -1 then rem = expire - now end
+			if rem and rem > 0 then
+				if not r.total or rem > r.total then r.total = rem end
+				local frac = math.clamp(rem / (r.total > 0 and r.total or 1), 0, 1)
+				local col = Color3.fromHSV(frac * 0.33, 0.8, 0.95)
+				r.ring:setProgress(frac, col)
+				r.timeL.Text = fmt(rem)
+				r.timeL.TextColor3 = col
+				r.row.Visible = true
+			else
+				r.row.Visible = false
+				r.total = nil
+			end
+		end
+		holder.BackgroundTransparency = RenderBg.Enabled and 0.4 or 1
+		if blurObj then blurObj.Visible = Blur.Enabled end
+		setGameHud(not RemoveGame.Enabled)
+	end
+
+	PotionStatus = larp:CreateOverlay({
+		Name = 'Potion Status',
+		Icon = getcustomasset('LarpV4/assets/larp/potionstatus.png'),
+		Size = UDim2.fromOffset(18, 18),
+		Position = UDim2.fromOffset(12, 12),
+		Function = function(callback)
+			if callback then
+				if not holder then buildContent() end
+				PotionStatus:Clean(runService.RenderStepped:Connect(update))
+			else
+				setGameHud(true)
+			end
+		end
+	})
+	RenderBg = PotionStatus:CreateToggle({ Name = 'Render Background', Default = true })
+	Apples = PotionStatus:CreateToggle({ Name = 'Apples', Default = true, Tooltip = 'Show the Golden Apple effect' })
+	ShowPositive = PotionStatus:CreateToggle({ Name = 'Show Positive Effects', Default = true })
+	ShowNegative = PotionStatus:CreateToggle({ Name = 'Show Negative Effects', Default = true })
+	Blur = PotionStatus:CreateToggle({ Name = 'Blur Background', Default = false })
+	RemoveGame = PotionStatus:CreateToggle({ Name = 'Remove Game Status', Default = false, Tooltip = "Hide the game's own potion status HUD" })
+end)
+
+run(function()
 	local Clock
 	local TwentyFourHour
 	local ClockType

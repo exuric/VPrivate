@@ -6851,6 +6851,196 @@ run(function()
 end)
 
 run(function()
+	local PondESP
+	local Glow, FillTrans, ShowName, ShowDistance, Background, Scale, Color, RareColor
+
+	local folder = Instance.new('Folder')
+	folder.Parent = larp.gui
+
+	local ponds = {}
+
+	local function isPond(inst)
+		return inst:IsA('Model') and inst.Name:lower():find('pond') ~= nil
+	end
+
+	local function isRare(inst)
+		local n = inst.Name:lower()
+		return n:find('two') ~= nil or n:find('tier_two') ~= nil
+	end
+
+	local function colorFor(rare)
+		if rare then
+			return Color3.fromHSV(RareColor.Hue, RareColor.Sat, RareColor.Value)
+		end
+		return Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+	end
+
+	local function styleOf(data)
+		local col = colorFor(data.rare)
+		if data.highlight then
+			data.highlight.Enabled = Glow.Enabled
+			data.highlight.FillColor = col
+			data.highlight.OutlineColor = col
+			data.highlight.FillTransparency = FillTrans.Value
+			data.highlight.OutlineTransparency = 0
+		end
+		if data.tag then
+			data.tag.TextColor3 = col
+			data.tag.TextSize = math.max(9, math.floor(15 * Scale.Value))
+			data.tag.BackgroundTransparency = Background.Enabled and 0.4 or 1
+		end
+	end
+
+	local function labelText(data)
+		local text = ShowName.Enabled and (data.rare and 'Rare Pond' or 'Pond') or ''
+		if ShowDistance.Enabled then
+			local root = entitylib.character and entitylib.character.RootPart
+			local dist = (root and data.pos) and math.floor((data.pos - root.Position).Magnitude) or 0
+			local d = '<font color="rgb(190,190,190)">[' .. dist .. 'm]</font>'
+			text = text == '' and d or (text .. ' ' .. d)
+		end
+		return text
+	end
+
+	local function addPond(inst)
+		if ponds[inst] or not isPond(inst) then return end
+		local hl = Instance.new('Highlight')
+		hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		hl.Adornee = inst
+		hl.Parent = inst
+		local tag = Instance.new('TextLabel')
+		tag.AutomaticSize = Enum.AutomaticSize.XY
+		tag.BackgroundColor3 = Color3.new()
+		tag.BorderSizePixel = 0
+		tag.AnchorPoint = Vector2.new(0.5, 1)
+		tag.Font = Enum.Font.GothamMedium
+		tag.TextColor3 = Color3.new(1, 1, 1)
+		tag.TextStrokeTransparency = 0.5
+		tag.RichText = true
+		tag.Visible = false
+		tag.ZIndex = 5
+		tag.Parent = folder
+		local pad = Instance.new('UIPadding')
+		pad.PaddingLeft = UDim.new(0, 5)
+		pad.PaddingRight = UDim.new(0, 5)
+		pad.PaddingTop = UDim.new(0, 1)
+		pad.PaddingBottom = UDim.new(0, 1)
+		pad.Parent = tag
+		local corner = Instance.new('UICorner')
+		corner.CornerRadius = UDim.new(0, 4)
+		corner.Parent = tag
+		local data = { inst = inst, rare = isRare(inst), highlight = hl, tag = tag, pos = inst:GetPivot().Position }
+		ponds[inst] = data
+		styleOf(data)
+	end
+
+	local function removePond(inst)
+		local data = ponds[inst]
+		if not data then return end
+		if data.highlight then pcall(function() data.highlight:Destroy() end) end
+		if data.tag then pcall(function() data.tag:Destroy() end) end
+		ponds[inst] = nil
+	end
+
+	PondESP = larp.Categories.Minigames:CreateModule({
+		Name = 'PondESP',
+		Function = function(callback)
+			if callback then
+				for _, v in workspace:GetChildren() do
+					addPond(v)
+				end
+				PondESP:Clean(workspace.ChildAdded:Connect(addPond))
+				PondESP:Clean(workspace.ChildRemoved:Connect(removePond))
+				PondESP:Clean(runService.PreRender:Connect(function()
+					local showTag = ShowName.Enabled or ShowDistance.Enabled
+					for inst, data in ponds do
+						if not inst.Parent then
+							removePond(inst)
+							continue
+						end
+						data.pos = inst:GetPivot().Position
+						local screen, vis = gameCamera:WorldToViewportPoint(data.pos + Vector3.new(0, 8, 0))
+						data.tag.Visible = vis and showTag
+						if vis and showTag then
+							data.tag.Text = labelText(data)
+							data.tag.Position = UDim2.fromOffset(screen.X, screen.Y)
+						end
+						if data.highlight then
+							data.highlight.Enabled = Glow.Enabled
+						end
+					end
+				end))
+			else
+				for inst in ponds do
+					removePond(inst)
+				end
+			end
+		end,
+		Tooltip = 'Highlights fisher reward ponds with a glow, name and distance'
+	})
+	Glow = PondESP:CreateToggle({
+		Name = 'Highlight',
+		Default = true,
+		Function = function()
+			for _, d in ponds do styleOf(d) end
+		end
+	})
+	FillTrans = PondESP:CreateSlider({
+		Name = 'Fill transparency',
+		Min = 0,
+		Max = 1,
+		Default = 0.6,
+		Decimal = 100,
+		Function = function()
+			for _, d in ponds do styleOf(d) end
+		end
+	})
+	ShowName = PondESP:CreateToggle({
+		Name = 'Name',
+		Default = true
+	})
+	ShowDistance = PondESP:CreateToggle({
+		Name = 'Distance',
+		Default = true
+	})
+	Background = PondESP:CreateToggle({
+		Name = 'Text background',
+		Default = true,
+		Function = function()
+			for _, d in ponds do styleOf(d) end
+		end
+	})
+	Scale = PondESP:CreateSlider({
+		Name = 'Text size',
+		Min = 0.5,
+		Max = 2,
+		Default = 1,
+		Decimal = 10,
+		Function = function()
+			for _, d in ponds do styleOf(d) end
+		end
+	})
+	Color = PondESP:CreateColorSlider({
+		Name = 'Pond color',
+		DefaultHue = 0.52,
+		DefaultSat = 0.85,
+		DefaultValue = 1,
+		Function = function()
+			for _, d in ponds do styleOf(d) end
+		end
+	})
+	RareColor = PondESP:CreateColorSlider({
+		Name = 'Rare pond color',
+		DefaultHue = 0.79,
+		DefaultSat = 0.85,
+		DefaultValue = 1,
+		Function = function()
+			for _, d in ponds do styleOf(d) end
+		end
+	})
+end)
+
+run(function()
 	local Health
 	
 	Health = larp.Categories.Render:CreateModule({

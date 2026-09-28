@@ -7446,6 +7446,235 @@ run(function()
 end)
 
 run(function()
+	local PotionStatus
+	local RenderBg, Apples, ShowPositive, ShowNegative
+
+	local folder = Instance.new('Folder')
+	folder.Parent = larp.gui
+
+	local FONT = Enum.Font.TitilliumWeb
+	local GREEN = Color3.fromRGB(95, 225, 130)
+	local ORANGE = Color3.fromRGB(255, 170, 60)
+	local RED = Color3.fromRGB(255, 95, 95)
+	local EFFECTS = {
+		{ value = 'speed', name = 'Speed', icon = 'rbxassetid://84756147306261', positive = true },
+		{ value = 'jump', name = 'Jump', icon = 'rbxassetid://114711740012001', positive = true },
+		{ value = 'serpents_touch_potion', name = "Serpent's Touch", icon = 'rbxassetid://121585940885682', positive = true },
+		{ value = 'golden_apple', name = 'Golden Apple', icon = 'rbxassetid://105548207289958', positive = true, apple = true },
+		{ value = 'shrink', name = 'Shrink', icon = 'rbxassetid://115999424942960', positive = false },
+	}
+
+	local panel
+	local rows = {}
+
+	local function fmt(sec)
+		sec = math.max(0, math.floor(sec + 0.5))
+		return string.format('%02d:%02d', math.floor(sec / 60), sec % 60)
+	end
+
+	local function buildPanel()
+		panel = Instance.new('Frame')
+		panel.Name = 'PotionStatus'
+		panel.Position = UDim2.fromOffset(14, 160)
+		panel.AutomaticSize = Enum.AutomaticSize.XY
+		panel.BackgroundColor3 = Color3.new()
+		panel.BackgroundTransparency = 0.35
+		panel.BorderSizePixel = 0
+		panel.Active = true
+		panel.Parent = folder
+		local corner = Instance.new('UICorner')
+		corner.CornerRadius = UDim.new(0, 6)
+		corner.Parent = panel
+		local pad = Instance.new('UIPadding')
+		pad.PaddingLeft = UDim.new(0, 8)
+		pad.PaddingRight = UDim.new(0, 8)
+		pad.PaddingTop = UDim.new(0, 6)
+		pad.PaddingBottom = UDim.new(0, 6)
+		pad.Parent = panel
+		local list = Instance.new('UIListLayout')
+		list.FillDirection = Enum.FillDirection.Vertical
+		list.SortOrder = Enum.SortOrder.LayoutOrder
+		list.Padding = UDim.new(0, 6)
+		list.Parent = panel
+
+		local header = Instance.new('Frame')
+		header.LayoutOrder = 0
+		header.AutomaticSize = Enum.AutomaticSize.XY
+		header.BackgroundTransparency = 1
+		header.Parent = panel
+		local hList = Instance.new('UIListLayout')
+		hList.FillDirection = Enum.FillDirection.Horizontal
+		hList.VerticalAlignment = Enum.VerticalAlignment.Center
+		hList.SortOrder = Enum.SortOrder.LayoutOrder
+		hList.Padding = UDim.new(0, 6)
+		hList.Parent = header
+		local hIcon = Instance.new('ImageLabel')
+		hIcon.LayoutOrder = 1
+		hIcon.BackgroundTransparency = 1
+		hIcon.Size = UDim2.fromOffset(18, 18)
+		hIcon.ScaleType = Enum.ScaleType.Fit
+		pcall(function() hIcon.Image = getcustomasset('LarpV4/assets/larp/potionstatus.png') end)
+		hIcon.Parent = header
+		local hTitle = Instance.new('TextLabel')
+		hTitle.LayoutOrder = 2
+		hTitle.AutomaticSize = Enum.AutomaticSize.XY
+		hTitle.BackgroundTransparency = 1
+		hTitle.Font = FONT
+		hTitle.TextColor3 = Color3.new(1, 1, 1)
+		hTitle.TextSize = 15
+		hTitle.Text = 'Potion Status'
+		hTitle.Parent = header
+
+		local dragging, dragStart, startPos
+		panel.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+				dragStart = input.Position
+				startPos = panel.Position
+			end
+		end)
+		panel.InputEnded:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = false
+			end
+		end)
+		PotionStatus:Clean(inputService.InputChanged:Connect(function(input)
+			if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+				local delta = input.Position - dragStart
+				panel.Position = UDim2.fromOffset(startPos.X.Offset + delta.X, startPos.Y.Offset + delta.Y)
+			end
+		end))
+
+		for i, def in EFFECTS do
+			local row = Instance.new('Frame')
+			row.LayoutOrder = i
+			row.AutomaticSize = Enum.AutomaticSize.XY
+			row.BackgroundTransparency = 1
+			row.Visible = false
+			row.Parent = panel
+			local rList = Instance.new('UIListLayout')
+			rList.FillDirection = Enum.FillDirection.Horizontal
+			rList.VerticalAlignment = Enum.VerticalAlignment.Center
+			rList.SortOrder = Enum.SortOrder.LayoutOrder
+			rList.Padding = UDim.new(0, 8)
+			rList.Parent = row
+
+			local iconHolder = Instance.new('Frame')
+			iconHolder.LayoutOrder = 1
+			iconHolder.Size = UDim2.fromOffset(34, 34)
+			iconHolder.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+			iconHolder.BackgroundTransparency = 0.2
+			iconHolder.BorderSizePixel = 0
+			iconHolder.Parent = row
+			local ihCorner = Instance.new('UICorner')
+			ihCorner.CornerRadius = UDim.new(1, 0)
+			ihCorner.Parent = iconHolder
+			local ring = Instance.new('UIStroke')
+			ring.Thickness = 2
+			ring.Color = def.positive and GREEN or RED
+			ring.Parent = iconHolder
+			local icon = Instance.new('ImageLabel')
+			icon.AnchorPoint = Vector2.new(0.5, 0.5)
+			icon.Position = UDim2.fromScale(0.5, 0.5)
+			icon.Size = UDim2.fromOffset(22, 22)
+			icon.BackgroundTransparency = 1
+			icon.Image = def.icon
+			icon.ScaleType = Enum.ScaleType.Fit
+			icon.Parent = iconHolder
+
+			local textCol = Instance.new('Frame')
+			textCol.LayoutOrder = 2
+			textCol.AutomaticSize = Enum.AutomaticSize.XY
+			textCol.BackgroundTransparency = 1
+			textCol.Parent = row
+			local tList = Instance.new('UIListLayout')
+			tList.FillDirection = Enum.FillDirection.Vertical
+			tList.SortOrder = Enum.SortOrder.LayoutOrder
+			tList.Parent = textCol
+			local nameL = Instance.new('TextLabel')
+			nameL.LayoutOrder = 1
+			nameL.AutomaticSize = Enum.AutomaticSize.XY
+			nameL.BackgroundTransparency = 1
+			nameL.Font = FONT
+			nameL.TextColor3 = Color3.new(1, 1, 1)
+			nameL.TextSize = 15
+			nameL.TextXAlignment = Enum.TextXAlignment.Left
+			nameL.Text = def.name
+			nameL.Parent = textCol
+			local timeL = Instance.new('TextLabel')
+			timeL.LayoutOrder = 2
+			timeL.AutomaticSize = Enum.AutomaticSize.XY
+			timeL.BackgroundTransparency = 1
+			timeL.Font = FONT
+			timeL.TextColor3 = GREEN
+			timeL.TextSize = 13
+			timeL.TextXAlignment = Enum.TextXAlignment.Left
+			timeL.Text = '00:00'
+			timeL.Parent = textCol
+
+			rows[def.value] = { def = def, row = row, ring = ring, timeL = timeL, total = nil }
+		end
+	end
+
+	local function update()
+		if not panel then return end
+		local char = entitylib.character and entitylib.character.Character
+		local now = workspace:GetServerTimeNow()
+		for _, r in rows do
+			local def = r.def
+			local allowed = (def.positive and ShowPositive.Enabled) or ((not def.positive) and ShowNegative.Enabled)
+			if def.apple and not Apples.Enabled then allowed = false end
+			local expire = (allowed and char) and char:GetAttribute('StatusEffect_' .. def.value) or nil
+			local rem
+			if expire and expire ~= -1 then rem = expire - now end
+			if rem and rem > 0 then
+				if not r.total or rem > r.total then r.total = rem end
+				local frac = math.clamp(rem / (r.total > 0 and r.total or 1), 0, 1)
+				r.timeL.Text = fmt(rem)
+				r.timeL.TextColor3 = frac > 0.5 and GREEN or (frac > 0.25 and ORANGE or RED)
+				r.row.Visible = true
+			else
+				r.row.Visible = false
+				r.total = nil
+			end
+		end
+		panel.BackgroundTransparency = RenderBg.Enabled and 0.35 or 1
+	end
+
+	PotionStatus = larp.Categories.Minigames:CreateModule({
+		Name = 'Potion Status',
+		Function = function(callback)
+			if callback then
+				buildPanel()
+				PotionStatus:Clean(panel)
+				PotionStatus:Clean(runService.RenderStepped:Connect(update))
+			else
+				table.clear(rows)
+				panel = nil
+			end
+		end,
+		Tooltip = 'Vape-style overlay of your active potion effects with timers'
+	})
+	RenderBg = PotionStatus:CreateToggle({
+		Name = 'Render Background',
+		Default = true
+	})
+	Apples = PotionStatus:CreateToggle({
+		Name = 'Apples',
+		Default = true,
+		Tooltip = 'Show the Golden Apple effect'
+	})
+	ShowPositive = PotionStatus:CreateToggle({
+		Name = 'Show Positive Effects',
+		Default = true
+	})
+	ShowNegative = PotionStatus:CreateToggle({
+		Name = 'Show Negative Effects',
+		Default = true
+	})
+end)
+
+run(function()
 	local Health
 	
 	Health = larp.Categories.Render:CreateModule({

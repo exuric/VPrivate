@@ -17463,6 +17463,194 @@ run(function()
 end)
 
 run(function()
+	local FishermanESP
+	local MaxDistance
+	local ShowLoot
+	local Reference = {}
+	local Folder = Instance.new('Folder')
+	Folder.Parent = larp.gui
+	getgenv().LarpFisher = {ponds = 0}
+
+	local function pondLoot(model)
+		local found = {}
+		for _, d in model:GetDescendants() do
+			if d:IsA('BasePart') then
+				local n = d.Name:lower()
+				if n:sub(1, 5) == 'fish_' then
+					found[n:sub(6)] = true
+				end
+			end
+		end
+		local list = {}
+		for k in pairs(found) do list[#list + 1] = k end
+		table.sort(list)
+		return list
+	end
+
+	local function removePond(model)
+		local bb = Reference[model]
+		if bb then
+			Reference[model] = nil
+			pcall(function() bb:Destroy() end)
+		end
+	end
+
+	local function refreshPond(model)
+		local bb = Reference[model]
+		if not bb then return end
+		for _, obj in bb.Frame:GetChildren() do
+			if obj:IsA('ImageLabel') then obj:Destroy() end
+		end
+		local loot = pondLoot(model)
+		bb.Title.Text = 'Pond'
+		if #loot > 0 and ShowLoot.Enabled then
+			for _, key in loot do
+				local img = Instance.new('ImageLabel')
+				img.Size = UDim2.fromOffset(28, 28)
+				img.BackgroundTransparency = 1
+				local meta = bedwars.ItemMeta[key] or bedwars.ItemMeta.emerald
+				img.Image = meta and meta.image or ''
+				img.Parent = bb.Frame
+			end
+			local names = {}
+			for _, key in loot do names[#names + 1] = key end
+			bb.Title.Text = 'Pond: ' .. table.concat(names, ', ')
+		end
+		local n = 0
+		for _, obj in bb.Frame:GetChildren() do
+			if obj:IsA('ImageLabel') then n += 1 end
+		end
+		bb.Billboard.Size = UDim2.fromOffset(math.max(120, 36 * n + 12), 62)
+	end
+
+	local function addPond(model)
+		if Reference[model] or not FishermanESP.Enabled then return end
+		local billboard = Instance.new('BillboardGui')
+		billboard.Name = 'pond'
+		billboard.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
+		billboard.Size = UDim2.fromOffset(120, 62)
+		billboard.AlwaysOnTop = true
+		billboard.ClipsDescendants = false
+		billboard.Adornee = model
+		local title = Instance.new('TextLabel')
+		title.Name = 'Title'
+		title.Size = UDim2.new(1, 0, 0, 22)
+		title.BackgroundTransparency = 1
+		title.TextSize = 15
+		title.Font = Enum.Font.GothamBold
+		title.TextColor3 = Color3.fromRGB(140, 230, 255)
+		title.TextStrokeTransparency = 0.4
+		title.Text = 'Pond'
+		title.Parent = billboard
+		local frame = Instance.new('Frame')
+		frame.Name = 'Icons'
+		frame.Size = UDim2.new(1, 0, 0, 34)
+		frame.Position = UDim2.new(0, 0, 0, 24)
+		frame.BackgroundColor3 = Color3.fromRGB(10, 20, 26)
+		frame.BackgroundTransparency = 0.25
+		frame.BorderSizePixel = 0
+		frame.Parent = billboard
+		local corner = Instance.new('UICorner')
+		corner.CornerRadius = UDim.new(0, 6)
+		corner.Parent = frame
+		local layout = Instance.new('UIListLayout')
+		layout.FillDirection = Enum.FillDirection.Horizontal
+		layout.Padding = UDim.new(0, 4)
+		layout.VerticalAlignment = Enum.VerticalAlignment.Center
+		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		layout.Parent = frame
+		billboard.Parent = Folder
+		Reference[model] = {Billboard = billboard, Frame = frame, Title = title}
+		refreshPond(model)
+		model.Destroying:Once(function() removePond(model) end)
+	end
+
+	FishermanESP = larp.Categories.Minigames:CreateModule({
+		Name = 'FishermanESP',
+		Function = function(callback)
+			if callback then
+				for _, inst in workspace:GetChildren() do
+					if inst:IsA('Model') and inst.Name:find('FishPond') then
+						pcall(addPond, inst)
+					end
+				end
+				FishermanESP:Clean(workspace.ChildAdded:Connect(function(inst)
+					if inst:IsA('Model') and inst.Name:find('FishPond') then
+						task.delay(0.5, function() pcall(addPond, inst) end)
+					end
+				end))
+				FishermanESP:Clean(runService.Heartbeat:Connect(function()
+					if not FishermanESP.Enabled then return end
+					local isFisher = store and store.equippedKit == 'fisherman'
+					local selfpos = entitylib.isAlive and entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position or nil
+					local n = 0
+					for model, d in Reference do
+						if not model.Parent then
+							removePond(model)
+						else
+							local show = true
+							if selfpos then
+								local pivotOk, pp = pcall(function() return model:GetPivot().Position end)
+								if pivotOk then
+									show = (pp - selfpos).Magnitude <= MaxDistance.Value
+								end
+							end
+							d.Billboard.Enabled = show and isFisher
+							if show and isFisher then n += 1 end
+						end
+					end
+					getgenv().LarpFisher.ponds = n
+				end))
+			else
+				for model in Reference do removePond(model) end
+				getgenv().LarpFisher.ponds = 0
+			end
+		end,
+		Tooltip = 'Shows fishing ponds and their loot.'
+	})
+	MaxDistance = FishermanESP:CreateSlider({
+		Name = 'Max Distance',
+		Min = 20,
+		Max = 1000,
+		Default = 400,
+		Suffix = 'studs'
+	})
+	ShowLoot = FishermanESP:CreateToggle({
+		Name = 'Show Loot',
+		Default = true,
+		Function = function()
+			for model in Reference do refreshPond(model) end
+		end,
+		Tooltip = 'Shows loot icons on each pond'
+	})
+
+	local function placeUnder(cat, anchor, name)
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == cat and m.Name ~= name and m.Object then
+				list[#list + 1] = m
+			end
+		end
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == anchor then
+				order[#order + 1] = name
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = name
+		end
+		larp:ApplyModuleOrder(cat, order)
+	end
+	placeUnder('Minigames', 'FishermanSpy', 'FishermanESP')
+	larp:QueueSave()
+end)
+
+run(function()
 	local InfiniteKrystal
 	local old, newMomentum
 	

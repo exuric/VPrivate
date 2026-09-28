@@ -6140,8 +6140,36 @@ run(function()
 	local Distance
 	local DistanceLimit
 	local Behind
+	local Ores
 	local Reference = {}
-	
+	local oreLines = {}
+	local ORE_SUFFIX = '_ore_mesh_block'
+	local collectionService = cloneref(game:GetService('CollectionService'))
+
+	local function addOreLine(part)
+		if oreLines[part] or not part:IsA('BasePart') then return end
+		if larp.ThreadFix then
+			setthreadidentity(8)
+		end
+		local line = Drawing.new('Line')
+		line.Thickness = 1
+		line.Transparency = 1 - Transparency.Value
+		line.Color = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+		line.Visible = false
+		oreLines[part] = line
+	end
+
+	local function removeOreLine(part)
+		local line = oreLines[part]
+		if line then
+			oreLines[part] = nil
+			pcall(function()
+				line.Visible = false
+				line:Remove()
+			end)
+		end
+	end
+
 	local function Added(ent)
 		if not Targets.Players.Enabled and ent.Player then return end
 		if not Targets.NPCs.Enabled and ent.NPC then return end
@@ -6209,8 +6237,33 @@ run(function()
 				EntityTracer.Color = Color3.fromHSV(math.min((distance / 128) / 2.8, 0.4), 0.89, 0.75)
 			end
 		end
+
+		for part, line in oreLines do
+			if not (Ores.Enabled and part.Parent) then
+				line.Visible = false
+				continue
+			end
+			local pos = part.Position
+			local rootPos, rootVis = gameCamera:WorldToViewportPoint(pos)
+			if not rootVis and Behind.Enabled then
+				local tempPos = gameCamera.CFrame:PointToObjectSpace(pos)
+				tempPos = CFrame.Angles(0, 0, (math.atan2(tempPos.Y, tempPos.X) + math.pi)):VectorToWorldSpace((CFrame.Angles(0, math.rad(89.9), 0):VectorToWorldSpace(Vector3.new(0, 0, -1))))
+				rootPos = gameCamera:WorldToViewportPoint(gameCamera.CFrame:pointToWorldSpace(tempPos))
+				rootVis = true
+			end
+			line.Visible = rootVis
+			line.From = startVector
+			line.To = Vector2.new(rootPos.X, rootPos.Y)
+			line.Transparency = 1 - Transparency.Value
+			if DistanceColor.Enabled and entitylib.isAlive then
+				local d = (entitylib.character.RootPart.Position - pos).Magnitude
+				line.Color = Color3.fromHSV(math.min((d / 128) / 2.8, 0.4), 0.89, 0.75)
+			else
+				line.Color = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+			end
+		end
 	end
-	
+
 	Tracers = larp.Categories.Render:CreateModule({
 		Name = 'Tracers',
 		Function = function(callback)
@@ -6234,10 +6287,22 @@ run(function()
 				Tracers:Clean(larp.Categories.Friends.ColorUpdate.Event:Connect(function()
 					ColorFunc(Color.Hue, Color.Sat, Color.Value)
 				end))
+				for _, tag in collectionService:GetAllTags() do
+					if tag:sub(-#ORE_SUFFIX) == ORE_SUFFIX then
+						for _, v in collectionService:GetTagged(tag) do
+							addOreLine(v)
+						end
+						Tracers:Clean(collectionService:GetInstanceAddedSignal(tag):Connect(addOreLine))
+						Tracers:Clean(collectionService:GetInstanceRemovedSignal(tag):Connect(removeOreLine))
+					end
+				end
 				Tracers:Clean(runService.RenderStepped:Connect(Loop))
 			else
 				for i in Reference do
 					Removed(i)
+				end
+				for i in oreLines do
+					removeOreLine(i)
 				end
 			end
 		end,
@@ -6329,6 +6394,16 @@ run(function()
 		end,
 		Default = true,
 		Tooltip = 'Hides teammates & non targetable entities'
+	})
+	Ores = Tracers:CreateToggle({
+		Name = 'Ores',
+		Tooltip = 'Also draw tracers to mineable ores (iron / emerald / diamond)',
+		Function = function()
+			if Tracers.Enabled then
+				Tracers:Toggle()
+				Tracers:Toggle()
+			end
+		end
 	})
 end)
 

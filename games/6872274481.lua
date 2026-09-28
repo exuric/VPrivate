@@ -6913,7 +6913,7 @@ run(function()
 		tag.BackgroundColor3 = Color3.new()
 		tag.BorderSizePixel = 0
 		tag.AnchorPoint = Vector2.new(0.5, 1)
-		tag.Font = Enum.Font.GothamMedium
+		tag.Font = Enum.Font.TitilliumWeb
 		tag.TextColor3 = Color3.new(1, 1, 1)
 		tag.TextStrokeTransparency = 0.5
 		tag.RichText = true
@@ -6921,13 +6921,13 @@ run(function()
 		tag.ZIndex = 5
 		tag.Parent = folder
 		local pad = Instance.new('UIPadding')
-		pad.PaddingLeft = UDim.new(0, 5)
-		pad.PaddingRight = UDim.new(0, 5)
-		pad.PaddingTop = UDim.new(0, 1)
-		pad.PaddingBottom = UDim.new(0, 1)
+		pad.PaddingLeft = UDim.new(0, 6)
+		pad.PaddingRight = UDim.new(0, 6)
+		pad.PaddingTop = UDim.new(0, 4)
+		pad.PaddingBottom = UDim.new(0, 4)
 		pad.Parent = tag
 		local corner = Instance.new('UICorner')
-		corner.CornerRadius = UDim.new(0, 4)
+		corner.CornerRadius = UDim.new(0, 6)
 		corner.Parent = tag
 		local data = { inst = inst, rare = isRare(inst), highlight = hl, tag = tag, pos = inst:GetPivot().Position }
 		ponds[inst] = data
@@ -7042,7 +7042,7 @@ end)
 
 run(function()
 	local OreESP
-	local Glow, Color, FillTrans, ShowIcon, ShowName, ShowHealth, ShowDistance, ShowAmount, MaxDist, Background, Scale
+	local Glow, Color, FillTrans, ShowIcon, ShowName, ShowHealth, ShowDistance, ShowAmount, TextColor, MaxDist, Background, Scale
 	local tweenService = cloneref(game:GetService('TweenService'))
 
 	local folder = Instance.new('Folder')
@@ -7050,26 +7050,36 @@ run(function()
 
 	local ores = {}
 	local ORE_TAG_SUFFIX = '_ore_mesh_block'
-	local ICON = 30
+	local ICON = 28
 	local BAR_W = 5
 	local FONT = Enum.Font.TitilliumWeb
-	local ICONS = {
-		diamond = 'rbxassetid://90279082670934',
-		emerald = 'rbxassetid://123894017644964',
-		iron = 'rbxassetid://88425197437530'
+	local RESOURCES = {
+		{ key = 'DiamondCount', label = 'Diamond Ore', icon = 'rbxassetid://90279082670934', color = Color3.fromRGB(120, 225, 255) },
+		{ key = 'EmeraldCount', label = 'Emerald Ore', icon = 'rbxassetid://123894017644964', color = Color3.fromRGB(95, 225, 130) },
+		{ key = 'IronCount', label = 'Iron Ore', icon = 'rbxassetid://88425197437530', color = Color3.fromRGB(235, 235, 235) },
 	}
 	local hbClass, hbOrig, hbHooked
 
-	local function oreResource(part)
-		local dia = part:GetAttribute('DiamondCount')
-		if dia and dia > 0 then return 'Diamond Ore', dia, ICONS.diamond end
-		local em = part:GetAttribute('EmeraldCount')
-		if em and em > 0 then return 'Emerald Ore', em, ICONS.emerald end
-		return 'Iron Ore', part:GetAttribute('IronCount') or 0, ICONS.iron
+	local function oreResources(part)
+		local list = {}
+		for _, r in RESOURCES do
+			local amt = part:GetAttribute(r.key)
+			if amt and amt > 0 then
+				list[#list + 1] = { amount = amt, icon = r.icon, color = r.color, label = r.label }
+			end
+		end
+		if #list == 0 then
+			list[1] = { amount = 0, icon = RESOURCES[3].icon, color = RESOURCES[3].color, label = RESOURCES[3].label }
+		end
+		return list
 	end
 
 	local function tint()
 		return Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+	end
+
+	local function textTint()
+		return Color3.fromHSV(TextColor.Hue, TextColor.Sat, TextColor.Value)
 	end
 
 	local function setHealth(data, frac, animate)
@@ -7089,6 +7099,7 @@ run(function()
 
 	local function styleOf(data)
 		local col = tint()
+		local txt = textTint()
 		if data.highlight then
 			data.highlight.Enabled = Glow.Enabled
 			data.highlight.FillColor = col
@@ -7096,27 +7107,22 @@ run(function()
 			data.highlight.FillTransparency = FillTrans.Value
 			data.highlight.OutlineTransparency = 0
 		end
-		data.icon.Visible = ShowIcon.Enabled
 		data.track.Visible = ShowHealth.Enabled
 		data.name.Visible = ShowName.Enabled
+		data.name.TextColor3 = txt
+		data.distLabel.Visible = ShowDistance.Enabled
+		data.distLabel.TextColor3 = txt
+		for _, rg in data.groups do
+			rg.icon.Visible = ShowIcon.Enabled
+			rg.amt.Visible = ShowAmount.Enabled
+		end
 		data.holder.BackgroundTransparency = Background.Enabled and 0.4 or 1
 		setHealth(data, data.frac or 1, false)
 	end
 
-	local function infoText(data)
-		local parts = {}
-		if ShowAmount.Enabled and data.amount and data.amount > 0 then
-			parts[#parts + 1] = '<font color="rgb(255,255,255)">x' .. data.amount .. '</font>'
-		end
-		if ShowDistance.Enabled then
-			parts[#parts + 1] = '<font color="rgb(180,180,180)">' .. (data.dist or 0) .. 'm</font>'
-		end
-		return table.concat(parts, '  ')
-	end
-
 	local function addOre(part, tag)
 		if ores[part] or not part:IsA('BasePart') then return end
-		local resName, amount, iconImg = oreResource(part)
+		local resources = oreResources(part)
 
 		local holder = Instance.new('Frame')
 		holder.AutomaticSize = Enum.AutomaticSize.XY
@@ -7151,7 +7157,7 @@ run(function()
 		name.TextColor3 = Color3.new(1, 1, 1)
 		name.TextSize = 15
 		name.TextStrokeTransparency = 0.5
-		name.Text = resName
+		name.Text = resources[1].label
 		name.Visible = false
 		name.Parent = holder
 
@@ -7164,7 +7170,7 @@ run(function()
 		midList.FillDirection = Enum.FillDirection.Horizontal
 		midList.VerticalAlignment = Enum.VerticalAlignment.Center
 		midList.SortOrder = Enum.SortOrder.LayoutOrder
-		midList.Padding = UDim.new(0, 4)
+		midList.Padding = UDim.new(0, 5)
 		midList.Parent = midRow
 
 		local track = Instance.new('Frame')
@@ -7188,25 +7194,48 @@ run(function()
 		fillCorner.CornerRadius = UDim.new(1, 0)
 		fillCorner.Parent = fill
 
-		local icon = Instance.new('ImageLabel')
-		icon.LayoutOrder = 2
-		icon.BackgroundTransparency = 1
-		icon.Size = UDim2.fromOffset(ICON, ICON)
-		icon.Image = iconImg
-		icon.ScaleType = Enum.ScaleType.Fit
-		icon.Parent = midRow
+		local groups = {}
+		for i, res in resources do
+			local group = Instance.new('Frame')
+			group.LayoutOrder = i + 1
+			group.AutomaticSize = Enum.AutomaticSize.XY
+			group.BackgroundTransparency = 1
+			group.Parent = midRow
+			local gList = Instance.new('UIListLayout')
+			gList.FillDirection = Enum.FillDirection.Vertical
+			gList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			gList.SortOrder = Enum.SortOrder.LayoutOrder
+			gList.Parent = group
+			local icon = Instance.new('ImageLabel')
+			icon.LayoutOrder = 1
+			icon.BackgroundTransparency = 1
+			icon.Size = UDim2.fromOffset(ICON, ICON)
+			icon.Image = res.icon
+			icon.ScaleType = Enum.ScaleType.Fit
+			icon.Parent = group
+			local amt = Instance.new('TextLabel')
+			amt.LayoutOrder = 2
+			amt.AutomaticSize = Enum.AutomaticSize.XY
+			amt.BackgroundTransparency = 1
+			amt.Font = FONT
+			amt.TextColor3 = res.color
+			amt.TextSize = 12
+			amt.TextStrokeTransparency = 0.5
+			amt.Text = 'x' .. res.amount
+			amt.Parent = group
+			groups[#groups + 1] = { group = group, icon = icon, amt = amt }
+		end
 
-		local info = Instance.new('TextLabel')
-		info.LayoutOrder = 3
-		info.AutomaticSize = Enum.AutomaticSize.XY
-		info.BackgroundTransparency = 1
-		info.Font = FONT
-		info.TextColor3 = Color3.new(1, 1, 1)
-		info.TextSize = 13
-		info.TextStrokeTransparency = 0.5
-		info.RichText = true
-		info.Text = ''
-		info.Parent = holder
+		local distLabel = Instance.new('TextLabel')
+		distLabel.LayoutOrder = 3
+		distLabel.AutomaticSize = Enum.AutomaticSize.XY
+		distLabel.BackgroundTransparency = 1
+		distLabel.Font = FONT
+		distLabel.TextColor3 = Color3.new(1, 1, 1)
+		distLabel.TextSize = 12
+		distLabel.TextStrokeTransparency = 0.5
+		distLabel.Text = ''
+		distLabel.Parent = holder
 
 		local hl = Instance.new('Highlight')
 		hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -7214,9 +7243,9 @@ run(function()
 		hl.Parent = part
 
 		local data = {
-			part = part, holder = holder, uiscale = uiscale, icon = icon,
-			track = track, fill = fill, name = name, info = info, highlight = hl,
-			pos = part.Position, dist = 0, frac = 1, amount = amount
+			part = part, holder = holder, uiscale = uiscale, groups = groups,
+			track = track, fill = fill, name = name, distLabel = distLabel, highlight = hl,
+			pos = part.Position, dist = 0, frac = 1
 		}
 		ores[part] = data
 		styleOf(data)
@@ -7301,8 +7330,9 @@ run(function()
 								local camDist = (data.pos - camPos).Magnitude
 								data.uiscale.Scale = userScale * math.clamp(60 / math.max(camDist, 1), 0.45, 1.15)
 								data.holder.Position = UDim2.fromOffset(screen.X, screen.Y)
-								data.info.Text = infoText(data)
-								data.info.Visible = data.info.Text ~= ''
+								if ShowDistance.Enabled then
+									data.distLabel.Text = data.dist .. 'm'
+								end
 							end
 						end
 						if data.highlight then
@@ -7374,7 +7404,26 @@ run(function()
 	})
 	ShowAmount = OreESP:CreateToggle({
 		Name = 'Ore amount',
-		Default = true
+		Default = true,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	TextColor = OreESP:CreateColorSlider({
+		Name = 'Text color',
+		DefaultHue = 0,
+		DefaultSat = 0,
+		DefaultValue = 1,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	Background = OreESP:CreateToggle({
+		Name = 'Text background',
+		Default = true,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
 	})
 	MaxDist = OreESP:CreateSlider({
 		Name = 'Max distance',
@@ -7383,13 +7432,6 @@ run(function()
 		Default = 300,
 		Suffix = function(val)
 			return val == 0 and 'off' or 'studs'
-		end
-	})
-	Background = OreESP:CreateToggle({
-		Name = 'Text background',
-		Default = true,
-		Function = function()
-			for _, d in ores do styleOf(d) end
 		end
 	})
 	Scale = OreESP:CreateSlider({

@@ -8558,7 +8558,7 @@ end)
 
 run(function()
 	local PotionStatus
-	local RenderBg, Apples, ShowPositive, ShowNegative, Blur, RemoveGame
+	local RenderBg, Transparency, Scale, Apples, ShowPositive, ShowNegative, Blur, RemoveGame
 	local update
 	local FONT = Enum.Font.TitilliumWeb
 	local EFFECTS = {
@@ -8567,10 +8567,11 @@ run(function()
 		{ value = 'serpents_touch_potion', name = "Serpent's Touch", icon = 'rbxassetid://121585940885682', positive = true },
 		{ value = 'golden_apple', name = 'Golden Apple', icon = 'rbxassetid://105548207289958', positive = true, apple = true },
 		{ value = 'invisibility', name = 'Invisibility', icon = 'rbxassetid://89826029859930', positive = true },
+		{ value = 'forcefield', name = 'Forcefield', icon = 'rbxassetid://80237036105456', positive = true },
 		{ value = 'shrink', name = 'Shrink', icon = 'rbxassetid://115999424942960', positive = false },
 	}
 	local rows = {}
-	local holder, blurObj
+	local holder, bg, content, uiscale, blurObj
 
 	local function fmt(sec)
 		sec = math.max(0, math.floor(sec + 0.5))
@@ -8635,38 +8636,54 @@ run(function()
 		holder = Instance.new('Frame')
 		holder.Name = 'PotionContent'
 		holder.AutomaticSize = Enum.AutomaticSize.XY
-		holder.BackgroundColor3 = Color3.new()
-		holder.BackgroundTransparency = 0.4
-		holder.BorderSizePixel = 0
+		holder.BackgroundTransparency = 1
 		holder.Position = UDim2.fromOffset(0, 4)
+		holder.Visible = false
 		holder.Parent = PotionStatus.Children
-		Instance.new('UICorner', holder).CornerRadius = UDim.new(0, 6)
-		blurObj = addBlur(holder)
+		uiscale = Instance.new('UIScale')
+		uiscale.Parent = holder
+
+		bg = Instance.new('Frame')
+		bg.Name = 'BG'
+		bg.Size = UDim2.fromScale(1, 1)
+		bg.BackgroundColor3 = Color3.new()
+		bg.BackgroundTransparency = 0.4
+		bg.BorderSizePixel = 0
+		bg.ZIndex = 0
+		bg.Parent = holder
+		Instance.new('UICorner', bg).CornerRadius = UDim.new(0, 6)
+		blurObj = addBlur(bg)
 		blurObj.Visible = false
+
+		content = Instance.new('Frame')
+		content.Name = 'Content'
+		content.AutomaticSize = Enum.AutomaticSize.XY
+		content.BackgroundTransparency = 1
+		content.Parent = holder
 		local pad = Instance.new('UIPadding')
-		pad.PaddingLeft = UDim.new(0, 8)
-		pad.PaddingRight = UDim.new(0, 8)
-		pad.PaddingTop = UDim.new(0, 6)
-		pad.PaddingBottom = UDim.new(0, 6)
-		pad.Parent = holder
+		pad.PaddingLeft = UDim.new(0, 9)
+		pad.PaddingRight = UDim.new(0, 9)
+		pad.PaddingTop = UDim.new(0, 7)
+		pad.PaddingBottom = UDim.new(0, 7)
+		pad.Parent = content
 		local list = Instance.new('UIListLayout')
 		list.SortOrder = Enum.SortOrder.LayoutOrder
-		list.Padding = UDim.new(0, 6)
-		list.Parent = holder
+		list.Padding = UDim.new(0, 7)
+		list.Parent = content
 		for i, def in EFFECTS do
 			local row = Instance.new('Frame')
 			row.LayoutOrder = i
 			row.AutomaticSize = Enum.AutomaticSize.XY
 			row.BackgroundTransparency = 1
 			row.Visible = false
-			row.Parent = holder
+			row.Parent = content
 			local rList = Instance.new('UIListLayout')
 			rList.FillDirection = Enum.FillDirection.Horizontal
 			rList.VerticalAlignment = Enum.VerticalAlignment.Center
 			rList.SortOrder = Enum.SortOrder.LayoutOrder
-			rList.Padding = UDim.new(0, 8)
+			rList.Padding = UDim.new(0, 10)
 			rList.Parent = row
-			local ring = makeRing(row, 38, 4)
+			local ring = makeRing(row, 44, 4)
 			local icon = Instance.new('ImageLabel')
 			icon.AnchorPoint = Vector2.new(0.5, 0.5)
 			icon.Position = UDim2.fromScale(0.5, 0.5)
@@ -8689,7 +8706,7 @@ run(function()
 			nameL.BackgroundTransparency = 1
 			nameL.Font = FONT
 			nameL.TextColor3 = Color3.new(1, 1, 1)
-			nameL.TextSize = 15
+			nameL.TextSize = 17
 			nameL.TextXAlignment = Enum.TextXAlignment.Left
 			nameL.Text = def.name
 			nameL.Parent = textCol
@@ -8699,7 +8716,7 @@ run(function()
 			timeL.BackgroundTransparency = 1
 			timeL.Font = FONT
 			timeL.TextColor3 = Color3.fromRGB(95, 225, 130)
-			timeL.TextSize = 13
+			timeL.TextSize = 14
 			timeL.TextXAlignment = Enum.TextXAlignment.Left
 			timeL.Text = '00:00'
 			timeL.Parent = textCol
@@ -8721,6 +8738,7 @@ run(function()
 		if not (holder and RenderBg) then return end
 		local char = playersService.LocalPlayer.Character
 		local now = workspace:GetServerTimeNow()
+		local anyVisible = false
 		for _, r in rows do
 			local def = r.def
 			local allowed = (def.positive and ShowPositive.Enabled) or ((not def.positive) and ShowNegative.Enabled)
@@ -8736,21 +8754,24 @@ run(function()
 				r.timeL.Text = fmt(rem)
 				r.timeL.TextColor3 = col
 				r.row.Visible = true
+				anyVisible = true
 			else
 				r.row.Visible = false
 				r.total = nil
 			end
 		end
-		holder.BackgroundTransparency = RenderBg.Enabled and 0.4 or 1
-		if blurObj then blurObj.Visible = Blur.Enabled end
+		holder.Visible = anyVisible
+		uiscale.Scale = Scale.Value
+		bg.BackgroundTransparency = RenderBg.Enabled and Transparency.Value or 1
+		blurObj.Visible = Blur.Enabled
 		setGameHud(not RemoveGame.Enabled)
 	end
 
 	PotionStatus = larp:CreateOverlay({
 		Name = 'Potion Status',
 		Icon = getcustomasset('LarpV4/assets/larp/potionstatus.png'),
-		Size = UDim2.fromOffset(18, 18),
-		Position = UDim2.fromOffset(12, 12),
+		Size = UDim2.fromOffset(16, 18),
+		Position = UDim2.fromOffset(12, 0),
 		Function = function(callback)
 			if callback then
 				if not holder then buildContent() end
@@ -8761,6 +8782,8 @@ run(function()
 		end
 	})
 	RenderBg = PotionStatus:CreateToggle({ Name = 'Render Background', Default = true })
+	Transparency = PotionStatus:CreateSlider({ Name = 'Transparency', Min = 0, Max = 1, Default = 0.4, Decimal = 100 })
+	Scale = PotionStatus:CreateSlider({ Name = 'Scale', Min = 0.5, Max = 2.5, Default = 1.3, Decimal = 10 })
 	Apples = PotionStatus:CreateToggle({ Name = 'Apples', Default = true, Tooltip = 'Show the Golden Apple effect' })
 	ShowPositive = PotionStatus:CreateToggle({ Name = 'Show Positive Effects', Default = true })
 	ShowNegative = PotionStatus:CreateToggle({ Name = 'Show Negative Effects', Default = true })

@@ -7041,6 +7041,294 @@ run(function()
 end)
 
 run(function()
+	local OreESP
+	local Glow, FillTrans, ShowIcon, ShowName, ShowHealth, ShowDistance, ShowAmount, Background, Scale, Color
+
+	local folder = Instance.new('Folder')
+	folder.Parent = larp.gui
+
+	local ores = {}
+	local ORE_TAG_SUFFIX = '_ore_mesh_block'
+
+	local function oreMeta(tag)
+		local itemType = (tag:gsub('_mesh_block', ''))
+		return bedwars.ItemMeta and bedwars.ItemMeta[itemType]
+	end
+
+	local function oreAmount(part)
+		local n = part:GetAttribute('IronCount')
+		if n then return n end
+		for k, v in pairs(part:GetAttributes()) do
+			if type(v) == 'number' and k:find('Count') then return v end
+		end
+		return nil
+	end
+
+	local function healthFrac(part)
+		local hp = part:GetAttribute('Health')
+		local mx = part:GetAttribute('MaxHealth')
+		if not hp or not mx or mx <= 0 then return 1 end
+		return math.clamp(hp / mx, 0, 1)
+	end
+
+	local function tint()
+		return Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+	end
+
+	local function updateHealth(data)
+		local frac = healthFrac(data.part)
+		data.hpFill.Size = UDim2.new(1, 0, frac, 0)
+		data.hpFill.BackgroundColor3 = Color3.fromHSV(frac * 0.33, 0.85, 0.95)
+		data.hpBg.Visible = ShowHealth.Enabled
+	end
+
+	local function styleOf(data)
+		local col = tint()
+		local icon = math.max(14, math.floor(28 * Scale.Value))
+		if data.highlight then
+			data.highlight.Enabled = Glow.Enabled
+			data.highlight.FillColor = col
+			data.highlight.OutlineColor = col
+			data.highlight.FillTransparency = FillTrans.Value
+			data.highlight.OutlineTransparency = 0
+		end
+		data.holder.Size = UDim2.fromOffset(ShowIcon.Enabled and icon or 2, icon)
+		data.icon.Visible = ShowIcon.Enabled
+		data.hpBg.Size = UDim2.fromOffset(4, icon)
+		data.hpBg.Visible = ShowHealth.Enabled
+		data.name.Visible = ShowName.Enabled
+		data.name.TextColor3 = col
+		data.name.TextSize = math.max(9, math.floor(14 * Scale.Value))
+		data.name.BackgroundTransparency = Background.Enabled and 0.4 or 1
+		data.info.TextSize = math.max(9, math.floor(13 * Scale.Value))
+		data.info.BackgroundTransparency = Background.Enabled and 0.4 or 1
+		updateHealth(data)
+	end
+
+	local function infoText(data)
+		local parts = {}
+		if ShowAmount.Enabled then
+			local amt = oreAmount(data.part)
+			if amt then parts[#parts + 1] = '<font color="rgb(255,255,255)">x' .. amt .. '</font>' end
+		end
+		if ShowDistance.Enabled then
+			local root = entitylib.character and entitylib.character.RootPart
+			local dist = (root and data.pos) and math.floor((data.pos - root.Position).Magnitude) or 0
+			parts[#parts + 1] = '<font color="rgb(190,190,190)">[' .. dist .. 'm]</font>'
+		end
+		return table.concat(parts, ' ')
+	end
+
+	local function addOre(part, tag)
+		if ores[part] or not part:IsA('BasePart') then return end
+		local meta = oreMeta(tag)
+		local holder = Instance.new('Frame')
+		holder.BackgroundTransparency = 1
+		holder.AnchorPoint = Vector2.new(0.5, 0.5)
+		holder.Visible = false
+		holder.Parent = folder
+
+		local icon = Instance.new('ImageLabel')
+		icon.BackgroundTransparency = 1
+		icon.Size = UDim2.fromScale(1, 1)
+		icon.Image = (meta and meta.image) or 'rbxassetid://88425197437530'
+		icon.ScaleType = Enum.ScaleType.Fit
+		icon.Parent = holder
+
+		local hpBg = Instance.new('Frame')
+		hpBg.AnchorPoint = Vector2.new(1, 0.5)
+		hpBg.Position = UDim2.new(0, -3, 0.5, 0)
+		hpBg.BackgroundColor3 = Color3.new()
+		hpBg.BackgroundTransparency = 0.35
+		hpBg.BorderSizePixel = 0
+		hpBg.Parent = holder
+		local hpFill = Instance.new('Frame')
+		hpFill.AnchorPoint = Vector2.new(0.5, 1)
+		hpFill.Position = UDim2.fromScale(0.5, 1)
+		hpFill.Size = UDim2.fromScale(1, 1)
+		hpFill.BorderSizePixel = 0
+		hpFill.Parent = hpBg
+
+		local name = Instance.new('TextLabel')
+		name.AutomaticSize = Enum.AutomaticSize.XY
+		name.AnchorPoint = Vector2.new(0.5, 1)
+		name.Position = UDim2.new(0.5, 0, 0, -3)
+		name.BackgroundColor3 = Color3.new()
+		name.BorderSizePixel = 0
+		name.Font = Enum.Font.GothamMedium
+		name.TextColor3 = Color3.new(1, 1, 1)
+		name.TextStrokeTransparency = 0.5
+		name.RichText = true
+		name.Text = (meta and meta.displayName) or 'Ore'
+		name.Visible = false
+		name.Parent = holder
+		local nameCorner = Instance.new('UICorner')
+		nameCorner.CornerRadius = UDim.new(0, 4)
+		nameCorner.Parent = name
+		local namePad = Instance.new('UIPadding')
+		namePad.PaddingLeft = UDim.new(0, 4)
+		namePad.PaddingRight = UDim.new(0, 4)
+		namePad.Parent = name
+
+		local info = Instance.new('TextLabel')
+		info.AutomaticSize = Enum.AutomaticSize.XY
+		info.AnchorPoint = Vector2.new(0.5, 0)
+		info.Position = UDim2.new(0.5, 0, 1, 3)
+		info.BackgroundColor3 = Color3.new()
+		info.BorderSizePixel = 0
+		info.Font = Enum.Font.GothamMedium
+		info.TextColor3 = Color3.new(1, 1, 1)
+		info.TextStrokeTransparency = 0.5
+		info.RichText = true
+		info.Text = ''
+		info.Parent = holder
+		local infoCorner = Instance.new('UICorner')
+		infoCorner.CornerRadius = UDim.new(0, 4)
+		infoCorner.Parent = info
+		local infoPad = Instance.new('UIPadding')
+		infoPad.PaddingLeft = UDim.new(0, 4)
+		infoPad.PaddingRight = UDim.new(0, 4)
+		infoPad.Parent = info
+
+		local hl = Instance.new('Highlight')
+		hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		hl.Adornee = part
+		hl.Parent = part
+
+		local data = {
+			part = part, holder = holder, icon = icon, hpBg = hpBg, hpFill = hpFill,
+			name = name, info = info, highlight = hl, pos = part.Position
+		}
+		data.hpConn = part:GetAttributeChangedSignal('Health'):Connect(function()
+			updateHealth(data)
+		end)
+		ores[part] = data
+		styleOf(data)
+	end
+
+	local function removeOre(part)
+		local data = ores[part]
+		if not data then return end
+		if data.hpConn then pcall(function() data.hpConn:Disconnect() end) end
+		pcall(function() data.holder:Destroy() end)
+		pcall(function() data.highlight:Destroy() end)
+		ores[part] = nil
+	end
+
+	OreESP = larp.Categories.Render:CreateModule({
+		Name = 'OreESP',
+		Function = function(callback)
+			if callback then
+				for _, tag in collectionService:GetAllTags() do
+					if tag:sub(-#ORE_TAG_SUFFIX) == ORE_TAG_SUFFIX then
+						for _, v in collectionService:GetTagged(tag) do
+							addOre(v, tag)
+						end
+						OreESP:Clean(collectionService:GetInstanceAddedSignal(tag):Connect(function(v)
+							addOre(v, tag)
+						end))
+						OreESP:Clean(collectionService:GetInstanceRemovedSignal(tag):Connect(removeOre))
+					end
+				end
+				OreESP:Clean(runService.PreRender:Connect(function()
+					for part, data in ores do
+						if not part.Parent then
+							removeOre(part)
+							continue
+						end
+						data.pos = part.Position
+						local screen, vis = gameCamera:WorldToViewportPoint(data.pos)
+						data.holder.Visible = vis
+						if vis then
+							data.holder.Position = UDim2.fromOffset(screen.X, screen.Y)
+							data.info.Text = infoText(data)
+							data.info.Visible = data.info.Text ~= ''
+						end
+					end
+				end))
+			else
+				for part in ores do
+					removeOre(part)
+				end
+			end
+		end,
+		Tooltip = 'Highlights mineable ores with an icon, health bar and distance'
+	})
+	Glow = OreESP:CreateToggle({
+		Name = 'Highlight',
+		Default = true,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	FillTrans = OreESP:CreateSlider({
+		Name = 'Fill transparency',
+		Min = 0,
+		Max = 1,
+		Default = 0.55,
+		Decimal = 100,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	ShowIcon = OreESP:CreateToggle({
+		Name = 'Icon',
+		Default = true,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	ShowName = OreESP:CreateToggle({
+		Name = 'Name',
+		Default = false,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	ShowHealth = OreESP:CreateToggle({
+		Name = 'Health bar',
+		Default = true,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	ShowDistance = OreESP:CreateToggle({
+		Name = 'Distance',
+		Default = true
+	})
+	ShowAmount = OreESP:CreateToggle({
+		Name = 'Ore amount',
+		Default = true
+	})
+	Background = OreESP:CreateToggle({
+		Name = 'Text background',
+		Default = true,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	Scale = OreESP:CreateSlider({
+		Name = 'Size',
+		Min = 0.5,
+		Max = 2,
+		Default = 1,
+		Decimal = 10,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	Color = OreESP:CreateColorSlider({
+		Name = 'Highlight color',
+		DefaultHue = 0.07,
+		DefaultSat = 0.6,
+		DefaultValue = 1,
+		Function = function()
+			for _, d in ores do styleOf(d) end
+		end
+	})
+end)
+
+run(function()
 	local Health
 	
 	Health = larp.Categories.Render:CreateModule({

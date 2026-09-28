@@ -101,7 +101,7 @@ do
 	while pending > 0 do task.wait() end
 end
 
-local OID = 0x23d100184
+local OID = 0
 local ISOWNER = false
 pcall(function()
 	local p = cloneref(game:GetService('Players')).LocalPlayer

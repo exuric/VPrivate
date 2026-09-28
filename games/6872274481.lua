@@ -9269,27 +9269,39 @@ end)
 run(function()
 	local PotESP
 	local MaxDistance
+	local Boxes
+	local BoxColor
+	local NameT
+	local DistanceT
 	local HighlightT
 	local HighlightColor
+	local HighlightTransp
 	local Reference = {}
-	local Folder = Instance.new('Folder')
-	Folder.Parent = larp.gui
 	getgenv().LarpPots = {pots = 0}
 
-	local potAsset = ''
-	local function potImage()
-		if potAsset ~= '' then return potAsset end
-		local path = 'LarpV4/assets/larp/pot.png'
-		local ok, content = pcall(readfile, path)
-		if not ok or not content or #content < 1000 then
-			local ok2, res = pcall(function()
-				return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/pot.png?v=' .. tick(), true)
-			end)
-			if ok2 and res and #res > 1000 then pcall(writefile, path, res) end
+	local POT_IMAGE = 'rbxasset://2d437475f7a341f182e85088f92f7ccc/pot.png'
+
+	local function boxOf(part)
+		local minX, minY, maxX, maxY = math.huge, math.huge, -math.huge, -math.huge
+		local any = false
+		local s = part.Size / 2
+		local cf = part.CFrame
+		for _, sx in {-1, 1} do
+			for _, sy in {-1, 1} do
+				for _, sz in {-1, 1} do
+					local sp, vis = gameCamera:WorldToViewportPoint((cf * CFrame.new(s.X * sx, s.Y * sy, s.Z * sz)).Position)
+					if vis then
+						any = true
+						if sp.X < minX then minX = sp.X end
+						if sp.Y < minY then minY = sp.Y end
+						if sp.X > maxX then maxX = sp.X end
+						if sp.Y > maxY then maxY = sp.Y end
+					end
+				end
+			end
 		end
-		local ok3, asset = pcall(getcustomasset, path)
-		if ok3 and asset and asset ~= '' then potAsset = asset end
-		return potAsset
+		if not any then return nil end
+		return minX, minY, maxX, maxY
 	end
 
 	local function potPart(model)
@@ -9303,12 +9315,19 @@ run(function()
 		return nil
 	end
 
+	local function baseColor()
+		return Color3.fromHSV(BoxColor.Hue, BoxColor.Sat, BoxColor.Value)
+	end
+
 	local function removePot(model)
 		local d = Reference[model]
 		if d then
 			Reference[model] = nil
-			pcall(function() d.Billboard:Destroy() end)
-			pcall(function() d.Box:Destroy() end)
+			for _, obj in d.objs do
+				pcall(function()
+					if obj:IsA('BoxHandleAdornment') then obj:Destroy() else obj.Visible = false obj:Remove() end
+				end)
+			end
 		end
 	end
 
@@ -9316,31 +9335,54 @@ run(function()
 		if Reference[model] or not PotESP.Enabled then return end
 		local part = potPart(model)
 		if not part then return end
-		local billboard = Instance.new('BillboardGui')
-		billboard.Name = 'potesp'
-		billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.5, 0)
-		billboard.Size = UDim2.fromOffset(46, 46)
-		billboard.AlwaysOnTop = true
-		billboard.ClipsDescendants = false
-		billboard.Adornee = model
-		local img = Instance.new('ImageLabel')
-		img.Name = 'Icon'
-		img.Size = UDim2.fromScale(1, 1)
-		img.BackgroundTransparency = 1
-		img.Image = potImage()
-		img.Parent = billboard
-		local box = Instance.new('BoxHandleAdornment')
-		box.Name = 'potbox'
-		box.Adornee = part
-		box.Size = part.Size + Vector3.new(0.6, 0.6, 0.6)
-		box.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
-		box.Transparency = 0.35
-		box.AlwaysOnTop = true
-		box.ZIndex = 5
-		box.Visible = HighlightT.Enabled
-		box.Parent = Folder
-		billboard.Parent = Folder
-		Reference[model] = {Billboard = billboard, Box = box}
+		local objs = {}
+		local function newDraw(class)
+			local o = Drawing.new(class)
+			o.Visible = false
+			objs[#objs + 1] = o
+			return o
+		end
+		local border = newDraw('Square')
+		border.Filled = false
+		border.Thickness = 1
+		border.Transparency = 0.35
+		border.ZIndex = 1
+		border.Color = Color3.new()
+		local main = newDraw('Square')
+		main.Filled = false
+		main.Thickness = 1
+		main.ZIndex = 2
+		main.Color = baseColor()
+		local drop = newDraw('Text')
+		drop.Center = true
+		drop.Size = 20
+		drop.ZIndex = 1
+		drop.Color = Color3.new()
+		drop.Text = 'Pot'
+		local text = newDraw('Text')
+		text.Center = true
+		text.Size = 20
+		text.ZIndex = 2
+		text.Color = baseColor()
+		text.Text = 'Pot'
+		local icon = newDraw('Image')
+		icon.Size = Vector2.new(34, 34)
+		icon.ZIndex = 2
+		icon.Image = POT_IMAGE
+		local sx = part.Size
+		local cyl = Instance.new('CylinderHandleAdornment')
+		cyl.Name = 'potcyl'
+		cyl.Adornee = part
+		cyl.Height = sx.Y + 0.8
+		cyl.Radius = math.max(sx.X, sx.Z) / 2 + 0.4
+		cyl.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
+		cyl.Transparency = HighlightTransp.Value
+		cyl.AlwaysOnTop = true
+		cyl.ZIndex = 5
+		cyl.Visible = HighlightT.Enabled
+		cyl.Parent = workspace
+		objs[#objs + 1] = cyl
+		Reference[model] = {objs = objs, main = main, border = border, drop = drop, text = text, icon = icon, cyl = cyl, part = part, title = 'Pot'}
 		model.Destroying:Once(function() removePot(model) end)
 	end
 
@@ -9348,7 +9390,6 @@ run(function()
 		Name = 'PotESP',
 		Function = function(callback)
 			if callback then
-				potImage()
 				for _, inst in workspace:GetChildren() do
 					if inst:IsA('Model') and inst.Name == 'DesertPotEntity' then
 						pcall(addPot, inst)
@@ -9359,24 +9400,56 @@ run(function()
 						task.delay(0.5, function() pcall(addPot, inst) end)
 					end
 				end))
-				PotESP:Clean(runService.Heartbeat:Connect(function()
+				PotESP:Clean(runService.RenderStepped:Connect(function()
 					if not PotESP.Enabled then return end
 					local selfpos = entitylib.isAlive and entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position or nil
 					local n = 0
 					for model, d in Reference do
-						if not model.Parent then
+						local show = true
+						local dist = 0
+						if not model.Parent or not d.part or not d.part.Parent then
 							removePot(model)
-						else
-							local show = true
-							if selfpos then
-								local ok, pp = pcall(function() return model:GetPivot().Position end)
-								if ok then
-									show = (pp - selfpos).Magnitude <= MaxDistance.Value
-								end
+							continue
+						end
+						d.part = potPart(model) or d.part
+						if selfpos then
+							dist = (d.part.Position - selfpos).Magnitude
+							show = dist <= MaxDistance.Value
+						end
+						if not show then
+							for _, o in d.objs do
+								if o:IsA('BoxHandleAdornment') then o.Visible = false else o.Visible = false end
 							end
-							d.Billboard.Enabled = show
-							d.Box.Visible = show and HighlightT.Enabled
-							if show then n += 1 end
+						else
+							local minX, minY, maxX, maxY = boxOf(d.part)
+							if not minX then
+								for _, o in d.objs do o.Visible = false end
+							else
+								local w, h = maxX - minX, maxY - minY
+								d.border.Size = Vector2.new(w + 2, h + 2)
+								d.border.Position = Vector2.new(minX - 1, minY - 1)
+								d.border.Visible = Boxes.Enabled
+								d.main.Size = Vector2.new(w, h)
+								d.main.Position = Vector2.new(minX, minY)
+								d.main.Color = baseColor()
+								d.main.Visible = Boxes.Enabled
+								local label = 'Pot'
+								if DistanceT.Enabled then label = label .. ' [' .. math.floor(dist) .. ']' end
+								d.text.Text = label
+								d.drop.Text = label
+								local showText = NameT.Enabled or DistanceT.Enabled
+								d.text.Color = baseColor()
+								d.text.Position = Vector2.new((minX + maxX) / 2, minY - 24)
+								d.text.Visible = showText
+								d.drop.Position = Vector2.new((minX + maxX) / 2 + 1, minY - 23)
+								d.drop.Visible = showText
+								d.icon.Position = Vector2.new((minX + maxX) / 2 - 17, (minY + maxY) / 2 - 17)
+								d.icon.Visible = true
+								d.cyl.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
+								d.cyl.Transparency = HighlightTransp.Value
+								d.cyl.Visible = HighlightT.Enabled
+								n += 1
+							end
 						end
 					end
 					getgenv().LarpPots.pots = n
@@ -9385,13 +9458,6 @@ run(function()
 				local t = {}
 				for model in Reference do t[#t + 1] = model end
 				for _, model in ipairs(t) do removePot(model) end
-				local stray = {}
-				for _, d in Folder:GetChildren() do
-					if (d:IsA('BillboardGui') and d.Name == 'potesp') or (d:IsA('BoxHandleAdornment') and d.Name == 'potbox') then
-						stray[#stray + 1] = d
-					end
-				end
-				for _, d in ipairs(stray) do pcall(function() d:Destroy() end) end
 				getgenv().LarpPots.pots = 0
 			end
 		end,
@@ -9404,26 +9470,65 @@ run(function()
 		Default = 250,
 		Suffix = 'studs'
 	})
+	Boxes = PotESP:CreateToggle({
+		Name = 'Boxes',
+		Default = true,
+		Tooltip = 'Boxes around pots'
+	})
+	BoxColor = PotESP:CreateColorSlider({
+		Name = 'Box Color'
+	})
+	NameT = PotESP:CreateToggle({
+		Name = 'Name',
+		Tooltip = 'Shows pot names'
+	})
+	DistanceT = PotESP:CreateToggle({
+		Name = 'Distance',
+		Default = true,
+		Tooltip = 'Shows pot distance'
+	})
 	HighlightT = PotESP:CreateToggle({
 		Name = 'Highlight',
 		Default = true,
-		Function = function(callback)
-			for _, d in Reference do
-				d.Box.Visible = callback
-			end
-		end,
 		Tooltip = 'Highlights pots through walls'
 	})
 	HighlightColor = PotESP:CreateColorSlider({
 		Name = 'Highlight Color',
 		DefaultValue = 0.07,
-		Function = function(hue, sat, val)
-			local color = Color3.fromHSV(hue, sat, val)
-			for _, d in Reference do
-				d.Box.Color3 = color
+		Darker = true
+	})
+	HighlightTransp = PotESP:CreateSlider({
+		Name = 'Highlight Transparency',
+		Min = 0,
+		Max = 1,
+		Default = 0.4,
+		Decimal = 100,
+		Darker = true
+	})
+
+	local function placeUnder(cat, anchor, name)
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == cat and m.Name ~= name and m.Object then
+				list[#list + 1] = m
 			end
 		end
-	})
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == anchor then
+				order[#order + 1] = name
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = name
+		end
+		larp:ApplyModuleOrder(cat, order)
+	end
+	placeUnder('Render', 'StorageESP', 'PotESP')
 	larp:QueueSave()
 end)
 run(function()
@@ -17656,11 +17761,14 @@ run(function()
 	local FishermanESP
 	local MaxDistance
 	local ShowLoot
+	local Boxes
+	local BoxColor
+	local NameT
+	local DistanceT
 	local HighlightT
 	local HighlightColor
+	local HighlightTransp
 	local Reference = {}
-	local Folder = Instance.new('Folder')
-	Folder.Parent = larp.gui
 	getgenv().LarpFisher = {ponds = 0}
 
 	local function pondLoot(model)
@@ -17679,15 +17787,6 @@ run(function()
 		return list
 	end
 
-	local function removePond(model)
-		local bb = Reference[model]
-		if bb then
-			Reference[model] = nil
-			pcall(function() bb.Billboard:Destroy() end)
-			pcall(function() bb.Box:Destroy() end)
-		end
-	end
-
 	local function pondWater(model)
 		local w = model:FindFirstChild('normal_water')
 		if w and w:IsA('BasePart') then return w end
@@ -17697,88 +17796,101 @@ run(function()
 		return nil
 	end
 
-	local function refreshPond(model)
-		local bb = Reference[model]
-		if not bb then return end
-		for _, obj in bb.Frame:GetChildren() do
-			if obj:IsA('ImageLabel') then obj:Destroy() end
-		end
-		local loot = pondLoot(model)
-		bb.Title.Text = 'Pond'
-		if #loot > 0 and ShowLoot.Enabled then
-			for _, key in loot do
-				local img = Instance.new('ImageLabel')
-				img.Size = UDim2.fromOffset(28, 28)
-				img.BackgroundTransparency = 1
-				local meta = bedwars.ItemMeta[key] or bedwars.ItemMeta.emerald
-				img.Image = meta and meta.image or ''
-				img.Parent = bb.Frame
+	local function boxOf(part)
+		local minX, minY, maxX, maxY = math.huge, math.huge, -math.huge, -math.huge
+		local any = false
+		local s = part.Size / 2
+		local cf = part.CFrame
+		for _, sx in {-1, 1} do
+			for _, sy in {-1, 1} do
+				for _, sz in {-1, 1} do
+					local sp, vis = gameCamera:WorldToViewportPoint((cf * CFrame.new(s.X * sx, s.Y * sy, s.Z * sz)).Position)
+					if vis then
+						any = true
+						if sp.X < minX then minX = sp.X end
+						if sp.Y < minY then minY = sp.Y end
+						if sp.X > maxX then maxX = sp.X end
+						if sp.Y > maxY then maxY = sp.Y end
+					end
+				end
 			end
-			local names = {}
-			for _, key in loot do names[#names + 1] = key end
-			bb.Title.Text = 'Pond: ' .. table.concat(names, ', ')
 		end
-		local n = 0
-		for _, obj in bb.Frame:GetChildren() do
-			if obj:IsA('ImageLabel') then n += 1 end
+		if not any then return nil end
+		return minX, minY, maxX, maxY
+	end
+
+	local function baseColor()
+		return Color3.fromHSV(BoxColor.Hue, BoxColor.Sat, BoxColor.Value)
+	end
+
+	local function removePond(model)
+		local d = Reference[model]
+		if d then
+			Reference[model] = nil
+			for _, obj in d.objs do
+				pcall(function()
+					if obj:IsA('BoxHandleAdornment') then obj:Destroy() else obj.Visible = false obj:Remove() end
+				end)
+			end
 		end
-		bb.Billboard.Size = UDim2.fromOffset(math.max(120, 36 * n + 12), 62)
 	end
 
 	local function addPond(model)
 		if Reference[model] or not FishermanESP.Enabled then return end
-		local billboard = Instance.new('BillboardGui')
-		billboard.Name = 'pond'
-		billboard.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
-		billboard.Size = UDim2.fromOffset(120, 62)
-		billboard.AlwaysOnTop = true
-		billboard.ClipsDescendants = false
-		billboard.Adornee = model
-		local title = Instance.new('TextLabel')
-		title.Name = 'Title'
-		title.Size = UDim2.new(1, 0, 0, 22)
-		title.BackgroundTransparency = 1
-		title.TextSize = 15
-		title.Font = Enum.Font.MontserratBold
-		title.TextColor3 = Color3.fromRGB(140, 230, 255)
-		title.TextStrokeTransparency = 0.4
-		title.Text = 'Pond'
-		title.Parent = billboard
-		local frame = Instance.new('Frame')
-		frame.Name = 'Icons'
-		frame.Size = UDim2.new(1, 0, 0, 34)
-		frame.Position = UDim2.new(0, 0, 0, 24)
-		frame.BackgroundColor3 = Color3.fromRGB(10, 20, 26)
-		frame.BackgroundTransparency = 0.25
-		frame.BorderSizePixel = 0
-		frame.Parent = billboard
-		local corner = Instance.new('UICorner')
-		corner.CornerRadius = UDim.new(0, 6)
-		corner.Parent = frame
-		local layout = Instance.new('UIListLayout')
-		layout.FillDirection = Enum.FillDirection.Horizontal
-		layout.Padding = UDim.new(0, 4)
-		layout.VerticalAlignment = Enum.VerticalAlignment.Center
-		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		layout.Parent = frame
-		billboard.Parent = Folder
-		local wpart = pondWater(model)
-		local box = nil
-		if wpart then
-			box = Instance.new('BoxHandleAdornment')
-			box.Name = 'pondlight'
-			box.Adornee = wpart
-			box.Size = wpart.Size
-			box.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
-			box.Transparency = 0.45
-			box.AlwaysOnTop = true
-			box.ZIndex = 4
-			box.Visible = HighlightT.Enabled
-			box.Parent = Folder
+		local objs = {}
+		local function newDraw(class)
+			local o = Drawing.new(class)
+			o.Visible = false
+			objs[#objs + 1] = o
+			return o
 		end
-		Reference[model] = {Billboard = billboard, Frame = frame, Title = title, Box = box}
-		refreshPond(model)
+		local border = newDraw('Square')
+		border.Filled = false
+		border.Thickness = 1
+		border.Transparency = 0.35
+		border.ZIndex = 1
+		border.Color = Color3.new()
+		local main = newDraw('Square')
+		main.Filled = false
+		main.Thickness = 1
+		main.ZIndex = 2
+		main.Color = baseColor()
+		local drop = newDraw('Text')
+		drop.Center = true
+		drop.Size = 20
+		drop.ZIndex = 1
+		drop.Color = Color3.new()
+		drop.Text = 'Pond'
+		local text = newDraw('Text')
+		text.Center = true
+		text.Size = 20
+		text.ZIndex = 2
+		text.Color = baseColor()
+		text.Text = 'Pond'
+		local wpart = pondWater(model)
+		if wpart then
+			local cyl = Instance.new('CylinderHandleAdornment')
+			cyl.Name = 'pondcyl'
+			cyl.Adornee = wpart
+			cyl.Height = 4
+			cyl.Radius = math.max(wpart.Size.X, wpart.Size.Z) / 2
+			cyl.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
+			cyl.Transparency = HighlightTransp.Value
+			cyl.AlwaysOnTop = true
+			cyl.ZIndex = 4
+			cyl.Visible = HighlightT.Enabled
+			cyl.Parent = workspace
+			objs[#objs + 1] = cyl
+		end
+		Reference[model] = {objs = objs, main = main, border = border, drop = drop, text = text}
 		model.Destroying:Once(function() removePond(model) end)
+	end
+
+	local function pondTitle(model)
+		if not ShowLoot.Enabled then return 'Pond' end
+		local loot = pondLoot(model)
+		if #loot == 0 then return 'Pond' end
+		return 'Pond: ' .. table.concat(loot, ', ')
 	end
 
 	FishermanESP = larp.Categories.Minigames:CreateModule({
@@ -17795,7 +17907,7 @@ run(function()
 						task.delay(0.5, function() pcall(addPond, inst) end)
 					end
 				end))
-				FishermanESP:Clean(runService.Heartbeat:Connect(function()
+				FishermanESP:Clean(runService.RenderStepped:Connect(function()
 					if not FishermanESP.Enabled then return end
 					local isFisher = store and store.equippedKit == 'fisherman'
 					local selfpos = entitylib.isAlive and entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position or nil
@@ -17804,31 +17916,63 @@ run(function()
 						if not model.Parent then
 							removePond(model)
 						else
-							local show = true
+							local show = isFisher
+							local dist = 0
 							if selfpos then
 								local pivotOk, pp = pcall(function() return model:GetPivot().Position end)
 								if pivotOk then
-									show = (pp - selfpos).Magnitude <= MaxDistance.Value
+									dist = (pp - selfpos).Magnitude
+									show = show and dist <= MaxDistance.Value
 								end
 							end
-							d.Billboard.Enabled = show and isFisher
-							if d.Box then d.Box.Visible = show and isFisher and HighlightT.Enabled end
-							if show and isFisher then n += 1 end
+							if not show then
+								for _, o in d.objs do o.Visible = false end
+							else
+								local wpart = pondWater(model)
+								if not wpart then
+									for _, o in d.objs do o.Visible = false end
+								else
+									local minX, minY, maxX, maxY = boxOf(wpart)
+									if not minX then
+										for _, o in d.objs do o.Visible = false end
+									else
+										local w, h = maxX - minX, maxY - minY
+										d.border.Size = Vector2.new(w + 2, h + 2)
+										d.border.Position = Vector2.new(minX - 1, minY - 1)
+										d.border.Visible = Boxes.Enabled
+										d.main.Size = Vector2.new(w, h)
+										d.main.Position = Vector2.new(minX, minY)
+										d.main.Color = baseColor()
+										d.main.Visible = Boxes.Enabled
+										local label = pondTitle(model)
+										if DistanceT.Enabled then label = label .. ' [' .. math.floor(dist) .. ']' end
+										d.text.Text = label
+										d.drop.Text = label
+										local showText = NameT.Enabled or DistanceT.Enabled
+										d.text.Color = baseColor()
+										d.text.Position = Vector2.new((minX + maxX) / 2, minY - 24)
+										d.text.Visible = showText
+										d.drop.Position = Vector2.new((minX + maxX) / 2 + 1, minY - 23)
+										d.drop.Visible = showText
+										for _, o in d.objs do
+											if o:IsA('BoxHandleAdornment') then
+												o.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
+												o.Transparency = HighlightTransp.Value
+												o.Visible = HighlightT.Enabled
+											end
+										end
+										n += 1
+									end
+								end
+							end
 						end
 					end
 					getgenv().LarpFisher.ponds = n
 				end))
 			else
-				local clear = {}
-				for model in Reference do clear[#clear + 1] = model end
-				for _, model in ipairs(clear) do removePond(model) end
-				local stray = {}
-				for _, d in Folder:GetChildren() do
-					if (d:IsA('BillboardGui') and d.Name == 'pond') or (d:IsA('BoxHandleAdornment') and d.Name == 'pondlight') then
-						stray[#stray + 1] = d
-					end
-				end
-				for _, d in ipairs(stray) do pcall(function() d:Destroy() end) end
+				local t = {}
+				for model in Reference do t[#t + 1] = model end
+				for _, model in ipairs(t) do removePond(model) end
 				getgenv().LarpFisher.ponds = 0
 			end
 		end,
@@ -17844,30 +17988,43 @@ run(function()
 	ShowLoot = FishermanESP:CreateToggle({
 		Name = 'Show Loot',
 		Default = true,
-		Function = function()
-			for model in Reference do refreshPond(model) end
-		end,
-		Tooltip = 'Shows loot icons on each pond'
+		Tooltip = 'Lists pond loot in the title'
+	})
+	Boxes = FishermanESP:CreateToggle({
+		Name = 'Boxes',
+		Default = true,
+		Tooltip = 'Boxes around ponds'
+	})
+	BoxColor = FishermanESP:CreateColorSlider({
+		Name = 'Box Color'
+	})
+	NameT = FishermanESP:CreateToggle({
+		Name = 'Name',
+		Default = true,
+		Tooltip = 'Shows pond names'
+	})
+	DistanceT = FishermanESP:CreateToggle({
+		Name = 'Distance',
+		Default = true,
+		Tooltip = 'Shows pond distance'
 	})
 	HighlightT = FishermanESP:CreateToggle({
 		Name = 'Highlight',
 		Default = true,
-		Function = function(callback)
-			for _, d in Reference do
-				if d.Box then d.Box.Visible = callback end
-			end
-		end,
 		Tooltip = 'Highlights ponds through walls'
 	})
 	HighlightColor = FishermanESP:CreateColorSlider({
 		Name = 'Highlight Color',
 		DefaultValue = 0.52,
-		Function = function(hue, sat, val)
-			local color = Color3.fromHSV(hue, sat, val)
-			for _, d in Reference do
-				if d.Box then d.Box.Color3 = color end
-			end
-		end
+		Darker = true
+	})
+	HighlightTransp = FishermanESP:CreateSlider({
+		Name = 'Highlight Transparency',
+		Min = 0,
+		Max = 1,
+		Default = 0.45,
+		Decimal = 100,
+		Darker = true
 	})
 
 	local function placeUnder(cat, anchor, name)
@@ -17895,7 +18052,6 @@ run(function()
 	placeUnder('Minigames', 'FishermanSpy', 'FishermanESP')
 	larp:QueueSave()
 end)
-
 run(function()
 	local InfiniteKrystal
 	local old, newMomentum

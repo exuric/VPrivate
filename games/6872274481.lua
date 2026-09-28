@@ -9324,9 +9324,9 @@ run(function()
 		if d then
 			Reference[model] = nil
 			for _, obj in d.objs do
-				pcall(function()
-					if obj:IsA('BoxHandleAdornment') then obj:Destroy() else obj.Visible = false obj:Remove() end
-				end)
+				pcall(function() obj.Visible = false end)
+				pcall(function() obj:Remove() end)
+				pcall(function() obj:Destroy() end)
 			end
 		end
 	end
@@ -9417,9 +9417,7 @@ run(function()
 							show = dist <= MaxDistance.Value
 						end
 						if not show then
-							for _, o in d.objs do
-								if o:IsA('BoxHandleAdornment') then o.Visible = false else o.Visible = false end
-							end
+							for _, o in d.objs do o.Visible = false end
 						else
 							local minX, minY, maxX, maxY = boxOf(d.part)
 							if not minX then
@@ -17828,9 +17826,9 @@ run(function()
 		if d then
 			Reference[model] = nil
 			for _, obj in d.objs do
-				pcall(function()
-					if obj:IsA('BoxHandleAdornment') then obj:Destroy() else obj.Visible = false obj:Remove() end
-				end)
+				pcall(function() obj.Visible = false end)
+				pcall(function() obj:Remove() end)
+				pcall(function() obj:Destroy() end)
 			end
 		end
 	end
@@ -17868,8 +17866,9 @@ run(function()
 		text.Color = baseColor()
 		text.Text = 'Pond'
 		local wpart = pondWater(model)
+		local cyl = nil
 		if wpart then
-			local cyl = Instance.new('CylinderHandleAdornment')
+			cyl = Instance.new('CylinderHandleAdornment')
 			cyl.Name = 'pondcyl'
 			cyl.Adornee = wpart
 			cyl.Height = 4
@@ -17882,7 +17881,7 @@ run(function()
 			cyl.Parent = workspace
 			objs[#objs + 1] = cyl
 		end
-		Reference[model] = {objs = objs, main = main, border = border, drop = drop, text = text}
+		Reference[model] = {objs = objs, main = main, border = border, drop = drop, text = text, cyl = cyl}
 		model.Destroying:Once(function() removePond(model) end)
 	end
 
@@ -17954,12 +17953,10 @@ run(function()
 										d.text.Visible = showText
 										d.drop.Position = Vector2.new((minX + maxX) / 2 + 1, minY - 23)
 										d.drop.Visible = showText
-										for _, o in d.objs do
-											if o:IsA('BoxHandleAdornment') then
-												o.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
-												o.Transparency = HighlightTransp.Value
-												o.Visible = HighlightT.Enabled
-											end
+										if d.cyl then
+											d.cyl.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
+											d.cyl.Transparency = HighlightTransp.Value
+											d.cyl.Visible = HighlightT.Enabled
 										end
 										n += 1
 									end

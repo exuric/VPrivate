@@ -5753,9 +5753,7 @@ run(function()
 								if vis then
 									local d = (Vector2.new(sp.X, sp.Y) - mloc).Magnitude
 									if d < bestd then
-										if not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, rp.Position) then
-											best, bestd = ent, d
-										end
+										best, bestd = ent, d
 									end
 								end
 							end
@@ -9271,7 +9269,6 @@ end)
 run(function()
 	local PotESP
 	local MaxDistance
-	local ShowDistance
 	local HighlightT
 	local HighlightColor
 	local Reference = {}
@@ -9279,50 +9276,71 @@ run(function()
 	Folder.Parent = larp.gui
 	getgenv().LarpPots = {pots = 0}
 
+	local potAsset = ''
+	local function potImage()
+		if potAsset ~= '' then return potAsset end
+		local path = 'LarpV4/assets/larp/pot.png'
+		local ok, content = pcall(readfile, path)
+		if not ok or not content or #content < 1000 then
+			local ok2, res = pcall(function()
+				return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/assets/larp/pot.png?v=' .. tick(), true)
+			end)
+			if ok2 and res and #res > 1000 then pcall(writefile, path, res) end
+		end
+		local ok3, asset = pcall(getcustomasset, path)
+		if ok3 and asset and asset ~= '' then potAsset = asset end
+		return potAsset
+	end
+
+	local function potPart(model)
+		local p = model:FindFirstChild('desert_pot')
+		if p and p:IsA('BasePart') then return p end
+		p = model.PrimaryPart
+		if p and p:IsA('BasePart') then return p end
+		for _, c in model:GetChildren() do
+			if c:IsA('BasePart') then return c end
+		end
+		return nil
+	end
+
 	local function removePot(model)
 		local d = Reference[model]
 		if d then
 			Reference[model] = nil
 			pcall(function() d.Billboard:Destroy() end)
-			pcall(function() d.Highlight:Destroy() end)
+			pcall(function() d.Box:Destroy() end)
 		end
 	end
 
 	local function addPot(model)
 		if Reference[model] or not PotESP.Enabled then return end
+		local part = potPart(model)
+		if not part then return end
 		local billboard = Instance.new('BillboardGui')
 		billboard.Name = 'potesp'
-		billboard.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
-		billboard.Size = UDim2.fromOffset(110, 30)
+		billboard.StudsOffsetWorldSpace = Vector3.new(0, 3.5, 0)
+		billboard.Size = UDim2.fromOffset(46, 46)
 		billboard.AlwaysOnTop = true
 		billboard.ClipsDescendants = false
 		billboard.Adornee = model
-		local title = Instance.new('TextLabel')
-		title.Name = 'Title'
-		title.Size = UDim2.new(1, 0, 1, 0)
-		title.BackgroundColor3 = Color3.fromRGB(20, 12, 8)
-		title.BackgroundTransparency = 0.25
-		title.TextSize = 15
-		title.Font = Enum.Font.GothamBold
-		title.TextColor3 = Color3.fromRGB(255, 180, 90)
-		title.TextStrokeTransparency = 0.4
-		title.Text = 'Pot'
-		title.Parent = billboard
-		local corner = Instance.new('UICorner')
-		corner.CornerRadius = UDim.new(0, 6)
-		corner.Parent = title
-		local hl = Instance.new('Highlight')
-		hl.Name = 'potlight'
-		hl.FillColor = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
-		hl.FillTransparency = 0.5
-		hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-		hl.OutlineTransparency = 0.2
-		hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		hl.Enabled = HighlightT.Enabled
-		hl.Adornee = model
-		hl.Parent = Folder
+		local img = Instance.new('ImageLabel')
+		img.Name = 'Icon'
+		img.Size = UDim2.fromScale(1, 1)
+		img.BackgroundTransparency = 1
+		img.Image = potImage()
+		img.Parent = billboard
+		local box = Instance.new('BoxHandleAdornment')
+		box.Name = 'potbox'
+		box.Adornee = part
+		box.Size = part.Size + Vector3.new(0.6, 0.6, 0.6)
+		box.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
+		box.Transparency = 0.35
+		box.AlwaysOnTop = true
+		box.ZIndex = 5
+		box.Visible = HighlightT.Enabled
+		box.Parent = Folder
 		billboard.Parent = Folder
-		Reference[model] = {Billboard = billboard, Title = title, Highlight = hl}
+		Reference[model] = {Billboard = billboard, Box = box}
 		model.Destroying:Once(function() removePot(model) end)
 	end
 
@@ -9330,6 +9348,7 @@ run(function()
 		Name = 'PotESP',
 		Function = function(callback)
 			if callback then
+				potImage()
 				for _, inst in workspace:GetChildren() do
 					if inst:IsA('Model') and inst.Name == 'DesertPotEntity' then
 						pcall(addPot, inst)
@@ -9349,20 +9368,15 @@ run(function()
 							removePot(model)
 						else
 							local show = true
-							local dist = 0
 							if selfpos then
 								local ok, pp = pcall(function() return model:GetPivot().Position end)
 								if ok then
-									dist = (pp - selfpos).Magnitude
-									show = dist <= MaxDistance.Value
+									show = (pp - selfpos).Magnitude <= MaxDistance.Value
 								end
 							end
 							d.Billboard.Enabled = show
-							d.Highlight.Enabled = show and HighlightT.Enabled
-							if show then
-								d.Title.Text = ShowDistance.Enabled and ('Pot • ' .. math.floor(dist)) or 'Pot'
-								n += 1
-							end
+							d.Box.Visible = show and HighlightT.Enabled
+							if show then n += 1 end
 						end
 					end
 					getgenv().LarpPots.pots = n
@@ -9371,6 +9385,13 @@ run(function()
 				local t = {}
 				for model in Reference do t[#t + 1] = model end
 				for _, model in ipairs(t) do removePot(model) end
+				local stray = {}
+				for _, d in Folder:GetChildren() do
+					if (d:IsA('BillboardGui') and d.Name == 'potesp') or (d:IsA('BoxHandleAdornment') and d.Name == 'potbox') then
+						stray[#stray + 1] = d
+					end
+				end
+				for _, d in ipairs(stray) do pcall(function() d:Destroy() end) end
 				getgenv().LarpPots.pots = 0
 			end
 		end,
@@ -9383,56 +9404,28 @@ run(function()
 		Default = 250,
 		Suffix = 'studs'
 	})
-	ShowDistance = PotESP:CreateToggle({
-		Name = 'Show Distance',
-		Default = true
-	})
 	HighlightT = PotESP:CreateToggle({
 		Name = 'Highlight',
 		Default = true,
 		Function = function(callback)
 			for _, d in Reference do
-				d.Highlight.Enabled = callback
+				d.Box.Visible = callback
 			end
 		end,
 		Tooltip = 'Highlights pots through walls'
 	})
 	HighlightColor = PotESP:CreateColorSlider({
 		Name = 'Highlight Color',
+		DefaultValue = 0.07,
 		Function = function(hue, sat, val)
 			local color = Color3.fromHSV(hue, sat, val)
 			for _, d in Reference do
-				d.Highlight.FillColor = color
+				d.Box.Color3 = color
 			end
 		end
 	})
-
-	local function placeUnder(cat, anchor, name)
-		local list = {}
-		for _, m in pairs(larp.Modules) do
-			if m.Category == cat and m.Name ~= name and m.Object then
-				list[#list + 1] = m
-			end
-		end
-		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
-		local order = {}
-		local inserted = false
-		for _, m in list do
-			order[#order + 1] = m.Name
-			if m.Name == anchor then
-				order[#order + 1] = name
-				inserted = true
-			end
-		end
-		if not inserted then
-			order[#order + 1] = name
-		end
-		larp:ApplyModuleOrder(cat, order)
-	end
-	placeUnder('Render', 'StorageESP', 'PotESP')
 	larp:QueueSave()
 end)
-
 run(function()
 	local AntiLasso
 	local Chance
@@ -17663,6 +17656,8 @@ run(function()
 	local FishermanESP
 	local MaxDistance
 	local ShowLoot
+	local HighlightT
+	local HighlightColor
 	local Reference = {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
@@ -17688,8 +17683,18 @@ run(function()
 		local bb = Reference[model]
 		if bb then
 			Reference[model] = nil
-			pcall(function() bb:Destroy() end)
+			pcall(function() bb.Billboard:Destroy() end)
+			pcall(function() bb.Box:Destroy() end)
 		end
+	end
+
+	local function pondWater(model)
+		local w = model:FindFirstChild('normal_water')
+		if w and w:IsA('BasePart') then return w end
+		for _, c in model:GetChildren() do
+			if c:IsA('BasePart') then return c end
+		end
+		return nil
 	end
 
 	local function refreshPond(model)
@@ -17734,7 +17739,7 @@ run(function()
 		title.Size = UDim2.new(1, 0, 0, 22)
 		title.BackgroundTransparency = 1
 		title.TextSize = 15
-		title.Font = Enum.Font.GothamBold
+		title.Font = Enum.Font.MontserratBold
 		title.TextColor3 = Color3.fromRGB(140, 230, 255)
 		title.TextStrokeTransparency = 0.4
 		title.Text = 'Pond'
@@ -17757,7 +17762,21 @@ run(function()
 		layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		layout.Parent = frame
 		billboard.Parent = Folder
-		Reference[model] = {Billboard = billboard, Frame = frame, Title = title}
+		local wpart = pondWater(model)
+		local box = nil
+		if wpart then
+			box = Instance.new('BoxHandleAdornment')
+			box.Name = 'pondlight'
+			box.Adornee = wpart
+			box.Size = wpart.Size
+			box.Color3 = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
+			box.Transparency = 0.45
+			box.AlwaysOnTop = true
+			box.ZIndex = 4
+			box.Visible = HighlightT.Enabled
+			box.Parent = Folder
+		end
+		Reference[model] = {Billboard = billboard, Frame = frame, Title = title, Box = box}
 		refreshPond(model)
 		model.Destroying:Once(function() removePond(model) end)
 	end
@@ -17793,6 +17812,7 @@ run(function()
 								end
 							end
 							d.Billboard.Enabled = show and isFisher
+							if d.Box then d.Box.Visible = show and isFisher and HighlightT.Enabled end
 							if show and isFisher then n += 1 end
 						end
 					end
@@ -17802,6 +17822,13 @@ run(function()
 				local clear = {}
 				for model in Reference do clear[#clear + 1] = model end
 				for _, model in ipairs(clear) do removePond(model) end
+				local stray = {}
+				for _, d in Folder:GetChildren() do
+					if (d:IsA('BillboardGui') and d.Name == 'pond') or (d:IsA('BoxHandleAdornment') and d.Name == 'pondlight') then
+						stray[#stray + 1] = d
+					end
+				end
+				for _, d in ipairs(stray) do pcall(function() d:Destroy() end) end
 				getgenv().LarpFisher.ponds = 0
 			end
 		end,
@@ -17821,6 +17848,26 @@ run(function()
 			for model in Reference do refreshPond(model) end
 		end,
 		Tooltip = 'Shows loot icons on each pond'
+	})
+	HighlightT = FishermanESP:CreateToggle({
+		Name = 'Highlight',
+		Default = true,
+		Function = function(callback)
+			for _, d in Reference do
+				if d.Box then d.Box.Visible = callback end
+			end
+		end,
+		Tooltip = 'Highlights ponds through walls'
+	})
+	HighlightColor = FishermanESP:CreateColorSlider({
+		Name = 'Highlight Color',
+		DefaultValue = 0.52,
+		Function = function(hue, sat, val)
+			local color = Color3.fromHSV(hue, sat, val)
+			for _, d in Reference do
+				if d.Box then d.Box.Color3 = color end
+			end
+		end
 	})
 
 	local function placeUnder(cat, anchor, name)

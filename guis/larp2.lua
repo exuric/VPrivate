@@ -1628,6 +1628,7 @@ components = {
 			tab.Targets = {
 				Players = self.Players.Enabled,
 				NPCs = self.NPCs.Enabled,
+				Pot = self.Pot.Enabled,
 				Invisible = self.Invisible.Enabled,
 				Walls = self.Walls.Enabled
 			}
@@ -1639,6 +1640,9 @@ components = {
 			end
 			if self.NPCs.Enabled ~= tab.NPCs then
 				self.NPCs:Toggle()
+			end
+			if tab.Pot ~= nil and self.Pot.Enabled ~= tab.Pot then
+				self.Pot:Toggle()
 			end
 			if self.Invisible.Enabled ~= tab.Invisible then
 				self.Invisible:Toggle()
@@ -1658,6 +1662,10 @@ components = {
 				tween:Cancel(self.NPCs.Object.Frame)
 				self.NPCs.Object.Frame.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
 			end
+			if self.Pot.Enabled then
+				tween:Cancel(self.Pot.Object.Frame)
+				self.Pot.Object.Frame.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+			end
 			if self.Invisible.Enabled then
 				tween:Cancel(self.Invisible.Object.Knob)
 				self.Invisible.Object.Knob.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
@@ -1670,6 +1678,7 @@ components = {
 		
 		optionapi.Players = components.TargetsButton({
 			Position = UDim2.fromOffset(11, 45),
+			Size = UDim2.fromOffset(64, 31),
 			Icon = getcustomasset('LarpV4/assets/larp/targetplayers1.png'),
 			IconSize = UDim2.fromOffset(15, 16),
 			IconParent = tool,
@@ -1679,13 +1688,30 @@ components = {
 			Function = optionsettings.Function
 		}, window, tool)
 		optionapi.NPCs = components.TargetsButton({
-			Position = UDim2.fromOffset(112, 45),
+			Position = UDim2.fromOffset(79, 45),
+			Size = UDim2.fromOffset(64, 31),
 			Icon = getcustomasset('LarpV4/assets/larp/targetnpc1.png'),
 			IconSize = UDim2.fromOffset(12, 16),
 			IconParent = tool,
 			ToolIcon = getcustomasset('LarpV4/assets/larp/targetnpc2.png'),
 			ToolSize = UDim2.fromOffset(9, 12),
 			Tooltip = 'NPCs',
+			Function = optionsettings.Function
+		}, window, tool)
+		local potIcon, potToolIcon = getcustomasset('LarpV4/assets/larp/targetnpc1.png'), getcustomasset('LarpV4/assets/larp/targetnpc2.png')
+		pcall(function()
+			local v = getcustomasset('LarpV4/assets/larp/pot.png')
+			if v and v ~= '' then potIcon, potToolIcon = v, v end
+		end)
+		optionapi.Pot = components.TargetsButton({
+			Position = UDim2.fromOffset(147, 45),
+			Size = UDim2.fromOffset(64, 31),
+			Icon = potIcon,
+			IconSize = UDim2.fromOffset(14, 14),
+			IconParent = tool,
+			ToolIcon = potToolIcon,
+			ToolSize = UDim2.fromOffset(10, 10),
+			Tooltip = 'Pots',
 			Function = optionsettings.Function
 		}, window, tool)
 		optionapi.Invisible = components.Toggle({
@@ -1723,6 +1749,9 @@ components = {
 		end
 		if optionsettings.NPCs then
 			optionapi.NPCs:Toggle()
+		end
+		if optionsettings.Pot then
+			optionapi.Pot:Toggle()
 		end
 		if optionsettings.Invisible then
 			optionapi.Invisible:Toggle()
@@ -1770,7 +1799,7 @@ components = {
 		local optionapi = {Enabled = false}
 		
 		local targetbutton = Instance.new('TextButton')
-		targetbutton.Size = UDim2.fromOffset(98, 31)
+		targetbutton.Size = optionsettings.Size or UDim2.fromOffset(98, 31)
 		targetbutton.Position = optionsettings.Position
 		targetbutton.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
 		targetbutton.AutoButtonColor = false

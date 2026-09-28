@@ -5738,35 +5738,66 @@ run(function()
 					-- over it, so gating acquisition on LOS was why ledge targets never locked.
 					-- Walls-enabled intent still holds below: a genuinely blocked arc falls to
 					-- bestBlocked, which is only taken when Walls is disabled.
-					local plr = entitylib.EntityMouse({
-						Part = 'RootPart',
-						Range = FOV.Value,
-						Players = Targets.Players.Enabled,
-						NPCs = Targets.NPCs.Enabled,
-						Wallcheck = false,
-						Origin = originPos,
-						Sort = sortmethods[Sort.Value]
-					})
-
-					if not plr then
-						local held = lockedTarget
-						local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
-						local cursorOk = false
-						if held and heldRoot and heldRoot.Parent then
-							local screen, vis = gameCamera:WorldToViewportPoint(heldRoot.Position)
-							if vis then
-								local mouseLoc = inputService.TouchEnabled and (gameCamera.ViewportSize * 0.5) or inputService:GetMouseLocation()
-								local dist = (Vector2.new(screen.X, screen.Y) - mouseLoc).Magnitude
-								cursorOk = dist <= FOV.Value * 1.4
+				local function isPot(ent)
+					return ent and not ent.Player and ent.Character and ent.Character.Name == 'DesertPotEntity'
+				end
+				local potOn = Targets.Pot and Targets.Pot.Enabled
+				local function pickPot()
+					local mloc = inputService.TouchEnabled and (gameCamera.ViewportSize * 0.5) or inputService:GetMouseLocation()
+					local best, bestd = nil, FOV.Value
+					for _, ent in entitylib.List do
+						if isPot(ent) and entitylib.isVulnerable(ent) then
+							local rp = ent.RootPart
+							if rp and rp.Parent then
+								local sp, vis = gameCamera:WorldToViewportPoint(rp.Position)
+								if vis then
+									local d = (Vector2.new(sp.X, sp.Y) - mloc).Magnitude
+									if d < bestd then
+										if not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, rp.Position) then
+											best, bestd = ent, d
+										end
+									end
+								end
 							end
 						end
-						if cursorOk and held and heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, heldRoot.Position)) and tick() - lockedTime < 3 then
-							plr = held
-						else
-							lockedTarget = nil
-							lockedTime = nil
+					end
+					return best
+				end
+				local plr = entitylib.EntityMouse({
+					Part = 'RootPart',
+					Range = FOV.Value,
+					Players = Targets.Players.Enabled,
+					NPCs = Targets.NPCs.Enabled,
+					Wallcheck = false,
+					Origin = originPos,
+					Sort = sortmethods[Sort.Value]
+				})
+				if plr and isPot(plr) and not potOn then
+					plr = nil
+				end
+
+				if not plr then
+					local held = lockedTarget
+					local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
+					local cursorOk = false
+					if held and heldRoot and heldRoot.Parent then
+						local screen, vis = gameCamera:WorldToViewportPoint(heldRoot.Position)
+						if vis then
+							local mouseLoc = inputService.TouchEnabled and (gameCamera.ViewportSize * 0.5) or inputService:GetMouseLocation()
+							local dist = (Vector2.new(screen.X, screen.Y) - mouseLoc).Magnitude
+							cursorOk = dist <= FOV.Value * 1.4
 						end
 					end
+					if cursorOk and held and heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled) or (isPot(held) and potOn)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, heldRoot.Position)) and tick() - lockedTime < 3 then
+						plr = held
+					else
+						lockedTarget = nil
+						lockedTime = nil
+					end
+				end
+				if not plr and potOn then
+					plr = pickPot()
+				end
 					lockedTarget, lockedTime = plr, tick()
 					if plr then
 						local pos = shootpos or self:getLaunchPosition(origin)
@@ -5972,7 +6003,8 @@ run(function()
 	})
 	Targets = ProjectileAimbot:CreateTargets({
 		Players = true,
-		Walls = true
+		Walls = true,
+		Pot = true
 	})
 	local methods = {'Distance', 'Damage'}
 	for i in sortmethods do
@@ -9234,6 +9266,171 @@ run(function()
 		end,
 		Darker = true
 	})
+end)
+
+run(function()
+	local PotESP
+	local MaxDistance
+	local ShowDistance
+	local HighlightT
+	local HighlightColor
+	local Reference = {}
+	local Folder = Instance.new('Folder')
+	Folder.Parent = larp.gui
+	getgenv().LarpPots = {pots = 0}
+
+	local function removePot(model)
+		local d = Reference[model]
+		if d then
+			Reference[model] = nil
+			pcall(function() d.Billboard:Destroy() end)
+			pcall(function() d.Highlight:Destroy() end)
+		end
+	end
+
+	local function addPot(model)
+		if Reference[model] or not PotESP.Enabled then return end
+		local billboard = Instance.new('BillboardGui')
+		billboard.Name = 'potesp'
+		billboard.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
+		billboard.Size = UDim2.fromOffset(110, 30)
+		billboard.AlwaysOnTop = true
+		billboard.ClipsDescendants = false
+		billboard.Adornee = model
+		local title = Instance.new('TextLabel')
+		title.Name = 'Title'
+		title.Size = UDim2.new(1, 0, 1, 0)
+		title.BackgroundColor3 = Color3.fromRGB(20, 12, 8)
+		title.BackgroundTransparency = 0.25
+		title.TextSize = 15
+		title.Font = Enum.Font.GothamBold
+		title.TextColor3 = Color3.fromRGB(255, 180, 90)
+		title.TextStrokeTransparency = 0.4
+		title.Text = 'Pot'
+		title.Parent = billboard
+		local corner = Instance.new('UICorner')
+		corner.CornerRadius = UDim.new(0, 6)
+		corner.Parent = title
+		local hl = Instance.new('Highlight')
+		hl.Name = 'potlight'
+		hl.FillColor = Color3.fromHSV(HighlightColor.Hue, HighlightColor.Sat, HighlightColor.Value)
+		hl.FillTransparency = 0.5
+		hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+		hl.OutlineTransparency = 0.2
+		hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		hl.Enabled = HighlightT.Enabled
+		hl.Adornee = model
+		hl.Parent = Folder
+		billboard.Parent = Folder
+		Reference[model] = {Billboard = billboard, Title = title, Highlight = hl}
+		model.Destroying:Once(function() removePot(model) end)
+	end
+
+	PotESP = larp.Categories.Render:CreateModule({
+		Name = 'PotESP',
+		Function = function(callback)
+			if callback then
+				for _, inst in workspace:GetChildren() do
+					if inst:IsA('Model') and inst.Name == 'DesertPotEntity' then
+						pcall(addPot, inst)
+					end
+				end
+				PotESP:Clean(workspace.ChildAdded:Connect(function(inst)
+					if inst:IsA('Model') and inst.Name == 'DesertPotEntity' then
+						task.delay(0.5, function() pcall(addPot, inst) end)
+					end
+				end))
+				PotESP:Clean(runService.Heartbeat:Connect(function()
+					if not PotESP.Enabled then return end
+					local selfpos = entitylib.isAlive and entitylib.character and entitylib.character.RootPart and entitylib.character.RootPart.Position or nil
+					local n = 0
+					for model, d in Reference do
+						if not model.Parent then
+							removePot(model)
+						else
+							local show = true
+							local dist = 0
+							if selfpos then
+								local ok, pp = pcall(function() return model:GetPivot().Position end)
+								if ok then
+									dist = (pp - selfpos).Magnitude
+									show = dist <= MaxDistance.Value
+								end
+							end
+							d.Billboard.Enabled = show
+							d.Highlight.Enabled = show and HighlightT.Enabled
+							if show then
+								d.Title.Text = ShowDistance.Enabled and ('Pot • ' .. math.floor(dist)) or 'Pot'
+								n += 1
+							end
+						end
+					end
+					getgenv().LarpPots.pots = n
+				end))
+			else
+				local t = {}
+				for model in Reference do t[#t + 1] = model end
+				for _, model in ipairs(t) do removePot(model) end
+				getgenv().LarpPots.pots = 0
+			end
+		end,
+		Tooltip = 'Shows breakable pots.'
+	})
+	MaxDistance = PotESP:CreateSlider({
+		Name = 'Max Distance',
+		Min = 20,
+		Max = 500,
+		Default = 250,
+		Suffix = 'studs'
+	})
+	ShowDistance = PotESP:CreateToggle({
+		Name = 'Show Distance',
+		Default = true
+	})
+	HighlightT = PotESP:CreateToggle({
+		Name = 'Highlight',
+		Default = true,
+		Function = function(callback)
+			for _, d in Reference do
+				d.Highlight.Enabled = callback
+			end
+		end,
+		Tooltip = 'Highlights pots through walls'
+	})
+	HighlightColor = PotESP:CreateColorSlider({
+		Name = 'Highlight Color',
+		Function = function(hue, sat, val)
+			local color = Color3.fromHSV(hue, sat, val)
+			for _, d in Reference do
+				d.Highlight.FillColor = color
+			end
+		end
+	})
+
+	local function placeUnder(cat, anchor, name)
+		local list = {}
+		for _, m in pairs(larp.Modules) do
+			if m.Category == cat and m.Name ~= name and m.Object then
+				list[#list + 1] = m
+			end
+		end
+		table.sort(list, function(a, b) return a.Object.LayoutOrder < b.Object.LayoutOrder end)
+		local order = {}
+		local inserted = false
+		for _, m in list do
+			order[#order + 1] = m.Name
+			if m.Name == anchor then
+				order[#order + 1] = name
+				inserted = true
+			end
+		end
+		if not inserted then
+			order[#order + 1] = name
+		end
+		larp:ApplyModuleOrder(cat, order)
+	end
+	placeUnder('Render', 'StorageESP', 'PotESP')
+	larp:QueueSave()
 end)
 
 run(function()
@@ -17602,7 +17799,9 @@ run(function()
 					getgenv().LarpFisher.ponds = n
 				end))
 			else
-				for model in Reference do removePond(model) end
+				local clear = {}
+				for model in Reference do clear[#clear + 1] = model end
+				for _, model in ipairs(clear) do removePond(model) end
 				getgenv().LarpFisher.ponds = 0
 			end
 		end,
@@ -21123,9 +21322,13 @@ run(function()
 					getgenv().LarpIndicators.projs = pcount
 				end))
 			else
-				for ent in refArrows do removeArrow(ent) end
-				for ent in refBoxes do removeBox(ent) end
-				for inst in refProj do removeProj(inst) end
+				local clearA, clearB, clearP = {}, {}, {}
+				for ent in refArrows do clearA[#clearA + 1] = ent end
+				for ent in refBoxes do clearB[#clearB + 1] = ent end
+				for inst in refProj do clearP[#clearP + 1] = inst end
+				for _, ent in ipairs(clearA) do removeArrow(ent) end
+				for _, ent in ipairs(clearB) do removeBox(ent) end
+				for _, inst in ipairs(clearP) do removeProj(inst) end
 				getgenv().LarpIndicators.arrows = 0
 				getgenv().LarpIndicators.boxes = 0
 				getgenv().LarpIndicators.projs = 0
@@ -21300,7 +21503,9 @@ run(function()
 					getgenv().LarpExplosions.tnts = n
 				end))
 			else
-				for inst in spheres do removeSphere(inst) end
+				local clearS = {}
+				for inst in spheres do clearS[#clearS + 1] = inst end
+				for _, inst in ipairs(clearS) do removeSphere(inst) end
 				getgenv().LarpExplosions.tnts = 0
 			end
 		end,

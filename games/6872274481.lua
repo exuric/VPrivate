@@ -7042,17 +7042,19 @@ end)
 
 run(function()
 	local OreESP
-	local Glow, FillTrans, ShowIcon, ShowName, ShowHealth, ShowDistance, ShowAmount, Background, Scale, Color
+	local Glow, Color, FillTrans, ShowIcon, ShowName, ShowHealth, ShowDistance, ShowAmount, MaxDist, Background, Scale
+	local tweenService = cloneref(game:GetService('TweenService'))
 
 	local folder = Instance.new('Folder')
 	folder.Parent = larp.gui
 
 	local ores = {}
 	local ORE_TAG_SUFFIX = '_ore_mesh_block'
+	local ICON_SIZE = 26
+	local BAR_W, BAR_H = 44, 5
 
 	local function oreMeta(tag)
-		local itemType = (tag:gsub('_mesh_block', ''))
-		return bedwars.ItemMeta and bedwars.ItemMeta[itemType]
+		return bedwars.ItemMeta and bedwars.ItemMeta[(tag:gsub('_mesh_block', ''))]
 	end
 
 	local function oreAmount(part)
@@ -7064,27 +7066,27 @@ run(function()
 		return nil
 	end
 
-	local function healthFrac(part)
-		local hp = part:GetAttribute('Health')
-		local mx = part:GetAttribute('MaxHealth')
-		if not hp or not mx or mx <= 0 then return 1 end
-		return math.clamp(hp / mx, 0, 1)
-	end
-
 	local function tint()
 		return Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 	end
 
-	local function updateHealth(data)
-		local frac = healthFrac(data.part)
-		data.hpFill.Size = UDim2.new(1, 0, frac, 0)
-		data.hpFill.BackgroundColor3 = Color3.fromHSV(frac * 0.33, 0.85, 0.95)
-		data.hpBg.Visible = ShowHealth.Enabled
+	local function setHealth(data, frac, animate)
+		frac = math.clamp(frac, 0, 1)
+		data.frac = frac
+		local col = Color3.fromHSV(0.33 * frac, 0.75, 0.95)
+		if animate then
+			tweenService:Create(data.fill, TweenInfo.new(0.22, Enum.EasingStyle.Quad), {
+				Size = UDim2.new(frac, 0, 1, 0),
+				BackgroundColor3 = col
+			}):Play()
+		else
+			data.fill.Size = UDim2.new(frac, 0, 1, 0)
+			data.fill.BackgroundColor3 = col
+		end
 	end
 
 	local function styleOf(data)
 		local col = tint()
-		local icon = math.max(14, math.floor(28 * Scale.Value))
 		if data.highlight then
 			data.highlight.Enabled = Glow.Enabled
 			data.highlight.FillColor = col
@@ -7092,17 +7094,12 @@ run(function()
 			data.highlight.FillTransparency = FillTrans.Value
 			data.highlight.OutlineTransparency = 0
 		end
-		data.holder.Size = UDim2.fromOffset(ShowIcon.Enabled and icon or 2, icon)
 		data.icon.Visible = ShowIcon.Enabled
-		data.hpBg.Size = UDim2.fromOffset(4, icon)
-		data.hpBg.Visible = ShowHealth.Enabled
+		data.track.Visible = ShowHealth.Enabled
 		data.name.Visible = ShowName.Enabled
-		data.name.TextColor3 = col
-		data.name.TextSize = math.max(9, math.floor(14 * Scale.Value))
-		data.name.BackgroundTransparency = Background.Enabled and 0.4 or 1
-		data.info.TextSize = math.max(9, math.floor(13 * Scale.Value))
-		data.info.BackgroundTransparency = Background.Enabled and 0.4 or 1
-		updateHealth(data)
+		data.name.BackgroundTransparency = Background.Enabled and 0.35 or 1
+		data.info.BackgroundTransparency = Background.Enabled and 0.35 or 1
+		setHealth(data, data.frac or 1, false)
 	end
 
 	local function infoText(data)
@@ -7112,53 +7109,39 @@ run(function()
 			if amt then parts[#parts + 1] = '<font color="rgb(255,255,255)">x' .. amt .. '</font>' end
 		end
 		if ShowDistance.Enabled then
-			local root = entitylib.character and entitylib.character.RootPart
-			local dist = (root and data.pos) and math.floor((data.pos - root.Position).Magnitude) or 0
-			parts[#parts + 1] = '<font color="rgb(190,190,190)">[' .. dist .. 'm]</font>'
+			parts[#parts + 1] = '<font color="rgb(185,185,185)">' .. (data.dist or 0) .. 'm</font>'
 		end
-		return table.concat(parts, ' ')
+		return table.concat(parts, '  ')
 	end
 
 	local function addOre(part, tag)
 		if ores[part] or not part:IsA('BasePart') then return end
 		local meta = oreMeta(tag)
+
 		local holder = Instance.new('Frame')
 		holder.BackgroundTransparency = 1
+		holder.AutomaticSize = Enum.AutomaticSize.XY
 		holder.AnchorPoint = Vector2.new(0.5, 0.5)
 		holder.Visible = false
 		holder.Parent = folder
-
-		local icon = Instance.new('ImageLabel')
-		icon.BackgroundTransparency = 1
-		icon.Size = UDim2.fromScale(1, 1)
-		icon.Image = (meta and meta.image) or 'rbxassetid://88425197437530'
-		icon.ScaleType = Enum.ScaleType.Fit
-		icon.Parent = holder
-
-		local hpBg = Instance.new('Frame')
-		hpBg.AnchorPoint = Vector2.new(1, 0.5)
-		hpBg.Position = UDim2.new(0, -3, 0.5, 0)
-		hpBg.BackgroundColor3 = Color3.new()
-		hpBg.BackgroundTransparency = 0.35
-		hpBg.BorderSizePixel = 0
-		hpBg.Parent = holder
-		local hpFill = Instance.new('Frame')
-		hpFill.AnchorPoint = Vector2.new(0.5, 1)
-		hpFill.Position = UDim2.fromScale(0.5, 1)
-		hpFill.Size = UDim2.fromScale(1, 1)
-		hpFill.BorderSizePixel = 0
-		hpFill.Parent = hpBg
+		local uiscale = Instance.new('UIScale')
+		uiscale.Parent = holder
+		local list = Instance.new('UIListLayout')
+		list.FillDirection = Enum.FillDirection.Vertical
+		list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		list.VerticalAlignment = Enum.VerticalAlignment.Center
+		list.SortOrder = Enum.SortOrder.LayoutOrder
+		list.Padding = UDim.new(0, 3)
+		list.Parent = holder
 
 		local name = Instance.new('TextLabel')
+		name.LayoutOrder = 1
 		name.AutomaticSize = Enum.AutomaticSize.XY
-		name.AnchorPoint = Vector2.new(0.5, 1)
-		name.Position = UDim2.new(0.5, 0, 0, -3)
 		name.BackgroundColor3 = Color3.new()
 		name.BorderSizePixel = 0
-		name.Font = Enum.Font.GothamMedium
-		name.TextColor3 = Color3.new(1, 1, 1)
-		name.TextStrokeTransparency = 0.5
-		name.RichText = true
+		name.FontFace = uipallet.Font
+		name.TextColor3 = uipallet.Text
+		name.TextSize = 14
 		name.Text = (meta and meta.displayName) or 'Ore'
 		name.Visible = false
 		name.Parent = holder
@@ -7166,19 +7149,49 @@ run(function()
 		nameCorner.CornerRadius = UDim.new(0, 4)
 		nameCorner.Parent = name
 		local namePad = Instance.new('UIPadding')
-		namePad.PaddingLeft = UDim.new(0, 4)
-		namePad.PaddingRight = UDim.new(0, 4)
+		namePad.PaddingLeft = UDim.new(0, 5)
+		namePad.PaddingRight = UDim.new(0, 5)
+		namePad.PaddingTop = UDim.new(0, 1)
+		namePad.PaddingBottom = UDim.new(0, 1)
 		namePad.Parent = name
 
+		local icon = Instance.new('ImageLabel')
+		icon.LayoutOrder = 2
+		icon.BackgroundTransparency = 1
+		icon.Size = UDim2.fromOffset(ICON_SIZE, ICON_SIZE)
+		icon.Image = (meta and meta.image) or 'rbxassetid://88425197437530'
+		icon.ScaleType = Enum.ScaleType.Fit
+		icon.Parent = holder
+
+		local track = Instance.new('Frame')
+		track.LayoutOrder = 3
+		track.Size = UDim2.fromOffset(BAR_W, BAR_H)
+		track.BackgroundColor3 = Color3.fromRGB(48, 14, 14)
+		track.BackgroundTransparency = 0.1
+		track.BorderSizePixel = 0
+		track.Parent = holder
+		local trackCorner = Instance.new('UICorner')
+		trackCorner.CornerRadius = UDim.new(1, 0)
+		trackCorner.Parent = track
+		local fill = Instance.new('Frame')
+		fill.AnchorPoint = Vector2.new(0, 0.5)
+		fill.Position = UDim2.fromScale(0, 0.5)
+		fill.Size = UDim2.fromScale(1, 1)
+		fill.BackgroundColor3 = Color3.fromHSV(0.33, 0.75, 0.95)
+		fill.BorderSizePixel = 0
+		fill.Parent = track
+		local fillCorner = Instance.new('UICorner')
+		fillCorner.CornerRadius = UDim.new(1, 0)
+		fillCorner.Parent = fill
+
 		local info = Instance.new('TextLabel')
+		info.LayoutOrder = 4
 		info.AutomaticSize = Enum.AutomaticSize.XY
-		info.AnchorPoint = Vector2.new(0.5, 0)
-		info.Position = UDim2.new(0.5, 0, 1, 3)
 		info.BackgroundColor3 = Color3.new()
 		info.BorderSizePixel = 0
-		info.Font = Enum.Font.GothamMedium
-		info.TextColor3 = Color3.new(1, 1, 1)
-		info.TextStrokeTransparency = 0.5
+		info.FontFace = uipallet.Font
+		info.TextColor3 = uipallet.Text
+		info.TextSize = 13
 		info.RichText = true
 		info.Text = ''
 		info.Parent = holder
@@ -7186,8 +7199,10 @@ run(function()
 		infoCorner.CornerRadius = UDim.new(0, 4)
 		infoCorner.Parent = info
 		local infoPad = Instance.new('UIPadding')
-		infoPad.PaddingLeft = UDim.new(0, 4)
-		infoPad.PaddingRight = UDim.new(0, 4)
+		infoPad.PaddingLeft = UDim.new(0, 5)
+		infoPad.PaddingRight = UDim.new(0, 5)
+		infoPad.PaddingTop = UDim.new(0, 1)
+		infoPad.PaddingBottom = UDim.new(0, 1)
 		infoPad.Parent = info
 
 		local hl = Instance.new('Highlight')
@@ -7196,12 +7211,10 @@ run(function()
 		hl.Parent = part
 
 		local data = {
-			part = part, holder = holder, icon = icon, hpBg = hpBg, hpFill = hpFill,
-			name = name, info = info, highlight = hl, pos = part.Position
+			part = part, holder = holder, uiscale = uiscale, icon = icon,
+			track = track, fill = fill, name = name, info = info, highlight = hl,
+			pos = part.Position, dist = 0, frac = 1
 		}
-		data.hpConn = part:GetAttributeChangedSignal('Health'):Connect(function()
-			updateHealth(data)
-		end)
 		ores[part] = data
 		styleOf(data)
 	end
@@ -7209,10 +7222,27 @@ run(function()
 	local function removeOre(part)
 		local data = ores[part]
 		if not data then return end
-		if data.hpConn then pcall(function() data.hpConn:Disconnect() end) end
 		pcall(function() data.holder:Destroy() end)
 		pcall(function() data.highlight:Destroy() end)
 		ores[part] = nil
+	end
+
+	local function matchOre(bp)
+		if typeof(bp) ~= 'Vector3' then
+			local ok, v = pcall(function() return Vector3.new(bp.X, bp.Y, bp.Z) end)
+			if not ok then return nil end
+			bp = v
+		end
+		local best, bestd
+		for part, data in ores do
+			for _, cand in {bp, bp * 3} do
+				local d = (data.pos - cand).Magnitude
+				if d < 3 and (not bestd or d < bestd) then
+					best, bestd = data, d
+				end
+			end
+		end
+		return best
 	end
 
 	OreESP = larp.Categories.Render:CreateModule({
@@ -7230,19 +7260,42 @@ run(function()
 						OreESP:Clean(collectionService:GetInstanceRemovedSignal(tag):Connect(removeOre))
 					end
 				end
+				local hbConn = bedwars.Client:Get('BlockHealthbarUpdate'):Connect(function(payload)
+					if not payload or not payload.blockPosition then return end
+					local data = matchOre(payload.blockPosition)
+					if data then
+						local maxH = payload.maxHealth or 100
+						setHealth(data, (payload.newHealth or maxH) / (maxH > 0 and maxH or 1), true)
+					end
+				end)
+				OreESP:Clean(function() pcall(function() hbConn:Disconnect() end) end)
 				OreESP:Clean(runService.PreRender:Connect(function()
+					local camPos = gameCamera.CFrame.Position
+					local root = entitylib.character and entitylib.character.RootPart
+					local userScale = Scale.Value
+					local maxD = MaxDist.Value
 					for part, data in ores do
 						if not part.Parent then
 							removeOre(part)
 							continue
 						end
 						data.pos = part.Position
-						local screen, vis = gameCamera:WorldToViewportPoint(data.pos)
-						data.holder.Visible = vis
-						if vis then
-							data.holder.Position = UDim2.fromOffset(screen.X, screen.Y)
-							data.info.Text = infoText(data)
-							data.info.Visible = data.info.Text ~= ''
+						data.dist = root and math.floor((data.pos - root.Position).Magnitude) or 0
+						if maxD > 0 and data.dist > maxD then
+							data.holder.Visible = false
+						else
+							local screen, vis = gameCamera:WorldToViewportPoint(data.pos)
+							data.holder.Visible = vis
+							if vis then
+								local camDist = (data.pos - camPos).Magnitude
+								data.uiscale.Scale = userScale * math.clamp(55 / math.max(camDist, 1), 0.5, 1.1)
+								data.holder.Position = UDim2.fromOffset(screen.X, screen.Y)
+								data.info.Text = infoText(data)
+								data.info.Visible = data.info.Text ~= ''
+							end
+						end
+						if data.highlight then
+							data.highlight.Enabled = Glow.Enabled
 						end
 					end
 				end))
@@ -7257,6 +7310,17 @@ run(function()
 	Glow = OreESP:CreateToggle({
 		Name = 'Highlight',
 		Default = true,
+		Function = function(state)
+			if Color and Color.Object then Color.Object.Visible = state end
+			if FillTrans and FillTrans.Object then FillTrans.Object.Visible = state end
+			for _, d in ores do styleOf(d) end
+		end
+	})
+	Color = OreESP:CreateColorSlider({
+		Name = 'Highlight color',
+		DefaultHue = 0,
+		DefaultSat = 0,
+		DefaultValue = 1,
 		Function = function()
 			for _, d in ores do styleOf(d) end
 		end
@@ -7265,7 +7329,7 @@ run(function()
 		Name = 'Fill transparency',
 		Min = 0,
 		Max = 1,
-		Default = 0.55,
+		Default = 0.5,
 		Decimal = 100,
 		Function = function()
 			for _, d in ores do styleOf(d) end
@@ -7300,6 +7364,15 @@ run(function()
 		Name = 'Ore amount',
 		Default = true
 	})
+	MaxDist = OreESP:CreateSlider({
+		Name = 'Max distance',
+		Min = 0,
+		Max = 1000,
+		Default = 300,
+		Suffix = function(val)
+			return val == 0 and 'off' or 'studs'
+		end
+	})
 	Background = OreESP:CreateToggle({
 		Name = 'Text background',
 		Default = true,
@@ -7312,20 +7385,10 @@ run(function()
 		Min = 0.5,
 		Max = 2,
 		Default = 1,
-		Decimal = 10,
-		Function = function()
-			for _, d in ores do styleOf(d) end
-		end
+		Decimal = 10
 	})
-	Color = OreESP:CreateColorSlider({
-		Name = 'Highlight color',
-		DefaultHue = 0.07,
-		DefaultSat = 0.6,
-		DefaultValue = 1,
-		Function = function()
-			for _, d in ores do styleOf(d) end
-		end
-	})
+	if Color.Object then Color.Object.Visible = Glow.Enabled end
+	if FillTrans.Object then FillTrans.Object.Visible = Glow.Enabled end
 end)
 
 run(function()

@@ -5479,17 +5479,22 @@ function mainapi:CreateCategoryList(categorysettings)
 		btnrow.Parent = children
 		local function mkbtn(txt, icon, xoff, cb)
 			local b = Instance.new('TextButton')
-			b.Size = UDim2.fromOffset(98, 34)
+			b.Size = UDim2.fromOffset(96, 36)
 			b.Position = UDim2.fromOffset(xoff, 0)
-			b.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
+			b.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
 			b.AutoButtonColor = false
 			b.Text = ''
 			b.Parent = btnrow
-			addCorner(b, UDim.new(0, 6))
+			addCorner(b, UDim.new(0, 7))
+			local st = Instance.new('UIStroke')
+			st.Color = color.Light(uipallet.Main, 0.16)
+			st.Thickness = 1
+			st.Transparency = 0.2
+			st.Parent = b
 			local holder = Instance.new('Frame')
 			holder.AnchorPoint = Vector2.new(0.5, 0.5)
 			holder.Position = UDim2.fromScale(0.5, 0.5)
-			holder.Size = UDim2.fromOffset(80, 16)
+			holder.Size = UDim2.fromOffset(84, 16)
 			holder.BackgroundTransparency = 1
 			holder.Parent = b
 			local hl = Instance.new('UIListLayout')
@@ -5499,10 +5504,10 @@ function mainapi:CreateCategoryList(categorysettings)
 			hl.Padding = UDim.new(0, 6)
 			hl.Parent = holder
 			local ic = Instance.new('ImageLabel')
-			ic.Size = UDim2.fromOffset(13, 13)
+			ic.Size = UDim2.fromOffset(14, 14)
 			ic.BackgroundTransparency = 1
 			ic.Image = getcustomasset(icon)
-			ic.ImageColor3 = color.Dark(uipallet.Text, 0.15)
+			ic.ImageColor3 = Color3.new(1, 1, 1)
 			ic.LayoutOrder = 0
 			ic.Parent = holder
 			local l = Instance.new('TextLabel')
@@ -5510,20 +5515,20 @@ function mainapi:CreateCategoryList(categorysettings)
 			l.Size = UDim2.fromOffset(0, 16)
 			l.BackgroundTransparency = 1
 			l.Text = txt
-			l.TextColor3 = color.Dark(uipallet.Text, 0.15)
+			l.TextColor3 = Color3.new(1, 1, 1)
 			l.TextSize = 12
 			l.FontFace = uipallet.FontSemiBold
 			l.LayoutOrder = 1
 			l.Parent = holder
-			b.MouseEnter:Connect(function() b.BackgroundColor3 = color.Light(uipallet.Main, 0.09) end)
-			b.MouseLeave:Connect(function() b.BackgroundColor3 = color.Light(uipallet.Main, 0.045) end)
+			b.MouseEnter:Connect(function() b.BackgroundColor3 = color.Light(uipallet.Main, 0.08) end)
+			b.MouseLeave:Connect(function() b.BackgroundColor3 = color.Light(uipallet.Main, 0.04) end)
 			b.MouseButton1Click:Connect(cb)
 			return b
 		end
 		mkbtn('CREATE NEW', 'LarpV4/assets/larp/add.png', 0, function()
 			addbkg.Visible = not addbkg.Visible
 		end)
-		mkbtn('PUBLIC', 'LarpV4/assets/larp/worldicon.png', 102, function()
+		mkbtn('PUBLIC', 'LarpV4/assets/larp/worldicon.png', 104, function()
 			mainapi:TogglePublicProfiles()
 		end)
 	end
@@ -5571,10 +5576,11 @@ function mainapi:CreateCategoryList(categorysettings)
 
 		for i, v in (categorysettings.Profiles and mainapi.Profiles or self.List) do
 			if categorysettings.Profiles then
+				if v.Name == 'default' then continue end
 				local object = Instance.new('TextButton')
 				object.Name = v.Name
 				object.Size = UDim2.fromOffset(200, 33)
-				object.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+				object.BackgroundColor3 = v.Name == mainapi.Profile and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.02)
 				object.AutoButtonColor = false
 				object.Text = ''
 				object.Parent = children
@@ -5585,7 +5591,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				accent.Position = UDim2.fromOffset(6, 7)
 				accent.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 				accent.BorderSizePixel = 0
-				accent.Visible = v.Name == mainapi.Profile
+				accent.Visible = false
 				accent.Parent = object
 				addCorner(accent, UDim.new(1, 0))
 				local objectstroke = Instance.new('UIStroke')
@@ -5600,7 +5606,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				objecttitle.BackgroundTransparency = 1
 				objecttitle.Text = v.Name
 				objecttitle.TextXAlignment = Enum.TextXAlignment.Left
-				objecttitle.TextColor3 = v.Name == mainapi.Profile and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Dark(uipallet.Text, 0.4)
+				objecttitle.TextColor3 = v.Name == mainapi.Profile and Color3.new(1, 1, 1) or color.Dark(uipallet.Text, 0.4)
 				objecttitle.TextSize = 15
 				objecttitle.FontFace = uipallet.Font
 				objecttitle.Parent = object
@@ -5617,7 +5623,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				dots.Position = UDim2.fromOffset(10, 9)
 				dots.BackgroundTransparency = 1
 				dots.Image = getcustomasset('LarpV4/assets/larp/dots.png')
-				dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
+				dots.ImageColor3 = v.Name == mainapi.Profile and Color3.new(1, 1, 1) or color.Light(uipallet.Main, 0.37)
 				dots.Parent = dotsbutton
 				local bind = Instance.new('TextButton')
 				addTooltip(bind, 'Click to bind')
@@ -7997,25 +8003,6 @@ local Profiles = mainapi:CreateCategoryList({
 	Placeholder = 'Type name',
 	Profiles = true
 })
-Profiles:CreateButton({
-	Name = 'Reset Profile',
-	LayoutOrder = 7,
-	Icon = getcustomasset('LarpV4/assets/larp/warning.png'),
-	Function = function()
-		mainapi.Save = function() end
-		if isfile('LarpV4/profiles/'..mainapi.Profile..mainapi.Place..'.txt') and delfile then
-			delfile('LarpV4/profiles/'..mainapi.Profile..mainapi.Place..'.txt')
-		end
-		shared.larpreload = true
-		if shared.LarpDeveloper then
-			loadstring(readfile('LarpV4/init.lua'), 'init')(license)
-		else
-			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/init.lua?v='..tick(), true))(license)
-		end
-	end,
-		Tooltip = 'Resets the current profile back to default settings'
-	})
-
 	--[[
 		Public Profiles (Vape Online-style browser + sharing)
 	]]
@@ -9185,6 +9172,7 @@ pubShowDetails = function(ref)
 			if not w then return end
 			local ch = w:FindFirstChild('Children')
 			if not ch then return end
+			if true then return end -- Public Profiles top button removed (Vape Lite look)
 			if ch:FindFirstChild('PublicBtn') then return end
 			local b = Instance.new('TextButton')
 			b.Name = 'PublicBtn'

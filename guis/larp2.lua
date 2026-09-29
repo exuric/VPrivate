@@ -5473,17 +5473,25 @@ function mainapi:CreateCategoryList(categorysettings)
 		addbkg.LayoutOrder = 1
 		local btnrow = Instance.new('Frame')
 		btnrow.Name = 'ProfileButtons'
-		btnrow.Size = UDim2.fromOffset(200, 34)
+		btnrow.AutomaticSize = Enum.AutomaticSize.X
+		btnrow.Size = UDim2.fromOffset(0, 36)
 		btnrow.BackgroundTransparency = 1
 		btnrow.LayoutOrder = 0
 		btnrow.Parent = children
-		local function mkbtn(txt, icon, xoff, cb)
+		local brl = Instance.new('UIListLayout')
+		brl.FillDirection = Enum.FillDirection.Horizontal
+		brl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		brl.VerticalAlignment = Enum.VerticalAlignment.Center
+		brl.Padding = UDim.new(0, 8)
+		brl.Parent = btnrow
+		local function mkbtn(txt, icon, order, cb)
 			local b = Instance.new('TextButton')
-			b.Size = UDim2.fromOffset(96, 36)
-			b.Position = UDim2.fromOffset(xoff, 0)
+			b.AutomaticSize = Enum.AutomaticSize.X
+			b.Size = UDim2.fromOffset(0, 36)
 			b.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
 			b.AutoButtonColor = false
 			b.Text = ''
+			b.LayoutOrder = order
 			b.Parent = btnrow
 			addCorner(b, UDim.new(0, 7))
 			local st = Instance.new('UIStroke')
@@ -5491,35 +5499,32 @@ function mainapi:CreateCategoryList(categorysettings)
 			st.Thickness = 1
 			st.Transparency = 0.2
 			st.Parent = b
-			local holder = Instance.new('Frame')
-			holder.AnchorPoint = Vector2.new(0.5, 0.5)
-			holder.Position = UDim2.fromScale(0.5, 0.5)
-			holder.Size = UDim2.fromOffset(84, 16)
-			holder.BackgroundTransparency = 1
-			holder.Parent = b
+			local bpad = Instance.new('UIPadding')
+			bpad.PaddingLeft = UDim.new(0, 13)
+			bpad.PaddingRight = UDim.new(0, 14)
+			bpad.Parent = b
 			local hl = Instance.new('UIListLayout')
 			hl.FillDirection = Enum.FillDirection.Horizontal
 			hl.VerticalAlignment = Enum.VerticalAlignment.Center
-			hl.HorizontalAlignment = Enum.HorizontalAlignment.Center
-			hl.Padding = UDim.new(0, 6)
-			hl.Parent = holder
+			hl.Padding = UDim.new(0, 7)
+			hl.Parent = b
 			local ic = Instance.new('ImageLabel')
 			ic.Size = UDim2.fromOffset(14, 14)
 			ic.BackgroundTransparency = 1
 			ic.Image = getcustomasset(icon)
 			ic.ImageColor3 = Color3.new(1, 1, 1)
 			ic.LayoutOrder = 0
-			ic.Parent = holder
+			ic.Parent = b
 			local l = Instance.new('TextLabel')
 			l.AutomaticSize = Enum.AutomaticSize.X
-			l.Size = UDim2.fromOffset(0, 16)
+			l.Size = UDim2.fromOffset(0, 36)
 			l.BackgroundTransparency = 1
 			l.Text = txt
 			l.TextColor3 = Color3.new(1, 1, 1)
 			l.TextSize = 12
 			l.FontFace = uipallet.FontSemiBold
 			l.LayoutOrder = 1
-			l.Parent = holder
+			l.Parent = b
 			b.MouseEnter:Connect(function() b.BackgroundColor3 = color.Light(uipallet.Main, 0.08) end)
 			b.MouseLeave:Connect(function() b.BackgroundColor3 = color.Light(uipallet.Main, 0.04) end)
 			b.MouseButton1Click:Connect(cb)
@@ -5528,7 +5533,7 @@ function mainapi:CreateCategoryList(categorysettings)
 		mkbtn('CREATE NEW', 'LarpV4/assets/larp/add.png', 0, function()
 			addbkg.Visible = not addbkg.Visible
 		end)
-		mkbtn('PUBLIC', 'LarpV4/assets/larp/worldicon.png', 104, function()
+		mkbtn('PUBLIC', 'LarpV4/assets/larp/worldicon.png', 1, function()
 			mainapi:TogglePublicProfiles()
 		end)
 	end
@@ -5585,6 +5590,12 @@ function mainapi:CreateCategoryList(categorysettings)
 				object.Text = ''
 				object.Parent = children
 				addCorner(object)
+				object.MouseEnter:Connect(function()
+					if v.Name ~= mainapi.Profile then object.BackgroundColor3 = color.Light(uipallet.Main, 0.07) end
+				end)
+				object.MouseLeave:Connect(function()
+					if v.Name ~= mainapi.Profile then object.BackgroundColor3 = color.Light(uipallet.Main, 0.02) end
+				end)
 				local accent = Instance.new('Frame')
 				accent.Name = 'Accent'
 				accent.Size = UDim2.fromOffset(3, 20)

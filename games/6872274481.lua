@@ -7446,6 +7446,258 @@ run(function()
 end)
 
 run(function()
+	local POTesp
+	local Box, Style, Filled, FillTrans, Chams, ShowName, ShowDistance, TextBg, TextSize, Tracers, TracerFrom, BoxColor, GradColor, MaxDist
+
+	local folder = Instance.new('Folder')
+	folder.Name = 'POTesp'
+	folder.Parent = larp.gui
+
+	local pots = {}
+
+	local function c1() return Color3.fromHSV(BoxColor.Hue, BoxColor.Sat, BoxColor.Value) end
+	local function c2() return Color3.fromHSV(GradColor.Hue, GradColor.Sat, GradColor.Value) end
+
+	local function styleOf(o)
+		if not o then return end
+		local corners = Style.Value == 'Corners'
+		o.corner.CornerRadius = UDim.new(0, Style.Value == 'Rounded' and 5 or 0)
+		o.stroke.Enabled = not corners
+		for _, seg in o.segs do seg.Visible = corners end
+		o.tag.BackgroundTransparency = TextBg.Enabled and 0.28 or 1
+		o.tag.TextSize = math.max(9, math.floor(14 * TextSize.Value))
+		o.highlight.Enabled = Chams.Enabled
+	end
+
+	local function makeSeg(parent, ax, ay, horizontal)
+		local L, T = 9, 2
+		local f = Instance.new('Frame')
+		f.BorderSizePixel = 0
+		f.AnchorPoint = Vector2.new(ax, ay)
+		f.Position = UDim2.fromScale(ax, ay)
+		f.Size = horizontal and UDim2.fromOffset(L, T) or UDim2.fromOffset(T, L)
+		f.Visible = false
+		f.ZIndex = 3
+		f.Parent = parent
+		return f
+	end
+
+	local function addPot(inst)
+		if pots[inst] or inst.Name ~= 'DesertPotEntity' or not inst:IsA('Model') then return end
+		local glow = Instance.new('Frame')
+		glow.BackgroundTransparency = 1
+		glow.BorderSizePixel = 0
+		glow.Visible = false
+		glow.ZIndex = 1
+		glow.Parent = folder
+		Instance.new('UICorner', glow).CornerRadius = UDim.new(0, 7)
+		local gstroke = Instance.new('UIStroke', glow)
+		gstroke.Thickness = 4
+		gstroke.Transparency = 0.72
+
+		local box = Instance.new('Frame')
+		box.BackgroundColor3 = Color3.new()
+		box.BackgroundTransparency = 1
+		box.BorderSizePixel = 0
+		box.Visible = false
+		box.ZIndex = 2
+		box.Parent = folder
+		local corner = Instance.new('UICorner', box)
+		corner.CornerRadius = UDim.new(0, 5)
+		local stroke = Instance.new('UIStroke', box)
+		stroke.Thickness = 1.6
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		stroke.Color = Color3.new(1, 1, 1)
+		local sgrad = Instance.new('UIGradient', stroke)
+		sgrad.Rotation = 55
+		local segs = {
+			makeSeg(box, 0, 0, true), makeSeg(box, 0, 0, false),
+			makeSeg(box, 1, 0, true), makeSeg(box, 1, 0, false),
+			makeSeg(box, 0, 1, true), makeSeg(box, 0, 1, false),
+			makeSeg(box, 1, 1, true), makeSeg(box, 1, 1, false),
+		}
+
+		local tag = Instance.new('TextLabel')
+		tag.AutomaticSize = Enum.AutomaticSize.XY
+		tag.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
+		tag.BackgroundTransparency = 0.28
+		tag.BorderSizePixel = 0
+		tag.AnchorPoint = Vector2.new(0.5, 1)
+		tag.Font = Enum.Font.GothamBold
+		tag.TextColor3 = Color3.new(1, 1, 1)
+		tag.TextSize = 14
+		tag.TextStrokeTransparency = 0.4
+		tag.RichText = true
+		tag.Visible = false
+		tag.ZIndex = 5
+		tag.Parent = folder
+		Instance.new('UICorner', tag).CornerRadius = UDim.new(0, 5)
+		local tpad = Instance.new('UIPadding', tag)
+		tpad.PaddingLeft = UDim.new(0, 8)
+		tpad.PaddingRight = UDim.new(0, 8)
+		tpad.PaddingTop = UDim.new(0, 3)
+		tpad.PaddingBottom = UDim.new(0, 4)
+		local underline = Instance.new('Frame', tag)
+		underline.AnchorPoint = Vector2.new(0.5, 1)
+		underline.Position = UDim2.new(0.5, 0, 1, -1)
+		underline.Size = UDim2.new(1, -6, 0, 2)
+		underline.BorderSizePixel = 0
+		underline.BackgroundColor3 = Color3.new(1, 1, 1)
+		underline.ZIndex = 6
+		Instance.new('UICorner', underline).CornerRadius = UDim.new(1, 0)
+		local ugrad = Instance.new('UIGradient', underline)
+
+		local tracer = Instance.new('Frame')
+		tracer.AnchorPoint = Vector2.new(0, 0.5)
+		tracer.BorderSizePixel = 0
+		tracer.BackgroundColor3 = Color3.new(1, 1, 1)
+		tracer.Size = UDim2.fromOffset(0, 2)
+		tracer.Visible = false
+		tracer.ZIndex = 1
+		tracer.Parent = folder
+		local tgrad = Instance.new('UIGradient', tracer)
+		tgrad.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.55), NumberSequenceKeypoint.new(1, 0) })
+
+		local highlight = Instance.new('Highlight')
+		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		highlight.Enabled = false
+		highlight.Adornee = inst
+		highlight.Parent = inst
+
+		local o = { inst = inst, glow = glow, gstroke = gstroke, box = box, corner = corner, stroke = stroke, sgrad = sgrad, segs = segs, tag = tag, underline = underline, ugrad = ugrad, tracer = tracer, tgrad = tgrad, highlight = highlight }
+		pots[inst] = o
+		styleOf(o)
+	end
+
+	local function removePot(inst)
+		local o = pots[inst]
+		if not o then return end
+		for _, k in { 'glow', 'box', 'tag', 'tracer', 'highlight' } do
+			if o[k] then pcall(function() o[k]:Destroy() end) end
+		end
+		pots[inst] = nil
+	end
+
+	local function labelText(dist)
+		local text = ShowName.Enabled and 'Pot' or ''
+		if ShowDistance.Enabled then
+			local d = '<font color="rgb(150,155,165)">' .. dist .. 'm</font>'
+			text = text == '' and d or (text .. ' ' .. d)
+		end
+		return text
+	end
+
+	POTesp = larp.Categories.Render:CreateModule({
+		Name = 'POTesp',
+		Function = function(callback)
+			if callback then
+				for _, v in workspace:GetChildren() do addPot(v) end
+				POTesp:Clean(workspace.ChildAdded:Connect(addPot))
+				POTesp:Clean(workspace.ChildRemoved:Connect(removePot))
+				POTesp:Clean(runService.PreRender:Connect(function()
+					local vp = gameCamera.ViewportSize
+					local root = entitylib.character and entitylib.character.RootPart
+					local primary, secondary = c1(), c2()
+					local showTag = ShowName.Enabled or ShowDistance.Enabled
+					local maxd = MaxDist.Value
+					local origin
+					if TracerFrom.Value == 'Top' then origin = Vector2.new(vp.X / 2, 0)
+					elseif TracerFrom.Value == 'Center' then origin = Vector2.new(vp.X / 2, vp.Y / 2)
+					else origin = Vector2.new(vp.X / 2, vp.Y) end
+					for inst, o in pots do
+						if not inst.Parent then removePot(inst) continue end
+						local cf, size = inst:GetBoundingBox()
+						local dist = root and math.floor((cf.Position - root.Position).Magnitude) or 0
+						local inRange = maxd == 0 or dist <= maxd
+						local minX, minY, maxX, maxY = math.huge, math.huge, -math.huge, -math.huge
+						local front = false
+						if inRange then
+							for _, x in { -size.X / 2, size.X / 2 } do
+								for _, y in { -size.Y / 2, size.Y / 2 } do
+									for _, z in { -size.Z / 2, size.Z / 2 } do
+										local sp = gameCamera:WorldToViewportPoint((cf * CFrame.new(x, y, z)).Position)
+										if sp.Z > 0 then
+											front = true
+											minX = math.min(minX, sp.X); minY = math.min(minY, sp.Y)
+											maxX = math.max(maxX, sp.X); maxY = math.max(maxY, sp.Y)
+										end
+									end
+								end
+							end
+						end
+						local onScreen = inRange and front and maxX > 0 and minX < vp.X and maxY > 0 and minY < vp.Y
+						local w, h = maxX - minX, maxY - minY
+
+						local showBox = onScreen and Box.Enabled
+						o.box.Visible = showBox
+						o.glow.Visible = showBox and Style.Value ~= 'Corners'
+						if showBox then
+							o.box.Position = UDim2.fromOffset(minX, minY)
+							o.box.Size = UDim2.fromOffset(w, h)
+							o.box.BackgroundColor3 = primary
+							o.box.BackgroundTransparency = Filled.Enabled and FillTrans.Value or 1
+							o.sgrad.Color = ColorSequence.new(primary, secondary)
+							o.glow.Position = UDim2.fromOffset(minX - 2, minY - 2)
+							o.glow.Size = UDim2.fromOffset(w + 4, h + 4)
+							o.gstroke.Color = primary
+							if Style.Value == 'Corners' then
+								for _, seg in o.segs do seg.BackgroundColor3 = primary end
+							end
+						end
+
+						local showName = onScreen and showTag
+						o.tag.Visible = showName
+						o.underline.Visible = showName
+						if showName then
+							o.tag.Text = labelText(dist)
+							o.tag.Position = UDim2.fromOffset((minX + maxX) / 2, minY - 4)
+							o.ugrad.Color = ColorSequence.new(primary, secondary)
+						end
+
+						local showTracer = onScreen and Tracers.Enabled
+						o.tracer.Visible = showTracer
+						if showTracer then
+							local tx, ty = (minX + maxX) / 2, maxY
+							local dx, dy = tx - origin.X, ty - origin.Y
+							o.tracer.Position = UDim2.fromOffset(origin.X, origin.Y)
+							o.tracer.Size = UDim2.fromOffset(math.sqrt(dx * dx + dy * dy), 2)
+							o.tracer.Rotation = math.deg(math.atan2(dy, dx))
+							o.tracer.BackgroundColor3 = primary
+							o.tgrad.Color = ColorSequence.new(secondary, primary)
+						end
+
+						o.highlight.Enabled = Chams.Enabled and inRange
+						if o.highlight.Enabled then
+							o.highlight.FillColor = primary
+							o.highlight.OutlineColor = secondary
+							o.highlight.FillTransparency = FillTrans.Value
+							o.highlight.OutlineTransparency = 0
+						end
+					end
+				end))
+			else
+				for inst in pots do removePot(inst) end
+			end
+		end,
+		Tooltip = 'Vape-style ESP for desert loot pots — box, chams, name, distance and tracers'
+	})
+	Box = POTesp:CreateToggle({ Name = 'Box', Default = true })
+	Style = POTesp:CreateDropdown({ Name = 'Box style', List = { 'Rounded', '2D', 'Corners' }, Function = function() for _, o in pots do styleOf(o) end end })
+	Filled = POTesp:CreateToggle({ Name = 'Filled', Default = true })
+	FillTrans = POTesp:CreateSlider({ Name = 'Fill transparency', Min = 0, Max = 1, Default = 0.8, Decimal = 100 })
+	Chams = POTesp:CreateToggle({ Name = 'Chams', Default = false, Tooltip = 'Fill the pot model through walls', Function = function() for _, o in pots do styleOf(o) end end })
+	ShowName = POTesp:CreateToggle({ Name = 'Name', Default = true })
+	ShowDistance = POTesp:CreateToggle({ Name = 'Distance', Default = true })
+	TextBg = POTesp:CreateToggle({ Name = 'Text background', Default = true, Function = function() for _, o in pots do styleOf(o) end end })
+	TextSize = POTesp:CreateSlider({ Name = 'Text size', Min = 0.5, Max = 2, Default = 1, Decimal = 10, Function = function() for _, o in pots do styleOf(o) end end })
+	Tracers = POTesp:CreateToggle({ Name = 'Tracers', Default = false })
+	TracerFrom = POTesp:CreateDropdown({ Name = 'Tracer origin', List = { 'Bottom', 'Center', 'Top' } })
+	BoxColor = POTesp:CreateColorSlider({ Name = 'Color', DefaultHue = 0.78, DefaultSat = 0.72, DefaultValue = 1 })
+	GradColor = POTesp:CreateColorSlider({ Name = 'Gradient color', DefaultHue = 0.55, DefaultSat = 0.85, DefaultValue = 1 })
+	MaxDist = POTesp:CreateSlider({ Name = 'Max distance', Min = 0, Max = 1000, Default = 0, Suffix = function(val) return val == 0 and 'off' or 'studs' end })
+end)
+
+run(function()
 	local Health
 	
 	Health = larp.Categories.Render:CreateModule({

@@ -8482,6 +8482,8 @@ run(function()
 	
 	ChinaHat = larp.Legit:CreateModule({
 		Name = 'China Hat',
+		Icon = (function() local ok, v = pcall(getcustomasset, 'LarpV4/assets/larp/chinahat.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(15, 15),
 		Function = function(callback)
 			if callback then
 				if larp.ThreadFix then

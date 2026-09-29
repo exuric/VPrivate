@@ -6291,7 +6291,7 @@ function mainapi:CreateLegit()
 	searchpad.Parent = legitsearch
 	local searchicon = Instance.new('ImageLabel')
 	searchicon.Size = UDim2.fromOffset(14, 14)
-	searchicon.Position = UDim2.new(1, -21, 0.5, -7)
+	searchicon.Position = UDim2.new(1, -18, 0.5, -7)
 	searchicon.BackgroundTransparency = 1
 	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 	searchicon.ImageColor3 = uipallet.Text
@@ -6351,9 +6351,9 @@ function mainapi:CreateLegit()
 	emptytext.BackgroundTransparency = 1
 	emptytext.Text = 'No Favorites'
 	emptytext.TextXAlignment = Enum.TextXAlignment.Center
-	emptytext.TextColor3 = Color3.new(1, 1, 1)
+	emptytext.TextColor3 = Color3.fromRGB(136, 136, 136)
 	emptytext.TextSize = 14
-	emptytext.FontFace = uipallet.Font
+	emptytext.FontFace = Font.fromEnum(Enum.Font.Arial)
 	emptytext.Parent = empty
 
 	refreshLegitTabs = function()

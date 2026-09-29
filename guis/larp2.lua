@@ -5468,6 +5468,65 @@ function mainapi:CreateCategoryList(categorysettings)
 	addbutton.ImageColor3 = categorysettings.Color
 	addbutton.ImageTransparency = 0.3
 	addbutton.Parent = addbkg
+	if categorysettings.Profiles then
+		addbkg.Visible = false
+		addbkg.LayoutOrder = 1
+		local btnrow = Instance.new('Frame')
+		btnrow.Name = 'ProfileButtons'
+		btnrow.Size = UDim2.fromOffset(200, 34)
+		btnrow.BackgroundTransparency = 1
+		btnrow.LayoutOrder = 0
+		btnrow.Parent = children
+		local function mkbtn(txt, icon, xoff, cb)
+			local b = Instance.new('TextButton')
+			b.Size = UDim2.fromOffset(98, 34)
+			b.Position = UDim2.fromOffset(xoff, 0)
+			b.BackgroundColor3 = color.Light(uipallet.Main, 0.045)
+			b.AutoButtonColor = false
+			b.Text = ''
+			b.Parent = btnrow
+			addCorner(b, UDim.new(0, 6))
+			local holder = Instance.new('Frame')
+			holder.AnchorPoint = Vector2.new(0.5, 0.5)
+			holder.Position = UDim2.fromScale(0.5, 0.5)
+			holder.Size = UDim2.fromOffset(80, 16)
+			holder.BackgroundTransparency = 1
+			holder.Parent = b
+			local hl = Instance.new('UIListLayout')
+			hl.FillDirection = Enum.FillDirection.Horizontal
+			hl.VerticalAlignment = Enum.VerticalAlignment.Center
+			hl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			hl.Padding = UDim.new(0, 6)
+			hl.Parent = holder
+			local ic = Instance.new('ImageLabel')
+			ic.Size = UDim2.fromOffset(13, 13)
+			ic.BackgroundTransparency = 1
+			ic.Image = getcustomasset(icon)
+			ic.ImageColor3 = color.Dark(uipallet.Text, 0.15)
+			ic.LayoutOrder = 0
+			ic.Parent = holder
+			local l = Instance.new('TextLabel')
+			l.AutomaticSize = Enum.AutomaticSize.X
+			l.Size = UDim2.fromOffset(0, 16)
+			l.BackgroundTransparency = 1
+			l.Text = txt
+			l.TextColor3 = color.Dark(uipallet.Text, 0.15)
+			l.TextSize = 12
+			l.FontFace = uipallet.FontSemiBold
+			l.LayoutOrder = 1
+			l.Parent = holder
+			b.MouseEnter:Connect(function() b.BackgroundColor3 = color.Light(uipallet.Main, 0.09) end)
+			b.MouseLeave:Connect(function() b.BackgroundColor3 = color.Light(uipallet.Main, 0.045) end)
+			b.MouseButton1Click:Connect(cb)
+			return b
+		end
+		mkbtn('CREATE NEW', 'LarpV4/assets/larp/add.png', 0, function()
+			addbkg.Visible = not addbkg.Visible
+		end)
+		mkbtn('PUBLIC', 'LarpV4/assets/larp/worldicon.png', 102, function()
+			mainapi:TogglePublicProfiles()
+		end)
+	end
 	local cursedpadding = Instance.new('Frame')
 	cursedpadding.Size = UDim2.fromOffset()
 	cursedpadding.BackgroundTransparency = 1

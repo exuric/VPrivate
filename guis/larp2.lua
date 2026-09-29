@@ -6351,6 +6351,12 @@ function mainapi:CreateSearch()
 	inputService.InputBegan:Connect(function(input)
 		if input.KeyCode == Enum.KeyCode.Tab and inputService:GetFocusedTextBox() == search and ghostText ~= '' then
 			search.Text = ghostText
+			task.defer(function()
+				if search.Text:find('\t') then
+					search.Text = search.Text:gsub('\t', '')
+				end
+				pcall(function() search.CursorPosition = #search.Text + 1 end)
+			end)
 		end
 	end)
 	local children = Instance.new('ScrollingFrame')

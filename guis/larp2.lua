@@ -6153,6 +6153,7 @@ function mainapi:CreateCategoryList(categorysettings)
 		settings.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	end)
 	settings.MouseButton1Click:Connect(function()
+		if categorysettings.Profiles then return end
 		childrentwo.Visible = not childrentwo.Visible
 	end)
 	window.InputBegan:Connect(function(inputObj)
@@ -6165,15 +6166,15 @@ function mainapi:CreateCategoryList(categorysettings)
 			setthreadidentity(8)
 		end
 		children.CanvasSize = UDim2.fromOffset(0, windowlist.AbsoluteContentSize.Y / scale.Scale)
-		if categoryapi.Expanded then
-			window.Size = UDim2.fromOffset(220, math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611))
+		if categoryapi.Expanded and not categoryapi.DetailOpen then
+			window.Size = UDim2.fromOffset(CW, math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611))
 		end
 	end)
 	windowlisttwo:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 		if self.ThreadFix then
 			setthreadidentity(8)
 		end
-		childrentwo.Size = UDim2.fromOffset(220, windowlisttwo.AbsoluteContentSize.Y)
+		childrentwo.Size = UDim2.fromOffset(CW, windowlisttwo.AbsoluteContentSize.Y)
 	end)
 
 	categoryapi.Button = self.Categories.Main:CreateButton({

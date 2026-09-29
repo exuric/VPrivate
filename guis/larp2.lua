@@ -6329,7 +6329,7 @@ function mainapi:CreateLegit()
 	local emptylogo = Instance.new('ImageLabel')
 	emptylogo.Name = 'Logo'
 	emptylogo.Size = UDim2.fromOffset(130, 45)
-	emptylogo.Position = UDim2.new(0.5, -65, 0, 96)
+	emptylogo.Position = UDim2.new(0.5, -65, 0, 80)
 	emptylogo.BackgroundTransparency = 1
 	emptylogo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
 	emptylogo.ImageColor3 = Color3.fromRGB(105, 105, 105)
@@ -6337,8 +6337,8 @@ function mainapi:CreateLegit()
 	emptylogo.Parent = empty
 	local emptyv4 = Instance.new('ImageLabel')
 	emptyv4.Name = 'V4'
-	emptyv4.Size = UDim2.fromOffset(30, 21)
-	emptyv4.Position = UDim2.new(0.5, -15, 0, 146)
+	emptyv4.Size = UDim2.fromOffset(44, 31)
+	emptyv4.Position = UDim2.new(0.5, -22, 0, 132)
 	emptyv4.BackgroundTransparency = 1
 	emptyv4.Image = getcustomasset('LarpV4/assets/larp/Textv4.png')
 	emptyv4.ImageColor3 = Color3.fromRGB(105, 105, 105)
@@ -6347,9 +6347,9 @@ function mainapi:CreateLegit()
 	local emptytext = Instance.new('TextLabel')
 	emptytext.Name = 'Label'
 	emptytext.Size = UDim2.new(1, 0, 0, 20)
-	emptytext.Position = UDim2.new(0, 0, 0, 172)
+	emptytext.Position = UDim2.new(0, 0, 0, 170)
 	emptytext.BackgroundTransparency = 1
-	emptytext.Text = 'larp v4'
+	emptytext.Text = 'No Favorites'
 	emptytext.TextXAlignment = Enum.TextXAlignment.Center
 	emptytext.TextColor3 = Color3.new(1, 1, 1)
 	emptytext.TextSize = 14

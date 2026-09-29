@@ -6308,8 +6308,45 @@ function mainapi:CreateLegit()
 	windowlist.Parent = children
 	legitapi.Window = window
 	table.insert(mainapi.Windows, window)
+	local empty = Instance.new('Frame')
+	empty.Name = 'Empty'
+	empty.Size = UDim2.new(1, -28, 0, 293)
+	empty.Position = UDim2.fromOffset(14, 84)
+	empty.BackgroundTransparency = 1
+	empty.Visible = false
+	empty.Parent = window
+	local emptylogo = Instance.new('ImageLabel')
+	emptylogo.Name = 'Logo'
+	emptylogo.Size = UDim2.fromOffset(130, 45)
+	emptylogo.Position = UDim2.new(0.5, -65, 0, 96)
+	emptylogo.BackgroundTransparency = 1
+	emptylogo.Image = getcustomasset('LarpV4/assets/larp/Larp.png')
+	emptylogo.ImageColor3 = Color3.fromRGB(105, 105, 105)
+	emptylogo.ImageTransparency = 0.15
+	emptylogo.Parent = empty
+	local emptyv4 = Instance.new('ImageLabel')
+	emptyv4.Name = 'V4'
+	emptyv4.Size = UDim2.fromOffset(30, 21)
+	emptyv4.Position = UDim2.new(0.5, -15, 0, 146)
+	emptyv4.BackgroundTransparency = 1
+	emptyv4.Image = getcustomasset('LarpV4/assets/larp/Textv4.png')
+	emptyv4.ImageColor3 = Color3.fromRGB(105, 105, 105)
+	emptyv4.ImageTransparency = 0.15
+	emptyv4.Parent = empty
+	local emptytext = Instance.new('TextLabel')
+	emptytext.Name = 'Label'
+	emptytext.Size = UDim2.new(1, 0, 0, 20)
+	emptytext.Position = UDim2.new(0, 0, 0, 172)
+	emptytext.BackgroundTransparency = 1
+	emptytext.Text = 'larp v4'
+	emptytext.TextXAlignment = Enum.TextXAlignment.Center
+	emptytext.TextColor3 = Color3.new(1, 1, 1)
+	emptytext.TextSize = 14
+	emptytext.FontFace = uipallet.Font
+	emptytext.Parent = empty
 
 	refreshLegitTabs = function()
+		local shown = 0
 		for _, v in legitapi.Modules do
 			local show = true
 			if legitapi.Tab == 'Favorite' and not v.Favourite then
@@ -6324,8 +6361,10 @@ function mainapi:CreateLegit()
 			end
 			if v.Object then
 				v.Object.Visible = show
+				if show then shown += 1 end
 			end
 		end
+		if empty then empty.Visible = shown == 0 end
 		for name, btn in legitTabButtons do
 			local sel = name == legitapi.Tab
 			btn.TextColor3 = sel and Color3.new(1, 1, 1) or color.Dark(uipallet.Text, 0.29)

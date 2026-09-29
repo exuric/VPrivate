@@ -7458,11 +7458,12 @@ run(function()
 	local FONT
 	do
 		local ok, f = pcall(function()
-			local reg = getcustomasset('LarpV4/assets/larp/proximanova.ttf')
-			local bold = getcustomasset('LarpV4/assets/larp/proximanova_bold.ttf')
+			local gca = larp.Libraries.getcustomasset
+			local reg = gca('LarpV4/assets/larp/proximanova.ttf')
+			local bold = gca('LarpV4/assets/larp/proximanova_bold.ttf')
 			local json = '{"name":"Proxima Nova","faces":[{"name":"Regular","weight":400,"style":"normal","assetId":"' .. reg .. '"},{"name":"Bold","weight":700,"style":"normal","assetId":"' .. bold .. '"}]}'
 			writefile('LarpV4/assets/larp/proximanova.json', json)
-			return Font.new(getcustomasset('LarpV4/assets/larp/proximanova.json'), Enum.FontWeight.Bold)
+			return Font.new(gca('LarpV4/assets/larp/proximanova.json'), Enum.FontWeight.Bold)
 		end)
 		FONT = ok and f or Font.fromEnum(Enum.Font.GothamBold)
 	end

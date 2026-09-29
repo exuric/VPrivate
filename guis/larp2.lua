@@ -1149,6 +1149,7 @@ components = {
 		local optionapi = {
 			Type = 'Dropdown',
 			Value = optionsettings.List[1] or 'None',
+			List = optionsettings.List,
 			Index = 0
 		}
 		
@@ -1214,6 +1215,7 @@ components = {
 		
 		function optionapi:Change(list)
 			optionsettings.List = list or {}
+			self.List = optionsettings.List
 			if not table.find(optionsettings.List, self.Value) then
 				self:SetValue(self.Value)
 			end
@@ -5539,7 +5541,7 @@ function mainapi:CreateCategoryList(categorysettings)
 			fitList()
 			if addbkg.Visible then pcall(function() addvalue:CaptureFocus() end) end
 		end)
-		mkbtn('PUBLIC', 'LarpV4/assets/larp/worldicon.png', 1, function()
+		mkbtn('PUBLIC', 'LarpV4/assets/larp/newpublicprofiles.png', 1, function()
 			mainapi:TogglePublicProfiles()
 		end)
 
@@ -5566,7 +5568,7 @@ function mainapi:CreateCategoryList(categorysettings)
 		dIcon.Size = UDim2.fromOffset(32, 32)
 		dIcon.Position = UDim2.new(0.5, -16, 0, 6)
 		dIcon.BackgroundTransparency = 1
-		dIcon.Image = getcustomasset('LarpV4/assets/larp/profilesicon.png')
+		dIcon.Image = getcustomasset('LarpV4/assets/larp/rearview.png')
 		dIcon.ImageColor3 = uipallet.Text
 		dIcon.Parent = detail
 		local dName = Instance.new('TextLabel')
@@ -5591,8 +5593,18 @@ function mainapi:CreateCategoryList(categorysettings)
 		local enHL = Instance.new('UIListLayout'); enHL.FillDirection = Enum.FillDirection.Horizontal; enHL.VerticalAlignment = Enum.VerticalAlignment.Center; enHL.Padding = UDim.new(0, 7); enHL.Parent = enHolder
 		local enIcon = Instance.new('ImageLabel'); enIcon.Size = UDim2.fromOffset(15, 15); enIcon.BackgroundTransparency = 1; enIcon.Image = getcustomasset('LarpV4/assets/larp/arrowdown.png'); enIcon.ImageColor3 = Color3.new(1, 1, 1); enIcon.LayoutOrder = 0; enIcon.Parent = enHolder
 		local enLbl = Instance.new('TextLabel'); enLbl.AutomaticSize = Enum.AutomaticSize.X; enLbl.Size = UDim2.fromOffset(0, 16); enLbl.BackgroundTransparency = 1; enLbl.Text = 'Enable modules'; enLbl.TextColor3 = Color3.new(1, 1, 1); enLbl.TextSize = 13; enLbl.FontFace = uipallet.FontSemiBold; enLbl.LayoutOrder = 1; enLbl.Parent = enHolder
-		enableBtn.MouseEnter:Connect(function() enableBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.08) end)
-		enableBtn.MouseLeave:Connect(function() enableBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.04) end)
+		enableBtn.MouseEnter:Connect(function()
+			enableBtn.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			enStroke.Transparency = 1
+			enIcon.ImageColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+			enLbl.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+		end)
+		enableBtn.MouseLeave:Connect(function()
+			enableBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+			enStroke.Transparency = 0.2
+			enIcon.ImageColor3 = Color3.new(1, 1, 1)
+			enLbl.TextColor3 = Color3.new(1, 1, 1)
+		end)
 		local trashBtn = Instance.new('TextButton')
 		trashBtn.Size = UDim2.fromOffset(38, 38)
 		trashBtn.Position = UDim2.fromOffset(CW - 12 - 38, 76)
@@ -5603,8 +5615,16 @@ function mainapi:CreateCategoryList(categorysettings)
 		addCorner(trashBtn, UDim.new(0, 7))
 		local trStroke = Instance.new('UIStroke'); trStroke.Color = color.Light(uipallet.Main, 0.16); trStroke.Transparency = 0.2; trStroke.Parent = trashBtn
 		local trIcon = Instance.new('ImageLabel'); trIcon.Size = UDim2.fromOffset(15, 15); trIcon.AnchorPoint = Vector2.new(0.5, 0.5); trIcon.Position = UDim2.fromScale(0.5, 0.5); trIcon.BackgroundTransparency = 1; trIcon.Image = getcustomasset('LarpV4/assets/larp/trash.png'); trIcon.ImageColor3 = uipallet.Text; trIcon.Parent = trashBtn
-		trashBtn.MouseEnter:Connect(function() trashBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.08) end)
-		trashBtn.MouseLeave:Connect(function() trashBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.04) end)
+		trashBtn.MouseEnter:Connect(function()
+			trashBtn.BackgroundColor3 = Color3.fromRGB(214, 66, 66)
+			trStroke.Transparency = 1
+			trIcon.ImageColor3 = Color3.new(1, 1, 1)
+		end)
+		trashBtn.MouseLeave:Connect(function()
+			trashBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+			trStroke.Transparency = 0.2
+			trIcon.ImageColor3 = uipallet.Text
+		end)
 		local affLbl = Instance.new('TextLabel')
 		affLbl.Size = UDim2.fromOffset(170, 16)
 		affLbl.Position = UDim2.fromOffset(14, 126)
@@ -8267,6 +8287,7 @@ do
 		search.PlaceholderColor3 = color.Dark(uipallet.Text, 0.4)
 		search.TextSize = 14
 		search.FontFace = uipallet.Font
+		search.TextYAlignment = Enum.TextYAlignment.Center
 		search.ClearTextOnFocus = false
 		search.ZIndex = 41
 		search.Parent = win
@@ -8286,7 +8307,7 @@ do
 		affLbl.ZIndex = 41
 		affLbl.Parent = win
 		local modScroll = Instance.new('ScrollingFrame')
-		modScroll.Size = UDim2.fromOffset(LP - 16, H - 138)
+		modScroll.Size = UDim2.fromOffset(LP - 48, H - 138)
 		modScroll.Position = UDim2.fromOffset(24, 132)
 		modScroll.BackgroundTransparency = 1
 		modScroll.BorderSizePixel = 0
@@ -8315,7 +8336,7 @@ do
 	local function renderModule(m)
 		local right = editor.right
 		for _, c in right:GetChildren() do if not c:IsA('UIListLayout') then c:Destroy() end end
-		local y = 4
+		local y = 26
 		-- header
 		local head = Instance.new('TextLabel'); head.Size = UDim2.fromOffset(160, 22); head.Position = UDim2.fromOffset(0, y); head.BackgroundTransparency = 1; head.Text = T(m.Name); head.TextXAlignment = Enum.TextXAlignment.Left; head.TextColor3 = Color3.new(1,1,1); head.TextSize = 17; head.FontFace = uipallet.FontSemiBold; head.ZIndex = 41; head.Parent = right
 		local hw = head.TextBounds.X + 8
@@ -8353,21 +8374,41 @@ do
 					local lbl = Instance.new('TextLabel'); lbl.Size = UDim2.fromOffset(220, 18); lbl.Position = UDim2.fromOffset(0, y); lbl.BackgroundTransparency = 1; lbl.Text = T(oname); lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.TextColor3 = Color3.new(1,1,1); lbl.TextSize = 15; lbl.FontFace = uipallet.Font; lbl.ZIndex = 41; lbl.Parent = right
 					local val = Instance.new('TextLabel'); val.Size = UDim2.fromOffset(60, 18); val.Position = UDim2.fromOffset(editor.rowW - 60, y); val.BackgroundTransparency = 1; val.Text = tostring(o.Value); val.TextXAlignment = Enum.TextXAlignment.Right; val.TextColor3 = color.Dark(uipallet.Text, 0.2); val.TextSize = 13; val.FontFace = uipallet.Font; val.ZIndex = 41; val.Parent = right
 					local mn2, mx2 = o.Min or 0, o.Max or 1
-					local track = Instance.new('TextButton'); track.Size = UDim2.fromOffset(editor.rowW, 4); track.Position = UDim2.fromOffset(0, y + 24); track.AutoButtonColor = false; track.Text = ''; track.BackgroundColor3 = color.Light(uipallet.Main, 0.12); track.ZIndex = 41; track.Parent = right; addCorner(track, UDim.new(1, 0))
+					local track = Instance.new('Frame'); track.Size = UDim2.fromOffset(editor.rowW, 4); track.Position = UDim2.fromOffset(0, y + 24); track.BackgroundColor3 = color.Light(uipallet.Main, 0.12); track.BorderSizePixel = 0; track.ZIndex = 41; track.Parent = right; addCorner(track, UDim.new(1, 0))
 					local frac = mx2 > mn2 and math.clamp((o.Value - mn2) / (mx2 - mn2), 0, 1) or 0
 					local fill = Instance.new('Frame'); fill.Size = UDim2.fromScale(frac, 1); fill.BackgroundColor3 = acol(); fill.BorderSizePixel = 0; fill.ZIndex = 42; fill.Parent = track; addCorner(fill, UDim.new(1, 0))
 					local knob = Instance.new('Frame'); knob.Size = UDim2.fromOffset(12, 12); knob.AnchorPoint = Vector2.new(0.5, 0.5); knob.Position = UDim2.new(frac, 0, 0.5, 0); knob.BackgroundColor3 = Color3.new(1,1,1); knob.ZIndex = 43; knob.Parent = track; addCorner(knob, UDim.new(1, 0))
+					local hit = Instance.new('TextButton'); hit.Size = UDim2.fromOffset(editor.rowW, 26); hit.Position = UDim2.fromOffset(0, y + 13); hit.BackgroundTransparency = 1; hit.Text = ''; hit.AutoButtonColor = false; hit.ZIndex = 43; hit.Parent = right
 					local dragging = false
 					local function setFromX(px)
 						local f = math.clamp((px - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
 						local v = mn2 + (mx2 - mn2) * f
 						if o.Decimal then v = math.floor(v * o.Decimal + 0.5) / o.Decimal else v = math.floor(v + 0.5) end
 						pcall(function() o:SetValue(v) end)
-						fill.Size = UDim2.fromScale(f, 1); knob.Position = UDim2.new(f, 0, 0.5, 0); val.Text = tostring(o.Value)
+						local nf = mx2 > mn2 and math.clamp((o.Value - mn2) / (mx2 - mn2), 0, 1) or 0
+						fill.Size = UDim2.fromScale(nf, 1); knob.Position = UDim2.new(nf, 0, 0.5, 0); val.Text = tostring(o.Value)
 					end
-					track.MouseButton1Down:Connect(function() dragging = true setFromX(inputService:GetMouseLocation().X) end)
-					inputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
-					inputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then setFromX(inputService:GetMouseLocation().X) end end)
+					hit.MouseButton1Down:Connect(function() dragging = true setFromX(inputService:GetMouseLocation().X) end)
+					hit:GetPropertyChangedSignal('AbsolutePosition'):Connect(function() end)
+					editor.win.AncestryChanged:Connect(function() dragging = false end)
+					local moveConn, endConn
+					moveConn = inputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then setFromX(inputService:GetMouseLocation().X) end end)
+					endConn = inputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+					hit.Destroying:Connect(function() moveConn:Disconnect() endConn:Disconnect() end)
+					y = y + 44
+				elseif o.Type == 'Dropdown' then
+					local box = Instance.new('TextButton'); box.Size = UDim2.fromOffset(editor.rowW, 36); box.Position = UDim2.fromOffset(0, y); box.BackgroundColor3 = color.Light(uipallet.Main, 0.04); box.AutoButtonColor = false; box.Text = ''; box.ZIndex = 41; box.Parent = right; addCorner(box, UDim.new(0, 7))
+					local bs = Instance.new('UIStroke'); bs.Color = color.Light(uipallet.Main, 0.12); bs.Transparency = 0.4; bs.Parent = box
+					local bt = Instance.new('TextLabel'); bt.Size = UDim2.new(1, -30, 1, 0); bt.Position = UDim2.fromOffset(12, 0); bt.BackgroundTransparency = 1; bt.Text = T(oname) .. ' - ' .. tostring(o.Value); bt.TextXAlignment = Enum.TextXAlignment.Left; bt.TextColor3 = uipallet.Text; bt.TextSize = 13; bt.FontFace = uipallet.Font; bt.ZIndex = 42; bt.Parent = box
+					local bc = Instance.new('ImageLabel'); bc.Size = UDim2.fromOffset(9, 5); bc.AnchorPoint = Vector2.new(1, 0.5); bc.Position = UDim2.new(1, -12, 0.5, 0); bc.BackgroundTransparency = 1; bc.Image = getcustomasset('LarpV4/assets/larp/expandup.png'); bc.Rotation = 180; bc.ImageColor3 = color.Dark(uipallet.Text, 0.4); bc.ZIndex = 42; bc.Parent = box
+					box.MouseButton1Click:Connect(function()
+						local list = o.List or {}
+						if #list < 2 then return end
+						local idx = table.find(list, o.Value) or 1
+						local nextv = list[(idx % #list) + 1]
+						pcall(function() o:SetValue(nextv) end)
+						bt.Text = T(oname) .. ' - ' .. tostring(o.Value)
+					end)
 					y = y + 44
 				else
 					local row = Instance.new('Frame'); row.Size = UDim2.fromOffset(editor.rowW - 22, 38); row.Position = UDim2.fromOffset(0, y); row.BackgroundColor3 = color.Light(uipallet.Main, 0.04); row.ZIndex = 41; row.Parent = right; addCorner(row, UDim.new(0, 7))
@@ -8394,19 +8435,27 @@ do
 		local function selectRow(sel)
 			for _, rr in rowRefs do rr.Frame.BackgroundColor3 = color.Light(uipallet.Main, 0.02) end
 			sel.Frame.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
+			editor.selected = sel
 			renderModule(sel.Module)
 		end
 		for i, m in aff do
 			local r = Instance.new('TextButton'); r.Size = UDim2.new(1, 0, 0, 42); r.BackgroundColor3 = color.Light(uipallet.Main, 0.02); r.AutoButtonColor = false; r.Text = ''; r.LayoutOrder = i; r.ZIndex = 41; r.Parent = editor.modScroll; addCorner(r, UDim.new(0, 7))
 			local rn = Instance.new('TextLabel'); rn.Size = UDim2.new(1, -90, 1, 0); rn.Position = UDim2.fromOffset(14, 0); rn.BackgroundTransparency = 1; rn.Text = T(m.Name); rn.TextXAlignment = Enum.TextXAlignment.Left; rn.TextColor3 = Color3.new(1,1,1); rn.TextSize = 15; rn.FontFace = uipallet.Font; rn.ZIndex = 42; rn.Parent = r
 			local chev = Instance.new('ImageLabel'); chev.Size = UDim2.fromOffset(7, 7); chev.AnchorPoint = Vector2.new(1, 0.5); chev.Position = UDim2.new(1, -12, 0.5, 0); chev.BackgroundTransparency = 1; chev.Image = getcustomasset('LarpV4/assets/larp/expandright.png'); chev.ImageColor3 = color.Dark(uipallet.Text, 0.4); chev.ZIndex = 42; chev.Parent = r
-			local hasBind = m.Bind and #m.Bind > 0
-			local pill = Instance.new('Frame'); pill.AutomaticSize = Enum.AutomaticSize.X; pill.Size = UDim2.fromOffset(0, 20); pill.AnchorPoint = Vector2.new(1, 0.5); pill.Position = UDim2.new(1, -28, 0.5, 0); pill.BackgroundColor3 = hasBind and color.Light(uipallet.Main, 0.1) or acol(); pill.ZIndex = 42; pill.Parent = r; addCorner(pill, UDim.new(0, 5))
-			local pp = Instance.new('UIPadding'); pp.PaddingLeft = UDim.new(0, 8); pp.PaddingRight = UDim.new(0, 8); pp.Parent = pill
-			local pt = Instance.new('TextLabel'); pt.AutomaticSize = Enum.AutomaticSize.X; pt.Size = UDim2.fromOffset(0, 20); pt.BackgroundTransparency = 1; pt.Text = hasBind and table.concat(m.Bind, '+'):upper() or 'ON'; pt.TextColor3 = hasBind and color.Dark(uipallet.Text, 0.2) or Color3.new(0,0,0); pt.TextSize = 11; pt.FontFace = uipallet.FontSemiBold; pt.ZIndex = 43; pt.Parent = pill
+			local badges = Instance.new('Frame'); badges.AutomaticSize = Enum.AutomaticSize.X; badges.Size = UDim2.fromOffset(0, 20); badges.AnchorPoint = Vector2.new(1, 0.5); badges.Position = UDim2.new(1, -26, 0.5, 0); badges.BackgroundTransparency = 1; badges.ZIndex = 42; badges.Parent = r
+			local bl = Instance.new('UIListLayout'); bl.FillDirection = Enum.FillDirection.Horizontal; bl.VerticalAlignment = Enum.VerticalAlignment.Center; bl.HorizontalAlignment = Enum.HorizontalAlignment.Right; bl.Padding = UDim.new(0, 5); bl.Parent = badges
+			local function badge(txt, on, order)
+				local pill = Instance.new('Frame'); pill.AutomaticSize = Enum.AutomaticSize.X; pill.Size = UDim2.fromOffset(0, 20); pill.BackgroundColor3 = on and acol() or color.Light(uipallet.Main, 0.1); pill.LayoutOrder = order; pill.ZIndex = 42; pill.Parent = badges; addCorner(pill, UDim.new(0, 5))
+				local pp = Instance.new('UIPadding'); pp.PaddingLeft = UDim.new(0, 8); pp.PaddingRight = UDim.new(0, 8); pp.Parent = pill
+				local pt = Instance.new('TextLabel'); pt.AutomaticSize = Enum.AutomaticSize.X; pt.Size = UDim2.fromOffset(0, 20); pt.BackgroundTransparency = 1; pt.Text = txt; pt.TextColor3 = on and mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Dark(uipallet.Text, 0.2); pt.TextSize = 11; pt.FontFace = uipallet.FontSemiBold; pt.ZIndex = 43; pt.Parent = pill
+			end
+			if m.Enabled then badge('ON', true, 0) end
+			if m.Bind and #m.Bind > 0 then badge(table.concat(m.Bind, '+'):upper(), false, 1) end
 			local ref = { Frame = r, Module = m }
 			rowRefs[#rowRefs+1] = ref
 			r.MouseButton1Click:Connect(function() selectRow(ref) end)
+			r.MouseEnter:Connect(function() if editor.selected ~= ref then r.BackgroundColor3 = color.Light(uipallet.Main, 0.05) end end)
+			r.MouseLeave:Connect(function() if editor.selected ~= ref then r.BackgroundColor3 = color.Light(uipallet.Main, 0.02) end end)
 			r.Visible = true
 		end
 		editor.search:GetPropertyChangedSignal('Text'):Connect(function()

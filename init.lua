@@ -79,6 +79,7 @@ local loaderAssets = {
 	['Larp.png'] = 423638,
 	['Textv4.png'] = 10107,
 	['star.png'] = 482,
+	['timechanger.png'] = 418,
 }
 do
 	local pending = 0

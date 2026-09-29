@@ -6258,14 +6258,6 @@ function mainapi:CreateSearch()
 	searchbkg.AnchorPoint = Vector2.new(xoffset, 0)
 	searchbkg.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
 	searchbkg.Parent = clickgui
-	local searchicon = Instance.new('ImageLabel')
-	searchicon.Name = 'Icon'
-searchicon.Size = UDim2.fromOffset(16, 16)
-searchicon.Position = UDim2.new(1, -25, 0, 10)
-	searchicon.BackgroundTransparency = 1
-	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
-	searchicon.ImageColor3 = Color3.new(1, 1, 1)
-	searchicon.Parent = searchbkg
 	local legiticon = Instance.new('ImageButton')
 	legiticon.Name = 'Legit'
 	legiticon.Size = UDim2.fromOffset(29, 16)
@@ -6294,6 +6286,63 @@ searchicon.Position = UDim2.new(1, -25, 0, 10)
 	search.FontFace = uipallet.Font
 	search.ClearTextOnFocus = false
 	search.Parent = searchbkg
+	search.ZIndex = 2
+	local ghostText = ''
+	local ghost = Instance.new('TextLabel')
+	ghost.Name = 'Ghost'
+	ghost.Size = UDim2.new(1, -50, 0, 37)
+	ghost.Position = UDim2.fromOffset(50, 0)
+	ghost.BackgroundTransparency = 1
+	ghost.Text = ''
+	ghost.TextXAlignment = Enum.TextXAlignment.Left
+	ghost.TextColor3 = color.Dark(uipallet.Text, 0.43)
+	ghost.TextSize = 12
+	ghost.FontFace = uipallet.Font
+	ghost.ZIndex = 1
+	ghost.Visible = false
+	ghost.Parent = searchbkg
+	local tabpill = Instance.new('TextLabel')
+	tabpill.Name = 'TabHint'
+	tabpill.Size = UDim2.fromOffset(32, 18)
+	tabpill.Position = UDim2.new(1, -58, 0.5, -9)
+	tabpill.BackgroundColor3 = color.Light(uipallet.Main, 0.1)
+	tabpill.Text = 'tab'
+	tabpill.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	tabpill.TextSize = 11
+	tabpill.FontFace = uipallet.Font
+	tabpill.BorderSizePixel = 0
+	tabpill.Visible = false
+	tabpill.Parent = searchbkg
+	addCorner(tabpill, UDim.new(0, 4))
+	local clearbtn = Instance.new('TextButton')
+	clearbtn.Name = 'Clear'
+	clearbtn.Size = UDim2.fromOffset(14, 14)
+	clearbtn.Position = UDim2.new(1, -20, 0.5, -7)
+	clearbtn.BackgroundTransparency = 1
+	clearbtn.Text = ''
+	clearbtn.AutoButtonColor = false
+	clearbtn.Parent = searchbkg
+	local clearicon = Instance.new('ImageLabel')
+	clearicon.Size = UDim2.fromOffset(14, 14)
+	clearicon.BackgroundTransparency = 1
+	clearicon.Image = getcustomasset('LarpV4/assets/larp/closemini.png')
+	clearicon.ImageColor3 = color.Dark(uipallet.Text, 0.16)
+	clearicon.Parent = clearbtn
+	clearbtn.MouseButton1Click:Connect(function()
+		search.Text = ''
+		pcall(function() search:CaptureFocus() end)
+	end)
+	search.Focused:Connect(function()
+		ghost.Visible = ghostText ~= ''
+	end)
+	search.FocusLost:Connect(function()
+		ghost.Visible = false
+	end)
+	inputService.InputBegan:Connect(function(input)
+		if input.KeyCode == Enum.KeyCode.Tab and inputService:GetFocusedTextBox() == search and ghostText ~= '' then
+			search.Text = ghostText
+		end
+	end)
 	local children = Instance.new('ScrollingFrame')
 	children.Name = 'Children'
 	children.Size = UDim2.new(1, 0, 1, -37)
@@ -6327,6 +6376,20 @@ searchicon.Position = UDim2.new(1, -25, 0, 10)
 		self.Legit.Window.Position = UDim2.new(0.5, -350, 0.5, -194)
 	end)
 	search:GetPropertyChangedSignal('Text'):Connect(function()
+		ghostText = ''
+		local q = search.Text:lower()
+		if q ~= '' then
+			local best
+			for name in pairs(self.Modules) do
+				if type(name) == 'string' and name:lower():sub(1, #q) == q then
+					if not best or #name < #best then best = name end
+				end
+			end
+			if best and #best > #search.Text then ghostText = best end
+		end
+		ghost.Text = ghostText
+		ghost.Visible = ghostText ~= '' and inputService:GetFocusedTextBox() == search
+		tabpill.Visible = ghostText ~= ''
 		for _, v in children:GetChildren() do
 			if v:IsA('TextButton') then
 				v:Destroy()

@@ -7458,33 +7458,38 @@ run(function()
 	local function styleOf(o)
 		if not o then return end
 		o.tag.TextSize = math.max(9, math.floor(16 * TextSize.Value))
-		o.tag.BackgroundTransparency = TextBg.Enabled and 0.3 or 1
+		o.tag.BackgroundTransparency = TextBg.Enabled and 0.25 or 1
+		o.stroke.Enabled = TextBg.Enabled
 	end
 
 	local function addPot(inst)
 		if pots[inst] or inst.Name ~= 'DesertPotEntity' or not inst:IsA('Model') then return end
 		local tag = Instance.new('TextLabel')
 		tag.AutomaticSize = Enum.AutomaticSize.XY
-		tag.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-		tag.BackgroundTransparency = 1
+		tag.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+		tag.BackgroundTransparency = 0.25
 		tag.BorderSizePixel = 0
 		tag.AnchorPoint = Vector2.new(0.5, 1)
-		tag.Font = Enum.Font.GothamBold
+		tag.Font = Enum.Font.ProximaNova
 		tag.TextColor3 = Color3.new(1, 1, 1)
 		tag.TextSize = 16
 		tag.TextStrokeColor3 = Color3.new()
-		tag.TextStrokeTransparency = 0.4
+		tag.TextStrokeTransparency = 0.6
 		tag.RichText = true
 		tag.Visible = false
 		tag.ZIndex = 5
 		tag.Parent = folder
 		local pad = Instance.new('UIPadding', tag)
-		pad.PaddingLeft = UDim.new(0, 6)
-		pad.PaddingRight = UDim.new(0, 6)
-		pad.PaddingTop = UDim.new(0, 2)
-		pad.PaddingBottom = UDim.new(0, 3)
-		Instance.new('UICorner', tag).CornerRadius = UDim.new(0, 5)
-		local o = { inst = inst, tag = tag }
+		pad.PaddingLeft = UDim.new(0, 9)
+		pad.PaddingRight = UDim.new(0, 9)
+		pad.PaddingTop = UDim.new(0, 3)
+		pad.PaddingBottom = UDim.new(0, 4)
+		Instance.new('UICorner', tag).CornerRadius = UDim.new(0, 7)
+		local stroke = Instance.new('UIStroke', tag)
+		stroke.Color = Color3.new()
+		stroke.Transparency = 0.55
+		stroke.Thickness = 1
+		local o = { inst = inst, tag = tag, stroke = stroke }
 		pots[inst] = o
 		styleOf(o)
 	end
@@ -7538,7 +7543,7 @@ run(function()
 		Tooltip = 'Clean nametag over desert loot pots'
 	})
 	ShowDistance = POTesp:CreateToggle({ Name = 'Distance', Default = true })
-	TextBg = POTesp:CreateToggle({ Name = 'Text background', Default = false, Function = function() for _, o in pots do styleOf(o) end end })
+	TextBg = POTesp:CreateToggle({ Name = 'Text background', Default = true, Function = function() for _, o in pots do styleOf(o) end end })
 	TextSize = POTesp:CreateSlider({ Name = 'Text size', Min = 0.5, Max = 2, Default = 1, Decimal = 10, Function = function() for _, o in pots do styleOf(o) end end })
 	TextColor = POTesp:CreateColorSlider({ Name = 'Color', DefaultHue = 0, DefaultSat = 0, DefaultValue = 1 })
 	MaxDist = POTesp:CreateSlider({ Name = 'Max distance', Min = 0, Max = 1000, Default = 0, Suffix = function(val) return val == 0 and 'off' or 'studs' end })

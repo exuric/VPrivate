@@ -7455,6 +7455,18 @@ run(function()
 
 	local pots = {}
 
+	local FONT
+	do
+		local ok, f = pcall(function()
+			local reg = getcustomasset('LarpV4/assets/larp/proximanova.ttf')
+			local bold = getcustomasset('LarpV4/assets/larp/proximanova_bold.ttf')
+			local json = '{"name":"Proxima Nova","faces":[{"name":"Regular","weight":400,"style":"normal","assetId":"' .. reg .. '"},{"name":"Bold","weight":700,"style":"normal","assetId":"' .. bold .. '"}]}'
+			writefile('LarpV4/assets/larp/proximanova.json', json)
+			return Font.new(getcustomasset('LarpV4/assets/larp/proximanova.json'), Enum.FontWeight.Bold)
+		end)
+		FONT = ok and f or Font.fromEnum(Enum.Font.GothamBold)
+	end
+
 	local function styleOf(o)
 		if not o then return end
 		o.tag.TextSize = math.max(9, math.floor(16 * TextSize.Value))
@@ -7470,7 +7482,7 @@ run(function()
 		tag.BackgroundTransparency = 0.25
 		tag.BorderSizePixel = 0
 		tag.AnchorPoint = Vector2.new(0.5, 1)
-		tag.Font = Enum.Font.ProximaNova
+		tag.FontFace = FONT
 		tag.TextColor3 = Color3.new(1, 1, 1)
 		tag.TextSize = 16
 		tag.TextStrokeColor3 = Color3.new()

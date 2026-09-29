@@ -7447,13 +7447,14 @@ end)
 
 run(function()
 	local POTesp
-	local ShowDistance, TextSize, TextBg, TextColor, MaxDist
+	local ShowDistance, TextSize, TextBg, TextColor, MaxDist, Drops
 
 	local folder = Instance.new('Folder')
 	folder.Name = 'POTesp'
 	folder.Parent = larp.gui
 
 	local pots = {}
+	local drops = {}
 
 	local FONT
 	do
@@ -7468,15 +7469,19 @@ run(function()
 		FONT = ok and f or Font.fromEnum(Enum.Font.GothamBold)
 	end
 
-	local function styleOf(o)
+	local function styleTag(o)
 		if not o then return end
 		o.tag.TextSize = math.max(9, math.floor(16 * TextSize.Value))
 		o.tag.BackgroundTransparency = TextBg.Enabled and 0.25 or 1
 		o.stroke.Enabled = TextBg.Enabled
 	end
 
-	local function addPot(inst)
-		if pots[inst] or inst.Name ~= 'DesertPotEntity' or not inst:IsA('Model') then return end
+	local function styleAll()
+		for _, o in pots do styleTag(o) end
+		for _, o in drops do styleTag(o) end
+	end
+
+	local function makeTag()
 		local tag = Instance.new('TextLabel')
 		tag.AutomaticSize = Enum.AutomaticSize.XY
 		tag.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
@@ -7502,9 +7507,15 @@ run(function()
 		stroke.Color = Color3.new()
 		stroke.Transparency = 0.55
 		stroke.Thickness = 1
+		return tag, stroke
+	end
+
+	local function addPot(inst)
+		if pots[inst] or inst.Name ~= 'DesertPotEntity' or not inst:IsA('Model') then return end
+		local tag, stroke = makeTag()
 		local o = { inst = inst, tag = tag, stroke = stroke }
 		pots[inst] = o
-		styleOf(o)
+		styleTag(o)
 	end
 
 	local function removePot(inst)
@@ -7514,8 +7525,34 @@ run(function()
 		pots[inst] = nil
 	end
 
+	local function addDrop(inst)
+		if drops[inst] or not Drops.Enabled or not (inst:IsA('BasePart') or inst:IsA('Model')) then return end
+		local tag, stroke = makeTag()
+		local o = { inst = inst, tag = tag, stroke = stroke }
+		drops[inst] = o
+		styleTag(o)
+	end
+
+	local function removeDrop(inst)
+		local o = drops[inst]
+		if not o then return end
+		if o.tag then pcall(function() o.tag:Destroy() end) end
+		drops[inst] = nil
+	end
+
 	local function labelText(dist)
 		local text = 'Pot'
+		if ShowDistance.Enabled then
+			text = text .. ' <font color="rgb(165,170,180)">' .. dist .. 'm</font>'
+		end
+		return text
+	end
+
+	local function dropLabel(inst, dist)
+		local meta = bedwars.ItemMeta[inst.Name]
+		local name = (meta and meta.displayName) or inst.Name
+		local amt = inst:GetAttribute('Amount') or 1
+		local text = name .. (amt >= 2 and ' x' .. amt or '')
 		if ShowDistance.Enabled then
 			text = text .. ' <font color="rgb(165,170,180)">' .. dist .. 'm</font>'
 		end
@@ -7529,6 +7566,9 @@ run(function()
 				for _, v in workspace:GetChildren() do addPot(v) end
 				POTesp:Clean(workspace.ChildAdded:Connect(addPot))
 				POTesp:Clean(workspace.ChildRemoved:Connect(removePot))
+				for _, v in collectionService:GetTagged('ItemDrop') do addDrop(v) end
+				POTesp:Clean(collectionService:GetInstanceAddedSignal('ItemDrop'):Connect(addDrop))
+				POTesp:Clean(collectionService:GetInstanceRemovedSignal('ItemDrop'):Connect(removeDrop))
 				POTesp:Clean(runService.PreRender:Connect(function()
 					local root = entitylib.character and entitylib.character.RootPart
 					local col = Color3.fromHSV(TextColor.Hue, TextColor.Sat, TextColor.Value)
@@ -7548,16 +7588,45 @@ run(function()
 							o.tag.Position = UDim2.fromOffset(screen.X, screen.Y)
 						end
 					end
+					local showDrops = Drops.Enabled
+					for inst, o in drops do
+						if not inst.Parent then removeDrop(inst) continue end
+						if not showDrops then o.tag.Visible = false continue end
+						local pos = inst:IsA('Model') and inst:GetPivot().Position or inst.Position
+						local dist = root and math.floor((pos - root.Position).Magnitude) or 0
+						local screen, vis = gameCamera:WorldToViewportPoint(pos + Vector3.new(0, 2, 0))
+						local show = vis and (maxd == 0 or dist <= maxd)
+						o.tag.Visible = show
+						if show then
+							o.tag.Text = dropLabel(inst, dist)
+							o.tag.TextColor3 = col
+							o.tag.Position = UDim2.fromOffset(screen.X, screen.Y)
+						end
+					end
 				end))
 			else
 				for inst in pots do removePot(inst) end
+				for inst in drops do removeDrop(inst) end
 			end
 		end,
-		Tooltip = 'Clean nametag over desert loot pots'
+		Tooltip = 'Clean nametag over desert loot pots and the items they drop'
 	})
 	ShowDistance = POTesp:CreateToggle({ Name = 'Distance', Default = true })
-	TextBg = POTesp:CreateToggle({ Name = 'Text background', Default = true, Function = function() for _, o in pots do styleOf(o) end end })
-	TextSize = POTesp:CreateSlider({ Name = 'Text size', Min = 0.5, Max = 2, Default = 1, Decimal = 10, Function = function() for _, o in pots do styleOf(o) end end })
+	Drops = POTesp:CreateToggle({
+		Name = 'Drops',
+		Default = false,
+		Tooltip = 'ESP items dropped from pots (emerald, iron, sand spear, etc.)',
+		Function = function()
+			if not POTesp.Enabled then return end
+			if Drops.Enabled then
+				for _, v in collectionService:GetTagged('ItemDrop') do addDrop(v) end
+			else
+				for inst in drops do removeDrop(inst) end
+			end
+		end
+	})
+	TextBg = POTesp:CreateToggle({ Name = 'Text background', Default = true, Function = styleAll })
+	TextSize = POTesp:CreateSlider({ Name = 'Text size', Min = 0.5, Max = 2, Default = 0.8, Decimal = 10, Function = styleAll })
 	TextColor = POTesp:CreateColorSlider({ Name = 'Color', DefaultHue = 0, DefaultSat = 0, DefaultValue = 1 })
 	MaxDist = POTesp:CreateSlider({ Name = 'Max distance', Min = 0, Max = 1000, Default = 0, Suffix = function(val) return val == 0 and 'off' or 'studs' end })
 end)

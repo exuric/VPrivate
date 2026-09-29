@@ -5343,10 +5343,11 @@ function mainapi:CreateCategoryList(categorysettings)
 	}
 	categorysettings.Color = categorysettings.Color or Color3.fromRGB(5, 134, 105)
 	local thumbCache = {}
+	local CW = categorysettings.Profiles and 256 or 220
 
 	local window = Instance.new('TextButton')
 	window.Name = categorysettings.Name..'CategoryList'
-	window.Size = UDim2.fromOffset(220, 45)
+	window.Size = UDim2.fromOffset(CW, 45)
 	window.Position = UDim2.fromOffset(240, 46)
 	window.BackgroundColor3 = uipallet.Main
 	window.AutoButtonColor = false
@@ -5437,7 +5438,7 @@ function mainapi:CreateCategoryList(categorysettings)
 	windowlisttwo.Parent = childrentwo
 	local addbkg = Instance.new('Frame')
 	addbkg.Name = 'Add'
-	addbkg.Size = UDim2.fromOffset(200, 31)
+	addbkg.Size = UDim2.fromOffset(CW - 20, 31)
 	addbkg.Position = UDim2.fromOffset(10, 45)
 	addbkg.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 	addbkg.Parent = children
@@ -5584,7 +5585,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				if v.Name == 'default' then continue end
 				local object = Instance.new('TextButton')
 				object.Name = v.Name
-				object.Size = UDim2.fromOffset(200, 33)
+				object.Size = UDim2.fromOffset(CW - 20, 33)
 				object.BackgroundColor3 = v.Name == mainapi.Profile and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.02)
 				object.AutoButtonColor = false
 				object.Text = ''
@@ -5938,7 +5939,7 @@ function mainapi:CreateCategoryList(categorysettings)
 		self.Expanded = not self.Expanded
 		children.Visible = self.Expanded
 		arrow.Rotation = self.Expanded and 0 or 180
-		window.Size = UDim2.fromOffset(220, self.Expanded and math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611) or 45)
+		window.Size = UDim2.fromOffset(CW, self.Expanded and math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611) or 45)
 		divider.Visible = children.CanvasPosition.Y > 10 and children.Visible
 	end
 

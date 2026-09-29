@@ -6258,6 +6258,14 @@ function mainapi:CreateSearch()
 	searchbkg.AnchorPoint = Vector2.new(xoffset, 0)
 	searchbkg.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
 	searchbkg.Parent = clickgui
+	local searchicon = Instance.new('ImageLabel')
+	searchicon.Name = 'Icon'
+	searchicon.Size = UDim2.fromOffset(16, 16)
+	searchicon.Position = UDim2.new(1, -25, 0, 10)
+	searchicon.BackgroundTransparency = 1
+	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
+	searchicon.ImageColor3 = Color3.new(1, 1, 1)
+	searchicon.Parent = searchbkg
 	local legiticon = Instance.new('ImageButton')
 	legiticon.Name = 'Legit'
 	legiticon.Size = UDim2.fromOffset(29, 16)
@@ -6312,6 +6320,7 @@ function mainapi:CreateSearch()
 	tabpill.FontFace = uipallet.Font
 	tabpill.BorderSizePixel = 0
 	tabpill.Visible = false
+	tabpill.ZIndex = 3
 	tabpill.Parent = searchbkg
 	addCorner(tabpill, UDim.new(0, 4))
 	local clearbtn = Instance.new('TextButton')
@@ -6321,6 +6330,7 @@ function mainapi:CreateSearch()
 	clearbtn.BackgroundTransparency = 1
 	clearbtn.Text = ''
 	clearbtn.AutoButtonColor = false
+	clearbtn.ZIndex = 3
 	clearbtn.Parent = searchbkg
 	local clearicon = Instance.new('ImageLabel')
 	clearicon.Size = UDim2.fromOffset(14, 14)
@@ -6390,6 +6400,8 @@ function mainapi:CreateSearch()
 		ghost.Text = ghostText
 		ghost.Visible = ghostText ~= '' and inputService:GetFocusedTextBox() == search
 		tabpill.Visible = ghostText ~= ''
+		clearbtn.Visible = search.Text ~= ''
+		searchicon.Visible = search.Text == ''
 		for _, v in children:GetChildren() do
 			if v:IsA('TextButton') then
 				v:Destroy()

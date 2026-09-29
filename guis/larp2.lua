@@ -8342,11 +8342,24 @@ do
 		local hw = head.TextBounds.X + 8
 		local stateBadge = Instance.new('Frame'); stateBadge.Size = UDim2.fromOffset(36, 20); stateBadge.Position = UDim2.fromOffset(hw, y + 1); stateBadge.BackgroundColor3 = m.Enabled and acol() or color.Light(uipallet.Main, 0.1); stateBadge.ZIndex = 41; stateBadge.Parent = right; addCorner(stateBadge, UDim.new(0, 5))
 		local sbt = Instance.new('TextLabel'); sbt.Size = UDim2.fromScale(1,1); sbt.BackgroundTransparency = 1; sbt.Text = m.Enabled and 'ON' or 'OFF'; sbt.TextColor3 = m.Enabled and Color3.new(0,0,0) or color.Dark(uipallet.Text, 0.2); sbt.TextSize = 11; sbt.FontFace = uipallet.FontSemiBold; sbt.ZIndex = 42; sbt.Parent = stateBadge
-		if m.Bind and #m.Bind > 0 then
-			local kb = Instance.new('Frame'); kb.AutomaticSize = Enum.AutomaticSize.X; kb.Size = UDim2.fromOffset(0, 20); kb.Position = UDim2.fromOffset(hw + 42, y + 1); kb.BackgroundColor3 = color.Light(uipallet.Main, 0.1); kb.ZIndex = 41; kb.Parent = right; addCorner(kb, UDim.new(0, 5))
-			local kbp = Instance.new('UIPadding'); kbp.PaddingLeft = UDim.new(0,8); kbp.PaddingRight = UDim.new(0,8); kbp.Parent = kb
-			local kbt = Instance.new('TextLabel'); kbt.AutomaticSize = Enum.AutomaticSize.X; kbt.Size = UDim2.fromOffset(0,20); kbt.BackgroundTransparency = 1; kbt.Text = table.concat(m.Bind, '+'):upper(); kbt.TextColor3 = color.Dark(uipallet.Text, 0.2); kbt.TextSize = 11; kbt.FontFace = uipallet.FontSemiBold; kbt.ZIndex = 42; kbt.Parent = kb
+		local kb = Instance.new('TextButton'); kb.AutomaticSize = Enum.AutomaticSize.X; kb.Size = UDim2.fromOffset(0, 20); kb.Position = UDim2.fromOffset(hw + 42, y + 1); kb.AutoButtonColor = false; kb.Text = ''; kb.BackgroundColor3 = color.Light(uipallet.Main, 0.1); kb.ZIndex = 41; kb.Parent = right; addCorner(kb, UDim.new(0, 5))
+		local kbp = Instance.new('UIPadding'); kbp.PaddingLeft = UDim.new(0, 8); kbp.PaddingRight = UDim.new(0, 8); kbp.Parent = kb
+		local kbt = Instance.new('TextLabel'); kbt.AutomaticSize = Enum.AutomaticSize.X; kbt.Size = UDim2.fromOffset(0, 20); kbt.BackgroundTransparency = 1; kbt.TextColor3 = color.Dark(uipallet.Text, 0.2); kbt.TextSize = 11; kbt.FontFace = uipallet.FontSemiBold; kbt.ZIndex = 42; kbt.Parent = kb
+		local kbi = Instance.new('ImageLabel'); kbi.Size = UDim2.fromOffset(12, 12); kbi.AnchorPoint = Vector2.new(0.5, 0.5); kbi.Position = UDim2.fromScale(0.5, 0.5); kbi.BackgroundTransparency = 1; kbi.Image = getcustomasset('LarpV4/assets/larp/bind.png'); kbi.ImageColor3 = color.Dark(uipallet.Text, 0.3); kbi.ZIndex = 42; kbi.Parent = kb
+		local function refreshBind()
+			local bound = m.Bind and #m.Bind > 0
+			kbt.Visible = bound
+			kbi.Visible = not bound
+			kbt.Text = bound and table.concat(m.Bind, '+'):upper() or ''
+			kb.Size = bound and UDim2.fromOffset(0, 20) or UDim2.fromOffset(24, 20)
 		end
+		refreshBind()
+		kb.MouseEnter:Connect(function() kb.BackgroundColor3 = color.Light(uipallet.Main, 0.16) end)
+		kb.MouseLeave:Connect(function() kb.BackgroundColor3 = color.Light(uipallet.Main, 0.1) end)
+		kb.MouseButton1Click:Connect(function()
+			kbt.Visible = true; kbi.Visible = false; kbt.Text = '...'; kb.Size = UDim2.fromOffset(0, 20)
+			mainapi.Binding = { SetBind = function(_, tab, mouse) m:SetBind(tab, mouse); refreshBind() end, Bind = m.Bind }
+		end)
 		local resetMod = Instance.new('TextButton'); resetMod.Size = UDim2.fromOffset(140, 26); resetMod.Position = UDim2.fromOffset(editor.rowW - 140, y - 2); resetMod.BackgroundColor3 = color.Light(uipallet.Main, 0.05); resetMod.AutoButtonColor = false; resetMod.Text = 'RESET THIS MODULE'; resetMod.TextColor3 = color.Dark(uipallet.Text, 0.15); resetMod.TextSize = 11; resetMod.FontFace = uipallet.FontSemiBold; resetMod.ZIndex = 41; resetMod.Parent = right; addCorner(resetMod, UDim.new(0, 6))
 		local rmS = Instance.new('UIStroke'); rmS.Color = color.Light(uipallet.Main, 0.12); rmS.Transparency = 0.3; rmS.Parent = resetMod
 		y = y + 34
@@ -8372,10 +8385,10 @@ do
 					y = y + 32
 				elseif o.Type == 'Slider' then
 					local lbl = Instance.new('TextLabel'); lbl.Size = UDim2.fromOffset(220, 18); lbl.Position = UDim2.fromOffset(0, y); lbl.BackgroundTransparency = 1; lbl.Text = T(oname); lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.TextColor3 = Color3.new(1,1,1); lbl.TextSize = 15; lbl.FontFace = uipallet.Font; lbl.ZIndex = 41; lbl.Parent = right
-					local val = Instance.new('TextLabel'); val.Size = UDim2.fromOffset(60, 18); val.Position = UDim2.fromOffset(editor.rowW - 60, y); val.BackgroundTransparency = 1; val.Text = tostring(o.Value); val.TextXAlignment = Enum.TextXAlignment.Right; val.TextColor3 = color.Dark(uipallet.Text, 0.2); val.TextSize = 13; val.FontFace = uipallet.Font; val.ZIndex = 41; val.Parent = right
-					local mn2, mx2 = o.Min or 0, o.Max or 1
+					local val = Instance.new('TextLabel'); val.Size = UDim2.fromOffset(60, 18); val.Position = UDim2.fromOffset(editor.rowW - 60, y); val.BackgroundTransparency = 1; val.Text = tostring(tonumber(o.Value) or 0); val.TextXAlignment = Enum.TextXAlignment.Right; val.TextColor3 = color.Dark(uipallet.Text, 0.2); val.TextSize = 13; val.FontFace = uipallet.Font; val.ZIndex = 41; val.Parent = right
+					local mn2, mx2 = tonumber(o.Min) or 0, tonumber(o.Max) or 1
 					local track = Instance.new('Frame'); track.Size = UDim2.fromOffset(editor.rowW, 4); track.Position = UDim2.fromOffset(0, y + 24); track.BackgroundColor3 = color.Light(uipallet.Main, 0.12); track.BorderSizePixel = 0; track.ZIndex = 41; track.Parent = right; addCorner(track, UDim.new(1, 0))
-					local frac = mx2 > mn2 and math.clamp((o.Value - mn2) / (mx2 - mn2), 0, 1) or 0
+					local frac = mx2 > mn2 and math.clamp(((tonumber(o.Value) or 0) - mn2) / (mx2 - mn2), 0, 1) or 0
 					local fill = Instance.new('Frame'); fill.Size = UDim2.fromScale(frac, 1); fill.BackgroundColor3 = acol(); fill.BorderSizePixel = 0; fill.ZIndex = 42; fill.Parent = track; addCorner(fill, UDim.new(1, 0))
 					local knob = Instance.new('Frame'); knob.Size = UDim2.fromOffset(12, 12); knob.AnchorPoint = Vector2.new(0.5, 0.5); knob.Position = UDim2.new(frac, 0, 0.5, 0); knob.BackgroundColor3 = Color3.new(1,1,1); knob.ZIndex = 43; knob.Parent = track; addCorner(knob, UDim.new(1, 0))
 					local hit = Instance.new('TextButton'); hit.Size = UDim2.fromOffset(editor.rowW, 26); hit.Position = UDim2.fromOffset(0, y + 13); hit.BackgroundTransparency = 1; hit.Text = ''; hit.AutoButtonColor = false; hit.ZIndex = 43; hit.Parent = right

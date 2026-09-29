@@ -5472,6 +5472,9 @@ function mainapi:CreateCategoryList(categorysettings)
 	if categorysettings.Profiles then
 		addbkg.Visible = false
 		addbkg.LayoutOrder = 1
+		local function fitList()
+			window.Size = UDim2.fromOffset(CW, math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611))
+		end
 		local btnrow = Instance.new('Frame')
 		btnrow.Name = 'ProfileButtons'
 		btnrow.AutomaticSize = Enum.AutomaticSize.X
@@ -5533,9 +5536,166 @@ function mainapi:CreateCategoryList(categorysettings)
 		end
 		mkbtn('CREATE NEW', 'LarpV4/assets/larp/add.png', 0, function()
 			addbkg.Visible = not addbkg.Visible
+			fitList()
+			if addbkg.Visible then pcall(function() addvalue:CaptureFocus() end) end
 		end)
 		mkbtn('PUBLIC', 'LarpV4/assets/larp/worldicon.png', 1, function()
 			mainapi:TogglePublicProfiles()
+		end)
+
+		-- Profile detail view (opened by a profile's 3-dot)
+		local backBtn = Instance.new('ImageButton')
+		backBtn.Name = 'Back'
+		backBtn.Size = UDim2.fromOffset(18, 18)
+		backBtn.Position = UDim2.fromOffset(12, 14)
+		backBtn.BackgroundTransparency = 1
+		backBtn.AutoButtonColor = false
+		backBtn.Image = getcustomasset('LarpV4/assets/larp/back.png')
+		backBtn.ImageColor3 = uipallet.Text
+		backBtn.Visible = false
+		backBtn.ZIndex = 3
+		backBtn.Parent = window
+		local detail = Instance.new('Frame')
+		detail.Name = 'Detail'
+		detail.Size = UDim2.new(1, 0, 1, -45)
+		detail.Position = UDim2.fromOffset(0, 45)
+		detail.BackgroundTransparency = 1
+		detail.Visible = false
+		detail.Parent = window
+		local dIcon = Instance.new('ImageLabel')
+		dIcon.Size = UDim2.fromOffset(32, 32)
+		dIcon.Position = UDim2.new(0.5, -16, 0, 6)
+		dIcon.BackgroundTransparency = 1
+		dIcon.Image = getcustomasset('LarpV4/assets/larp/profilesicon.png')
+		dIcon.ImageColor3 = uipallet.Text
+		dIcon.Parent = detail
+		local dName = Instance.new('TextLabel')
+		dName.Size = UDim2.new(1, 0, 0, 22)
+		dName.Position = UDim2.fromOffset(0, 44)
+		dName.BackgroundTransparency = 1
+		dName.Text = ''
+		dName.TextColor3 = Color3.new(1, 1, 1)
+		dName.TextSize = 17
+		dName.FontFace = uipallet.FontSemiBold
+		dName.Parent = detail
+		local enableBtn = Instance.new('TextButton')
+		enableBtn.Size = UDim2.fromOffset(CW - 20 - 46, 38)
+		enableBtn.Position = UDim2.fromOffset(12, 76)
+		enableBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+		enableBtn.AutoButtonColor = false
+		enableBtn.Text = ''
+		enableBtn.Parent = detail
+		addCorner(enableBtn, UDim.new(0, 7))
+		local enStroke = Instance.new('UIStroke'); enStroke.Color = color.Light(uipallet.Main, 0.16); enStroke.Transparency = 0.2; enStroke.Parent = enableBtn
+		local enHolder = Instance.new('Frame'); enHolder.AnchorPoint = Vector2.new(0.5, 0.5); enHolder.Position = UDim2.fromScale(0.5, 0.5); enHolder.AutomaticSize = Enum.AutomaticSize.X; enHolder.Size = UDim2.fromOffset(0, 16); enHolder.BackgroundTransparency = 1; enHolder.Parent = enableBtn
+		local enHL = Instance.new('UIListLayout'); enHL.FillDirection = Enum.FillDirection.Horizontal; enHL.VerticalAlignment = Enum.VerticalAlignment.Center; enHL.Padding = UDim.new(0, 7); enHL.Parent = enHolder
+		local enIcon = Instance.new('ImageLabel'); enIcon.Size = UDim2.fromOffset(15, 15); enIcon.BackgroundTransparency = 1; enIcon.Image = getcustomasset('LarpV4/assets/larp/arrowdown.png'); enIcon.ImageColor3 = Color3.new(1, 1, 1); enIcon.LayoutOrder = 0; enIcon.Parent = enHolder
+		local enLbl = Instance.new('TextLabel'); enLbl.AutomaticSize = Enum.AutomaticSize.X; enLbl.Size = UDim2.fromOffset(0, 16); enLbl.BackgroundTransparency = 1; enLbl.Text = 'Enable modules'; enLbl.TextColor3 = Color3.new(1, 1, 1); enLbl.TextSize = 13; enLbl.FontFace = uipallet.FontSemiBold; enLbl.LayoutOrder = 1; enLbl.Parent = enHolder
+		enableBtn.MouseEnter:Connect(function() enableBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.08) end)
+		enableBtn.MouseLeave:Connect(function() enableBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.04) end)
+		local trashBtn = Instance.new('TextButton')
+		trashBtn.Size = UDim2.fromOffset(38, 38)
+		trashBtn.Position = UDim2.fromOffset(CW - 12 - 38, 76)
+		trashBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+		trashBtn.AutoButtonColor = false
+		trashBtn.Text = ''
+		trashBtn.Parent = detail
+		addCorner(trashBtn, UDim.new(0, 7))
+		local trStroke = Instance.new('UIStroke'); trStroke.Color = color.Light(uipallet.Main, 0.16); trStroke.Transparency = 0.2; trStroke.Parent = trashBtn
+		local trIcon = Instance.new('ImageLabel'); trIcon.Size = UDim2.fromOffset(15, 15); trIcon.AnchorPoint = Vector2.new(0.5, 0.5); trIcon.Position = UDim2.fromScale(0.5, 0.5); trIcon.BackgroundTransparency = 1; trIcon.Image = getcustomasset('LarpV4/assets/larp/trash.png'); trIcon.ImageColor3 = uipallet.Text; trIcon.Parent = trashBtn
+		trashBtn.MouseEnter:Connect(function() trashBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.08) end)
+		trashBtn.MouseLeave:Connect(function() trashBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.04) end)
+		local affLbl = Instance.new('TextLabel')
+		affLbl.Size = UDim2.fromOffset(170, 16)
+		affLbl.Position = UDim2.fromOffset(14, 126)
+		affLbl.BackgroundTransparency = 1
+		affLbl.RichText = true
+		affLbl.Text = ''
+		affLbl.TextXAlignment = Enum.TextXAlignment.Left
+		affLbl.TextColor3 = Color3.new(1, 1, 1)
+		affLbl.TextSize = 12
+		affLbl.FontFace = uipallet.FontSemiBold
+		affLbl.Parent = detail
+		local editAll = Instance.new('TextButton')
+		editAll.Size = UDim2.fromOffset(60, 16)
+		editAll.Position = UDim2.fromOffset(CW - 74, 126)
+		editAll.BackgroundTransparency = 1
+		editAll.Text = 'edit all'
+		editAll.TextXAlignment = Enum.TextXAlignment.Right
+		editAll.TextColor3 = color.Dark(uipallet.Text, 0.35)
+		editAll.TextSize = 12
+		editAll.FontFace = uipallet.Font
+		editAll.Parent = detail
+		local modList = Instance.new('ScrollingFrame')
+		modList.Size = UDim2.new(1, -8, 1, -150)
+		modList.Position = UDim2.fromOffset(4, 150)
+		modList.BackgroundTransparency = 1
+		modList.BorderSizePixel = 0
+		modList.ScrollBarThickness = 2
+		modList.ScrollBarImageTransparency = 0.75
+		modList.CanvasSize = UDim2.new()
+		modList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		modList.Parent = detail
+		local modLayout = Instance.new('UIListLayout'); modLayout.Padding = UDim.new(0, 2); modLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center; modLayout.SortOrder = Enum.SortOrder.LayoutOrder; modLayout.Parent = modList
+		local detailRows = {}
+		local currentProfile
+		categoryapi.CloseDetail = function()
+			detail.Visible = false
+			children.Visible = categoryapi.Expanded ~= false
+			categoryapi.DetailOpen = false
+			backBtn.Visible = false
+			icon.Visible = true
+			fitList()
+		end
+		categoryapi.OpenDetail = function(name)
+			currentProfile = name
+			dName.Text = name
+			for _, r in detailRows do pcall(function() r:Destroy() end) end
+			table.clear(detailRows)
+			local aff = {}
+			for _, m in pairs(mainapi.Modules) do
+				if m.Enabled or (m.Bind and #m.Bind > 0) then aff[#aff + 1] = m end
+			end
+			table.sort(aff, function(a, b) return a.Name < b.Name end)
+			affLbl.Text = '<b>' .. #aff .. '</b> <font color="rgb(120,120,120)">AFFECTED MODULES</font>'
+			for i, m in aff do
+				local r = Instance.new('Frame')
+				r.Size = UDim2.fromOffset(CW - 16, 40)
+				r.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+				r.LayoutOrder = i
+				r.Parent = modList
+				addCorner(r, UDim.new(0, 6))
+				local rn = Instance.new('TextLabel'); rn.Size = UDim2.new(1, -70, 1, 0); rn.Position = UDim2.fromOffset(14, 0); rn.BackgroundTransparency = 1; rn.Text = T(m.Name); rn.TextXAlignment = Enum.TextXAlignment.Left; rn.TextColor3 = Color3.new(1, 1, 1); rn.TextSize = 14; rn.FontFace = uipallet.Font; rn.Parent = r
+				local pill = Instance.new('Frame'); pill.AutomaticSize = Enum.AutomaticSize.X; pill.Size = UDim2.fromOffset(0, 20); pill.AnchorPoint = Vector2.new(1, 0.5); pill.Position = UDim2.new(1, -12, 0.5, 0); pill.BackgroundColor3 = color.Light(uipallet.Main, 0.08); pill.Parent = r
+				addCorner(pill, UDim.new(0, 5))
+				local pillPad = Instance.new('UIPadding'); pillPad.PaddingLeft = UDim.new(0, 9); pillPad.PaddingRight = UDim.new(0, 9); pillPad.Parent = pill
+				local pt = Instance.new('TextLabel'); pt.AutomaticSize = Enum.AutomaticSize.X; pt.Size = UDim2.fromOffset(0, 20); pt.BackgroundTransparency = 1; pt.Text = (m.Bind and #m.Bind > 0) and table.concat(m.Bind, '+'):upper() or 'ON'; pt.TextColor3 = color.Dark(uipallet.Text, 0.2); pt.TextSize = 11; pt.FontFace = uipallet.FontSemiBold; pt.Parent = pill
+				detailRows[#detailRows + 1] = r
+			end
+			children.Visible = false
+			detail.Visible = true
+			categoryapi.DetailOpen = true
+			backBtn.Visible = true
+			icon.Visible = false
+			local h = 150 + math.clamp(#aff * 42, 42, 300)
+			window.Size = UDim2.fromOffset(CW, 45 + h)
+		end
+		backBtn.MouseButton1Click:Connect(function() categoryapi.CloseDetail() end)
+		enableBtn.MouseButton1Click:Connect(function()
+			if currentProfile then
+				mainapi:Save(currentProfile)
+				mainapi:Load(true)
+				categoryapi.CloseDetail()
+			end
+		end)
+		trashBtn.MouseButton1Click:Connect(function()
+			if currentProfile and currentProfile ~= 'default' then
+				categoryapi:ChangeValue(currentProfile)
+				categoryapi.CloseDetail()
+			end
+		end)
+		editAll.MouseButton1Click:Connect(function()
+			mainapi:CreateNotification('Profiles', 'Module editor coming soon', 3)
 		end)
 	end
 	local cursedpadding = Instance.new('Frame')
@@ -5714,24 +5874,8 @@ function mainapi:CreateCategoryList(categorysettings)
 					end
 				end)
 				dotsbutton.MouseButton1Click:Connect(function()
-					if v.Name ~= mainapi.Profile then
-						local used = mainapi:PubSourceUsed(v.Name)
-						if used[1] then
-							mainapi:CreatePrompt({
-								Title = 'Delete Profile',
-								Text = "'"..v.Name.."' is the source of "..#used.." public profile(s). Delete them too?",
-								Confirm = 'Delete Both',
-								Cancel = 'Keep',
-								Function = function(ok)
-									if ok then
-										mainapi:PubDeleteIds(used)
-										categoryapi:ChangeValue(v.Name)
-									end
-								end
-							})
-						else
-							categoryapi:ChangeValue(v.Name)
-						end
+					if categoryapi.OpenDetail then
+						categoryapi.OpenDetail(v.Name)
 					end
 				end)
 				object.MouseButton1Click:Connect(function()
@@ -5976,9 +6120,11 @@ function mainapi:CreateCategoryList(categorysettings)
 		arrow.ImageColor3 = Color3.fromRGB(140, 140, 140)
 	end)
 	arrowbutton.MouseButton1Click:Connect(function()
+		if categoryapi.DetailOpen and categoryapi.CloseDetail then categoryapi.CloseDetail() return end
 		categoryapi:Expand()
 	end)
 	arrowbutton.MouseButton2Click:Connect(function()
+		if categoryapi.DetailOpen and categoryapi.CloseDetail then categoryapi.CloseDetail() return end
 		categoryapi:Expand()
 	end)
 	addvalue.FocusLost:Connect(function(enter)

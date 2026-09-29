@@ -5477,6 +5477,7 @@ function mainapi:CreateCategoryList(categorysettings)
 		local function fitList()
 			window.Size = UDim2.fromOffset(CW, math.min(51 + windowlist.AbsoluteContentSize.Y / scale.Scale, 611))
 		end
+		local settingsView
 		local btnrow = Instance.new('Frame')
 		btnrow.Name = 'ProfileButtons'
 		btnrow.AutomaticSize = Enum.AutomaticSize.X
@@ -5661,10 +5662,12 @@ function mainapi:CreateCategoryList(categorysettings)
 		local currentProfile
 		categoryapi.CloseDetail = function()
 			detail.Visible = false
+			if settingsView then settingsView.Visible = false end
 			children.Visible = categoryapi.Expanded ~= false
 			categoryapi.DetailOpen = false
 			backBtn.Visible = false
 			icon.Visible = true
+			title.Text = T(categorysettings.Name)
 			fitList()
 		end
 		categoryapi.OpenDetail = function(name)
@@ -5717,6 +5720,39 @@ function mainapi:CreateCategoryList(categorysettings)
 		editAll.MouseButton1Click:Connect(function()
 			if currentProfile then mainapi:OpenModuleEditor(currentProfile) end
 		end)
+
+		settingsView = Instance.new('Frame')
+		settingsView.Name = 'ProfilesSettings'
+		settingsView.Size = UDim2.new(1, 0, 1, -45)
+		settingsView.Position = UDim2.fromOffset(0, 45)
+		settingsView.BackgroundTransparency = 1
+		settingsView.Visible = false
+		settingsView.Parent = window
+		local function svToggle(label, yy, key, default)
+			if mainapi[key] == nil then mainapi[key] = default end
+			local l = Instance.new('TextLabel'); l.Size = UDim2.new(1, -70, 0, 20); l.Position = UDim2.fromOffset(16, yy); l.BackgroundTransparency = 1; l.Text = label; l.TextXAlignment = Enum.TextXAlignment.Left; l.TextColor3 = Color3.new(1, 1, 1); l.TextSize = 14; l.FontFace = uipallet.Font; l.Parent = settingsView
+			local sw = Instance.new('TextButton'); sw.Size = UDim2.fromOffset(34, 18); sw.Position = UDim2.fromOffset(CW - 16 - 34, yy + 1); sw.AutoButtonColor = false; sw.Text = ''; sw.BackgroundColor3 = mainapi[key] and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.14); sw.Parent = settingsView; addCorner(sw, UDim.new(1, 0))
+			local kn = Instance.new('Frame'); kn.Size = UDim2.fromOffset(14, 14); kn.Position = UDim2.fromOffset(mainapi[key] and 18 or 2, 2); kn.BackgroundColor3 = mainapi[key] and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(150, 150, 150); kn.Parent = sw; addCorner(kn, UDim.new(1, 0))
+			sw.MouseButton1Click:Connect(function()
+				mainapi[key] = not mainapi[key]
+				sw.BackgroundColor3 = mainapi[key] and Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Light(uipallet.Main, 0.14)
+				kn.Position = UDim2.fromOffset(mainapi[key] and 18 or 2, 2)
+				kn.BackgroundColor3 = mainapi[key] and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(150, 150, 150)
+			end)
+		end
+		svToggle('Auto-load module states', 12, 'ProfileAutoLoad', true)
+		svToggle('Frame positions per profile', 44, 'ProfileFramePos', false)
+		categoryapi.ToggleSettings = function()
+			local open = not settingsView.Visible
+			detail.Visible = false
+			settingsView.Visible = open
+			children.Visible = (not open) and (categoryapi.Expanded ~= false)
+			backBtn.Visible = open
+			icon.Visible = not open
+			title.Text = open and 'Profiles settings' or T(categorysettings.Name)
+			categoryapi.DetailOpen = open
+			if open then window.Size = UDim2.fromOffset(CW, 45 + 84) else fitList() end
+		end
 	end
 	local cursedpadding = Instance.new('Frame')
 	cursedpadding.Size = UDim2.fromOffset()
@@ -6173,7 +6209,10 @@ function mainapi:CreateCategoryList(categorysettings)
 		settings.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	end)
 	settings.MouseButton1Click:Connect(function()
-		if categorysettings.Profiles then return end
+		if categorysettings.Profiles then
+			if categoryapi.ToggleSettings then categoryapi.ToggleSettings() end
+			return
+		end
 		childrentwo.Visible = not childrentwo.Visible
 	end)
 	window.InputBegan:Connect(function(inputObj)
@@ -8415,12 +8454,52 @@ do
 					local bt = Instance.new('TextLabel'); bt.Size = UDim2.new(1, -30, 1, 0); bt.Position = UDim2.fromOffset(12, 0); bt.BackgroundTransparency = 1; bt.Text = T(oname) .. ' - ' .. tostring(o.Value); bt.TextXAlignment = Enum.TextXAlignment.Left; bt.TextColor3 = uipallet.Text; bt.TextSize = 13; bt.FontFace = uipallet.Font; bt.ZIndex = 42; bt.Parent = box
 					local bc = Instance.new('ImageLabel'); bc.Size = UDim2.fromOffset(9, 5); bc.AnchorPoint = Vector2.new(1, 0.5); bc.Position = UDim2.new(1, -12, 0.5, 0); bc.BackgroundTransparency = 1; bc.Image = getcustomasset('LarpV4/assets/larp/expandup.png'); bc.Rotation = 180; bc.ImageColor3 = color.Dark(uipallet.Text, 0.4); bc.ZIndex = 42; bc.Parent = box
 					box.MouseButton1Click:Connect(function()
+						local old = editor.win:FindFirstChild('DropdownPopup')
+						local wasMine = old and old:GetAttribute('Owner') == tostring(box)
+						if old then old:Destroy() end
+						bc.Rotation = 180
+						if wasMine then return end
 						local list = o.List or {}
-						if #list < 2 then return end
-						local idx = table.find(list, o.Value) or 1
-						local nextv = list[(idx % #list) + 1]
-						pcall(function() o:SetValue(nextv) end)
-						bt.Text = T(oname) .. ' - ' .. tostring(o.Value)
+						if #list < 1 then return end
+						local rel = (box.AbsolutePosition - editor.win.AbsolutePosition) / scale.Scale
+						local pop = Instance.new('ScrollingFrame')
+						pop.Name = 'DropdownPopup'
+						pop:SetAttribute('Owner', tostring(box))
+						pop.Position = UDim2.fromOffset(rel.X, rel.Y + 38)
+						pop.Size = UDim2.fromOffset(editor.rowW, math.min(#list * 30 + 4, 180))
+						pop.BackgroundColor3 = Color3.fromRGB(28, 27, 31)
+						pop.BorderSizePixel = 0
+						pop.ScrollBarThickness = 2
+						pop.CanvasSize = UDim2.new()
+						pop.AutomaticCanvasSize = Enum.AutomaticSize.Y
+						pop.ZIndex = 60
+						pop.Parent = editor.win
+						addCorner(pop, UDim.new(0, 7))
+						local ps = Instance.new('UIStroke'); ps.Color = color.Light(uipallet.Main, 0.16); ps.Transparency = 0.2; ps.Parent = pop
+						local pl = Instance.new('UIListLayout'); pl.Padding = UDim.new(0, 1); pl.Parent = pop
+						local pp2 = Instance.new('UIPadding'); pp2.PaddingTop = UDim.new(0, 2); pp2.PaddingBottom = UDim.new(0, 2); pp2.Parent = pop
+						bc.Rotation = 0
+						for _, opt in list do
+							local ob = Instance.new('TextButton')
+							ob.Size = UDim2.new(1, 0, 0, 28)
+							ob.BackgroundColor3 = tostring(opt) == tostring(o.Value) and color.Light(uipallet.Main, 0.1) or Color3.fromRGB(28, 27, 31)
+							ob.AutoButtonColor = false
+							ob.Text = '   ' .. tostring(opt)
+							ob.TextXAlignment = Enum.TextXAlignment.Left
+							ob.TextColor3 = tostring(opt) == tostring(o.Value) and Color3.new(1, 1, 1) or color.Dark(uipallet.Text, 0.25)
+							ob.TextSize = 13
+							ob.FontFace = uipallet.Font
+							ob.ZIndex = 61
+							ob.Parent = pop
+							ob.MouseEnter:Connect(function() ob.BackgroundColor3 = color.Light(uipallet.Main, 0.14) end)
+							ob.MouseLeave:Connect(function() ob.BackgroundColor3 = tostring(opt) == tostring(o.Value) and color.Light(uipallet.Main, 0.1) or Color3.fromRGB(28, 27, 31) end)
+							ob.MouseButton1Click:Connect(function()
+								pcall(function() o:SetValue(opt) end)
+								bt.Text = T(oname) .. ' - ' .. tostring(o.Value)
+								bc.Rotation = 180
+								pop:Destroy()
+							end)
+						end
 					end)
 					y = y + 44
 				else

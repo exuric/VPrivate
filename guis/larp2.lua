@@ -6292,7 +6292,7 @@ function mainapi:CreateLegit()
 	searchpad.Parent = legitsearch
 	local searchicon = Instance.new('ImageLabel')
 	searchicon.Size = UDim2.fromOffset(14, 14)
-	searchicon.Position = UDim2.new(1, -18, 0.5, -7)
+	searchicon.Position = UDim2.new(1, -16, 0.5, -7)
 	searchicon.BackgroundTransparency = 1
 	searchicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
 	searchicon.ImageColor3 = uipallet.Text
@@ -6464,9 +6464,13 @@ function mainapi:CreateLegit()
 		favicon.Image = getcustomasset('LarpV4/assets/larp/star.png')
 		favicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 		favicon.Parent = favstar
+		local setfavicon
 		function moduleapi:SetFavourite(on)
 			moduleapi.Favourite = on and true or nil
 			favicon.ImageColor3 = on and Color3.fromRGB(255, 184, 31) or color.Dark(uipallet.Text, 0.43)
+			if setfavicon then
+				setfavicon.ImageColor3 = on and Color3.fromRGB(255, 184, 31) or color.Dark(uipallet.Text, 0.43)
+			end
 			mainapi:QueueSave()
 			refreshLegitTabs()
 		end
@@ -6582,6 +6586,25 @@ function mainapi:CreateLegit()
 		settingstitle.TextSize = 13
 		settingstitle.FontFace = uipallet.Font
 		settingstitle.Parent = settingspane
+		local setfavbtn = Instance.new('TextButton')
+		setfavbtn.Name = 'Favourite'
+		setfavbtn.Size = UDim2.fromOffset(16, 16)
+		setfavbtn.Position = UDim2.new(1, -28, 0, 11)
+		setfavbtn.BackgroundTransparency = 1
+		setfavbtn.Text = ''
+		setfavbtn.AutoButtonColor = false
+		setfavbtn.Parent = settingspane
+		addTooltip(setfavbtn, 'Favorite')
+		setfavicon = Instance.new('ImageLabel')
+		setfavicon.Size = UDim2.fromOffset(14, 14)
+		setfavicon.Position = UDim2.fromOffset(1, 1)
+		setfavicon.BackgroundTransparency = 1
+		setfavicon.Image = getcustomasset('LarpV4/assets/larp/star.png')
+		setfavicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+		setfavicon.Parent = setfavbtn
+		setfavbtn.MouseButton1Click:Connect(function()
+			moduleapi:SetFavourite(not moduleapi.Favourite)
+		end)
 		local settingsdivider = Instance.new('Frame')
 		settingsdivider.Size = UDim2.new(1, -20, 0, 1)
 		settingsdivider.Position = UDim2.fromOffset(10, 37)

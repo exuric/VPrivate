@@ -9743,6 +9743,8 @@ run(function()
 
 	TimeChanger = larp.Legit:CreateModule({
 		Name = 'Time Changer',
+		Icon = (function() local ok, v = pcall(getcustomasset, 'LarpV4/assets/larp/timechanger.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(15, 15),
 		Function = function(callback)
 			if callback then
 				old = lightingService.TimeOfDay

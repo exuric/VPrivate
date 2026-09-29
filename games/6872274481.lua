@@ -19283,6 +19283,8 @@ run(function()
 	
 	ReachDisplay = larp.Legit:CreateModule({
 		Name = 'Reach Display',
+		Icon = (function() local ok, v = pcall(getcustomasset, 'LarpV4/assets/larp/reachdisplay.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(15, 15),
 		Function = function(callback)
 			if callback then
 				repeat

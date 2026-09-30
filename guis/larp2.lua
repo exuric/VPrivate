@@ -6325,15 +6325,15 @@ function mainapi:CreateSearch()
 	addCorner(tabpill, UDim.new(0, 4))
 	local clearbtn = Instance.new('TextButton')
 	clearbtn.Name = 'Clear'
-	clearbtn.Size = UDim2.fromOffset(14, 14)
-	clearbtn.Position = UDim2.new(1, -20, 0.5, -7)
+	clearbtn.Size = UDim2.fromOffset(18, 18)
+	clearbtn.Position = UDim2.new(1, -22, 0.5, -9)
 	clearbtn.BackgroundTransparency = 1
 	clearbtn.Text = ''
 	clearbtn.AutoButtonColor = false
 	clearbtn.ZIndex = 3
 	clearbtn.Parent = searchbkg
 	local clearicon = Instance.new('ImageLabel')
-	clearicon.Size = UDim2.fromOffset(14, 14)
+	clearicon.Size = UDim2.fromOffset(18, 18)
 	clearicon.BackgroundTransparency = 1
 	clearicon.Image = getcustomasset('LarpV4/assets/larp/closemini.png')
 	clearicon.ImageColor3 = color.Dark(uipallet.Text, 0.16)
@@ -6349,13 +6349,18 @@ function mainapi:CreateSearch()
 		ghost.Visible = false
 	end)
 	inputService.InputBegan:Connect(function(input)
-		if input.KeyCode == Enum.KeyCode.Tab and inputService:GetFocusedTextBox() == search and ghostText ~= '' then
-			search.Text = ghostText
+		if input.KeyCode == Enum.KeyCode.Tab and inputService:GetFocusedTextBox() == search then
+			if ghostText ~= '' then
+				search.Text = ghostText
+			end
 			task.defer(function()
-				if search.Text:find('\t') then
-					search.Text = search.Text:gsub('\t', '')
+				if search.Text:find('[\t ]+$') then
+					search.Text = search.Text:gsub('[\t ]+$', '')
 				end
 				pcall(function() search.CursorPosition = #search.Text + 1 end)
+				if inputService:GetFocusedTextBox() ~= search then
+					pcall(function() search:CaptureFocus() end)
+				end
 			end)
 		end
 	end)
@@ -6393,6 +6398,8 @@ function mainapi:CreateSearch()
 	end)
 	search:GetPropertyChangedSignal('Text'):Connect(function()
 		ghostText = ''
+		ghost.Visible = false
+		tabpill.Visible = false
 		local q = search.Text:lower()
 		if q ~= '' then
 			local best
@@ -6401,11 +6408,18 @@ function mainapi:CreateSearch()
 					if not best or #name < #best then best = name end
 				end
 			end
-			if best and #best > #search.Text then ghostText = best end
+			if best and #best > #search.Text then
+				ghostText = best
+				local w = getfontsizeCached(search.Text, 12, uipallet.Font)
+				if w and w.X < 120 then
+					ghost.Text = best:sub(#search.Text + 1)
+					ghost.Position = UDim2.new(0, 50 + w.X + 1, 0, 0)
+					ghost.Size = UDim2.new(1, -(50 + w.X + 1), 0, 37)
+					ghost.Visible = inputService:GetFocusedTextBox() == search
+					tabpill.Visible = true
+				end
+			end
 		end
-		ghost.Text = ghostText
-		ghost.Visible = ghostText ~= '' and inputService:GetFocusedTextBox() == search
-		tabpill.Visible = ghostText ~= ''
 		clearbtn.Visible = search.Text ~= ''
 		searchicon.Visible = search.Text == ''
 		for _, v in children:GetChildren() do

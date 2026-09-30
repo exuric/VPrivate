@@ -5735,6 +5735,23 @@ run(function()
 		local p = (ok and tonumber(ping)) or 0.1
 		return math.clamp(p * 1.8 + 0.045, 0.05, 0.4)
 	end
+	local function isPot(ent)
+		return ent and not ent.Player and ent.Character and ent.Character.Name == 'DesertPotEntity'
+	end
+	local function acquire()
+		if not (entitylib.isAlive and entitylib.character and entitylib.character.RootPart) then return nil end
+		local t = entitylib.EntityMouse({
+			Part = 'RootPart',
+			Range = FOV.Value,
+			Players = Targets.Players.Enabled,
+			NPCs = Targets.NPCs.Enabled,
+			Wallcheck = false,
+			Origin = entitylib.character.RootPart.Position,
+			Sort = sortmethods[Sort.Value]
+		})
+		if t and isPot(t) and not (Targets.Pot and Targets.Pot.Enabled) then return nil end
+		return t
+	end
 		local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
 		Function = function(callback)
@@ -5779,29 +5796,17 @@ run(function()
 					plr = nil
 				end
 
-				if not plr then
+				if not plr and lockedTarget then
 					local held = lockedTarget
-					local heldRoot = held and (held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart'))))
-					local cursorOk = false
-					if held and heldRoot and heldRoot.Parent then
-						local screen, vis = gameCamera:WorldToViewportPoint(heldRoot.Position)
-						if vis then
-							local mouseLoc = inputService.TouchEnabled and (gameCamera.ViewportSize * 0.5) or inputService:GetMouseLocation()
-							local dist = (Vector2.new(screen.X, screen.Y) - mouseLoc).Magnitude
-							cursorOk = dist <= FOV.Value * 1.4
-						end
-					end
-					if cursorOk and held and heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled) or (isPot(held) and potOn)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, heldRoot.Position)) and tick() - lockedTime < 3 then
+					local heldRoot = held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart')))
+					if heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled) or (isPot(held) and potOn)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, heldRoot.Position)) and tick() - (lockedTime or 0) < 0.6 then
 						plr = held
-					else
-						lockedTarget = nil
-						lockedTime = nil
 					end
 				end
 				if not plr and potOn then
 					plr = pickPot()
 				end
-					lockedTarget, lockedTime = plr, tick()
+					if plr then lockedTarget, lockedTime = plr, tick() end
 					if plr then
 						local pos = shootpos or self:getLaunchPosition(origin)
 						if not pos then
@@ -5970,8 +5975,25 @@ run(function()
 	
 					return old(...)
 				end
+				ProjectileAimbot:Clean(runService.Heartbeat:Connect(function()
+					local t = acquire()
+					if t then
+						lockedTarget, lockedTime = t, tick()
+					elseif lockedTarget then
+						local root = lockedTarget.RootPart or lockedTarget.HumanoidRootPart
+						local keep = root and root.Parent and entitylib.isVulnerable(lockedTarget)
+							and entitylib.targetCheck(lockedTarget) and tick() - (lockedTime or 0) < 0.5
+						if keep then
+							local sp, vis = gameCamera:WorldToViewportPoint(root.Position)
+							local mloc = inputService.TouchEnabled and (gameCamera.ViewportSize * 0.5) or inputService:GetMouseLocation()
+							keep = vis and (Vector2.new(sp.X, sp.Y) - mloc).Magnitude <= FOV.Value * 1.6
+						end
+						if not keep then lockedTarget, lockedTime = nil, nil end
+					end
+				end))
 			else
 				bedwars.ProjectileController.calculateImportantLaunchValues = old
+				lockedTarget, lockedTime = nil, nil
 			end
 		end,
 		Tooltip = 'Silently adjusts your aim towards the enemy'

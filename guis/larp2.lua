@@ -6295,34 +6295,6 @@ function mainapi:CreateSearch()
 	search.ClearTextOnFocus = false
 	search.Parent = searchbkg
 	search.ZIndex = 2
-	local ghostText = ''
-	local ghost = Instance.new('TextLabel')
-	ghost.Name = 'Ghost'
-	ghost.Size = UDim2.new(1, -50, 0, 37)
-	ghost.Position = UDim2.fromOffset(50, 0)
-	ghost.BackgroundTransparency = 1
-	ghost.Text = ''
-	ghost.TextXAlignment = Enum.TextXAlignment.Left
-	ghost.TextColor3 = color.Dark(uipallet.Text, 0.43)
-	ghost.TextSize = 12
-	ghost.FontFace = uipallet.Font
-	ghost.ZIndex = 1
-	ghost.Visible = false
-	ghost.Parent = searchbkg
-	local tabpill = Instance.new('TextLabel')
-	tabpill.Name = 'TabHint'
-	tabpill.Size = UDim2.fromOffset(32, 18)
-	tabpill.Position = UDim2.new(1, -58, 0.5, -9)
-	tabpill.BackgroundColor3 = color.Light(uipallet.Main, 0.1)
-	tabpill.Text = 'tab'
-	tabpill.TextColor3 = color.Dark(uipallet.Text, 0.16)
-	tabpill.TextSize = 11
-	tabpill.FontFace = uipallet.Font
-	tabpill.BorderSizePixel = 0
-	tabpill.Visible = false
-	tabpill.ZIndex = 3
-	tabpill.Parent = searchbkg
-	addCorner(tabpill, UDim.new(0, 4))
 	local clearbtn = Instance.new('TextButton')
 	clearbtn.Name = 'Clear'
 	clearbtn.Size = UDim2.fromOffset(18, 18)
@@ -6341,28 +6313,6 @@ function mainapi:CreateSearch()
 	clearbtn.MouseButton1Click:Connect(function()
 		search.Text = ''
 		pcall(function() search:CaptureFocus() end)
-	end)
-	search.Focused:Connect(function()
-		ghost.Visible = ghostText ~= ''
-	end)
-	search.FocusLost:Connect(function()
-		ghost.Visible = false
-	end)
-	inputService.InputBegan:Connect(function(input)
-		if input.KeyCode == Enum.KeyCode.Tab and inputService:GetFocusedTextBox() == search then
-			if ghostText ~= '' then
-				search.Text = ghostText
-			end
-			task.defer(function()
-				if search.Text:find('[\t ]+$') then
-					search.Text = search.Text:gsub('[\t ]+$', '')
-				end
-				pcall(function() search.CursorPosition = #search.Text + 1 end)
-				if inputService:GetFocusedTextBox() ~= search then
-					pcall(function() search:CaptureFocus() end)
-				end
-			end)
-		end
 	end)
 	local children = Instance.new('ScrollingFrame')
 	children.Name = 'Children'
@@ -6397,29 +6347,6 @@ function mainapi:CreateSearch()
 		self.Legit.Window.Position = UDim2.new(0.5, -350, 0.5, -194)
 	end)
 	search:GetPropertyChangedSignal('Text'):Connect(function()
-		ghostText = ''
-		ghost.Visible = false
-		tabpill.Visible = false
-		local q = search.Text:lower()
-		if q ~= '' then
-			local best
-			for name in pairs(self.Modules) do
-				if type(name) == 'string' and name:lower():sub(1, #q) == q then
-					if not best or #name < #best then best = name end
-				end
-			end
-			if best and #best > #search.Text then
-				ghostText = best
-				local w = getfontsizeCached(search.Text, 12, uipallet.Font)
-				if w and w.X < 120 then
-					ghost.Text = best:sub(#search.Text + 1)
-					ghost.Position = UDim2.new(0, 50 + w.X + 1, 0, 0)
-					ghost.Size = UDim2.new(1, -(50 + w.X + 1), 0, 37)
-					ghost.Visible = inputService:GetFocusedTextBox() == search
-					tabpill.Visible = true
-				end
-			end
-		end
 		clearbtn.Visible = search.Text ~= ''
 		searchicon.Visible = search.Text == ''
 		for _, v in children:GetChildren() do

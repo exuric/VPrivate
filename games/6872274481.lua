@@ -72,17 +72,8 @@ local function updateStrafe(root, targetVel)
 	local st = strafeState[root]
 	if not st then st = {} strafeState[root] = st end
 	if st.sampledAt and now - st.sampledAt < 0.01 then return st end
-	local hv = Vector3.new(targetVel.X, 0, targetVel.Z)
-	if st.pv and st.sampledAt then
-		local dtv = now - st.sampledAt
-		if dtv > 0.003 then
-			local a = (hv - st.pv) / dtv
-			if a.Magnitude > 60 then a = a.Unit * 60 end
-			st.accel = st.accel and st.accel:Lerp(a, 0.15) or a
-		end
-	end
-	st.pv = hv
 	st.sampledAt = now
+	local hv = Vector3.new(targetVel.X, 0, targetVel.Z)
 	local speed = hv.Magnitude
 	if speed > 3 then
 		local dir = hv.Unit
@@ -115,10 +106,6 @@ local function predictAt(pos, vel, gravity, airborne, st, t)
 		leadT = bclamp(t, 0, math.max(toRev, 0.04))
 	end
 	local horiz = hv * leadT
-	if st and st.accel then
-		local at = leadT < 0.45 and leadT or 0.45
-		horiz = horiz + st.accel * (0.5 * at * at)
-	end
 	local y = (airborne and gravity > 0) and (pos.Y + vy * t - 0.5 * gravity * t * t) or (pos.Y + vy * t)
 	return Vector3.new(pos.X + horiz.X, y, pos.Z + horiz.Z)
 end
@@ -5958,8 +5945,8 @@ run(function()
 						end
 						if best then
 							local prevDir = aimSmooth[plr]
-							if prevDir and (best.dir - prevDir).Magnitude < fireSpeed * 0.5 then
-								best = { dir = prevDir:Lerp(best.dir, 0.4), from = best.from, travelTime = best.travelTime }
+							if prevDir and (best.dir - prevDir).Magnitude < fireSpeed * 0.25 then
+								best = { dir = prevDir:Lerp(best.dir, 0.85), from = best.from, travelTime = best.travelTime }
 							end
 							aimSmooth[plr] = best.dir
 						end

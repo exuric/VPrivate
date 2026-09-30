@@ -9,7 +9,6 @@ $files = @(
 	'games/6872265039.lua',
 	'games/6872274481.lua',
 	'games/8444591321.lua',
-	'games/8560631822.lua',
 	'games/100702124803290.lua',
 	'games/119265221596002.lua'
 )

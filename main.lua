@@ -260,7 +260,7 @@ task.spawn(function()
 	-- load. downloadFile coordinates concurrent fetches through _pending, so
 	-- the later calls that need these files will read the finished writefile.
 	do
-		local gamePath = 'LarpV4/games/'..game.PlaceId..'.lua'
+		local gamePath = 'LarpV4/games/'..(game.PlaceId == 8560631822 and 6872274481 or game.PlaceId)..'.lua'
 		task.spawn(function() pcall(downloadFile, 'LarpV4/games/universal.lua') end)
 		task.spawn(function() pcall(downloadFile, gamePath) end)
 	end
@@ -283,7 +283,7 @@ task.spawn(function()
 			loadstring(downloadFile('LarpV4/games/universal.lua'), 'universal')(license)
 			task.wait()
 			do
-				local gamePath = 'LarpV4/games/'..game.PlaceId..'.lua'
+				local gamePath = 'LarpV4/games/'..(game.PlaceId == 8560631822 and 6872274481 or game.PlaceId)..'.lua'
 				if isfile(gamePath) then
 					local cached = readfile(gamePath)
 					if #cached < 100 or cached:sub(1, #LARPWATER) ~= LARPWATER then
@@ -291,7 +291,7 @@ task.spawn(function()
 					end
 				end
 				local ok, err = pcall(function()
-					loadstring(downloadFile(gamePath), tostring(game.PlaceId))(license)
+					loadstring(downloadFile(gamePath), game.PlaceId == 8560631822 and 'bedwars' or tostring(game.PlaceId))(license)
 				end)
 			if not ok then
 				local msg = tostring(err or '')

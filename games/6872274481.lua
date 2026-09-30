@@ -5742,7 +5742,7 @@ run(function()
 	local function pingLatency()
 		local ok, ping = pcall(function() return lplr:GetNetworkPing() end)
 		local p = (ok and tonumber(ping)) or 0.1
-		return math.clamp(p * 1.3 + 0.05, 0.05, 0.35)
+		return math.clamp(p * 1.8 + 0.045, 0.05, 0.4)
 	end
 		local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',

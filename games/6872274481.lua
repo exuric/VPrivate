@@ -65,22 +65,24 @@ local bsqrt = math.sqrt
 local bclamp = math.clamp
 local babs = math.abs
 
--- Shared target-motion model for both arcs. Tracks each target's horizontal
--- direction to detect strafing, and predicts a future position that (a) does
--- not lead a standing target at all, (b) never leads PAST a strafe reversal
--- (where the target turns around -- leading past it is the classic strafe
--- miss), and (c) keeps the gravity arc for genuinely airborne targets.
 local strafeState = setmetatable({}, {__mode = 'k'})
 local function updateStrafe(root, targetVel)
 	if not root then return nil end
 	local now = os.clock()
 	local st = strafeState[root]
 	if not st then st = {} strafeState[root] = st end
-	-- one sample per frame: the solver calls targetAt many times per solve and is
-	-- itself called several times per frame, so gate on a small real-time delta.
 	if st.sampledAt and now - st.sampledAt < 0.01 then return st end
-	st.sampledAt = now
 	local hv = Vector3.new(targetVel.X, 0, targetVel.Z)
+	if st.pv and st.sampledAt then
+		local dtv = now - st.sampledAt
+		if dtv > 0.003 then
+			local a = (hv - st.pv) / dtv
+			if a.Magnitude > 60 then a = a.Unit * 60 end
+			st.accel = st.accel and st.accel:Lerp(a, 0.15) or a
+		end
+	end
+	st.pv = hv
+	st.sampledAt = now
 	local speed = hv.Magnitude
 	if speed > 3 then
 		local dir = hv.Unit
@@ -103,32 +105,21 @@ local function updateStrafe(root, targetVel)
 end
 local function predictAt(pos, vel, gravity, airborne, st, t)
 	local hv = Vector3.new(vel.X, 0, vel.Z)
-	local speed = hv.Magnitude
 	local vy = vel.Y
-	-- standing still (or nearly): do not invent a lead -- that is what made
-	-- still targets get missed.
-	if speed < 2 and babs(vy) < 2 then
+	if hv.Magnitude < 2 and babs(vy) < 2 then
 		return pos
 	end
 	local leadT = t
 	if st and st.half and (st.seen or 0) >= 2 and st.lastRev then
-		-- strafing: cap the lead at the next reversal so we aim at the turnaround
-		-- instead of sailing past where they will actually be.
-		local elapsed = (os.clock() - st.lastRev) % st.half
-		local toRev = st.half - elapsed
+		local toRev = st.half - ((os.clock() - st.lastRev) % st.half)
 		leadT = bclamp(t, 0, math.max(toRev, 0.04))
 	end
-	-- full lead at any range: a straight-moving target (the common case, and what
-	-- gets missed far away) needs the exact lead. Erratic targets are handled by the
-	-- strafe-reversal cap above, so no blanket far-range damping -- that only made
-	-- long shots fall behind moving targets.
 	local horiz = hv * leadT
-	local y
-	if airborne and gravity > 0 then
-		y = pos.Y + vy * t - 0.5 * gravity * t * t
-	else
-		y = pos.Y + vy * t
+	if st and st.accel then
+		local at = leadT < 0.45 and leadT or 0.45
+		horiz = horiz + st.accel * (0.5 * at * at)
 	end
+	local y = (airborne and gravity > 0) and (pos.Y + vy * t - 0.5 * gravity * t * t) or (pos.Y + vy * t)
 	return Vector3.new(pos.X + horiz.X, y, pos.Z + horiz.Z)
 end
 
@@ -185,11 +176,6 @@ ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVe
 	end
 	local tof = bclamp(dist0 / speed, 0.02, 6)
 
-	-- Straight-line projectiles (fireball etc. carry gravity 0). The ballistic
-	-- closed form divides by gravity and collapses the flight time to ~0, so the
-	-- old code led by nothing and the shot fell way short. Solve the intercept
-	-- directly: iterate flight time against the target's predicted path and aim
-	-- straight at it.
 	if gravity < 1 then
 		local t2 = tof
 		for _ = 1, 14 do
@@ -310,11 +296,6 @@ ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targ
 	end
 	local tof = bclamp(dist0 / speed, 0.02, 6)
 
-	-- Straight-line projectiles (fireball etc. carry gravity 0). The ballistic
-	-- closed form divides by gravity and collapses the flight time to ~0, so the
-	-- old code led by nothing and the shot fell way short. Solve the intercept
-	-- directly: iterate flight time against the target's predicted path and aim
-	-- straight at it.
 	if gravity < 1 then
 		local t2 = tof
 		for _ = 1, 14 do
@@ -5738,12 +5719,6 @@ run(function()
 	local velEMA = setmetatable({}, {__mode = 'k'})
 	local arcMode = setmetatable({}, {__mode = 'k'})
 	local aimSmooth = setmetatable({}, {__mode = 'k'})
-	-- Velocity from POSITION HISTORY, not AssemblyLinearVelocity. Server-driven
-	-- NPCs (and many players) move by CFrame replication, so AssemblyLinearVelocity
-	-- reads ~0 for them -- the old estimator then led by nothing and every moving
-	-- target got missed. Differentiating the replicated position captures real
-	-- movement no matter how it is produced; raw engine velocity is only used as a
-	-- fallback before we have two samples or across a teleport/re-appear gap.
 	local function smoothVel(part, raw)
 		if not part or not part.Position then return raw or Vector3.zero end
 		raw = raw or Vector3.zero
@@ -5755,33 +5730,19 @@ run(function()
 			return raw
 		end
 		local dt = now - st.t
-		-- the solver calls this many times per frame; resample at most ~every 6ms
 		if dt < 0.006 then return st.vel end
-		local measured
-		if dt < 0.25 then
-			measured = (pos - st.pos) / dt
-		else
-			measured = raw
-		end
-		-- barely moved on replication but the engine reports a real velocity
-		-- (knockback frame): trust the engine reading for that sample
+		local measured = dt < 0.25 and (pos - st.pos) / dt or raw
 		if measured.Magnitude < 1 and raw.Magnitude > 4 then measured = raw end
 		local prev = st.vel or measured
-		-- snap on a genuine direction/speed change, otherwise smooth to kill jitter
 		local alpha = (measured - prev).Magnitude > 30 and 0.6 or 0.35
 		local out = prev:Lerp(measured, alpha)
 		st.pos, st.t, st.vel = pos, now, out
 		return out
 	end
 	local function pingLatency()
-		-- Auto-adapt to ping, always. Other entities render BEHIND their true server
-		-- position by your inbound latency plus Roblox's interpolation buffer, so a shot
-		-- aimed at the position you SEE lands where they already left (the "ghost hit").
-		-- Lead by inbound ping (~half round-trip) plus a fixed interp buffer to aim at
-		-- the server-current position. Clamped so high ping can't wild-lead.
 		local ok, ping = pcall(function() return lplr:GetNetworkPing() end)
 		local p = (ok and tonumber(ping)) or 0.1
-		return math.clamp(p * 0.5 + 0.06, 0.05, 0.22)
+		return math.clamp(p * 1.3 + 0.05, 0.05, 0.35)
 	end
 		local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
@@ -5791,13 +5752,6 @@ run(function()
 				bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
 					local self, projmeta, worldmeta, origin, shootpos = ...
 					local originPos = entitylib.isAlive and (shootpos or entitylib.character.RootPart.Position) or Vector3.zero
-					-- Acquire without the straight-line wallcheck. For a lobbed projectile the
-					-- real reachability test is the ballistic arc (IsTrajectoryClear, per part,
-					-- high arc included), not line of sight to the root. A target on a ledge or
-					-- behind low cover fails the straight ray but is cleanly cleared by an arc
-					-- over it, so gating acquisition on LOS was why ledge targets never locked.
-					-- Walls-enabled intent still holds below: a genuinely blocked arc falls to
-					-- bestBlocked, which is only taken when Walls is disabled.
 				local function isPot(ent)
 					return ent and not ent.Player and ent.Character and ent.Character.Name == 'DesertPotEntity'
 				end
@@ -5898,15 +5852,6 @@ run(function()
 						local rootPart = plr.RootPart or plr.HumanoidRootPart
 						local rootPos = rootPart and rootPart.Position
 						local hipH = plr.HipHeight or 2
-						-- FloorMaterial lags a frame or two when a target walks off a ledge, and
-						-- their downward velocity is still ~0 on that frame, so both of the usual
-						-- airborne signals read "grounded" while they have in fact started to
-						-- fall -- the solver then aims at ledge height and the shot sails over as
-						-- they drop. A short downward probe against the map is the ground truth:
-						-- no floor within reach below the root means treat them as airborne now,
-						-- so gravity is modelled from this frame instead of after the flag catches
-						-- up. Grounded/standing targets always have floor directly below, so this
-						-- never latches on a stationary player.
 						local groundBelow
 						if rootPos then
 							local okProbe, probe = pcall(function()
@@ -5928,12 +5873,6 @@ run(function()
 						local latency = pingLatency()
 						local hasHighArc = typeof(prediction.SolveTrajectoryHigh) == 'function'
 						
-						-- Stable solve. The old version fed RAW velocity to a solver that does no
-						-- smoothing, swept ~10 body parts + a prediction ladder + both arcs, and kept
-						-- the shortest-flight hit each frame -- so the winning part/arc flipped every
-						-- frame and the trajectory line wobbled and missed. Now: smoothed velocity, one
-						-- part (first that clears), flat arc preferred with per-target hysteresis, and a
-						-- low-pass on the final aim. A steady line is what actually lands.
 						local partOrder
 						do
 							local tp = TargetPart.Value
@@ -5962,17 +5901,12 @@ run(function()
 								local rawVel = isPearl and Vector3.zero or (tpart.AssemblyLinearVelocity or tpart.Velocity or (rootPart and (rootPart.AssemblyLinearVelocity or rootPart.Velocity)) or Vector3.zero)
 								local vel = isPearl and Vector3.zero or smoothVel(tpart, rawVel)
 								if latency > 0 and not isPearl then
-									-- latency compensation: the position we see is stale by ~ping, so
-									-- advance the aim target forward along its path before solving. This
-									-- is ~0 for a still target, so it never over-leads a standing one.
 									tpos = tpos + Vector3.new(vel.X, airborne and vel.Y or 0, vel.Z) * latency
 								end
 								local resolvedRootPos = rootPos or tpos
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
 								local origin3 = newlook.Position
-								-- prefer last frame's arc for this target so a direct shot and a lob
-								-- do not alternate every frame
 								local order = wantHigh and {'high', 'flat'} or {'flat', 'high'}
 								local chosen, chosenMode
 								for _, mode in ipairs(order) do
@@ -5994,8 +5928,6 @@ run(function()
 								end
 							end
 						end
-						-- stationary-target fallback (primary part) when a moving model cleared
-						-- nothing -- guards against a briefly-garbage velocity reading
 						if not best then
 							local tpart = plr[TargetPart.Value] or plr.RootPart or plr.Head
 							if tpart and tpart.Position then
@@ -6013,9 +5945,6 @@ run(function()
 							best = bestBlocked
 						end
 						if not best then
-							-- serve a very recent cached solve only if it STILL clears to the
-							-- target's current position, so a target that just ducked behind
-							-- cover is never shot through the wall.
 							local cached = getgenv()._larpProjAimCache
 							if cached and cached.plr == plr and tick() - cached.at < 0.25 then
 								local cb = cached.best
@@ -6027,9 +5956,6 @@ run(function()
 								end
 							end
 						end
-						-- low-pass the final aim so residual solver jitter does not wobble the
-						-- trajectory line; snap when it jumps (target relocated / arc switched) so
-						-- fast movement is still tracked
 						if best then
 							local prevDir = aimSmooth[plr]
 							if prevDir and (best.dir - prevDir).Magnitude < fireSpeed * 0.5 then

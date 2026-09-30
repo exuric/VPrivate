@@ -12,8 +12,6 @@ local mainapi = {
 	Loaded = false,
 	Libraries = {},
 	Modules = {},
-	-- bedwars runs across several place ids (different match types); treat the
-	-- practice place as the main one so config/profiles are shared, not reset per match.
 	Place = (game.PlaceId == 8560631822 and 6872274481 or game.PlaceId),
 	Profile = 'default',
 	Profiles = {},

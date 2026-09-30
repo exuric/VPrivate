@@ -5709,22 +5709,26 @@ run(function()
 	local function smoothVel(part, raw)
 		if not part or not part.Position then return raw or Vector3.zero end
 		raw = raw or Vector3.zero
-		local now = os.clock()
-		local pos = part.Position
+		local now, pos = os.clock(), part.Position
 		local st = velEMA[part]
 		if not st then
-			velEMA[part] = { pos = pos, t = now, vel = raw }
+			velEMA[part] = { s = {{pos, now}}, vel = raw }
 			return raw
 		end
-		local dt = now - st.t
-		if dt < 0.006 then return st.vel end
-		local measured = dt < 0.25 and (pos - st.pos) / dt or raw
-		if measured.Magnitude < 1 and raw.Magnitude > 4 then measured = raw end
-		local prev = st.vel or measured
-		local alpha = (measured - prev).Magnitude > 30 and 0.6 or 0.35
-		local out = prev:Lerp(measured, alpha)
-		st.pos, st.t, st.vel = pos, now, out
-		return out
+		local last = st.s[#st.s]
+		if now - last[2] >= 0.006 then
+			if (pos - last[1]).Magnitude > 30 then
+				st.s = {{pos, now}}
+				st.vel = Vector3.zero
+			else
+				st.s[#st.s + 1] = {pos, now}
+				while #st.s > 2 and now - st.s[1][2] > 0.09 do table.remove(st.s, 1) end
+				local first = st.s[1]
+				local span = now - first[2]
+				if span >= 0.02 then st.vel = (pos - first[1]) / span end
+			end
+		end
+		return st.vel
 	end
 	local function pingLatency()
 		local ok, ping = pcall(function() return lplr:GetNetworkPing() end)

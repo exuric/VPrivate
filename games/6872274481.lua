@@ -118,11 +118,11 @@ local function predictAt(pos, vel, gravity, airborne, st, t)
 		local toRev = st.half - elapsed
 		leadT = bclamp(t, 0, math.max(toRev, 0.04))
 	end
-	-- far-horizon damping: over a long flight a moving target rarely holds a
-	-- straight line, so trust the lead a little less as t grows. Close/fast
-	-- shots (t < ~0.5s) are untouched; this trims wild over-lead at range.
-	local trust = t > 0.5 and bclamp(1 - (t - 0.5) * 0.12, 0.72, 1) or 1
-	local horiz = hv * (leadT * trust)
+	-- full lead at any range: a straight-moving target (the common case, and what
+	-- gets missed far away) needs the exact lead. Erratic targets are handled by the
+	-- strafe-reversal cap above, so no blanket far-range damping -- that only made
+	-- long shots fall behind moving targets.
+	local horiz = hv * leadT
 	local y
 	if airborne and gravity > 0 then
 		y = pos.Y + vy * t - 0.5 * gravity * t * t
@@ -184,6 +184,26 @@ ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVe
 		return origin + Vector3.new(0, 1, 0) * speed, 0, 0.05
 	end
 	local tof = bclamp(dist0 / speed, 0.02, 6)
+
+	-- Straight-line projectiles (fireball etc. carry gravity 0). The ballistic
+	-- closed form divides by gravity and collapses the flight time to ~0, so the
+	-- old code led by nothing and the shot fell way short. Solve the intercept
+	-- directly: iterate flight time against the target's predicted path and aim
+	-- straight at it.
+	if gravity < 1 then
+		local t2 = tof
+		for _ = 1, 14 do
+			local tp2 = targetAt(t2)
+			local m = (tp2 - origin).Magnitude
+			local nt = bclamp(m / speed, 0.02, 8)
+			if babs(nt - t2) < 0.002 then t2 = nt break end
+			t2 = 0.5 * nt + 0.5 * t2
+		end
+		local tp2 = targetAt(t2)
+		local m = (tp2 - origin).Magnitude
+		local v2 = (m > 0.001) and (tp2 - origin) / m * speed or Vector3.new(0, 1, 0) * speed
+		return origin + v2.Unit * speed, tp2, t2
+	end
 
 	local bestGood
 	local vel
@@ -289,6 +309,26 @@ ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targ
 		return origin + Vector3.new(0, 1, 0) * speed, 0, 0.05
 	end
 	local tof = bclamp(dist0 / speed, 0.02, 6)
+
+	-- Straight-line projectiles (fireball etc. carry gravity 0). The ballistic
+	-- closed form divides by gravity and collapses the flight time to ~0, so the
+	-- old code led by nothing and the shot fell way short. Solve the intercept
+	-- directly: iterate flight time against the target's predicted path and aim
+	-- straight at it.
+	if gravity < 1 then
+		local t2 = tof
+		for _ = 1, 14 do
+			local tp2 = targetAt(t2)
+			local m = (tp2 - origin).Magnitude
+			local nt = bclamp(m / speed, 0.02, 8)
+			if babs(nt - t2) < 0.002 then t2 = nt break end
+			t2 = 0.5 * nt + 0.5 * t2
+		end
+		local tp2 = targetAt(t2)
+		local m = (tp2 - origin).Magnitude
+		local v2 = (m > 0.001) and (tp2 - origin) / m * speed or Vector3.new(0, 1, 0) * speed
+		return origin + v2.Unit * speed, tp2, t2
+	end
 
 	local bestGood
 	local vel
@@ -5734,15 +5774,11 @@ run(function()
 		return out
 	end
 	local function pingLatency()
-		local mode = PingMode and PingMode.Value or 'Automatic'
-		if mode == 'Low' then return 0.05
-		elseif mode == 'Medium' then return 0.09
-		elseif mode == 'High' then return 0.14 end
-		-- Automatic: other entities render BEHIND their true server position by your
-		-- inbound latency plus Roblox's interpolation buffer, so a shot aimed at the
-		-- position you SEE lands where they already left -- that is the "ghost hit" on
-		-- low ping. Lead by inbound ping (~half round-trip) plus a fixed interp buffer
-		-- to aim at the server-current position. Clamped so high ping can't wild-lead.
+		-- Auto-adapt to ping, always. Other entities render BEHIND their true server
+		-- position by your inbound latency plus Roblox's interpolation buffer, so a shot
+		-- aimed at the position you SEE lands where they already left (the "ghost hit").
+		-- Lead by inbound ping (~half round-trip) plus a fixed interp buffer to aim at
+		-- the server-current position. Clamped so high ping can't wild-lead.
 		local ok, ping = pcall(function() return lplr:GetNetworkPing() end)
 		local p = (ok and tonumber(ping)) or 0.1
 		return math.clamp(p * 0.5 + 0.06, 0.05, 0.22)
@@ -6055,12 +6091,6 @@ run(function()
 		Min = 1,
 		Max = 1000,
 		Default = 1000
-	})
-	PingMode = ProjectileAimbot:CreateDropdown({
-		Name = 'Ping mode',
-		List = {'Automatic', 'Low', 'Medium', 'High'},
-		Default = 'Automatic',
-		Tooltip = 'Latency compensation. Automatic reads your ping and leads by the right amount; Low/Medium/High force a preset.'
 	})
 	AutoCharge = ProjectileAimbot:CreateToggle({
 		Name = 'Auto Charge',

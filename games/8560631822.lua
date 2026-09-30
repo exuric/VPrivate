@@ -5717,15 +5717,17 @@ run(function()
 	end
 	local function pingLatency()
 		local mode = PingMode and PingMode.Value or 'Automatic'
-		if mode == 'Low' then return 0.02
-		elseif mode == 'Medium' then return 0.06
-		elseif mode == 'High' then return 0.12 end
-		-- Automatic: GetNetworkPing is seconds. Lead by a conservative fraction of
-		-- it -- over-leading (too much latency) is what pushes shots past a moving
-		-- target, especially with a slow projectile at range.
+		if mode == 'Low' then return 0.05
+		elseif mode == 'Medium' then return 0.09
+		elseif mode == 'High' then return 0.14 end
+		-- Automatic: other entities render BEHIND their true server position by your
+		-- inbound latency plus Roblox's interpolation buffer, so a shot aimed at the
+		-- position you SEE lands where they already left -- that is the "ghost hit" on
+		-- low ping. Lead by inbound ping (~half round-trip) plus a fixed interp buffer
+		-- to aim at the server-current position. Clamped so high ping can't wild-lead.
 		local ok, ping = pcall(function() return lplr:GetNetworkPing() end)
-		local p = (ok and tonumber(ping)) or 0.05
-		return math.clamp(p * 0.5 + 0.02, 0.015, 0.16)
+		local p = (ok and tonumber(ping)) or 0.1
+		return math.clamp(p * 0.5 + 0.06, 0.05, 0.22)
 	end
 		local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',

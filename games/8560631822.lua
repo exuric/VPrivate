@@ -3530,7 +3530,6 @@ run(function()
     AutoChargeProj = larp.Categories.Blatant:CreateModule({
         Name = 'Charge Percent',
 		Function = function(callback)
-			seedSelected()
 			if callback then
 			ProjectileAimbot:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
 				if Mode.Value ~= 'Adaptive' then
@@ -4264,8 +4263,10 @@ run(function()
 		if not ent or not ent.Character then return false end
 		local hum = ent.Humanoid or ent.Character:FindFirstChildOfClass('Humanoid')
 		if not hum then return false end
-		if hum.Health <= 0 then return false end
-		local st = hum:GetState()
+		local isHum = typeof(hum) == 'Instance' and hum:IsA('Humanoid')
+		local hp = ent.Health or (isHum and hum.Health)
+		if hp and hp <= 0 then return false end
+		local st = isHum and hum:GetState()
 		if st == Enum.HumanoidStateType.Dead or st == Enum.HumanoidStateType.Physics or st == Enum.HumanoidStateType.PlatformStanding then return false end
 		if ent.Character:FindFirstChildOfClass('ForceField') then return false end
 		return true
@@ -5683,18 +5684,35 @@ run(function()
 	local velEMA = setmetatable({}, {__mode = 'k'})
 	local arcMode = setmetatable({}, {__mode = 'k'})
 	local aimSmooth = setmetatable({}, {__mode = 'k'})
+	-- Velocity from POSITION HISTORY, not AssemblyLinearVelocity. Server-driven
+	-- NPCs (and many players) move by CFrame replication, so AssemblyLinearVelocity
+	-- reads ~0 for them -- the old estimator then led by nothing and every moving
+	-- target got missed. Differentiating the replicated position captures real
+	-- movement no matter how it is produced; raw engine velocity is only a
+	-- fallback before two samples or across a teleport/re-appear gap.
 	local function smoothVel(part, raw)
-		if not part then return raw or Vector3.zero end
+		if not part or not part.Position then return raw or Vector3.zero end
 		raw = raw or Vector3.zero
-		local prev = velEMA[part]
-		if not prev then velEMA[part] = raw return raw end
-		-- Exponential smoothing. Raw AssemblyLinearVelocity jitters frame to frame
-		-- (animation, network, knockback) and the ballistic solver uses it linearly,
-		-- so feeding it raw made the arc wobble. Heavy smoothing normally; snap when
-		-- the reading genuinely jumps so a real direction change still leads.
-		local alpha = (raw - prev).Magnitude > 28 and 0.6 or 0.28
-		local out = prev:Lerp(raw, alpha)
-		velEMA[part] = out
+		local now = os.clock()
+		local pos = part.Position
+		local st = velEMA[part]
+		if not st then
+			velEMA[part] = { pos = pos, t = now, vel = raw }
+			return raw
+		end
+		local dt = now - st.t
+		if dt < 0.006 then return st.vel end
+		local measured
+		if dt < 0.25 then
+			measured = (pos - st.pos) / dt
+		else
+			measured = raw
+		end
+		if measured.Magnitude < 1 and raw.Magnitude > 4 then measured = raw end
+		local prev = st.vel or measured
+		local alpha = (measured - prev).Magnitude > 30 and 0.6 or 0.35
+		local out = prev:Lerp(measured, alpha)
+		st.pos, st.t, st.vel = pos, now, out
 		return out
 	end
 	local function pingLatency()
@@ -5973,7 +5991,7 @@ run(function()
 	})
 	TargetPart = ProjectileAimbot:CreateDropdown({
 		Name = 'Part',
-		List = {'RootPart', 'Head'}
+		List = {'RootPart'}
 	})
 	Prediction = ProjectileAimbot:CreateSlider({
 		Name = 'Prediction',
@@ -19932,10 +19950,12 @@ run(function()
 		if not hum then
 			return false
 		end
-		if hum.Health <= 0 then
+		local isHum = typeof(hum) == 'Instance' and hum:IsA('Humanoid')
+		local hp = ent.Health or (isHum and hum.Health)
+		if hp and hp <= 0 then
 			return false
 		end
-		local st = hum:GetState()
+		local st = isHum and hum:GetState()
 		if st == Enum.HumanoidStateType.Dead or st == Enum.HumanoidStateType.Physics or st == Enum.HumanoidStateType.PlatformStanding then
 			return false
 		end

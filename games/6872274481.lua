@@ -3553,21 +3553,6 @@ run(function()
         Name = 'Charge Percent',
 		Function = function(callback)
 			if callback then
-			ProjectileAimbot:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
-				if Mode.Value ~= 'Adaptive' then
-					return
-				end
-				if damageTable.damageType == 0 or not damageTable.fromEntity then
-					return
-				end
-				if damageTable.fromEntity == lplr.Character or damageTable.fromEntity == lplr then
-					local victim = entitylib.getEntity(damageTable.entityInstance)
-					if victim and victim.RootPart and tick() - (projectileShotTimes[victim.RootPart] or -9e9) < 5 then
-						prediction.reportHit(victim.RootPart)
-						prediction.markKnockback(victim.RootPart, damageTable.knockbackMultiplier)
-					end
-				end
-			end))
 			old = bedwars.ProjectileController.calculateImportantLaunchValues
                 bedwars.ProjectileController.calculateImportantLaunchValues = function(...)
                     local args = {...}
@@ -3592,6 +3577,17 @@ run(function()
         Default = 50,
         Suffix = '%'
     })
+
+    larpEvents.EntityDamageEvent.Event:Connect(function(damageTable)
+        if damageTable.damageType == 0 or not damageTable.fromEntity then return end
+        if damageTable.fromEntity == lplr.Character or damageTable.fromEntity == lplr then
+            local victim = entitylib.getEntity(damageTable.entityInstance)
+            if victim and victim.RootPart and tick() - (projectileShotTimes[victim.RootPart] or -9e9) < 5 then
+                prediction.reportHit(victim.RootPart)
+                prediction.markKnockback(victim.RootPart, damageTable.knockbackMultiplier)
+            end
+        end
+    end)
 end)
 
 run(function()
@@ -5975,22 +5971,6 @@ run(function()
 	
 					return old(...)
 				end
-				ProjectileAimbot:Clean(runService.Heartbeat:Connect(function()
-					local t = acquire()
-					if t then
-						lockedTarget, lockedTime = t, tick()
-					elseif lockedTarget then
-						local root = lockedTarget.RootPart or lockedTarget.HumanoidRootPart
-						local keep = root and root.Parent and entitylib.isVulnerable(lockedTarget)
-							and entitylib.targetCheck(lockedTarget) and tick() - (lockedTime or 0) < 0.5
-						if keep then
-							local sp, vis = gameCamera:WorldToViewportPoint(root.Position)
-							local mloc = inputService.TouchEnabled and (gameCamera.ViewportSize * 0.5) or inputService:GetMouseLocation()
-							keep = vis and (Vector2.new(sp.X, sp.Y) - mloc).Magnitude <= FOV.Value * 1.6
-						end
-						if not keep then lockedTarget, lockedTime = nil, nil end
-					end
-				end))
 			else
 				bedwars.ProjectileController.calculateImportantLaunchValues = old
 				lockedTarget, lockedTime = nil, nil
@@ -5998,6 +5978,24 @@ run(function()
 		end,
 		Tooltip = 'Silently adjusts your aim towards the enemy'
 	})
+
+	runService.Heartbeat:Connect(function()
+		if not ProjectileAimbot.Enabled then return end
+		local t = acquire()
+		if t then
+			lockedTarget, lockedTime = t, tick()
+		elseif lockedTarget then
+			local root = lockedTarget.RootPart or lockedTarget.HumanoidRootPart
+			local keep = root and root.Parent and entitylib.isVulnerable(lockedTarget)
+				and entitylib.targetCheck(lockedTarget) and tick() - (lockedTime or 0) < 0.5
+			if keep then
+				local sp, vis = gameCamera:WorldToViewportPoint(root.Position)
+				local mloc = inputService.TouchEnabled and (gameCamera.ViewportSize * 0.5) or inputService:GetMouseLocation()
+				keep = vis and (Vector2.new(sp.X, sp.Y) - mloc).Magnitude <= FOV.Value * 1.6
+			end
+			if not keep then lockedTarget, lockedTime = nil, nil end
+		end
+	end)
 	Targets = ProjectileAimbot:CreateTargets({
 		Players = true,
 		Walls = true,

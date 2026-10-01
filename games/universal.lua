@@ -8838,7 +8838,7 @@ run(function()
 				end
 			end)
 		end,
-		Size = UDim2.fromOffset(112, 112),
+		Size = UDim2.fromOffset(120, 120),
 		Icon = getcustomasset('LarpV4/assets/larp/clock.png'),
 		IconSize = UDim2.fromOffset(15, 15),
 		Tooltip = 'Shows the current local time'
@@ -8863,28 +8863,59 @@ run(function()
 		end
 	})
 
-	Clock.Children.Position = UDim2.new(0, 12, 1, -124)
+	local FONT = Font.fromEnum(Enum.Font.Gotham)
+	do
+		local ok, f = pcall(function()
+			local gca = larp.Libraries.getcustomasset
+			local reg = gca('LarpV4/assets/larp/proximanova.ttf')
+			writefile('LarpV4/assets/larp/proximanova_reg.json',
+				'{"name":"Proxima Nova","faces":[{"name":"Regular","weight":400,"style":"normal","assetId":"' .. reg .. '"}]}')
+			return Font.new(gca('LarpV4/assets/larp/proximanova_reg.json'), Enum.FontWeight.Regular)
+		end)
+		if ok then FONT = f end
+	end
+
+	Clock.Children.Position = UDim2.new(0, 12, 1, -132)
+
 	bg = Instance.new('Frame')
 	bg.Name = 'ClockBG'
-	bg.Size = UDim2.fromOffset(112, 112)
-	bg.BackgroundColor3 = Color3.fromRGB(15, 15, 17)
-	bg.BackgroundTransparency = 0.1
+	bg.Size = UDim2.fromOffset(120, 120)
+	bg.BackgroundColor3 = Color3.fromRGB(150, 190, 235)
 	bg.BorderSizePixel = 0
+	bg.ClipsDescendants = true
 	bg.Parent = Clock.Children
-	Instance.new('UICorner', bg).CornerRadius = UDim.new(0, 8)
+	Instance.new('UICorner', bg).CornerRadius = UDim.new(0, 10)
+	local sky = Instance.new('UIGradient', bg)
+	sky.Rotation = 90
+	sky.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 170, 228)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(196, 218, 245))
+	})
+	for _, c in {{0.30, 0.27, 62, 26, 0.55}, {0.56, 0.21, 46, 20, 0.6}, {0.82, 0.58, 56, 24, 0.6}, {0.2, 0.72, 42, 18, 0.62}} do
+		local cl = Instance.new('Frame')
+		cl.AnchorPoint = Vector2.new(0.5, 0.5)
+		cl.Position = UDim2.fromScale(c[1], c[2])
+		cl.Size = UDim2.fromOffset(c[3], c[4])
+		cl.BackgroundColor3 = Color3.new(1, 1, 1)
+		cl.BackgroundTransparency = c[5]
+		cl.BorderSizePixel = 0
+		cl.Parent = bg
+		Instance.new('UICorner', cl).CornerRadius = UDim.new(1, 0)
+	end
 
 	digital = Instance.new('Frame')
-	digital.Size = UDim2.fromOffset(112, 112)
+	digital.Size = UDim2.fromOffset(120, 120)
 	digital.BackgroundTransparency = 1
 	digital.Parent = Clock.Children
 	dSec = Instance.new('Frame')
 	dSec.AnchorPoint = Vector2.new(0.5, 1)
-	dSec.Size = UDim2.fromOffset(2, 30)
+	dSec.Size = UDim2.fromOffset(2, 34)
 	dSec.Position = UDim2.fromScale(0.5, 0.5)
 	dSec.BackgroundColor3 = Color3.fromRGB(128, 205, 150)
 	dSec.BorderSizePixel = 0
+	dSec.ZIndex = 2
 	dSec.Parent = digital
-	local function dl(size, bold, ax, ay, px, py)
+	local function dl(size, ax, ay, px, py)
 		local l = Instance.new('TextLabel')
 		l.AutomaticSize = Enum.AutomaticSize.XY
 		l.AnchorPoint = Vector2.new(ax, ay)
@@ -8892,25 +8923,26 @@ run(function()
 		l.BackgroundTransparency = 1
 		l.Text = ''
 		l.TextColor3 = Color3.new(1, 1, 1)
+		l.TextTransparency = 0.05
 		l.TextSize = size
-		l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
-		l.ZIndex = 2
+		l.FontFace = FONT
+		l.ZIndex = 3
 		l.Parent = digital
 		return l
 	end
-	hourL = dl(36, true, 0, 0, 12, 8)
-	minL = dl(36, true, 1, 1, -12, -8)
-	ampmL = dl(13, false, 1, 0, -14, 16)
-	dayL = dl(13, false, 0, 1, 14, -34)
-	dateL = dl(13, false, 0, 1, 14, -14)
+	hourL = dl(42, 0, 0, 10, 4)
+	minL = dl(42, 1, 1, -10, -4)
+	ampmL = dl(15, 1, 0, -12, 10)
+	dayL = dl(14, 0, 1, 12, -30)
+	dateL = dl(14, 0, 1, 12, -12)
 
 	analog = Instance.new('Frame')
-	analog.Size = UDim2.fromOffset(112, 112)
+	analog.Size = UDim2.fromOffset(120, 120)
 	analog.BackgroundTransparency = 1
 	analog.Visible = false
 	analog.Parent = Clock.Children
 	local face = Instance.new('Frame')
-	face.Size = UDim2.fromOffset(96, 96)
+	face.Size = UDim2.fromOffset(100, 100)
 	face.AnchorPoint = Vector2.new(0.5, 0.5)
 	face.Position = UDim2.fromScale(0.5, 0.5)
 	face.BackgroundTransparency = 1
@@ -8919,11 +8951,13 @@ run(function()
 		local tick = Instance.new('Frame')
 		tick.AnchorPoint = Vector2.new(0.5, 0.5)
 		local ang = math.rad(i * 30)
-		tick.Position = UDim2.new(0.5, math.sin(ang) * 42, 0.5, -math.cos(ang) * 42)
+		tick.Position = UDim2.new(0.5, math.sin(ang) * 44, 0.5, -math.cos(ang) * 44)
 		tick.Size = UDim2.fromOffset(i % 3 == 0 and 4 or 2, i % 3 == 0 and 8 or 5)
-		tick.BackgroundColor3 = Color3.fromRGB(170, 170, 170)
+		tick.BackgroundColor3 = Color3.new(1, 1, 1)
+		tick.BackgroundTransparency = 0.15
 		tick.BorderSizePixel = 0
 		tick.Rotation = i * 30
+		tick.ZIndex = 2
 		tick.Parent = face
 	end
 	local function hand(len, w, col)

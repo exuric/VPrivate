@@ -5937,7 +5937,7 @@ run(function()
 						local effectiveMult = (AutoCharge.Enabled or not Aim.Enabled) and 1 or (projmeta.velocityMultiplier or 1)
 						local fireSpeed = projSpeed * effectiveMult
 						local speedScaled = fireSpeed
-						local latency = pingLatency()
+						local latency = 0
 						local aimRoot = rootPart or plr[TargetPart.Value] or plr.Head
 						local rawRootVel = isPearl and Vector3.zero or (aimRoot and (aimRoot.AssemblyLinearVelocity or aimRoot.Velocity) or Vector3.zero)
 						local baseVel = isPearl and Vector3.zero or smoothVel(aimRoot, rawRootVel)

@@ -146,9 +146,10 @@ ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVe
 		local cosT = 1 / bsqrt(1 + u * u)
 		local sinT = u * cosT
 		local vx = dx / horiz * cosT * speed
+		local horizSpeed = cosT * speed
 		local arcTof
-		if babs(vx) > 0.001 then
-			arcTof = dx / vx
+		if horizSpeed > 0.001 then
+			arcTof = horiz / horizSpeed
 		end
 		return Vector3.new(vx, sinT * speed, dz / horiz * cosT * speed), arcTof
 	end
@@ -281,9 +282,10 @@ ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targ
 		local cosT = 1 / bsqrt(1 + u * u)
 		local sinT = u * cosT
 		local vx = dx / horiz * cosT * speed
+		local horizSpeed = cosT * speed
 		local arcTof
-		if babs(vx) > 0.001 then
-			arcTof = dx / vx
+		if horizSpeed > 0.001 then
+			arcTof = horiz / horizSpeed
 		end
 		return Vector3.new(vx, sinT * speed, dz / horiz * cosT * speed), arcTof
 	end

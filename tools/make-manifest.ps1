@@ -10,7 +10,8 @@ $files = @(
 	'games/6872274481.lua',
 	'games/8444591321.lua',
 	'games/100702124803290.lua',
-	'games/119265221596002.lua'
+	'games/119265221596002.lua',
+	'games/77790193039862.lua'
 )
 $tmp = Join-Path $env:TEMP 'larp_manifest'
 if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }

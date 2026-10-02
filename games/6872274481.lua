@@ -174,49 +174,63 @@ ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVe
 		return origin + v2.Unit * speed, tp2, t2
 	end
 
-	local bestGood
-	local vel
-	for iter = 1, 14 do
-		local tp = targetAt(tof)
-		local arcTof
-		vel, arcTof = closedForm(tp)
-		if vel then
-			bestGood = { tof, vel }
-			local newTof
-			if arcTof and arcTof > 0.01 then
-				newTof = bclamp(arcTof, 0.02, 6)
-			else
-				local m = (tp - origin).Magnitude
-				newTof = bclamp(m / speed, 0.02, 6)
+	local function solveArc(t)
+		local pt = targetAt(t)
+		local v, arc = closedForm(pt)
+		return pt, v, arc
+	end
+
+	local N = 36
+	local tmax = 6
+	local prevT, prevF
+	local bestAbs, bestVel, bestPt, bestArc
+	local rootVel, rootPt, rootArc
+	for i = 0, N do
+		local t = 0.02 + (tmax - 0.02) * (i / N)
+		local pt, v, arc = solveArc(t)
+		if v and arc then
+			local f = arc - t
+			local af = babs(f)
+			if not bestAbs or af < bestAbs then
+				bestAbs, bestVel, bestPt, bestArc = af, v, pt, arc
 			end
-			-- relaxation damping prevents ping-pong divergence
-			newTof = 0.55 * newTof + 0.45 * tof
-			if babs(newTof - tof) < 0.002 then
-				tof = newTof
+			if prevF ~= nil and ((prevF <= 0) ~= (f <= 0)) then
+				local a, b, fa = prevT, t, prevF
+				local mVel, mPt, mArc = v, pt, arc
+				for _ = 1, 22 do
+					local m = (a + b) * 0.5
+					local p2, v2, a2 = solveArc(m)
+					if not v2 then break end
+					mVel, mPt, mArc = v2, p2, a2
+					if (fa <= 0) == ((a2 - m) <= 0) then a, fa = m, a2 - m else b = m end
+				end
+				rootVel, rootPt, rootArc = mVel, mPt, mArc
 				break
 			end
-			tof = newTof
+			prevT, prevF = t, f
 		else
-			tof = tof * 0.6
-			if tof < 0.02 then
-				break
-			end
+			prevF = nil
 		end
 	end
 
-	local tp = targetAt(tof)
-	vel = closedForm(tp)
-	if not vel and bestGood then
-		tof, vel = bestGood[1], bestGood[2]
-	end
-	if not vel then
-		local m = (tp - origin).Magnitude
-		if m < 0.001 then
-			return origin + Vector3.new(0, 1, 0) * speed, 0, 0.05
+	local vel, tp, tofOut
+	if rootVel then
+		vel, tp, tofOut = rootVel, rootPt, rootArc
+	elseif bestVel then
+		vel, tp, tofOut = bestVel, bestPt, bestArc
+	else
+		local dx = targetPos.X - origin.X
+		local dz = targetPos.Z - origin.Z
+		local horiz = bsqrt(dx * dx + dz * dz)
+		if horiz < 0.001 then
+			return origin + Vector3.new(0, 1, 0) * speed, targetPos, 0.05
 		end
-		vel = (tp - origin) / m * speed
+		local inv = 0.70710678
+		vel = Vector3.new(dx / horiz * speed * inv, speed * inv, dz / horiz * speed * inv)
+		tp = targetPos
+		tofOut = horiz / (speed * inv)
 	end
-	return origin + vel.Unit * speed, tp, tof
+	return origin + vel.Unit * speed, tp, tofOut
 end
 
 -- Same as SolveTrajectory but forces the STEEP (high) arc solution, useful
@@ -295,48 +309,63 @@ ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targ
 		return origin + v2.Unit * speed, tp2, t2
 	end
 
-	local bestGood
-	local vel
-	for iter = 1, 14 do
-		local tp = targetAt(tof)
-		local arcTof
-		vel, arcTof = closedFormHigh(tp)
-		if vel then
-			bestGood = { tof, vel }
-			local newTof
-			if arcTof and arcTof > 0.01 then
-				newTof = bclamp(arcTof, 0.02, 6)
-			else
-				local m = (tp - origin).Magnitude
-				newTof = bclamp(m / speed, 0.02, 6)
+	local function solveArc(t)
+		local pt = targetAt(t)
+		local v, arc = closedFormHigh(pt)
+		return pt, v, arc
+	end
+
+	local N = 36
+	local tmax = 6
+	local prevT, prevF
+	local bestAbs, bestVel, bestPt, bestArc
+	local rootVel, rootPt, rootArc
+	for i = 0, N do
+		local t = 0.02 + (tmax - 0.02) * (i / N)
+		local pt, v, arc = solveArc(t)
+		if v and arc then
+			local f = arc - t
+			local af = babs(f)
+			if not bestAbs or af < bestAbs then
+				bestAbs, bestVel, bestPt, bestArc = af, v, pt, arc
 			end
-			newTof = 0.55 * newTof + 0.45 * tof
-			if babs(newTof - tof) < 0.002 then
-				tof = newTof
+			if prevF ~= nil and ((prevF <= 0) ~= (f <= 0)) then
+				local a, b, fa = prevT, t, prevF
+				local mVel, mPt, mArc = v, pt, arc
+				for _ = 1, 22 do
+					local m = (a + b) * 0.5
+					local p2, v2, a2 = solveArc(m)
+					if not v2 then break end
+					mVel, mPt, mArc = v2, p2, a2
+					if (fa <= 0) == ((a2 - m) <= 0) then a, fa = m, a2 - m else b = m end
+				end
+				rootVel, rootPt, rootArc = mVel, mPt, mArc
 				break
 			end
-			tof = newTof
+			prevT, prevF = t, f
 		else
-			tof = tof * 0.6
-			if tof < 0.02 then
-				break
-			end
+			prevF = nil
 		end
 	end
 
-	local tp = targetAt(tof)
-	vel = closedFormHigh(tp)
-	if not vel and bestGood then
-		tof, vel = bestGood[1], bestGood[2]
-	end
-	if not vel then
-		local m = (tp - origin).Magnitude
-		if m < 0.001 then
-			return origin + Vector3.new(0, 1, 0) * speed, 0, 0.05
+	local vel, tp, tofOut
+	if rootVel then
+		vel, tp, tofOut = rootVel, rootPt, rootArc
+	elseif bestVel then
+		vel, tp, tofOut = bestVel, bestPt, bestArc
+	else
+		local dx = targetPos.X - origin.X
+		local dz = targetPos.Z - origin.Z
+		local horiz = bsqrt(dx * dx + dz * dz)
+		if horiz < 0.001 then
+			return origin + Vector3.new(0, 1, 0) * speed, targetPos, 0.05
 		end
-		vel = (tp - origin) / m * speed
+		local inv = 0.70710678
+		vel = Vector3.new(dx / horiz * speed * inv, speed * inv, dz / horiz * speed * inv)
+		tp = targetPos
+		tofOut = horiz / (speed * inv)
 	end
-	return origin + vel.Unit * speed, tp, tof
+	return origin + vel.Unit * speed, tp, tofOut
 end
 
 ballistic.IsTrajectoryClear = function(origin, velocity, gravity, maxTime, rayCheck, targetPos, hitRadius)

@@ -97,20 +97,15 @@ end
 local function predictAt(pos, vel, gravity, airborne, st, t)
 	local hv = Vector3.new(vel.X, 0, vel.Z)
 	local vy = vel.Y
-	if hv.Magnitude < 2 and babs(vy) < 2 then
+	if hv.Magnitude < 1 and babs(vy) < 1 then
 		return pos
 	end
-	local leadT = t
-	if st and st.half and (st.seen or 0) >= 2 and st.lastRev then
-		local toRev = st.half - ((os.clock() - st.lastRev) % st.half)
-		leadT = bclamp(t, 0, math.max(toRev, 0.04))
-	end
-	local horiz = hv * leadT
+	local horiz = hv * t
 	local y = (airborne and gravity > 0) and (pos.Y + vy * t - 0.5 * gravity * t * t) or (pos.Y + vy * t)
 	return Vector3.new(pos.X + horiz.X, y, pos.Z + horiz.Z)
 end
 
-ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVel, targetGravity, hipHeight, jumpSpeed, rayCheck, targetAirborne, targetRootPos, targetRoot, extraA, extraB)
+ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVel, targetGravity, hipHeight, jumpSpeed, rayCheck, targetAirborne, targetRootPos, targetRoot, leadExtra, extraB)
 	origin = origin or Vector3.zero
 	targetPos = targetPos or origin
 	targetVel = targetVel or Vector3.zero
@@ -119,8 +114,9 @@ ballistic.SolveTrajectory = function(origin, speed, gravity, targetPos, targetVe
 	targetGravity = targetGravity or workspace.Gravity or 196.2
 
 	local strafe = updateStrafe(targetRoot, targetVel)
+	local lead = leadExtra or 0
 	local function targetAt(t)
-		return predictAt(targetPos, targetVel, targetGravity, targetAirborne, strafe, t)
+		return predictAt(targetPos, targetVel, targetGravity, targetAirborne, strafe, t + lead)
 	end
 
 	local function closedForm(target)
@@ -225,7 +221,7 @@ end
 
 -- Same as SolveTrajectory but forces the STEEP (high) arc solution, useful
 -- for clearing walls with bows/crossbows where the flat arc would be blocked.
-ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targetVel, targetGravity, hipHeight, jumpSpeed, rayCheck, targetAirborne, targetRootPos, targetRoot, extraA, extraB)
+ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targetVel, targetGravity, hipHeight, jumpSpeed, rayCheck, targetAirborne, targetRootPos, targetRoot, leadExtra, extraB)
 	origin = origin or Vector3.zero
 	targetPos = targetPos or origin
 	targetVel = targetVel or Vector3.zero
@@ -234,8 +230,9 @@ ballistic.SolveTrajectoryHigh = function(origin, speed, gravity, targetPos, targ
 	targetGravity = targetGravity or workspace.Gravity or 196.2
 
 	local strafe = updateStrafe(targetRoot, targetVel)
+	local lead = leadExtra or 0
 	local function targetAt(t)
-		return predictAt(targetPos, targetVel, targetGravity, targetAirborne, strafe, t)
+		return predictAt(targetPos, targetVel, targetGravity, targetAirborne, strafe, t + lead)
 	end
 
 	local function closedFormHigh(target)
@@ -5711,18 +5708,41 @@ run(function()
 			velEMA[part] = { s = {{pos, now}}, vel = raw }
 			return raw
 		end
-		local last = st.s[#st.s]
-		if now - last[2] >= 0.006 then
-			if (pos - last[1]).Magnitude > 30 then
-				st.s = {{pos, now}}
-				st.vel = Vector3.zero
-			else
-				st.s[#st.s + 1] = {pos, now}
-				while #st.s > 2 and now - st.s[1][2] > 0.09 do table.remove(st.s, 1) end
-				local first = st.s[1]
-				local span = now - first[2]
-				if span >= 0.02 then st.vel = (pos - first[1]) / span end
+		local s = st.s
+		local last = s[#s]
+		if (pos - last[1]).Magnitude > 30 then
+			st.s = {{pos, now}}
+			st.vel = Vector3.zero
+			return st.vel
+		end
+		if now - last[2] >= 0.004 then
+			s[#s + 1] = {pos, now}
+			while #s > 2 and now - s[1][2] > 0.14 do table.remove(s, 1) end
+		end
+		local n = #s
+		if n >= 3 then
+			local t0 = s[1][2]
+			local mt, mx, my, mz = 0, 0, 0, 0
+			for i = 1, n do
+				local e = s[i]
+				mt += (e[2] - t0); mx += e[1].X; my += e[1].Y; mz += e[1].Z
 			end
+			mt /= n; mx /= n; my /= n; mz /= n
+			local stt, sx, sy, sz = 0, 0, 0, 0
+			for i = 1, n do
+				local e = s[i]
+				local dt = (e[2] - t0) - mt
+				stt += dt * dt
+				sx += dt * (e[1].X - mx)
+				sy += dt * (e[1].Y - my)
+				sz += dt * (e[1].Z - mz)
+			end
+			if stt > 1e-6 then
+				st.vel = Vector3.new(sx / stt, sy / stt, sz / stt)
+			end
+		elseif n == 2 then
+			local dt = s[2][2] - s[1][2]
+			if dt > 0 then st.vel = (s[2][1] - s[1][1]) / dt end
 		end
 		return st.vel
 	end
@@ -5747,6 +5767,27 @@ run(function()
 		})
 		if t and isPot(t) and not (Targets.Pot and Targets.Pot.Enabled) then return nil end
 		return t
+	end
+	local function nearestTarget(originPos)
+		if not originPos then return nil end
+		local best, bestD
+		for _, ent in entitylib.List do
+			if ent and ent.Character and entitylib.isVulnerable(ent) and entitylib.targetCheck(ent) then
+				local ok = (ent.Player and Targets.Players.Enabled)
+					or (ent.NPC and Targets.NPCs.Enabled)
+					or (isPot(ent) and Targets.Pot and Targets.Pot.Enabled)
+				if ok then
+					local root = ent.RootPart or ent.HumanoidRootPart
+					if root and root.Parent then
+						if (not Targets.Walls.Enabled) or (not entitylib.Wallcheck(originPos, root.Position)) then
+							local d = (root.Position - originPos).Magnitude
+							if not bestD or d < bestD then best, bestD = ent, d end
+						end
+					end
+				end
+			end
+		end
+		return best
 	end
 		local ProjectileAimbot = larp.Categories.Blatant:CreateModule({
 		Name = 'ProjectileAimbot',
@@ -5795,12 +5836,15 @@ run(function()
 				if not plr and lockedTarget then
 					local held = lockedTarget
 					local heldRoot = held.RootPart or held.HumanoidRootPart or (held.Character and (held.Character.PrimaryPart or held.Character:FindFirstChild('HumanoidRootPart')))
-					if heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled) or (isPot(held) and potOn)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, heldRoot.Position)) and tick() - (lockedTime or 0) < 0.6 then
+					if heldRoot and heldRoot.Parent and held.Character and entitylib.isVulnerable(held) and entitylib.targetCheck(held) and ((held.Player and Targets.Players.Enabled) or (held.NPC and Targets.NPCs.Enabled) or (isPot(held) and potOn)) and (not Targets.Walls.Enabled or not entitylib.Wallcheck(originPos, heldRoot.Position)) and tick() - (lockedTime or 0) < 0.9 then
 						plr = held
 					end
 				end
 				if not plr and potOn then
 					plr = pickPot()
+				end
+				if not plr then
+					plr = nearestTarget(originPos)
 				end
 					if plr then lockedTarget, lockedTime = plr, tick() end
 					if plr then
@@ -5861,8 +5905,12 @@ run(function()
 						local isPearl = projmeta.projectile == 'telepearl'
 						local effectiveMult = (AutoCharge.Enabled or not Aim.Enabled) and 1 or (projmeta.velocityMultiplier or 1)
 						local fireSpeed = projSpeed * effectiveMult
-						local speedScaled = fireSpeed * Prediction.Value
+						local speedScaled = fireSpeed
 						local latency = pingLatency()
+						local aimRoot = rootPart or plr[TargetPart.Value] or plr.Head
+						local rawRootVel = isPearl and Vector3.zero or (aimRoot and (aimRoot.AssemblyLinearVelocity or aimRoot.Velocity) or Vector3.zero)
+						local baseVel = isPearl and Vector3.zero or smoothVel(aimRoot, rawRootVel)
+						local leadVel = isPearl and Vector3.zero or (Vector3.new(baseVel.X, airborne and rawRootVel.Y or baseVel.Y, baseVel.Z) * Prediction.Value)
 						local hasHighArc = typeof(prediction.SolveTrajectoryHigh) == 'function'
 						
 						local partOrder
@@ -5879,7 +5927,7 @@ run(function()
 						local wantHigh = arcMode[plr] == 'high'
 						local function evaluate(origin3, tpos, vel, resolvedRootPos, resolvedRoot, solver, useAirborne)
 							if not solver then return nil end
-							local okSolve, calc, impact, travelTime = pcall(solver, origin3, speedScaled, gravity, tpos, vel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, useAirborne, resolvedRootPos, resolvedRoot, nil, true)
+							local okSolve, calc, impact, travelTime = pcall(solver, origin3, speedScaled, gravity, tpos, vel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, useAirborne, resolvedRootPos, resolvedRoot, latency, true)
 							if not okSolve or not calc or not travelTime then return nil end
 							if travelTime <= 0 or travelTime > lifetime * 1.1 then return nil end
 							local dir = CFrame.new(origin3, calc).LookVector * fireSpeed
@@ -5890,11 +5938,7 @@ run(function()
 							local tpart = plr[name]
 							if tpart and tpart.Position then
 								local tpos = tpart.Position
-								local rawVel = isPearl and Vector3.zero or (tpart.AssemblyLinearVelocity or tpart.Velocity or (rootPart and (rootPart.AssemblyLinearVelocity or rootPart.Velocity)) or Vector3.zero)
-								local vel = isPearl and Vector3.zero or smoothVel(tpart, rawVel)
-								if latency > 0 and not isPearl then
-									tpos = tpos + Vector3.new(vel.X, airborne and vel.Y or 0, vel.Z) * latency
-								end
+								local vel = leadVel
 								local resolvedRootPos = rootPos or tpos
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
@@ -5949,14 +5993,6 @@ run(function()
 							end
 						end
 						if best then
-							local prevDir = aimSmooth[plr]
-							if prevDir and (best.dir - prevDir).Magnitude < fireSpeed * 0.25 then
-								best = { dir = prevDir:Lerp(best.dir, 0.85), from = best.from, travelTime = best.travelTime }
-							end
-							aimSmooth[plr] = best.dir
-						end
-
-						if best then
 							getgenv()._larpProjAimCache = { plr = plr, at = tick(), best = best }
 							if targetinfo then targetinfo.Targets[plr] = tick() + 1 end
 							return {
@@ -5981,7 +6017,17 @@ run(function()
 
 	runService.Heartbeat:Connect(function()
 		if not ProjectileAimbot.Enabled then return end
-		local t = acquire()
+		if not (entitylib.isAlive and entitylib.character and entitylib.character.RootPart) then
+			lockedTarget, lockedTime = nil, nil
+			return
+		end
+		for _, ent in entitylib.List do
+			local eroot = ent and (ent.RootPart or ent.HumanoidRootPart)
+			if eroot and eroot.Parent then
+				smoothVel(eroot, eroot.AssemblyLinearVelocity or eroot.Velocity)
+			end
+		end
+		local t = acquire() or nearestTarget(entitylib.character.RootPart.Position)
 		if t then
 			lockedTarget, lockedTime = t, tick()
 		elseif lockedTarget then

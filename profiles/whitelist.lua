@@ -28,6 +28,7 @@ end
 local KEY = uhex('4433764b337935')
 local SEED = {
 	uhex('0d7a1a275f157c287a3f277a15590d7a1a'),
+	uhex('205a05285a0959215c102c5c1d51'),
 	uhex('284b043b654d')
 }
 

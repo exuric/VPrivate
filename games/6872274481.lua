@@ -4051,6 +4051,7 @@ run(function()
 end)
 
 run(function()
+	warn('KA_START')
 	local Killaura, Targets, SwingRange, AttackRange, MaxAngle, LimitItems, SwingOnly, SwingAnim, SwingSpeed, HitReg
 	local SwordController, EntityUtil
 	local realSwing, realCanSee
@@ -4280,6 +4281,7 @@ run(function()
 		Default = true,
 		Tooltip = 'Plays the real sword swing animation, matched to your swings'
 	})
+	warn('KA_DONE')
 end)
 
 run(function()

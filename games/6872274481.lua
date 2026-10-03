@@ -4153,8 +4153,24 @@ run(function()
 		local e = toEntity(ent)
 		if not e then return false end
 		local ts = swingTime or workspace:GetServerTimeNow()
+		local char = entitylib.character and entitylib.character.Character
+		local hrp = char and char.PrimaryPart
+		local troot = ent.RootPart or ent.HumanoidRootPart
+		local spoofed = false
+		local realCF
+		if hrp and troot then
+			local tpos = troot.Position
+			realCF = hrp.CFrame
+			if (tpos - realCF.Position).Magnitude > 13 then
+				local dir = tpos - realCF.Position
+				dir = dir.Magnitude > 0.01 and dir.Unit or realCF.LookVector
+				hrp.CFrame = CFrame.new(tpos - dir * 10, tpos)
+				spoofed = true
+			end
+		end
 		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts })
 		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts + 0.015 })
+		if spoofed and hrp and realCF then hrp.CFrame = realCF end
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
 		store.meleeHit = os.clock()

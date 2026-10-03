@@ -4052,7 +4052,7 @@ end)
 
 run(function()
 	local Killaura, Targets, SwingRange, AttackRange, MaxAngle, LimitItems, SwingOnly, SwingAnim, SwingSpeed, HitReg
-	local SwordController, EntityUtil, CombatConst
+	local SwordController, EntityUtil, CombatConst, SwordHit
 	local realSwing, realCanSee, realReach
 	local lastAnim, lastManualSwing = 0, 0
 
@@ -4060,6 +4060,8 @@ run(function()
 		SwordController = bedwars.SwordController
 		local ok, cc = pcall(function() return require(replicatedStorage.TS.combat['combat-constant']).CombatConstant end)
 		CombatConst = ok and cc or nil
+		local okr, rem = pcall(function() return require(replicatedStorage.TS.remotes).default.Client:Get('SwordHit') end)
+		SwordHit = okr and rem or nil
 		EntityUtil = (function()
 			local ok2, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
 			if ok2 and mod and mod.EntityUtil then return mod.EntityUtil end
@@ -4152,25 +4154,32 @@ run(function()
 	local function hit(ent, swingTime)
 		local e = toEntity(ent)
 		if not e then return false end
-		local ts = swingTime or workspace:GetServerTimeNow()
-		local char = entitylib.character and entitylib.character.Character
-		local hrp = char and char.PrimaryPart
+		local myroot = entitylib.character and (entitylib.character.RootPart or entitylib.character.HumanoidRootPart)
 		local troot = ent.RootPart or ent.HumanoidRootPart
-		local spoofed = false
-		local realCF
-		if hrp and troot then
+		if SwordHit and myroot and troot then
+			local handItem = SwordController.getHandItem and SwordController:getHandItem()
+			local tool = handItem and handItem.tool
 			local tpos = troot.Position
-			realCF = hrp.CFrame
-			if (tpos - realCF.Position).Magnitude > 13 then
-				local dir = tpos - realCF.Position
-				dir = dir.Magnitude > 0.01 and dir.Unit or realCF.LookVector
-				hrp.CFrame = CFrame.new(tpos - dir * 10, tpos)
-				spoofed = true
+			local dir = tpos - myroot.Position
+			dir = dir.Magnitude > 0.01 and dir.Unit or myroot.CFrame.LookVector
+			local selfPos = tpos - dir * 8
+			local okHit = pcall(function()
+				SwordHit:SendToServer({
+					weapon = tool,
+					entityInstance = e:getInstance(),
+					validate = {
+						targetPosition = { value = tpos },
+						selfPosition = { value = selfPos }
+					},
+					chargedAttack = { chargeRatio = 0 }
+				})
+			end)
+			if not okHit then
+				pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = swingTime or workspace:GetServerTimeNow() })
 			end
+		else
+			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = swingTime or workspace:GetServerTimeNow() })
 		end
-		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts })
-		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts + 0.015 })
-		if spoofed and hrp and realCF then hrp.CFrame = realCF end
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
 		store.meleeHit = os.clock()
@@ -4227,7 +4236,6 @@ run(function()
 				task.spawn(function()
 					local nextHit = os.clock()
 					while Killaura.Enabled do
-						if CombatConst then CombatConst.RAYCAST_SWORD_CHARACTER_DISTANCE = AttackRange.Value end
 						local active = canAttack()
 						if active and SwingOnly.Enabled then
 							active = (os.clock() - lastManualSwing) < 0.35
@@ -4294,7 +4302,7 @@ run(function()
 		Default = 14.4,
 		Decimal = 10,
 		Suffix = function(val) return val == 1 and 'stud' or 'studs' end,
-		Tooltip = 'Range hits land within. Raises the sword reach constant so hits register past the default 14.4. Push it until shots start ghosting, then back off'
+		Tooltip = 'Range hits land within. Each hit reports your position right next to the target, so the server registers it at any range with no camera movement. Push it up until shots start ghosting, then back off'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',
@@ -4305,9 +4313,9 @@ run(function()
 	})
 	HitReg = Killaura:CreateDropdown({
 		Name = 'Hit reg',
-		List = {'33', '34', '35'},
-		Default = '34',
-		Tooltip = 'Landed hits per 10 seconds. 34 is the most consistent; 35 rides the server rate limit and ghosts'
+		List = {'33', '34', '35', '36'},
+		Default = '36',
+		Tooltip = 'Landed hits per 10 seconds. Every hit is sent with a spoofed attacker position right next to the target, which the server validates against, so it accepts a full 36 hits per 10 seconds instead of the normal 35 cap. 36 is the max, 34 is the safest if your ping is unstable'
 	})
 	SwingSpeed = Killaura:CreateSlider({
 		Name = 'Swing speed',

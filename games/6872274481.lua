@@ -4151,34 +4151,22 @@ run(function()
 		end
 	end
 
-	local function hit(ent, swingTime)
+	local function hit(ent)
 		local e = toEntity(ent)
 		if not e then return false end
-		local myroot = entitylib.character and (entitylib.character.RootPart or entitylib.character.HumanoidRootPart)
+		local char = entitylib.character and entitylib.character.Character
+		local hrp = char and char.PrimaryPart
 		local troot = ent.RootPart or ent.HumanoidRootPart
-		if SwordHit and myroot and troot then
-			local handItem = SwordController.getHandItem and SwordController:getHandItem()
-			local tool = handItem and handItem.tool
+		if hrp and troot then
 			local tpos = troot.Position
-			local dir = tpos - myroot.Position
-			dir = dir.Magnitude > 0.01 and dir.Unit or myroot.CFrame.LookVector
-			local selfPos = tpos - dir * 8
-			local okHit = pcall(function()
-				SwordHit:SendToServer({
-					weapon = tool,
-					entityInstance = e:getInstance(),
-					validate = {
-						targetPosition = { value = tpos },
-						selfPosition = { value = selfPos }
-					},
-					chargedAttack = { chargeRatio = 0 }
-				})
-			end)
-			if not okHit then
-				pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = swingTime or workspace:GetServerTimeNow() })
-			end
+			local realCF = hrp.CFrame
+			local dir = tpos - realCF.Position
+			dir = dir.Magnitude > 0.01 and dir.Unit or realCF.LookVector
+			hrp.CFrame = CFrame.new(tpos - dir * 4, tpos)
+			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
+			hrp.CFrame = realCF
 		else
-			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = swingTime or workspace:GetServerTimeNow() })
+			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
 		end
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
@@ -4234,7 +4222,7 @@ run(function()
 					return realSwing(self, ...)
 				end
 				task.spawn(function()
-					local nextHit = os.clock()
+					local nextHit = workspace:GetServerTimeNow()
 					while Killaura.Enabled do
 						local active = canAttack()
 						if active and SwingOnly.Enabled then
@@ -4245,20 +4233,20 @@ run(function()
 							local t = pickTarget(AttackRange.Value)
 							if t then
 								store.KillauraTarget = t
-								local now = os.clock()
+								local snow = workspace:GetServerTimeNow()
 								local iv = hitInterval()
-								if now >= nextHit then
+								if snow >= nextHit then
 									hit(t)
 									nextHit = nextHit + iv
-									if nextHit < now - iv then nextHit = now + iv end
+									if nextHit < snow then nextHit = snow + iv end
 								end
 							else
 								store.KillauraTarget = nil
-								nextHit = os.clock()
+								nextHit = workspace:GetServerTimeNow() + hitInterval()
 							end
 						else
 							store.KillauraTarget = nil
-							nextHit = os.clock()
+							nextHit = workspace:GetServerTimeNow() + hitInterval()
 						end
 						task.wait()
 					end
@@ -4314,8 +4302,8 @@ run(function()
 	HitReg = Killaura:CreateDropdown({
 		Name = 'Hit reg',
 		List = {'33', '34', '35', '36'},
-		Default = '36',
-		Tooltip = 'Hits per 10 seconds. Position spoof pushes it to 36, past the normal 35 cap. Lower it if your ping ghosts'
+		Default = '34',
+		Tooltip = 'Swing rate per 10 seconds, evenly spaced. 34 lands the most (the position spoof pushes it to 35 or 36). Higher settings send too fast and the server drops them, so keep it at 34'
 	})
 	SwingSpeed = Killaura:CreateSlider({
 		Name = 'Swing speed',

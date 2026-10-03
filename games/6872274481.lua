@@ -4051,7 +4051,6 @@ run(function()
 end)
 
 run(function()
-	warn('KA_START')
 	local Killaura, Targets, SwingRange, AttackRange, MaxAngle, LimitItems, SwingOnly, SwingAnim, SwingSpeed, HitReg
 	local SwordController, EntityUtil
 	local realSwing, realCanSee
@@ -4098,11 +4097,19 @@ run(function()
 		return false
 	end
 
+	local function ensureEntityUtil()
+		if EntityUtil then return EntityUtil end
+		local ok, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
+		if ok and mod and mod.EntityUtil then EntityUtil = mod.EntityUtil end
+		return EntityUtil
+	end
+
 	local function toEntity(ent)
-		if not EntityUtil or not ent then return nil end
-		local e = ent.Character and EntityUtil:getEntity(ent.Character)
+		local eu = ensureEntityUtil()
+		if not eu or not ent then return nil end
+		local e = ent.Character and eu:getEntity(ent.Character)
 		if not e and ent.RootPart and ent.RootPart.Parent then
-			e = EntityUtil:getEntity(ent.RootPart.Parent)
+			e = eu:getEntity(ent.RootPart.Parent)
 		end
 		return e
 	end
@@ -4281,7 +4288,6 @@ run(function()
 		Default = true,
 		Tooltip = 'Plays the real sword swing animation, matched to your swings'
 	})
-	warn('KA_DONE')
 end)
 
 run(function()

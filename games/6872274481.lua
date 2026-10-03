@@ -4248,16 +4248,9 @@ run(function()
 								local now = os.clock()
 								local iv = hitInterval()
 								if now >= nextHit then
-									hit(t, workspace:GetServerTimeNow())
+									hit(t)
 									nextHit = nextHit + iv
 									if nextHit < now - iv then nextHit = now + iv end
-								end
-								if SwingAnim.Enabled then
-									local gap = SwingSpeed.Value > 0 and SwingSpeed.Value or 0.05
-									if now - lastAnim >= gap and pickTarget(SwingRange.Value) then
-										lastAnim = now
-										playAnim()
-									end
 								end
 							else
 								store.KillauraTarget = nil
@@ -4269,7 +4262,14 @@ run(function()
 						end
 						task.wait()
 					end
-					if CombatConst and realReach then CombatConst.RAYCAST_SWORD_CHARACTER_DISTANCE = realReach end
+				end)
+				task.spawn(function()
+					while Killaura.Enabled do
+						if SwingAnim.Enabled and store.KillauraTarget and entitylib.isAlive then
+							pcall(playAnim)
+						end
+						task.wait(SwingSpeed.Value > 0 and SwingSpeed.Value or 0.1)
+					end
 				end)
 			else
 				store.KillauraTarget = nil
@@ -4315,7 +4315,7 @@ run(function()
 		Name = 'Hit reg',
 		List = {'33', '34', '35', '36'},
 		Default = '36',
-		Tooltip = 'Landed hits per 10 seconds. Every hit is sent with a spoofed attacker position right next to the target, which the server validates against, so it accepts a full 36 hits per 10 seconds instead of the normal 35 cap. 36 is the max, 34 is the safest if your ping is unstable'
+		Tooltip = 'Hits per 10 seconds. Position spoof pushes it to 36, past the normal 35 cap. Lower it if your ping ghosts'
 	})
 	SwingSpeed = Killaura:CreateSlider({
 		Name = 'Swing speed',

@@ -4052,15 +4052,17 @@ end)
 
 run(function()
 	local Killaura, Targets, SwingRange, AttackRange, MaxAngle, LimitItems, SwingOnly, SwingAnim, SwingSpeed, HitReg
-	local SwordController, EntityUtil
-	local realSwing, realCanSee
-	local lastHit, lastAnim = 0, 0
+	local SwordController, EntityUtil, CombatConst
+	local realSwing, realCanSee, realReach
+	local lastAnim, lastManualSwing = 0, 0
 
 	local function resolve()
 		SwordController = bedwars.SwordController
+		local ok, cc = pcall(function() return require(replicatedStorage.TS.combat['combat-constant']).CombatConstant end)
+		CombatConst = ok and cc or nil
 		EntityUtil = (function()
-			local ok, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
-			if ok and mod and mod.EntityUtil then return mod.EntityUtil end
+			local ok2, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
+			if ok2 and mod and mod.EntityUtil then return mod.EntityUtil end
 			for _, v in getgc(true) do
 				if type(v) == 'table' and rawget(v, 'getLocalPlayerEntity') and rawget(v, 'getAliveEnemyEntityInstances') then
 					return v
@@ -4147,13 +4149,34 @@ run(function()
 		end
 	end
 
-	local function hit(ent)
+	local function hit(ent, swingTime)
 		local e = toEntity(ent)
-		if not e then return end
-		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
+		if not e then return false end
+		local ts = swingTime or workspace:GetServerTimeNow()
+		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts })
+		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts + 0.015 })
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
 		store.meleeHit = os.clock()
+		return true
+	end
+
+	local function bestSwordSlot()
+		if not (store.inventory and store.inventory.hotbar) then return nil end
+		local slot, dmg = nil, -1
+		for s, item in pairs(store.inventory.hotbar) do
+			local m = item and item.itemType and bedwars.ItemMeta[item.itemType]
+			if m and m.sword and (m.sword.damage or 0) > dmg then slot, dmg = s, m.sword.damage or 0 end
+		end
+		return slot
+	end
+
+	local function ensureSword()
+		if handIsSword() then return end
+		local slot = bestSwordSlot()
+		if slot and store.inventory and store.inventory.hotbarSlot ~= slot then
+			pcall(function() bedwars.Store:dispatch({ type = 'InventorySelectHotbarSlot', slot = slot }) end)
+		end
 	end
 
 	local function canAttack()
@@ -4176,36 +4199,34 @@ run(function()
 				resolve()
 				realSwing = SwordController.swingSwordInRegion
 				realCanSee = SwordController.canSee
+				realReach = CombatConst and CombatConst.RAYCAST_SWORD_CHARACTER_DISTANCE
 				SwordController.canSee = function(self, ent)
 					if Targets.Walls and not Targets.Walls.Enabled then return true end
 					return realCanSee(self, ent)
 				end
 				SwordController.swingSwordInRegion = function(self, ...)
-					if SwingOnly.Enabled and canAttack() then
-						local t = pickTarget(math.min(AttackRange.Value, maxReach()))
-						if t then
-							store.KillauraTarget = t
-							if os.clock() - lastHit >= hitInterval() then
-								lastHit = os.clock()
-								hit(t)
-							end
-						end
-						if SwingAnim.Enabled then playAnim() end
-						return true
-					end
+					lastManualSwing = os.clock()
 					return realSwing(self, ...)
 				end
 				task.spawn(function()
+					local nextHit = os.clock()
 					while Killaura.Enabled do
-						if not SwingOnly.Enabled and canAttack() then
-							local reach = math.min(AttackRange.Value, maxReach())
-							local t = pickTarget(reach)
+						if CombatConst then CombatConst.RAYCAST_SWORD_CHARACTER_DISTANCE = AttackRange.Value end
+						local active = canAttack()
+						if active and SwingOnly.Enabled then
+							active = (os.clock() - lastManualSwing) < 0.35
+						end
+						if active then
+							if not LimitItems.Enabled then ensureSword() end
+							local t = pickTarget(AttackRange.Value)
 							if t then
 								store.KillauraTarget = t
 								local now = os.clock()
-								if now - lastHit >= hitInterval() then
-									lastHit = now
-									hit(t)
+								local iv = hitInterval()
+								if now >= nextHit then
+									hit(t, workspace:GetServerTimeNow())
+									nextHit = nextHit + iv
+									if nextHit < now - iv then nextHit = now + iv end
 								end
 								if SwingAnim.Enabled then
 									local gap = SwingSpeed.Value > 0 and SwingSpeed.Value or 0.05
@@ -4216,16 +4237,22 @@ run(function()
 								end
 							else
 								store.KillauraTarget = nil
+								nextHit = os.clock()
 							end
+						else
+							store.KillauraTarget = nil
+							nextHit = os.clock()
 						end
 						task.wait()
 					end
+					if CombatConst and realReach then CombatConst.RAYCAST_SWORD_CHARACTER_DISTANCE = realReach end
 				end)
 			else
 				store.KillauraTarget = nil
 				if realSwing then SwordController.swingSwordInRegion = realSwing end
 				if realCanSee then SwordController.canSee = realCanSee end
-				realSwing, realCanSee, SwordController, EntityUtil = nil, nil, nil, nil
+				if CombatConst and realReach then CombatConst.RAYCAST_SWORD_CHARACTER_DISTANCE = realReach end
+				realSwing, realCanSee, SwordController, EntityUtil, CombatConst = nil, nil, nil, nil, nil
 			end
 		end,
 		Tooltip = 'Attacks targets around you without aiming'
@@ -4247,11 +4274,11 @@ run(function()
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
 		Min = 1,
-		Max = 18,
+		Max = 30,
 		Default = 14.4,
 		Decimal = 10,
 		Suffix = function(val) return val == 1 and 'stud' or 'studs' end,
-		Tooltip = 'Range hits land within. Capped to the sword server max (14.4 studs) so every hit registers'
+		Tooltip = 'Range hits land within. Raises the sword reach constant so hits register past the default 14.4. Push it until shots start ghosting, then back off'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',
@@ -4270,18 +4297,18 @@ run(function()
 		Name = 'Swing speed',
 		Min = 0.03,
 		Max = 0.5,
-		Default = 0.08,
+		Default = 0.12,
 		Decimal = 100,
 		Suffix = 'seconds',
 		Tooltip = 'Time between swing animations. Low = fast, more visual swings so it never looks like it ghosts. Independent of the hit rate'
 	})
 	LimitItems = Killaura:CreateToggle({
 		Name = 'Limit to items',
-		Tooltip = 'Only attack while holding a sword.\nOff: attack with anything, even empty-handed or with a bow'
+		Tooltip = 'Only attack while a sword is held.\nOff: swaps to your sword to attack even with a bow or other item out'
 	})
 	SwingOnly = Killaura:CreateToggle({
 		Name = 'Swing only',
-		Tooltip = 'Only attacks when you swing'
+		Tooltip = 'Only attacks while you are swinging. Your swings drive the full hit rate'
 	})
 	SwingAnim = Killaura:CreateToggle({
 		Name = 'Swing animation',

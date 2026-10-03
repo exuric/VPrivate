@@ -4154,20 +4154,7 @@ run(function()
 	local function hit(ent)
 		local e = toEntity(ent)
 		if not e then return false end
-		local char = entitylib.character and entitylib.character.Character
-		local hrp = char and char.PrimaryPart
-		local troot = ent.RootPart or ent.HumanoidRootPart
-		if hrp and troot then
-			local tpos = troot.Position
-			local realCF = hrp.CFrame
-			local dir = tpos - realCF.Position
-			dir = dir.Magnitude > 0.01 and dir.Unit or realCF.LookVector
-			hrp.CFrame = CFrame.new(tpos - dir * 4, tpos)
-			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
-			hrp.CFrame = realCF
-		else
-			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
-		end
+		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
 		store.meleeHit = os.clock()
@@ -4290,7 +4277,7 @@ run(function()
 		Default = 14.4,
 		Decimal = 10,
 		Suffix = function(val) return val == 1 and 'stud' or 'studs' end,
-		Tooltip = 'Range hits land within. Each hit reports your position right next to the target, so the server registers it at any range with no camera movement. Push it up until shots start ghosting, then back off'
+		Tooltip = 'Range hits land within. The server only registers up to roughly its own reach tolerance, so keep it near 14'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',
@@ -4301,9 +4288,9 @@ run(function()
 	})
 	HitReg = Killaura:CreateDropdown({
 		Name = 'Hit reg',
-		List = {'33', '34', '35', '36'},
+		List = {'33', '34', '35'},
 		Default = '34',
-		Tooltip = 'Swing rate per 10 seconds, evenly spaced. 34 lands the most (the position spoof pushes it to 35 or 36). Higher settings send too fast and the server drops them, so keep it at 34'
+		Tooltip = 'Swing rate per 10 seconds, evenly spaced. 34 is the most consistent; higher sends too fast and the server drops hits'
 	})
 	SwingSpeed = Killaura:CreateSlider({
 		Name = 'Swing speed',

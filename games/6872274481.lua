@@ -4147,7 +4147,7 @@ run(function()
 		local h = handItem()
 		local m = h and h.itemType and bedwars.ItemMeta[h.itemType]
 		if m and SwordController then
-			pcall(SwordController.playSwordEffect, SwordController, m, false, { playAnimation = true, playSound = true })
+			pcall(SwordController.playSwordEffect, SwordController, m, false, { playAnimation = true, playSound = false })
 		end
 	end
 

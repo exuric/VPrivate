@@ -4162,8 +4162,10 @@ run(function()
 			local realCF = hrp.CFrame
 			local dir = tpos - realCF.Position
 			dir = dir.Magnitude > 0.01 and dir.Unit or realCF.LookVector
+			local ts = workspace:GetServerTimeNow()
 			hrp.CFrame = CFrame.new(tpos - dir * 4, tpos)
-			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
+			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts })
+			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts + 0.015 })
 			hrp.CFrame = realCF
 		else
 			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })

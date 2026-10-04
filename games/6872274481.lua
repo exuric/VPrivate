@@ -4154,7 +4154,9 @@ run(function()
 	local function hit(ent)
 		local e = toEntity(ent)
 		if not e then return false end
-		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
+		local ts = workspace:GetServerTimeNow()
+		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts })
+		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts + 0.015 })
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
 		store.meleeHit = os.clock()
@@ -4288,9 +4290,9 @@ run(function()
 	})
 	HitReg = Killaura:CreateDropdown({
 		Name = 'Hit reg',
-		List = {'33', '34', '35'},
-		Default = '34',
-		Tooltip = 'Swing rate per 10 seconds, evenly spaced. 34 is the most consistent; higher sends too fast and the server drops hits'
+		List = {'33', '34', '35', '36'},
+		Default = '35',
+		Tooltip = 'Swing rate per 10 seconds, evenly spaced, two packets per swing so the second catches what the first drops. 35 lands a full 36; drop it if your ping ghosts'
 	})
 	SwingSpeed = Killaura:CreateSlider({
 		Name = 'Swing speed',

@@ -4163,9 +4163,13 @@ run(function()
 			local dir = tpos - realCF.Position
 			dir = dir.Magnitude > 0.01 and dir.Unit or realCF.LookVector
 			local ts = workspace:GetServerTimeNow()
-			hrp.CFrame = CFrame.new(tpos - dir * 4, tpos)
+			hrp.CFrame = CFrame.new(tpos - dir * 10, tpos)
 			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts })
-			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts + 0.015 })
+			task.wait(0.02)
+			if entitylib.isAlive and ent and ent.RootPart then
+				hrp.CFrame = CFrame.new(ent.RootPart.Position - dir * 10, ent.RootPart.Position)
+				pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts + 0.02 })
+			end
 			hrp.CFrame = realCF
 		else
 			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
@@ -4224,7 +4228,7 @@ run(function()
 					return realSwing(self, ...)
 				end
 				task.spawn(function()
-					local nextHit = workspace:GetServerTimeNow()
+					local nextHit = os.clock()
 					while Killaura.Enabled do
 						local active = canAttack()
 						if active and SwingOnly.Enabled then
@@ -4235,20 +4239,20 @@ run(function()
 							local t = pickTarget(AttackRange.Value)
 							if t then
 								store.KillauraTarget = t
-								local snow = workspace:GetServerTimeNow()
+								local now = os.clock()
 								local iv = hitInterval()
-								if snow >= nextHit then
+								if now >= nextHit then
 									hit(t)
 									nextHit = nextHit + iv
-									if nextHit < snow then nextHit = snow + iv end
+									if nextHit < now - iv then nextHit = now + iv end
 								end
 							else
 								store.KillauraTarget = nil
-								nextHit = workspace:GetServerTimeNow() + hitInterval()
+								nextHit = os.clock() + hitInterval()
 							end
 						else
 							store.KillauraTarget = nil
-							nextHit = workspace:GetServerTimeNow() + hitInterval()
+							nextHit = os.clock() + hitInterval()
 						end
 						task.wait()
 					end

@@ -9514,6 +9514,8 @@ run(function()
 	
 	Memory = larp.Legit:CreateModule({
 		Name = 'Memory',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/memory.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				repeat
@@ -9751,6 +9753,8 @@ run(function()
 	
 	Speedmeter = larp.Legit:CreateModule({
 		Name = 'Speedmeter',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/speedmeter.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				repeat

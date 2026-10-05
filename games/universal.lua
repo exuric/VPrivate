@@ -9185,6 +9185,8 @@ run(function()
 	
 	FOV = larp.Legit:CreateModule({
 		Name = 'FOV',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/fov.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				oldfov = gameCamera.FieldOfView

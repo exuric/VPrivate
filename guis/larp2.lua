@@ -1183,6 +1183,7 @@ components = {
 		picker.Parent = clickgui
 		addCorner(picker, UDim.new(0, 8))
 		addBlur(picker)
+		makeDraggable(picker)
 		local pstroke = Instance.new('UIStroke')
 		pstroke.Color = color.Light(uipallet.Main, 0.14)
 		pstroke.Transparency = 0.3
@@ -1200,6 +1201,7 @@ components = {
 		ptitle.ZIndex = 31
 		ptitle.Parent = picker
 		local pclose = addCloseButton(picker, 8)
+		pclose.Position = UDim2.new(1, -30, 0, 4)
 		pclose.ZIndex = 32
 		pclose.MouseButton1Click:Connect(function() if togglePicker then togglePicker() end end)
 

@@ -1419,6 +1419,7 @@ components = {
 		button.BackgroundColor3 = uipallet.Main
 		button.AutoButtonColor = false
 		button.Text = ''
+		button.ClipsDescendants = true
 		button.Parent = bkg
 		local title = Instance.new('TextLabel')
 		title.Name = 'Title'
@@ -1466,41 +1467,51 @@ components = {
 			self.Value = table.find(optionsettings.List, val) and val or optionsettings.List[1] or 'None'
 			title.Text = '         '..optionsettings.Name..' - '..self.Value
 			if dropdownchildren then
-				arrow.Rotation = 90
-				dropdownchildren:Destroy()
+				tween:Tween(arrow, uipallet.Tween, { Rotation = 90 })
+				local dc = dropdownchildren
 				dropdownchildren = nil
-				dropdown.Size = UDim2.new(1, 0, 0, 40)
+				tween:Tween(dropdown, uipallet.Tween, { Size = UDim2.new(1, 0, 0, 40) })
+				task.delay(0.17, function() if dc and dc.Parent then dc:Destroy() end end)
 			end
 			optionsettings.Function(self.Value, mouse)
 		end
 		
 		button.MouseButton1Click:Connect(function()
 			if not dropdownchildren then
-				arrow.Rotation = 270
-				dropdown.Size = UDim2.new(1, 0, 0, 40 + (#optionsettings.List - 1) * 26)
+				tween:Tween(arrow, uipallet.Tween, { Rotation = 270 })
+				tween:Tween(dropdown, uipallet.Tween, { Size = UDim2.new(1, 0, 0, 40 + #optionsettings.List * 26) })
 				dropdownchildren = Instance.new('Frame')
 				dropdownchildren.Name = 'Children'
-				dropdownchildren.Size = UDim2.new(1, 0, 0, (#optionsettings.List - 1) * 26)
+				dropdownchildren.Size = UDim2.new(1, 0, 0, #optionsettings.List * 26)
 				dropdownchildren.Position = UDim2.fromOffset(0, 27)
 				dropdownchildren.BackgroundTransparency = 1
 				dropdownchildren.Parent = button
-				local ind = 0
-				for _, v in optionsettings.List do
-					if v == optionapi.Value then continue end
+				for ind, v in ipairs(optionsettings.List) do
+					local selected = v == optionapi.Value
 					local dropdownoption = Instance.new('TextButton')
 					dropdownoption.Name = v..'Option'
 					dropdownoption.Size = UDim2.new(1, 0, 0, 26)
-					dropdownoption.Position = UDim2.fromOffset(0, ind * 26)
-					dropdownoption.BackgroundColor3 = uipallet.Main
+					dropdownoption.Position = UDim2.fromOffset(0, (ind - 1) * 26)
+					dropdownoption.BackgroundColor3 = selected and color.Light(uipallet.Main, 0.045) or uipallet.Main
 					dropdownoption.BorderSizePixel = 0
 					dropdownoption.AutoButtonColor = false
 					dropdownoption.Text = '         '..v
 					dropdownoption.TextXAlignment = Enum.TextXAlignment.Left
-					dropdownoption.TextColor3 = color.Dark(uipallet.Text, 0.16)
+					dropdownoption.TextColor3 = selected and uipallet.Text or color.Dark(uipallet.Text, 0.16)
 					dropdownoption.TextSize = 13
 					dropdownoption.TextTruncate = Enum.TextTruncate.AtEnd
 					dropdownoption.FontFace = uipallet.Font
 					dropdownoption.Parent = dropdownchildren
+					if selected then
+						local chk = Instance.new('ImageLabel')
+						chk.Size = UDim2.fromOffset(12, 12)
+						chk.AnchorPoint = Vector2.new(1, 0.5)
+						chk.Position = UDim2.new(1, -12, 0.5, 0)
+						chk.BackgroundTransparency = 1
+						chk.Image = getcustomasset('LarpV4/assets/larp/check.png')
+						chk.ImageColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+						chk.Parent = dropdownoption
+					end
 					dropdownoption.MouseEnter:Connect(function()
 						tween:Tween(dropdownoption, uipallet.Tween, {
 							BackgroundColor3 = color.Light(uipallet.Main, 0.02)
@@ -1514,7 +1525,6 @@ components = {
 					dropdownoption.MouseButton1Click:Connect(function()
 						optionapi:SetValue(v, true)
 					end)
-					ind += 1
 				end
 			else
 				optionapi:SetValue(optionapi.Value, true)
@@ -1666,7 +1676,7 @@ components = {
 		knobholder.Size = UDim2.fromOffset(24, 4)
 		knobholder.Position = UDim2.fromScale(1, 0.5)
 		knobholder.AnchorPoint = Vector2.new(0.5, 0.5)
-		knobholder.BackgroundColor3 = slider.BackgroundColor3
+		knobholder.BackgroundTransparency = 1
 		knobholder.BorderSizePixel = 0
 		knobholder.Parent = fill
 		local knob = Instance.new('Frame')
@@ -1675,8 +1685,14 @@ components = {
 		knob.Position = UDim2.fromScale(0.5, 0.5)
 		knob.AnchorPoint = Vector2.new(0.5, 0.5)
 		knob.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+		knob.ZIndex = 2
 		knob.Parent = knobholder
 		addCorner(knob, UDim.new(1, 0))
+		local knobStroke = Instance.new('UIStroke')
+		knobStroke.Color = color.Dark(uipallet.Main, 0.1)
+		knobStroke.Thickness = 2
+		knobStroke.Transparency = 0.4
+		knobStroke.Parent = knob
 		local bubble = Instance.new('TextLabel')
 		bubble.Name = 'Bubble'
 		bubble.AnchorPoint = Vector2.new(0.5, 1)

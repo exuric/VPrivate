@@ -19164,6 +19164,8 @@ run(function()
 	
 	SoundChanger = larp.Legit:CreateModule({
 		Name = 'SoundChanger',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/soundchanger.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				old = bedwars.SoundManager.playSound

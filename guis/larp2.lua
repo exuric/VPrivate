@@ -1649,11 +1649,12 @@ components = {
 		valuebox.Parent = slider
 		local bkg = Instance.new('Frame')
 		bkg.Name = 'Slider'
-		bkg.Size = UDim2.new(1, -20, 0, 2)
-		bkg.Position = UDim2.fromOffset(10, 37)
+		bkg.Size = UDim2.new(1, -20, 0, 6)
+		bkg.Position = UDim2.fromOffset(10, 34)
 		bkg.BackgroundColor3 = color.Light(uipallet.Main, 0.034)
 		bkg.BorderSizePixel = 0
 		bkg.Parent = slider
+		addCorner(bkg, UDim.new(1, 0))
 		local fill = bkg:Clone()
 		fill.Name = 'Fill'
 		fill.Size = UDim2.fromScale(math.clamp((optionapi.Value - optionsettings.Min) / optionsettings.Max, 0.04, 0.96), 1)
@@ -1676,6 +1677,25 @@ components = {
 		knob.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 		knob.Parent = knobholder
 		addCorner(knob, UDim.new(1, 0))
+		local bubble = Instance.new('TextLabel')
+		bubble.Name = 'Bubble'
+		bubble.AnchorPoint = Vector2.new(0.5, 1)
+		bubble.Size = UDim2.fromOffset(48, 18)
+		bubble.Position = UDim2.new(0.5, 0, 0, -7)
+		bubble.BackgroundColor3 = color.Light(uipallet.Main, 0.09)
+		bubble.BorderSizePixel = 0
+		bubble.Text = ''
+		bubble.TextColor3 = uipallet.Text
+		bubble.TextSize = 11
+		bubble.FontFace = uipallet.Font
+		bubble.Visible = false
+		bubble.ZIndex = 6
+		bubble.Parent = knob
+		addCorner(bubble, UDim.new(0, 5))
+		local bubbleStroke = Instance.new('UIStroke')
+		bubbleStroke.Color = color.Light(uipallet.Main, 0.16)
+		bubbleStroke.Transparency = 0.4
+		bubbleStroke.Parent = bubble
 		optionsettings.Function = optionsettings.Function or function() end
 		optionsettings.Decimal = optionsettings.Decimal or 1
 		
@@ -1706,6 +1726,7 @@ components = {
 				Size = UDim2.fromScale(math.clamp(pos or math.clamp(value / optionsettings.Max, 0, 1), 0.04, 0.96), 1)
 			})
 			valuebutton.Text = self.Value..(optionsettings.Suffix and ' '..(type(optionsettings.Suffix) == 'function' and optionsettings.Suffix(self.Value) or optionsettings.Suffix) or '')
+			if bubble then bubble.Text = tostring(self.Value) end
 			if check or final then
 				optionsettings.Function(value, final)
 			end
@@ -1720,7 +1741,9 @@ components = {
 				optionapi:SetValue(math.floor((optionsettings.Min + (optionsettings.Max - optionsettings.Min) * newPosition) * optionsettings.Decimal) / optionsettings.Decimal, newPosition)
 				local lastValue = optionapi.Value
 				local lastPosition = newPosition
-		
+				bubble.Visible = true
+				tween:Tween(knob, uipallet.Tween, { Size = UDim2.fromOffset(18, 18) })
+
 				local changed = inputService.InputChanged:Connect(function(input)
 					if input.UserInputType == (inputObj.UserInputType == Enum.UserInputType.MouseButton1 and Enum.UserInputType.MouseMovement or Enum.UserInputType.Touch) then
 						local newPosition = math.clamp((input.Position.X - bkg.AbsolutePosition.X) / bkg.AbsoluteSize.X, 0, 1)
@@ -1740,14 +1763,16 @@ components = {
 							ended:Disconnect()
 						end
 						optionapi:SetValue(lastValue, lastPosition, true)
+						bubble.Visible = false
+						tween:Tween(knob, uipallet.Tween, { Size = UDim2.fromOffset(14, 14) })
 					end
 				end)
-		
+
 			end
 		end)
 		slider.MouseEnter:Connect(function()
 			tween:Tween(knob, uipallet.Tween, {
-				Size = UDim2.fromOffset(16, 16)
+				Size = UDim2.fromOffset(17, 17)
 			})
 		end)
 		slider.MouseLeave:Connect(function()

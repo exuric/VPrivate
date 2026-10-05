@@ -12295,6 +12295,7 @@ end
 	end
 
 	local send
+	local aiModule
 	local function newChat()
 		chat.history = {}
 		if chat.list then
@@ -12380,7 +12381,10 @@ end
 		newBtn.MouseButton1Click:Connect(newChat)
 
 		local close = addCloseButton(win, 8)
-		close.MouseButton1Click:Connect(function() win.Visible = false end)
+		close.MouseButton1Click:Connect(function()
+			win.Visible = false
+			if aiModule and aiModule.Enabled then pcall(function() aiModule:Toggle() end) end
+		end)
 
 		local arrow = Instance.new('ImageButton')
 		arrow.AnchorPoint = Vector2.new(1, 0)
@@ -12532,68 +12536,28 @@ end
 		chat.win.Visible = true
 	end
 
-	task.spawn(function()
-		local waited = 0
-		while not mainapi.Loaded and waited < 60 do
-			task.wait(0.5)
-			waited += 0.5
+	pcall(function()
+		if mainapi.Categories and mainapi.Categories.Other then
+			aiModule = mainapi.Categories.Other:CreateModule({
+				Name = 'AI Assistant',
+				Icon = getcustomasset('LarpV4/assets/larp/ai.png'),
+				Function = function(cb)
+					if cb then openChat() elseif chat.win then chat.win.Visible = false end
+				end,
+				Tooltip = 'Chat with Gemini about larp and anything else'
+			})
 		end
-		if not mainapi.Loaded then return end
-		pcall(function()
-			local w = clickgui:FindFirstChild('OtherCategory')
-			if not w then return end
-			local ch = w:FindFirstChild('Children')
-			if not ch then return end
-			if ch:FindFirstChild('AIAssistantRow') then return end
-			local row = Instance.new('TextButton')
-			row.Name = 'AIAssistantRow'
-			row.Size = UDim2.new(1, 0, 0, 40)
-			row.LayoutOrder = -5
-			row.BackgroundColor3 = uipallet.Main
-			row.AutoButtonColor = false
-			row.Text = ''
-			row.Parent = ch
-			addCorner(row, UDim.new(0, 6))
-			local icon = Instance.new('ImageLabel')
-			icon.Size = UDim2.fromOffset(16, 16)
-			icon.Position = UDim2.fromOffset(10, 12)
-			icon.BackgroundTransparency = 1
-			icon.Image = getcustomasset('LarpV4/assets/larp/ai.png')
-			icon.ImageColor3 = accent()
-			icon.Parent = row
-			local label = Instance.new('TextLabel')
-			label.Size = UDim2.new(1, -56, 1, 0)
-			label.Position = UDim2.fromOffset(36, 0)
-			label.BackgroundTransparency = 1
-			label.Text = 'AI Assistant'
-			label.TextXAlignment = Enum.TextXAlignment.Left
-			label.TextColor3 = color.Dark(uipallet.Text, 0.16)
-			label.TextSize = 14
-			label.FontFace = CHATFONT
-			label.Parent = row
-			local chev = Instance.new('ImageLabel')
-			chev.AnchorPoint = Vector2.new(1, 0.5)
-			chev.Size = UDim2.fromOffset(6, 10)
-			chev.Position = UDim2.new(1, -12, 0.5, 0)
-			chev.BackgroundTransparency = 1
-			chev.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
-			chev.ImageColor3 = Color3.fromRGB(140, 140, 140)
-			chev.Parent = row
-			row.MouseEnter:Connect(function()
-				label.TextColor3 = uipallet.Text
-				tween:Tween(row, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.05) })
-			end)
-			row.MouseLeave:Connect(function()
-				label.TextColor3 = color.Dark(uipallet.Text, 0.16)
-				tween:Tween(row, uipallet.Tween, { BackgroundColor3 = uipallet.Main })
-			end)
-			row.MouseButton1Click:Connect(openChat)
-		end)
 	end)
 
-	function mainapi:OpenAIAssistant() openChat() end
+	function mainapi:OpenAIAssistant()
+		if aiModule and not aiModule.Enabled then pcall(function() aiModule:Toggle() end) else openChat() end
+	end
 	function mainapi:ToggleAIAssistant()
-		if chat.win and chat.win.Visible then chat.win.Visible = false else openChat() end
+		if chat.win and chat.win.Visible then
+			if aiModule and aiModule.Enabled then pcall(function() aiModule:Toggle() end) else chat.win.Visible = false end
+		else
+			mainapi:OpenAIAssistant()
+		end
 	end
 end)()
 

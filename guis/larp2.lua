@@ -12069,4 +12069,532 @@ if shared.LarpPresetInstall then
 	end))
 end
 
+do
+	local HttpService = game:GetService('HttpService')
+	local lplr = playersService.LocalPlayer
+	local API_KEY = ''
+	local function getKey()
+		if API_KEY ~= '' then return API_KEY end
+		pcall(function()
+			if isfile('LarpV4/profiles/ai.txt') then
+				API_KEY = (readfile('LarpV4/profiles/ai.txt') or ''):gsub('%s+$', ''):gsub('^%s+', '')
+			end
+		end)
+		return API_KEY
+	end
+	local MODEL = 'gemini-3.5-flash-lite'
+	local IMG_MODEL = 'gemini-2.5-flash-image-preview'
+	local SYSTEM_PROMPT = table.concat({
+		'You are the AI Assistant built into larp v4, a Roblox script and GUI styled after Vape V4, used in Bedwars and other games.',
+		'You are powered by Google Gemini (model '..MODEL..'). Answer clearly and concisely in plain text.',
+		'You help with how to use larp v4 and with general questions.',
+		'larp v4 facts:',
+		'- Open or close the menu with the menu keybind (default RightShift).',
+		'- Modules sit in categories: Combat, Blatant, Render, World, Utility, Inventory, Minigames, Other, plus a Legit tab and a Targets tab.',
+		'- Toggle a module: open the menu, open its category, click the module row.',
+		'- Bind a module to a key: hover the module row, click the keybind icon on the right of the row (or right-click the module), then press the key. Rebind the same way; bind to Backspace or Delete to clear it.',
+		'- Combat modules include KillAura, AimAssist, Reach, Projectile Aimbot. Render includes ESP, Chams, Fullbright. Movement includes Scaffold, Fly, Speed.',
+		'- The Targets tab controls who modules target (friends, enemies, whitelist).',
+		'Keep answers short and friendly. If you do not know something about larp, say so briefly.'
+	}, '\n')
+
+	local accent = function() return Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) end
+
+	local CHATFONT, CHATFONTBOLD = uipallet.Font, uipallet.FontSemiBold
+	pcall(function()
+		local reg = getcustomasset('LarpV4/assets/larp/proximanova.ttf')
+		local bold = getcustomasset('LarpV4/assets/larp/proximanova_bold.ttf')
+		writefile('LarpV4/assets/larp/proximanova.json', '{"name":"Proxima Nova","faces":[{"name":"Regular","weight":400,"style":"normal","assetId":"'..reg..'"},{"name":"Bold","weight":700,"style":"normal","assetId":"'..bold..'"}]}')
+		local fam = getcustomasset('LarpV4/assets/larp/proximanova.json')
+		CHATFONT = Font.new(fam, Enum.FontWeight.Regular)
+		CHATFONTBOLD = Font.new(fam, Enum.FontWeight.Bold)
+	end)
+
+	local function decodeB64(s)
+		local fns = {
+			crypt and crypt.base64decode,
+			crypt and crypt.base64 and crypt.base64.decode,
+			crypt and crypt.base64_decode,
+			base64 and base64.decode,
+			base64_decode,
+			(getgenv and getgenv().Base64 and getgenv().Base64.Decode)
+		}
+		for _, f in next, fns do
+			if type(f) == 'function' then
+				local ok, res = pcall(f, s)
+				if ok and type(res) == 'string' and #res > 0 then return res end
+			end
+		end
+	end
+
+	local httpRequest = request or http_request or (syn and syn.request) or (http and http.request)
+
+	local function callGemini(hist, imageMode)
+		local model = imageMode and IMG_MODEL or MODEL
+		local contents = {}
+		for _, m in next, hist do
+			contents[#contents + 1] = { role = m.role, parts = {{ text = m.text }} }
+		end
+		local body = {
+			system_instruction = { parts = {{ text = SYSTEM_PROMPT }} },
+			contents = contents
+		}
+		if imageMode then
+			body.generationConfig = { responseModalities = { 'TEXT', 'IMAGE' } }
+		else
+			body.generationConfig = { thinkingConfig = { includeThoughts = true } }
+		end
+		local resp = httpRequest({
+			Url = 'https://generativelanguage.googleapis.com/v1beta/models/'..model..':generateContent',
+			Method = 'POST',
+			Headers = { ['Content-Type'] = 'application/json', ['x-goog-api-key'] = getKey() },
+			Body = HttpService:JSONEncode(body)
+		})
+		local code = resp and (resp.StatusCode or resp.status_code)
+		if not resp or (code and code >= 400) then
+			error('HTTP '..tostring(code)..': '..tostring(resp and resp.Body and resp.Body:sub(1, 180)))
+		end
+		local data = HttpService:JSONDecode(resp.Body)
+		local cand = data.candidates and data.candidates[1]
+		local parts = cand and cand.content and cand.content.parts or {}
+		local thinking, answer, image = '', '', nil
+		for _, p in next, parts do
+			if p.text then
+				if p.thought then thinking = thinking..p.text else answer = answer..p.text end
+			elseif p.inlineData or p.inline_data then
+				local inl = p.inlineData or p.inline_data
+				local bytes = decodeB64(inl.data)
+				if bytes then
+					local path = 'LarpV4/assets/larp/aigen_'..tostring(os.time())..'_'..tostring(math.random(1000, 9999))..'.png'
+					local okw = pcall(writefile, path, bytes)
+					if okw then image = getcustomasset(path) end
+				end
+			end
+		end
+		if answer == '' and not image then
+			answer = (cand and cand.finishReason) and ('No content ('..tostring(cand.finishReason)..')') or 'No response.'
+		end
+		return { answer = answer, thinking = thinking, image = image, usage = data.usageMetadata }
+	end
+
+	local chat = { win = nil, list = nil, layout = nil, history = {}, tokens = 0, busy = false, imageMode = false, tokenLabel = nil }
+
+	local function scrollBottom()
+		task.defer(function()
+			if chat.list then chat.list.CanvasPosition = Vector2.new(0, chat.list.AbsoluteCanvasSize.Y) end
+		end)
+	end
+
+	local function addBubble(role, text, thinkingText, imageAsset)
+		local isUser = role == 'user'
+		local row = Instance.new('Frame')
+		row.Size = UDim2.new(1, 0, 0, 0)
+		row.AutomaticSize = Enum.AutomaticSize.Y
+		row.BackgroundTransparency = 1
+		row.Parent = chat.list
+
+		local bubble = Instance.new('Frame')
+		bubble.AutomaticSize = Enum.AutomaticSize.XY
+		bubble.AnchorPoint = Vector2.new(isUser and 1 or 0, 0)
+		bubble.Position = UDim2.fromScale(isUser and 1 or 0, 0)
+		bubble.BackgroundColor3 = isUser and accent() or (role == 'error' and Color3.fromRGB(70, 32, 32) or color.Light(uipallet.Main, 0.06))
+		bubble.BorderSizePixel = 0
+		bubble.Parent = row
+		addCorner(bubble, UDim.new(0, 9))
+		local bpad = Instance.new('UIPadding')
+		bpad.PaddingLeft = UDim.new(0, 11)
+		bpad.PaddingRight = UDim.new(0, 11)
+		bpad.PaddingTop = UDim.new(0, 8)
+		bpad.PaddingBottom = UDim.new(0, 8)
+		bpad.Parent = bubble
+		local blay = Instance.new('UIListLayout')
+		blay.SortOrder = Enum.SortOrder.LayoutOrder
+		blay.Padding = UDim.new(0, 6)
+		blay.Parent = bubble
+		local bmax = Instance.new('UISizeConstraint')
+		bmax.MaxSize = Vector2.new(312, math.huge)
+		bmax.Parent = bubble
+
+		if thinkingText and thinkingText ~= '' then
+			local toggle = Instance.new('TextButton')
+			toggle.AutomaticSize = Enum.AutomaticSize.X
+			toggle.Size = UDim2.fromOffset(0, 16)
+			toggle.BackgroundTransparency = 1
+			toggle.AutoButtonColor = false
+			toggle.Text = 'Show thoughts'
+			toggle.TextXAlignment = Enum.TextXAlignment.Left
+			toggle.TextColor3 = color.Dark(uipallet.Text, 0.34)
+			toggle.TextSize = 12
+			toggle.FontFace = CHATFONT
+			toggle.LayoutOrder = 0
+			toggle.Parent = bubble
+			local think = Instance.new('TextLabel')
+			think.AutomaticSize = Enum.AutomaticSize.Y
+			think.Size = UDim2.new(1, 0, 0, 0)
+			think.BackgroundTransparency = 1
+			think.Text = thinkingText
+			think.TextWrapped = true
+			think.TextXAlignment = Enum.TextXAlignment.Left
+			think.TextYAlignment = Enum.TextYAlignment.Top
+			think.TextColor3 = color.Dark(uipallet.Text, 0.4)
+			think.TextSize = 12
+			think.FontFace = CHATFONT
+			think.LayoutOrder = 1
+			think.Visible = false
+			think.Parent = bubble
+			toggle.MouseButton1Click:Connect(function()
+				think.Visible = not think.Visible
+				toggle.Text = think.Visible and 'Hide thoughts' or 'Show thoughts'
+				scrollBottom()
+			end)
+		end
+
+		if text and text ~= '' then
+			local label = Instance.new('TextLabel')
+			label.AutomaticSize = Enum.AutomaticSize.XY
+			label.Size = UDim2.fromOffset(0, 0)
+			label.BackgroundTransparency = 1
+			label.Text = text
+			label.TextWrapped = true
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.TextYAlignment = Enum.TextYAlignment.Top
+			label.TextColor3 = isUser and mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or uipallet.Text
+			label.TextSize = 14
+			label.FontFace = CHATFONT
+			label.LayoutOrder = 2
+			label.Parent = bubble
+			local lmax = Instance.new('UISizeConstraint')
+			lmax.MaxSize = Vector2.new(290, math.huge)
+			lmax.Parent = label
+		end
+
+		if imageAsset then
+			local img = Instance.new('ImageLabel')
+			img.Size = UDim2.fromOffset(256, 256)
+			img.BackgroundTransparency = 1
+			img.Image = imageAsset
+			img.ScaleType = Enum.ScaleType.Fit
+			img.LayoutOrder = 3
+			img.Parent = bubble
+			addCorner(img, UDim.new(0, 6))
+		end
+
+		scrollBottom()
+		return row
+	end
+
+	local function setTokens(usage)
+		if usage and usage.totalTokenCount then chat.tokens = chat.tokens + usage.totalTokenCount end
+		if chat.tokenLabel then chat.tokenLabel.Text = string.format('%d tokens', chat.tokens) end
+	end
+
+	local function greet()
+		local name = (lplr and lplr.DisplayName ~= '' and lplr.DisplayName) or (lplr and lplr.Name) or 'player'
+		addBubble('model', 'Your move, '..name..'!')
+		addBubble('model', 'Before you type anything — Ask Gemini.')
+	end
+
+	local send
+	local function newChat()
+		chat.history = {}
+		if chat.list then
+			for _, c in next, chat.list:GetChildren() do
+				if c:IsA('Frame') then c:Destroy() end
+			end
+		end
+		greet()
+	end
+
+	local buildChat
+	buildChat = function()
+		if chat.win then return end
+		local view = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(1280, 720)
+		local W, H = 440, 520
+		local win = Instance.new('Frame')
+		win.Name = 'AIAssistant'
+		win.Size = UDim2.fromOffset(W, H)
+		win.Position = UDim2.fromOffset(view.X / 2 - W / 2, view.Y / 2 - H / 2)
+		win.BackgroundColor3 = uipallet.Main
+		win.BorderSizePixel = 0
+		win.Visible = false
+		win.Parent = clickgui
+		addCorner(win, UDim.new(0, 8))
+		addBlur(win)
+		makeDraggable(win)
+		chat.win = win
+
+		local hicon = Instance.new('ImageLabel')
+		hicon.Size = UDim2.fromOffset(20, 20)
+		hicon.Position = UDim2.fromOffset(14, 13)
+		hicon.BackgroundTransparency = 1
+		hicon.Image = getcustomasset('LarpV4/assets/larp/ai.png')
+		hicon.ImageColor3 = accent()
+		hicon.Parent = win
+		local htitle = Instance.new('TextLabel')
+		htitle.Size = UDim2.fromOffset(200, 18)
+		htitle.Position = UDim2.fromOffset(42, 10)
+		htitle.BackgroundTransparency = 1
+		htitle.Text = 'AI Assistant'
+		htitle.TextXAlignment = Enum.TextXAlignment.Left
+		htitle.TextColor3 = uipallet.Text
+		htitle.TextSize = 15
+		htitle.FontFace = CHATFONTBOLD
+		htitle.Parent = win
+		local hmodel = Instance.new('TextLabel')
+		hmodel.Size = UDim2.fromOffset(240, 14)
+		hmodel.Position = UDim2.fromOffset(42, 27)
+		hmodel.BackgroundTransparency = 1
+		hmodel.Text = MODEL
+		hmodel.TextXAlignment = Enum.TextXAlignment.Left
+		hmodel.TextColor3 = color.Dark(uipallet.Text, 0.4)
+		hmodel.TextSize = 11
+		hmodel.FontFace = CHATFONT
+		hmodel.Parent = win
+		local tokenLabel = Instance.new('TextLabel')
+		tokenLabel.AnchorPoint = Vector2.new(1, 0)
+		tokenLabel.Size = UDim2.fromOffset(120, 14)
+		tokenLabel.Position = UDim2.fromOffset(W - 66, 15)
+		tokenLabel.BackgroundTransparency = 1
+		tokenLabel.Text = '0 tokens'
+		tokenLabel.TextXAlignment = Enum.TextXAlignment.Right
+		tokenLabel.TextColor3 = color.Dark(uipallet.Text, 0.4)
+		tokenLabel.TextSize = 11
+		tokenLabel.FontFace = CHATFONT
+		tokenLabel.Parent = win
+		chat.tokenLabel = tokenLabel
+
+		local newBtn = Instance.new('TextButton')
+		newBtn.AnchorPoint = Vector2.new(1, 0)
+		newBtn.Size = UDim2.fromOffset(18, 18)
+		newBtn.Position = UDim2.fromOffset(W - 62, 13)
+		newBtn.BackgroundTransparency = 1
+		newBtn.AutoButtonColor = false
+		newBtn.Text = '+'
+		newBtn.TextColor3 = color.Dark(uipallet.Text, 0.3)
+		newBtn.TextSize = 20
+		newBtn.FontFace = CHATFONTBOLD
+		newBtn.Parent = win
+		addTooltip(newBtn, 'New chat')
+		newBtn.MouseEnter:Connect(function() newBtn.TextColor3 = uipallet.Text end)
+		newBtn.MouseLeave:Connect(function() newBtn.TextColor3 = color.Dark(uipallet.Text, 0.3) end)
+		newBtn.MouseButton1Click:Connect(newChat)
+
+		local close = addCloseButton(win, 8)
+		close.MouseButton1Click:Connect(function() win.Visible = false end)
+
+		local arrow = Instance.new('ImageButton')
+		arrow.AnchorPoint = Vector2.new(1, 0)
+		arrow.Size = UDim2.fromOffset(14, 14)
+		arrow.Position = UDim2.fromOffset(W - 84, 15)
+		arrow.BackgroundTransparency = 1
+		arrow.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
+		arrow.ImageColor3 = Color3.fromRGB(140, 140, 140)
+		arrow.Rotation = 90
+		arrow.Parent = win
+
+		local divider = Instance.new('Frame')
+		divider.Size = UDim2.new(1, 0, 0, 1)
+		divider.Position = UDim2.fromOffset(0, 46)
+		divider.BackgroundColor3 = Color3.new(1, 1, 1)
+		divider.BackgroundTransparency = 0.928
+		divider.BorderSizePixel = 0
+		divider.Parent = win
+
+		local body = Instance.new('Frame')
+		body.Name = 'Body'
+		body.Size = UDim2.new(1, 0, 1, -47)
+		body.Position = UDim2.fromOffset(0, 47)
+		body.BackgroundTransparency = 1
+		body.Parent = win
+
+		local list = Instance.new('ScrollingFrame')
+		list.Size = UDim2.new(1, -16, 1, -64)
+		list.Position = UDim2.fromOffset(8, 6)
+		list.BackgroundTransparency = 1
+		list.BorderSizePixel = 0
+		list.ScrollBarThickness = 2
+		list.ScrollBarImageTransparency = 0.7
+		list.CanvasSize = UDim2.new()
+		list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		list.Parent = body
+		chat.list = list
+		local lay = Instance.new('UIListLayout')
+		lay.SortOrder = Enum.SortOrder.LayoutOrder
+		lay.Padding = UDim.new(0, 8)
+		lay.Parent = list
+		chat.layout = lay
+
+		local inputBg = Instance.new('Frame')
+		inputBg.AnchorPoint = Vector2.new(0, 1)
+		inputBg.Size = UDim2.new(1, -16, 0, 44)
+		inputBg.Position = UDim2.new(0, 8, 1, -8)
+		inputBg.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+		inputBg.BorderSizePixel = 0
+		inputBg.Parent = body
+		addCorner(inputBg, UDim.new(0, 8))
+
+		local imgBtn = Instance.new('TextButton')
+		imgBtn.Size = UDim2.fromOffset(34, 28)
+		imgBtn.Position = UDim2.fromOffset(6, 8)
+		imgBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		imgBtn.AutoButtonColor = false
+		imgBtn.Text = 'IMG'
+		imgBtn.TextColor3 = color.Dark(uipallet.Text, 0.3)
+		imgBtn.TextSize = 11
+		imgBtn.FontFace = CHATFONTBOLD
+		imgBtn.Parent = inputBg
+		addCorner(imgBtn, UDim.new(0, 6))
+		addTooltip(imgBtn, 'Toggle image generation')
+		local function refreshImg()
+			imgBtn.BackgroundColor3 = chat.imageMode and accent() or color.Light(uipallet.Main, 0.05)
+			imgBtn.TextColor3 = chat.imageMode and mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Dark(uipallet.Text, 0.3)
+		end
+		imgBtn.MouseButton1Click:Connect(function()
+			chat.imageMode = not chat.imageMode
+			refreshImg()
+		end)
+
+		local box = Instance.new('TextBox')
+		box.Size = UDim2.new(1, -92, 1, -12)
+		box.Position = UDim2.fromOffset(46, 6)
+		box.BackgroundTransparency = 1
+		box.Text = ''
+		box.PlaceholderText = 'Ask Gemini…'
+		box.PlaceholderColor3 = color.Dark(uipallet.Text, 0.43)
+		box.TextXAlignment = Enum.TextXAlignment.Left
+		box.TextColor3 = Color3.new(1, 1, 1)
+		box.TextSize = 13
+		box.FontFace = CHATFONT
+		box.ClearTextOnFocus = false
+		box.TextTruncate = Enum.TextTruncate.AtEnd
+		box.Parent = inputBg
+
+		local sendBtn = Instance.new('TextButton')
+		sendBtn.AnchorPoint = Vector2.new(1, 0)
+		sendBtn.Size = UDim2.fromOffset(34, 28)
+		sendBtn.Position = UDim2.new(1, -6, 0, 8)
+		sendBtn.BackgroundColor3 = accent()
+		sendBtn.AutoButtonColor = false
+		sendBtn.Text = '>'
+		sendBtn.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+		sendBtn.TextSize = 14
+		sendBtn.FontFace = CHATFONTBOLD
+		sendBtn.Parent = inputBg
+		addCorner(sendBtn, UDim.new(0, 6))
+
+		local collapsed = false
+		arrow.MouseButton1Click:Connect(function()
+			collapsed = not collapsed
+			body.Visible = not collapsed
+			arrow.Rotation = collapsed and 0 or 90
+			win.Size = collapsed and UDim2.fromOffset(W, 47) or UDim2.fromOffset(W, H)
+		end)
+
+		local function doSend()
+			local text = box.Text
+			if chat.busy or text:gsub('%s', '') == '' then return end
+			if getKey() == '' then
+				box.Text = ''
+				addBubble('user', text)
+				addBubble('error', 'No API key set. Put your Gemini key in LarpV4/profiles/ai.txt')
+				return
+			end
+			box.Text = ''
+			chat.busy = true
+			local imageMode = chat.imageMode
+			addBubble('user', text)
+			chat.history[#chat.history + 1] = { role = 'user', text = text }
+			local pending = addBubble('model', imageMode and 'Generating image…' or 'Thinking…')
+			task.spawn(function()
+				local ok, res = pcall(callGemini, chat.history, imageMode)
+				if pending then pending:Destroy() end
+				if ok and res then
+					addBubble('model', res.answer, res.thinking, res.image)
+					chat.history[#chat.history + 1] = { role = 'model', text = res.answer ~= '' and res.answer or '[image]' }
+					setTokens(res.usage)
+				else
+					addBubble('error', 'Request failed: '..tostring(res))
+				end
+				chat.busy = false
+			end)
+		end
+		send = doSend
+		sendBtn.MouseButton1Click:Connect(doSend)
+		box.FocusLost:Connect(function(enter) if enter then doSend() end end)
+		sendBtn.MouseEnter:Connect(function() tween:Tween(sendBtn, uipallet.Tween, { BackgroundColor3 = color.Light(accent(), 0.1) }) end)
+		sendBtn.MouseLeave:Connect(function() tween:Tween(sendBtn, uipallet.Tween, { BackgroundColor3 = accent() }) end)
+
+		greet()
+	end
+
+	local function openChat()
+		buildChat()
+		chat.win.Visible = true
+	end
+
+	task.spawn(function()
+		local waited = 0
+		while not mainapi.Loaded and waited < 60 do
+			task.wait(0.5)
+			waited += 0.5
+		end
+		if not mainapi.Loaded then return end
+		pcall(function()
+			local w = clickgui:FindFirstChild('OtherCategory')
+			if not w then return end
+			local ch = w:FindFirstChild('Children')
+			if not ch then return end
+			if ch:FindFirstChild('AIAssistantRow') then return end
+			local row = Instance.new('TextButton')
+			row.Name = 'AIAssistantRow'
+			row.Size = UDim2.new(1, 0, 0, 40)
+			row.LayoutOrder = -5
+			row.BackgroundColor3 = uipallet.Main
+			row.AutoButtonColor = false
+			row.Text = ''
+			row.Parent = ch
+			addCorner(row, UDim.new(0, 6))
+			local icon = Instance.new('ImageLabel')
+			icon.Size = UDim2.fromOffset(16, 16)
+			icon.Position = UDim2.fromOffset(10, 12)
+			icon.BackgroundTransparency = 1
+			icon.Image = getcustomasset('LarpV4/assets/larp/ai.png')
+			icon.ImageColor3 = accent()
+			icon.Parent = row
+			local label = Instance.new('TextLabel')
+			label.Size = UDim2.new(1, -56, 1, 0)
+			label.Position = UDim2.fromOffset(36, 0)
+			label.BackgroundTransparency = 1
+			label.Text = 'AI Assistant'
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.TextColor3 = color.Dark(uipallet.Text, 0.16)
+			label.TextSize = 14
+			label.FontFace = CHATFONT
+			label.Parent = row
+			local chev = Instance.new('ImageLabel')
+			chev.AnchorPoint = Vector2.new(1, 0.5)
+			chev.Size = UDim2.fromOffset(6, 10)
+			chev.Position = UDim2.new(1, -12, 0.5, 0)
+			chev.BackgroundTransparency = 1
+			chev.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
+			chev.ImageColor3 = Color3.fromRGB(140, 140, 140)
+			chev.Parent = row
+			row.MouseEnter:Connect(function()
+				label.TextColor3 = uipallet.Text
+				tween:Tween(row, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.05) })
+			end)
+			row.MouseLeave:Connect(function()
+				label.TextColor3 = color.Dark(uipallet.Text, 0.16)
+				tween:Tween(row, uipallet.Tween, { BackgroundColor3 = uipallet.Main })
+			end)
+			row.MouseButton1Click:Connect(openChat)
+		end)
+	end)
+
+	function mainapi:OpenAIAssistant() openChat() end
+	function mainapi:ToggleAIAssistant()
+		if chat.win and chat.win.Visible then chat.win.Visible = false else openChat() end
+	end
+end
+
 return mainapi

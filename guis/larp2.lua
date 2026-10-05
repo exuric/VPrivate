@@ -1175,7 +1175,7 @@ components = {
 		local PW = 212
 		local picker = Instance.new('Frame')
 		picker.Name = optionsettings.Name..'Picker'
-		picker.Size = UDim2.fromOffset(PW, 234)
+		picker.Size = UDim2.fromOffset(PW, 256)
 		picker.BackgroundColor3 = uipallet.Main
 		picker.BorderSizePixel = 0
 		picker.Visible = false
@@ -1187,10 +1187,25 @@ components = {
 		pstroke.Color = color.Light(uipallet.Main, 0.14)
 		pstroke.Transparency = 0.3
 		pstroke.Parent = picker
+		local ptitle = Instance.new('TextLabel')
+		ptitle.Size = UDim2.fromOffset(PW - 40, 20)
+		ptitle.Position = UDim2.fromOffset(12, 7)
+		ptitle.BackgroundTransparency = 1
+		ptitle.Text = optionsettings.Name or 'Color'
+		ptitle.TextXAlignment = Enum.TextXAlignment.Left
+		ptitle.TextTruncate = Enum.TextTruncate.AtEnd
+		ptitle.TextColor3 = uipallet.Text
+		ptitle.TextSize = 13
+		ptitle.FontFace = uipallet.FontSemiBold
+		ptitle.ZIndex = 31
+		ptitle.Parent = picker
+		local pclose = addCloseButton(picker, 8)
+		pclose.ZIndex = 32
+		pclose.MouseButton1Click:Connect(function() if togglePicker then togglePicker() end end)
 
 		local square = Instance.new('Frame')
 		square.Size = UDim2.fromOffset(PW - 24, 118)
-		square.Position = UDim2.fromOffset(12, 12)
+		square.Position = UDim2.fromOffset(12, 32)
 		square.BorderSizePixel = 0
 		square.ClipsDescendants = true
 		square.ZIndex = 31
@@ -1251,20 +1266,20 @@ components = {
 			ks.Parent = knob
 			return bar, knob
 		end
-		local hueBar, hueKnob = makeBar(138)
+		local hueBar, hueKnob = makeBar(158)
 		local hrb = {}
 		for i = 0, 1, 0.1 do table.insert(hrb, ColorSequenceKeypoint.new(i, Color3.fromHSV(i, 1, 1))) end
 		local hgr = Instance.new('UIGradient')
 		hgr.Color = ColorSequence.new(hrb)
 		hgr.Parent = hueBar
-		local opBar, opKnob = makeBar(158)
+		local opBar, opKnob = makeBar(178)
 		local ogr = Instance.new('UIGradient')
 		ogr.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) })
 		ogr.Parent = opBar
 
 		local hexBox = Instance.new('TextBox')
 		hexBox.Size = UDim2.fromOffset(PW - 24, 24)
-		hexBox.Position = UDim2.fromOffset(12, 180)
+		hexBox.Position = UDim2.fromOffset(12, 200)
 		hexBox.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
 		hexBox.BorderSizePixel = 0
 		hexBox.Text = ''
@@ -1280,7 +1295,7 @@ components = {
 
 		local swatchRow = Instance.new('Frame')
 		swatchRow.Size = UDim2.fromOffset(PW - 24, 16)
-		swatchRow.Position = UDim2.fromOffset(12, 210)
+		swatchRow.Position = UDim2.fromOffset(12, 230)
 		swatchRow.BackgroundTransparency = 1
 		swatchRow.ZIndex = 31
 		swatchRow.Parent = picker
@@ -1358,7 +1373,7 @@ components = {
 				local px = ap.X / scale.Scale + 14
 				local py = ap.Y / scale.Scale + 54
 				if (px + PW) * scale.Scale > vs.X then px = ap.X / scale.Scale - PW - 6 end
-				if (py + 234) * scale.Scale > vs.Y then py = vs.Y / scale.Scale - 240 end
+				if (py + 256) * scale.Scale > vs.Y then py = vs.Y / scale.Scale - 262 end
 				picker.Position = UDim2.fromOffset(px, py)
 				optionapi.RefreshPopup()
 			end

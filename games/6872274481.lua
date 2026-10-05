@@ -18280,6 +18280,8 @@ end)
 run(function()
 	larp.Legit:CreateModule({
 		Name = 'Clean Kit',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/cleankit.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				bedwars.WindWalkerController.spawnOrb = function() end
@@ -18434,6 +18436,8 @@ run(function()
 	
 	FOV = larp.Legit:CreateModule({
 		Name = 'FOV',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/fov.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				old = bedwars.FovController.setFOV
@@ -18468,6 +18472,8 @@ run(function()
 	
 	FPSBoost = larp.Legit:CreateModule({
 		Name = 'FPS Boost',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/fpsboost.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				if Kill.Enabled then
@@ -18664,6 +18670,8 @@ end)
 run(function()
 	larp.Legit:CreateModule({
 		Name = 'HitFix',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/hitfix.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			debug.setconstant(bedwars.SwordController.swingSwordAtMouse, 23, callback and 'raycast' or 'Raycast')
 			debug.setupvalue(bedwars.SwordController.swingSwordAtMouse, 4, callback and bedwars.QueryUtil or workspace)
@@ -19087,6 +19095,8 @@ run(function()
 	
 	SongBeats = larp.Legit:CreateModule({
 		Name = 'Song Beats',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/songbeats.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				songobj = Instance.new('Sound')
@@ -19243,6 +19253,8 @@ run(function()
 	
 	UICleanup = larp.Legit:CreateModule({
 		Name = 'UI Cleanup',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/uicleanup.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			for i, v in (callback and new or old) do
 				for i2, v2 in v do
@@ -19415,6 +19427,8 @@ run(function()
 	
 	Viewmodel = larp.Legit:CreateModule({
 		Name = 'Viewmodel',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/viewmodel.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			local viewmodel = gameCamera:FindFirstChild('Viewmodel')
 			if callback then

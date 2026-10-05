@@ -768,12 +768,13 @@ components = {
 		local optionapi = {
 			Type = 'ColorSlider',
 			Hue = optionsettings.DefaultHue or 0.44,
-			Sat = optionsettings.DefaultSat or 1,
+			Sat = optionsettings.DefaultSat or (optionsettings.DefaultHue and 1 or 0),
 			Value = optionsettings.DefaultValue or 1,
 			Opacity = optionsettings.DefaultOpacity or 1,
 			Rainbow = false,
 			Index = 0
 		}
+		local togglePicker
 		
 		local function createSlider(name, gradientColor)
 			local slider = Instance.new('TextButton')
@@ -1057,6 +1058,7 @@ components = {
 			end
 		
 			optionsettings.Function(self.Hue, self.Sat, self.Value, self.Opacity)
+			if optionapi.RefreshPopup then optionapi.RefreshPopup() end
 		end
 		
 		function optionapi:Toggle()
@@ -1136,9 +1138,9 @@ components = {
 			})
 		end)
 		slider:GetPropertyChangedSignal('Visible'):Connect(function()
-			satSlider.Visible = expand.Rotation == 180 and slider.Visible
-			vibSlider.Visible = satSlider.Visible
-			opSlider.Visible = satSlider.Visible
+			satSlider.Visible = false
+			vibSlider.Visible = false
+			opSlider.Visible = false
 		end)
 		expandbutton.MouseEnter:Connect(function()
 			expand.ImageColor3 = color.Dark(uipallet.Text, 0.16)
@@ -1147,10 +1149,7 @@ components = {
 			expand.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 		end)
 		expandbutton.MouseButton1Click:Connect(function()
-			satSlider.Visible = not satSlider.Visible
-			vibSlider.Visible = satSlider.Visible
-			opSlider.Visible = satSlider.Visible
-			expand.Rotation = satSlider.Visible and 180 or 0
+			if togglePicker then togglePicker() end
 		end)
 		rainbow.MouseButton1Click:Connect(function()
 			optionapi:Toggle()
@@ -1172,9 +1171,202 @@ components = {
 			end
 		end)
 		
+		local pickerOpen = false
+		local PW = 212
+		local picker = Instance.new('Frame')
+		picker.Name = optionsettings.Name..'Picker'
+		picker.Size = UDim2.fromOffset(PW, 234)
+		picker.BackgroundColor3 = uipallet.Main
+		picker.BorderSizePixel = 0
+		picker.Visible = false
+		picker.ZIndex = 30
+		picker.Parent = clickgui
+		addCorner(picker, UDim.new(0, 8))
+		addBlur(picker)
+		local pstroke = Instance.new('UIStroke')
+		pstroke.Color = color.Light(uipallet.Main, 0.14)
+		pstroke.Transparency = 0.3
+		pstroke.Parent = picker
+
+		local square = Instance.new('Frame')
+		square.Size = UDim2.fromOffset(PW - 24, 118)
+		square.Position = UDim2.fromOffset(12, 12)
+		square.BorderSizePixel = 0
+		square.ClipsDescendants = true
+		square.ZIndex = 31
+		square.Parent = picker
+		addCorner(square, UDim.new(0, 6))
+		local whiteOv = Instance.new('Frame')
+		whiteOv.Size = UDim2.fromScale(1, 1)
+		whiteOv.BackgroundColor3 = Color3.new(1, 1, 1)
+		whiteOv.BorderSizePixel = 0
+		whiteOv.ZIndex = 31
+		whiteOv.Parent = square
+		local wg = Instance.new('UIGradient')
+		wg.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) })
+		wg.Parent = whiteOv
+		local blackOv = Instance.new('Frame')
+		blackOv.Size = UDim2.fromScale(1, 1)
+		blackOv.BackgroundColor3 = Color3.new(0, 0, 0)
+		blackOv.BorderSizePixel = 0
+		blackOv.ZIndex = 32
+		blackOv.Parent = square
+		local bgr = Instance.new('UIGradient')
+		bgr.Rotation = 90
+		bgr.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) })
+		bgr.Parent = blackOv
+		local sqCursor = Instance.new('Frame')
+		sqCursor.Size = UDim2.fromOffset(10, 10)
+		sqCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+		sqCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+		sqCursor.BorderSizePixel = 0
+		sqCursor.ZIndex = 33
+		sqCursor.Parent = square
+		addCorner(sqCursor, UDim.new(1, 0))
+		local sqcs = Instance.new('UIStroke')
+		sqcs.Color = Color3.new(0, 0, 0)
+		sqcs.Thickness = 1.5
+		sqcs.Parent = sqCursor
+
+		local function makeBar(y)
+			local bar = Instance.new('Frame')
+			bar.Size = UDim2.fromOffset(PW - 24, 12)
+			bar.Position = UDim2.fromOffset(12, y)
+			bar.BorderSizePixel = 0
+			bar.ZIndex = 31
+			bar.Parent = picker
+			addCorner(bar, UDim.new(1, 0))
+			local knob = Instance.new('Frame')
+			knob.Size = UDim2.fromOffset(6, 16)
+			knob.AnchorPoint = Vector2.new(0.5, 0.5)
+			knob.Position = UDim2.fromScale(0, 0.5)
+			knob.BackgroundColor3 = Color3.new(1, 1, 1)
+			knob.BorderSizePixel = 0
+			knob.ZIndex = 33
+			knob.Parent = bar
+			addCorner(knob, UDim.new(1, 0))
+			local ks = Instance.new('UIStroke')
+			ks.Color = Color3.new(0, 0, 0)
+			ks.Thickness = 1.5
+			ks.Parent = knob
+			return bar, knob
+		end
+		local hueBar, hueKnob = makeBar(138)
+		local hrb = {}
+		for i = 0, 1, 0.1 do table.insert(hrb, ColorSequenceKeypoint.new(i, Color3.fromHSV(i, 1, 1))) end
+		local hgr = Instance.new('UIGradient')
+		hgr.Color = ColorSequence.new(hrb)
+		hgr.Parent = hueBar
+		local opBar, opKnob = makeBar(158)
+		local ogr = Instance.new('UIGradient')
+		ogr.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0) })
+		ogr.Parent = opBar
+
+		local hexBox = Instance.new('TextBox')
+		hexBox.Size = UDim2.fromOffset(PW - 24, 24)
+		hexBox.Position = UDim2.fromOffset(12, 180)
+		hexBox.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		hexBox.BorderSizePixel = 0
+		hexBox.Text = ''
+		hexBox.PlaceholderText = '#FFFFFF'
+		hexBox.PlaceholderColor3 = color.Dark(uipallet.Text, 0.45)
+		hexBox.TextColor3 = uipallet.Text
+		hexBox.TextSize = 13
+		hexBox.FontFace = uipallet.Font
+		hexBox.ClearTextOnFocus = false
+		hexBox.ZIndex = 31
+		hexBox.Parent = picker
+		addCorner(hexBox, UDim.new(0, 6))
+
+		local swatchRow = Instance.new('Frame')
+		swatchRow.Size = UDim2.fromOffset(PW - 24, 16)
+		swatchRow.Position = UDim2.fromOffset(12, 210)
+		swatchRow.BackgroundTransparency = 1
+		swatchRow.ZIndex = 31
+		swatchRow.Parent = picker
+		local swl = Instance.new('UIListLayout')
+		swl.FillDirection = Enum.FillDirection.Horizontal
+		swl.Padding = UDim.new(0, 5)
+		swl.Parent = swatchRow
+		local PRESETS = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(235, 75, 75), Color3.fromRGB(251, 146, 60), Color3.fromRGB(235, 205, 60), Color3.fromRGB(74, 222, 128), Color3.fromRGB(51, 225, 193), Color3.fromRGB(96, 165, 250), Color3.fromRGB(167, 139, 250), Color3.fromRGB(244, 114, 182) }
+		for i, col in ipairs(PRESETS) do
+			local sw = Instance.new('TextButton')
+			sw.Size = UDim2.fromOffset(16, 16)
+			sw.LayoutOrder = i
+			sw.BackgroundColor3 = col
+			sw.BorderSizePixel = 0
+			sw.AutoButtonColor = false
+			sw.Text = ''
+			sw.ZIndex = 32
+			sw.Parent = swatchRow
+			addCorner(sw, UDim.new(1, 0))
+			sw.MouseButton1Click:Connect(function()
+				if optionapi.Rainbow then optionapi:Toggle() end
+				optionapi:SetValue(col:ToHSV())
+			end)
+		end
+
+		local sqDrag, hueDrag, opDrag = false, false, false
+		local function sqSet(input)
+			local sx = math.clamp((input.Position.X - square.AbsolutePosition.X) / square.AbsoluteSize.X, 0, 1)
+			local sy = math.clamp((input.Position.Y - square.AbsolutePosition.Y) / square.AbsoluteSize.Y, 0, 1)
+			optionapi:SetValue(nil, sx, 1 - sy)
+		end
+		local function hueSet(input)
+			if optionapi.Rainbow then optionapi:Toggle() end
+			optionapi:SetValue(math.clamp((input.Position.X - hueBar.AbsolutePosition.X) / hueBar.AbsoluteSize.X, 0, 1))
+		end
+		local function opSet(input)
+			optionapi:SetValue(nil, nil, nil, math.clamp((input.Position.X - opBar.AbsolutePosition.X) / opBar.AbsoluteSize.X, 0, 1))
+		end
+		square.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then sqDrag = true sqSet(i) end end)
+		hueBar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then hueDrag = true hueSet(i) end end)
+		opBar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then opDrag = true opSet(i) end end)
+		mainapi:Clean(inputService.InputChanged:Connect(function(i)
+			if i.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+			if sqDrag then sqSet(i) elseif hueDrag then hueSet(i) elseif opDrag then opSet(i) end
+		end))
+		mainapi:Clean(inputService.InputEnded:Connect(function(i)
+			if i.UserInputType == Enum.UserInputType.MouseButton1 then sqDrag, hueDrag, opDrag = false, false, false end
+		end))
+		hexBox.FocusLost:Connect(function()
+			local ok, c = pcall(function() return Color3.fromHex((hexBox.Text:gsub('%s', ''))) end)
+			if ok and c then
+				if optionapi.Rainbow then optionapi:Toggle() end
+				optionapi:SetValue(c:ToHSV())
+			end
+		end)
+
+		function optionapi.RefreshPopup()
+			if not pickerOpen then return end
+			square.BackgroundColor3 = Color3.fromHSV(optionapi.Hue, 1, 1)
+			sqCursor.Position = UDim2.fromScale(optionapi.Sat, 1 - optionapi.Value)
+			hueKnob.Position = UDim2.fromScale(optionapi.Hue, 0.5)
+			opKnob.Position = UDim2.fromScale(optionapi.Opacity, 0.5)
+			local cur = Color3.fromHSV(optionapi.Hue, optionapi.Sat, optionapi.Value)
+			opBar.BackgroundColor3 = cur
+			pcall(function() hexBox.Text = '#'..cur:ToHex() end)
+		end
+
+		togglePicker = function()
+			pickerOpen = not pickerOpen
+			picker.Visible = pickerOpen
+			expand.Rotation = pickerOpen and 180 or 0
+			if pickerOpen then
+				local ap = slider.AbsolutePosition
+				local vs = (gameCamera and gameCamera.ViewportSize) or Vector2.new(1920, 1080)
+				local px = ap.X / scale.Scale + 14
+				local py = ap.Y / scale.Scale + 54
+				if (px + PW) * scale.Scale > vs.X then px = ap.X / scale.Scale - PW - 6 end
+				if (py + 234) * scale.Scale > vs.Y then py = vs.Y / scale.Scale - 240 end
+				picker.Position = UDim2.fromOffset(px, py)
+				optionapi.RefreshPopup()
+			end
+		end
+
 		optionapi.Object = slider
 		api.Options[optionsettings.Name] = optionapi
-		
+
 		return optionapi
 	end,
 	Dropdown = function(optionsettings, children, api)

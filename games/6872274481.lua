@@ -18545,6 +18545,8 @@ run(function()
 	
 	HitColor = larp.Legit:CreateModule({
 		Name = 'Hit Color',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/hitcolor.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then 
 				repeat

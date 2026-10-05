@@ -74,51 +74,51 @@ local LarpLocales = {
 		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfiles', Targets = 'Objetivos', Overlays = 'Superposiciones',
 		Search = 'Buscar', Settings = 'Ajustes', General = 'General', Performance = 'Rendimiento', TextGUI = 'Texto en pantalla',
 		TargetInfo = 'Info de objetivo', ResetProfile = 'Restablecer perfil', SelfDestruct = 'Unload', Reinject = 'Reinyectar',
-		MultiBind = 'Activar multi-teclas', Language = 'Idioma', EnglishDefault = 'InglÃ©s (predeterminado)', LoadedIn = 'Cargado correctamente en ',
-		AddEntry = 'AÃ±adir...', TypeName = 'Escribe un nombre', RobloxUser = 'Usuario de Roblox', ToggleFav = 'Alternar favorito',
-		FavTooltip = 'Muestra este mÃ³dulo en Favoritos.', Mode = 'Modo', ModeTip = 'Cantidad de informaciÃ³n mostrada.', Minimal = 'MÃ­nimo',
-		Standard = 'EstÃ¡ndar', Detailed = 'Detallado', Font = 'Fuente', ColorMode = 'Modo de color', MatchGUI = 'Igualar color de interfaz',
+		MultiBind = 'Activar multi-teclas', Language = 'Idioma', EnglishDefault = 'Inglés (predeterminado)', LoadedIn = 'Cargado correctamente en ',
+		AddEntry = 'Añadir...', TypeName = 'Escribe un nombre', RobloxUser = 'Usuario de Roblox', ToggleFav = 'Alternar favorito',
+		FavTooltip = 'Muestra este módulo en Favoritos.', Mode = 'Modo', ModeTip = 'Cantidad de información mostrada.', Minimal = 'Mínimo',
+		Standard = 'Estándar', Detailed = 'Detallado', Font = 'Fuente', ColorMode = 'Modo de color', MatchGUI = 'Igualar color de interfaz',
 		CustomColor = 'Color personalizado', TextColor = 'Color de texto', Scale = 'Escala', Watermark = 'Marca de agua',
-		Gradient = 'Degradado', V4Gradient = 'Degradado V4', OpenOverlays = 'Abrir menÃº de superposiciones', OpenSettings = 'Abrir ajustes',
-		DiscordJoin = 'Ãšnete a nuestro Discord', Profile = 'Perfil', HidSuffix = 'ocultos'
+		Gradient = 'Degradado', V4Gradient = 'Degradado V4', OpenOverlays = 'Abrir menú de superposiciones', OpenSettings = 'Abrir ajustes',
+		DiscordJoin = 'Únete a nuestro Discord', Profile = 'Perfil', HidSuffix = 'ocultos'
 	},
 	French = {
 		Combat = 'Combat', Utility = 'Utilitaire', World = 'Monde', Inventory = 'Inventaire', Minigames = 'Mini-jeux', Other = 'Autre',
 		Favorites = 'Favoris', Friends = 'Amis', Profiles = 'Profils', Targets = 'Cibles', Overlays = 'Superpositions',
-		Search = 'Rechercher', Settings = 'ParamÃ¨tres', General = 'GÃ©nÃ©ral', Performance = 'Performances', TextGUI = 'Texte Ã  lâ€™Ã©cran',
-		TargetInfo = 'Infos cible', ResetProfile = 'RÃ©initialiser le profil', SelfDestruct = 'Unload', Reinject = 'RÃ©injecter',
-		MultiBind = 'Activer multi-touches', Language = 'Langue', EnglishDefault = 'Anglais (par dÃ©faut)', LoadedIn = 'ChargÃ© avec succÃ¨s en ',
+		Search = 'Rechercher', Settings = 'Paramètres', General = 'Général', Performance = 'Performances', TextGUI = 'Texte à l’écran',
+		TargetInfo = 'Infos cible', ResetProfile = 'Réinitialiser le profil', SelfDestruct = 'Unload', Reinject = 'Réinjecter',
+		MultiBind = 'Activer multi-touches', Language = 'Langue', EnglishDefault = 'Anglais (par défaut)', LoadedIn = 'Chargé avec succès en ',
 		AddEntry = 'Ajouter...', TypeName = 'Tapez un nom', RobloxUser = "Nom d'utilisateur Roblox", ToggleFav = 'Basculer le favori',
-		FavTooltip = 'Affiche ce module dans Favoris.', Mode = 'Mode', ModeTip = "QuantitÃ© d'informations affichÃ©es.", Minimal = 'Minimal',
-		Standard = 'Standard', Detailed = 'DÃ©taillÃ©', Font = 'Police', ColorMode = 'Mode couleur', MatchGUI = "Suivre la couleur de l'interface",
-		CustomColor = 'Couleur personnalisÃ©e', TextColor = 'Couleur du texte', Scale = 'Ã‰chelle', Watermark = 'Filigrane',
-		Gradient = 'DÃ©gradÃ©', V4Gradient = 'DÃ©gradÃ© V4', OpenOverlays = 'Ouvrir le menu des superpositions', OpenSettings = 'Ouvrir les paramÃ¨tres',
-		DiscordJoin = 'Rejoins notre Discord', Profile = 'Profil', HidSuffix = 'masquÃ©s'
+		FavTooltip = 'Affiche ce module dans Favoris.', Mode = 'Mode', ModeTip = "Quantité d'informations affichées.", Minimal = 'Minimal',
+		Standard = 'Standard', Detailed = 'Détaillé', Font = 'Police', ColorMode = 'Mode couleur', MatchGUI = "Suivre la couleur de l'interface",
+		CustomColor = 'Couleur personnalisée', TextColor = 'Couleur du texte', Scale = 'Échelle', Watermark = 'Filigrane',
+		Gradient = 'Dégradé', V4Gradient = 'Dégradé V4', OpenOverlays = 'Ouvrir le menu des superpositions', OpenSettings = 'Ouvrir les paramètres',
+		DiscordJoin = 'Rejoins notre Discord', Profile = 'Profil', HidSuffix = 'masqués'
 	},
 	German = {
 		Combat = 'Kampf', Utility = 'Dienstprogramm', World = 'Welt', Inventory = 'Inventar', Minigames = 'Minispiele', Other = 'Sonstiges',
 		Favorites = 'Favoriten', Friends = 'Freunde', Profiles = 'Profile', Targets = 'Ziele', Overlays = 'Overlays',
 		Search = 'Suchen', Settings = 'Einstellungen', General = 'Allgemein', Performance = 'Leistung', TextGUI = 'Text-GUI',
-		TargetInfo = 'Zielinfo', ResetProfile = 'Profil zurÃ¼cksetzen', SelfDestruct = 'Unload', Reinject = 'Neu injizieren',
+		TargetInfo = 'Zielinfo', ResetProfile = 'Profil zurücksetzen', SelfDestruct = 'Unload', Reinject = 'Neu injizieren',
 		MultiBind = 'Mehrfachbelegung aktivieren', Language = 'Sprache', EnglishDefault = 'Englisch (Standard)', LoadedIn = 'Erfolgreich geladen auf ',
-		AddEntry = 'HinzufÃ¼gen...', TypeName = 'Namen eingeben', RobloxUser = 'Roblox-Benutzername', ToggleFav = 'Favorit umschalten',
+		AddEntry = 'Hinzufügen...', TypeName = 'Namen eingeben', RobloxUser = 'Roblox-Benutzername', ToggleFav = 'Favorit umschalten',
 		FavTooltip = 'Zeigt dieses Modul in Favoriten.', Mode = 'Modus', ModeTip = 'Umfang der angezeigten Informationen.', Minimal = 'Minimal',
-		Standard = 'Standard', Detailed = 'Detailliert', Font = 'Schriftart', ColorMode = 'Farbmodus', MatchGUI = 'GUI-Farbe Ã¼bernehmen',
+		Standard = 'Standard', Detailed = 'Detailliert', Font = 'Schriftart', ColorMode = 'Farbmodus', MatchGUI = 'GUI-Farbe übernehmen',
 		CustomColor = 'Benutzerdefinierte Farbe', TextColor = 'Textfarbe', Scale = 'Skalierung', Watermark = 'Wasserzeichen',
-		Gradient = 'Verlauf', V4Gradient = 'V4-Verlauf', OpenOverlays = 'Overlay-MenÃ¼ Ã¶ffnen', OpenSettings = 'Einstellungen Ã¶ffnen',
+		Gradient = 'Verlauf', V4Gradient = 'V4-Verlauf', OpenOverlays = 'Overlay-Menü öffnen', OpenSettings = 'Einstellungen öffnen',
 		DiscordJoin = 'Tritt unserem Discord bei', Profile = 'Profil', HidSuffix = 'versteckt'
 	},
 	Portuguese = {
-		Combat = 'Combate', Utility = 'Utilidade', World = 'Mundo', Inventory = 'InventÃ¡rio', Minigames = 'Minijogos', Other = 'Outro',
-		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfis', Targets = 'Alvos', Overlays = 'SobreposiÃ§Ãµes',
-		Search = 'Pesquisar', Settings = 'ConfiguraÃ§Ãµes', General = 'Geral', Performance = 'Desempenho', TextGUI = 'Texto na tela',
+		Combat = 'Combate', Utility = 'Utilidade', World = 'Mundo', Inventory = 'Inventário', Minigames = 'Minijogos', Other = 'Outro',
+		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfis', Targets = 'Alvos', Overlays = 'Sobreposições',
+		Search = 'Pesquisar', Settings = 'Configurações', General = 'Geral', Performance = 'Desempenho', TextGUI = 'Texto na tela',
 		TargetInfo = 'Info do alvo', ResetProfile = 'Redefinir perfil', SelfDestruct = 'Unload', Reinject = 'Reinjetar',
-		MultiBind = 'Ativar mÃºltiplas teclas', Language = 'Idioma', EnglishDefault = 'InglÃªs (padrÃ£o)', LoadedIn = 'Carregado com sucesso em ',
-		AddEntry = 'Adicionar...', TypeName = 'Digite um nome', RobloxUser = 'Nome de usuÃ¡rio Roblox', ToggleFav = 'Alternar favorito',
-		FavTooltip = 'Mostra este mÃ³dulo em Favoritos.', Mode = 'Modo', ModeTip = 'Quantidade de informaÃ§Ãµes exibidas.', Minimal = 'MÃ­nimo',
-		Standard = 'PadrÃ£o', Detailed = 'Detalhado', Font = 'Fonte', ColorMode = 'Modo de cor', MatchGUI = 'Seguir cor da interface',
-		CustomColor = 'Cor personalizada', TextColor = 'Cor do texto', Scale = 'Escala', Watermark = 'Marca dâ€™Ã¡gua',
-		Gradient = 'Gradiente', V4Gradient = 'Gradiente V4', OpenOverlays = 'Abrir menu de sobreposiÃ§Ãµes', OpenSettings = 'Abrir configuraÃ§Ãµes',
+		MultiBind = 'Ativar múltiplas teclas', Language = 'Idioma', EnglishDefault = 'Inglês (padrão)', LoadedIn = 'Carregado com sucesso em ',
+		AddEntry = 'Adicionar...', TypeName = 'Digite um nome', RobloxUser = 'Nome de usuário Roblox', ToggleFav = 'Alternar favorito',
+		FavTooltip = 'Mostra este módulo em Favoritos.', Mode = 'Modo', ModeTip = 'Quantidade de informações exibidas.', Minimal = 'Mínimo',
+		Standard = 'Padrão', Detailed = 'Detalhado', Font = 'Fonte', ColorMode = 'Modo de cor', MatchGUI = 'Seguir cor da interface',
+		CustomColor = 'Cor personalizada', TextColor = 'Cor do texto', Scale = 'Escala', Watermark = 'Marca d’água',
+		Gradient = 'Gradiente', V4Gradient = 'Gradiente V4', OpenOverlays = 'Abrir menu de sobreposições', OpenSettings = 'Abrir configurações',
 		DiscordJoin = 'Entre no nosso Discord', Profile = 'Perfil', HidSuffix = 'ocultos'
 	}
 }
@@ -1183,7 +1183,7 @@ components = {
 		title.Name = 'Title'
 		title.Size = UDim2.new(1, 0, 0, 29)
 		title.BackgroundTransparency = 1
-		title.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name..' - '..optionapi.Value
+		title.Text = '         '..optionsettings.Name..' - '..optionapi.Value
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		title.TextSize = 13
@@ -1223,7 +1223,7 @@ components = {
 		
 		function optionapi:SetValue(val, mouse)
 			self.Value = table.find(optionsettings.List, val) and val or optionsettings.List[1] or 'None'
-			title.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name..' - '..self.Value
+			title.Text = '         '..optionsettings.Name..' - '..self.Value
 			if dropdownchildren then
 				arrow.Rotation = 90
 				dropdownchildren:Destroy()
@@ -1253,7 +1253,7 @@ components = {
 					dropdownoption.BackgroundColor3 = uipallet.Main
 					dropdownoption.BorderSizePixel = 0
 					dropdownoption.AutoButtonColor = false
-					dropdownoption.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..v
+					dropdownoption.Text = '         '..v
 					dropdownoption.TextXAlignment = Enum.TextXAlignment.Left
 					dropdownoption.TextColor3 = color.Dark(uipallet.Text, 0.16)
 					dropdownoption.TextSize = 13
@@ -2326,7 +2326,7 @@ components = {
 		toggle.BorderSizePixel = 0
 		toggle.AutoButtonColor = false
 		toggle.Visible = optionsettings.Visible == nil or optionsettings.Visible
-		toggle.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name
+		toggle.Text = '          '..optionsettings.Name
 		toggle.TextXAlignment = Enum.TextXAlignment.Left
 		toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		toggle.TextSize = 14
@@ -2640,7 +2640,7 @@ components = {
 			label.Name = 'DividerLabel'
 			label.Size = UDim2.fromOffset(218, 27)
 			label.BackgroundTransparency = 1
-			label.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..text:upper()
+			label.Text = '          '..text:upper()
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.TextColor3 = color.Dark(uipallet.Text, 0.43)
 			label.TextSize = 9
@@ -2880,7 +2880,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€ŠRebind GUI'
+		button.Text = '          Rebind GUI'
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2968,7 +2968,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = (categorysettings.Icon and 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š' or 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š')..T(categorysettings.Name)
+		button.Text = (categorysettings.Icon and '                                 ' or '             ')..T(categorysettings.Name)
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -3269,7 +3269,7 @@ function mainapi:CreateGUI()
 			toggle.Size = UDim2.new(1, 0, 0, 40)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
-			toggle.Text = string.rep('â€Š', 33 * scale.Scale)..T(togglesettings.Name)
+			toggle.Text = string.rep(' ', 33 * scale.Scale)..T(togglesettings.Name)
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
 			toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			toggle.TextSize = 14
@@ -3314,7 +3314,7 @@ function mainapi:CreateGUI()
 			end
 
 			scale:GetPropertyChangedSignal('Scale'):Connect(function()
-				toggle.Text = string.rep('â€Š', 33 * scale.Scale)..T(togglesettings.Name)
+				toggle.Text = string.rep(' ', 33 * scale.Scale)..T(togglesettings.Name)
 			end)
 			toggle.MouseEnter:Connect(function()
 				hovered = true
@@ -3408,7 +3408,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..T(categorysettings.Name)
+		button.Text = '          '..T(categorysettings.Name)
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -3523,7 +3523,7 @@ function mainapi:CreateGUI()
 			window.Size = UDim2.fromOffset(220, 45 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 			for _, v in categoryapi.Buttons do
 				if v.Icon then
-					v.Object.Text = string.rep('â€Š', 33 * scale.Scale)..v.Name
+					v.Object.Text = string.rep(' ', 33 * scale.Scale)..v.Name
 				end
 			end
 		end)
@@ -4030,7 +4030,7 @@ function mainapi:CreateGUI()
 		window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 		for _, v in categoryapi.Buttons do
 			if v.Icon then
-				v.Object.Text = string.rep('â€Š', 36 * scale.Scale)..v.Name
+				v.Object.Text = string.rep(' ', 36 * scale.Scale)..v.Name
 			end
 		end
 	end)
@@ -4270,7 +4270,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = uipallet.Main
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..T(modulesettings.Name)
+		modulebutton.Text = '            '..T(modulesettings.Name)
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
@@ -7875,7 +7875,7 @@ toolstroke.Parent = toolstrokebkg
 							if not table.find(held, p) then table.insert(rest, p) end
 						end
 					end
-					table.insert(rows, {text = table.concat(held, ' + ')..(rest[1] and ' + '..table.concat(rest, ' + ') or '')..'  â€”  '..name})
+					table.insert(rows, {text = table.concat(held, ' + ')..(rest[1] and ' + '..table.concat(rest, ' + ') or '')..'  —  '..name})
 				end
 			end
 		end
@@ -9017,7 +9017,7 @@ do
 			local sub = (e.meta.privacy or 'public'):upper()
 			if e.meta.updated and e.meta.updated > 0 then
 				local ok, d = pcall(os.date, '%m/%d', e.meta.updated)
-				if ok and d then sub = sub..' Â· '..d end
+				if ok and d then sub = sub..' · '..d end
 			end
 			pubMkLabel(row, sub, 10, true, 8, 19, 135, 13)
 			row.MouseButton1Click:Connect(function()
@@ -9089,7 +9089,7 @@ do
 			addCorner(card, UDim.new(0, 6))
 			pubMkLabel(card, c.name, 13, false, 8, 4, 164, 17).FontFace = uipallet.FontSemiBold
 			pubMkLabel(card, c.creator, 11, true, 8, 22, 164, 14)
-			pubMkLabel(card, 'â™¥ '..c.likes..'    â¬‡ '..c.downloads, 11, true, 8, 38, 164, 14)
+			pubMkLabel(card, '♥ '..c.likes..'    ⬇ '..c.downloads, 11, true, 8, 38, 164, 14)
 			local tagstr = table.concat(c.tags or {}, ', ')
 			if tagstr ~= '' then pubMkLabel(card, tagstr, 10, true, 8, 54, 164, 14) end
 			if c.privacy ~= 'public' then
@@ -9281,10 +9281,10 @@ pubShowDetails = function(ref)
 		put(pubMkLabel(sc, table.concat(meta.tags, '  |  '), 11, true, 0, 0, 340, 15), 15)
 	end
 	local likes = pubLikeCount(meta, ref.id)
-	local statline = pubMkLabel(sc, 'â™¥ ' .. likes .. '      D/L ' .. pubDlCount(meta, ref.id), 12, false, 0, 0, 200, 18)
+	local statline = pubMkLabel(sc, '♥ ' .. likes .. '      D/L ' .. pubDlCount(meta, ref.id), 12, false, 0, 0, 200, 18)
 	statline.Position = UDim2.fromOffset(0, y)
 	statline.Parent = sc
-	local likeBtn = pubMkButton(sc, pubLiked(ref.id) and 'â™¥ Liked' or 'â™¡ Like', 0, 0, 90, 22, pubLiked(ref.id), 11)
+	local likeBtn = pubMkButton(sc, pubLiked(ref.id) and '♥ Liked' or '♡ Like', 0, 0, 90, 22, pubLiked(ref.id), 11)
 	likeBtn.Position = UDim2.fromOffset(214, y)
 	likeBtn.Parent = sc
 	y = y + 28
@@ -10100,7 +10100,7 @@ local function reloadLarp()
 	end
 end
 function mainapi:ShowLanguagePicker(onPick)
-	local langDisplay = {English = 'English (default)', Spanish = 'EspaÃ±ol', French = 'FranÃ§ais', German = 'Deutsch', Portuguese = 'PortuguÃªs'}
+	local langDisplay = {English = 'English (default)', Spanish = 'Español', French = 'Français', German = 'Deutsch', Portuguese = 'Português'}
 	local selected = mainapi.Language
 	if not table.find(LarpLangNames, selected) then selected = 'English' end
 	local shadow = Instance.new('TextButton')
@@ -10230,14 +10230,14 @@ do
 ]]
 local CHANGELOG_VERSION = 5
 local CHANGELOG = {
-	{ver = '1.5', date = 'Sep 24 Â· 26', title = 'Released version 1.5', added = {
+	{ver = '1.5', date = 'Sep 24 · 26', title = 'Released version 1.5', added = {
 		'Added tabs and search to the Legit tab',
 		'Added favorite modules in the Legit tab',
 		'Fixed Clock widget',
 		'Fixed Profiles window dragging and toggle',
 		'Fixed changelog popup close and dragging',
 	}, removed = {}},
-	{ver = '1.4', date = 'Sep 24 Â· 26', title = 'Released version 1.4', added = {
+	{ver = '1.4', date = 'Sep 24 · 26', title = 'Released version 1.4', added = {
 		'Improved projectile aimbot',
 		'Fixed KillAura slow swings and ghost hits',
 		'Added Fake Rank boards and nametag icons',
@@ -10247,7 +10247,7 @@ local CHANGELOG = {
 	}, removed = {
 		'Random and Random All settings in Larp Skins',
 	}},
-	{ver = '1.3', date = 'Sep 22 Â· 26', title = 'Released version 1.3', added = {
+	{ver = '1.3', date = 'Sep 22 · 26', title = 'Released version 1.3', added = {
 		'Better aimbot target checks',
 		'Fixed device icons on nametags',
 		'Faster script downloads',
@@ -10288,7 +10288,7 @@ local function changelogRenderVersion(idx)
 	local v = CHANGELOG[idx]
 	if not v then return end
 	changelogTitle.Text = v.title
-	changelogVer.Text = v.date .. '  Â·  Ver ' .. v.ver
+	changelogVer.Text = v.date .. '  ·  Ver ' .. v.ver
 	changelogEntryList.CanvasSize = UDim2.fromOffset(0, 60 + ((#v.added + #v.removed) * 26))
 	task.spawn(function()
 		local order = 0
@@ -12324,10 +12324,10 @@ end
 	addCorner(send, UDim.new(0, 8))
 	local sendArt = Instance.new('ImageLabel')
 	sendArt.AnchorPoint = Vector2.new(0.5, 0.5)
-	sendArt.Size = UDim2.fromOffset(9, 13)
+	sendArt.Size = UDim2.fromOffset(15, 15)
 	sendArt.Position = UDim2.fromScale(0.5, 0.5)
 	sendArt.BackgroundTransparency = 1
-	sendArt.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
+	sendArt.Image = getcustomasset('LarpV4/assets/larp/send.png')
 	sendArt.ImageColor3 = color.Dark(uipallet.Text, 0.4)
 	sendArt.Parent = send
 
@@ -12371,30 +12371,50 @@ end
 	box.TextTruncate = Enum.TextTruncate.AtEnd
 	box.Parent = inputBar
 
-	local historyPanel = Instance.new('Frame')
-	historyPanel.Size = UDim2.fromOffset(190, 0)
-	historyPanel.AutomaticSize = Enum.AutomaticSize.Y
-	historyPanel.Position = UDim2.fromOffset(W - 200, HEADER + 2)
-	historyPanel.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
-	historyPanel.BorderSizePixel = 0
-	historyPanel.Visible = false
-	historyPanel.ZIndex = 5
-	historyPanel.Parent = win
-	addCorner(historyPanel, UDim.new(0, 8))
-	local hpStroke = Instance.new('UIStroke')
-	hpStroke.Color = color.Light(uipallet.Main, 0.14)
-	hpStroke.Transparency = 0.3
-	hpStroke.Parent = historyPanel
-	local hpList = Instance.new('UIListLayout')
-	hpList.SortOrder = Enum.SortOrder.LayoutOrder
-	hpList.Padding = UDim.new(0, 2)
-	hpList.Parent = historyPanel
-	local hpPad = Instance.new('UIPadding')
-	hpPad.PaddingTop = UDim.new(0, 5)
-	hpPad.PaddingBottom = UDim.new(0, 5)
-	hpPad.PaddingLeft = UDim.new(0, 5)
-	hpPad.PaddingRight = UDim.new(0, 5)
-	hpPad.Parent = historyPanel
+	local historyView = Instance.new('Frame')
+	historyView.Size = UDim2.fromScale(1, 1)
+	historyView.BackgroundColor3 = uipallet.Main
+	historyView.BorderSizePixel = 0
+	historyView.Visible = false
+	historyView.ZIndex = 6
+	historyView.Parent = body
+	local hvTitle = Instance.new('TextLabel')
+	hvTitle.Size = UDim2.fromOffset(200, 18)
+	hvTitle.Position = UDim2.fromOffset(40, 8)
+	hvTitle.BackgroundTransparency = 1
+	hvTitle.Text = 'Recent chats'
+	hvTitle.TextXAlignment = Enum.TextXAlignment.Left
+	hvTitle.TextColor3 = uipallet.Text
+	hvTitle.TextSize = 14
+	hvTitle.FontFace = CHATFONTBOLD
+	hvTitle.ZIndex = 7
+	hvTitle.Parent = historyView
+	local hvBack = Instance.new('ImageButton')
+	hvBack.Size = UDim2.fromOffset(22, 22)
+	hvBack.Position = UDim2.fromOffset(10, 6)
+	hvBack.BackgroundTransparency = 1
+	hvBack.AutoButtonColor = false
+	hvBack.Image = getcustomasset('LarpV4/assets/larp/back.png')
+	hvBack.ImageColor3 = color.Dark(uipallet.Text, 0.3)
+	hvBack.ZIndex = 7
+	hvBack.Parent = historyView
+	hvBack.MouseEnter:Connect(function() tween:Tween(hvBack, uipallet.Tween, { ImageColor3 = uipallet.Text }) end)
+	hvBack.MouseLeave:Connect(function() tween:Tween(hvBack, uipallet.Tween, { ImageColor3 = color.Dark(uipallet.Text, 0.3) }) end)
+	local hvScroll = Instance.new('ScrollingFrame')
+	hvScroll.Size = UDim2.new(1, -16, 1, -38)
+	hvScroll.Position = UDim2.fromOffset(8, 34)
+	hvScroll.BackgroundTransparency = 1
+	hvScroll.BorderSizePixel = 0
+	hvScroll.ScrollBarThickness = 2
+	hvScroll.ScrollBarImageTransparency = 0.6
+	hvScroll.CanvasSize = UDim2.new()
+	hvScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	hvScroll.ZIndex = 7
+	hvScroll.Parent = historyView
+	local hvLay = Instance.new('UIListLayout')
+	hvLay.SortOrder = Enum.SortOrder.LayoutOrder
+	hvLay.Padding = UDim.new(0, 5)
+	hvLay.Parent = hvScroll
 
 	local function scrollBottom()
 		task.defer(function() if list then list.CanvasPosition = Vector2.new(0, list.AbsoluteCanvasSize.Y) end end)
@@ -12562,7 +12582,7 @@ end
 		for _, m in next, sess.history do
 			addBubble(m.role == 'user' and 'user' or 'model', m.text)
 		end
-		historyPanel.Visible = false
+		historyView.Visible = false
 	end
 
 	local function newChat()
@@ -12570,45 +12590,63 @@ end
 		chat.history = {}
 		clearList()
 		greet()
-		historyPanel.Visible = false
+		historyView.Visible = false
 	end
 
 	openHistory = function()
-		if historyPanel.Visible then historyPanel.Visible = false return end
-		for _, c in next, historyPanel:GetChildren() do if c:IsA('TextButton') then c:Destroy() end end
+		if historyView.Visible then historyView.Visible = false return end
+		for _, c in next, hvScroll:GetChildren() do if c:IsA('TextButton') then c:Destroy() end end
 		if #chat.sessions == 0 then
 			local empty = Instance.new('TextButton')
-			empty.Size = UDim2.new(1, 0, 0, 26)
+			empty.Size = UDim2.new(1, 0, 0, 40)
 			empty.BackgroundTransparency = 1
 			empty.AutoButtonColor = false
-			empty.Text = 'No recent chats'
-			empty.TextColor3 = color.Dark(uipallet.Text, 0.4)
-			empty.TextSize = 12
+			empty.Text = 'No recent chats yet'
+			empty.TextColor3 = color.Dark(uipallet.Text, 0.42)
+			empty.TextSize = 13
 			empty.FontFace = CHATFONT
-			empty.Parent = historyPanel
+			empty.ZIndex = 7
+			empty.Parent = hvScroll
 		else
 			for i, sess in next, chat.sessions do
 				local r = Instance.new('TextButton')
-				r.Size = UDim2.new(1, 0, 0, 28)
+				r.Size = UDim2.new(1, 0, 0, 40)
 				r.LayoutOrder = i
 				r.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
-				r.BackgroundTransparency = 1
+				r.BorderSizePixel = 0
 				r.AutoButtonColor = false
-				r.Text = '   '..sess.title
-				r.TextXAlignment = Enum.TextXAlignment.Left
-				r.TextTruncate = Enum.TextTruncate.AtEnd
-				r.TextColor3 = color.Dark(uipallet.Text, 0.1)
-				r.TextSize = 13
-				r.FontFace = CHATFONT
-				r.Parent = historyPanel
-				addCorner(r, UDim.new(0, 6))
-				r.MouseEnter:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundTransparency = 0 }) end)
-				r.MouseLeave:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundTransparency = 1 }) end)
+				r.Text = ''
+				r.ZIndex = 7
+				r.Parent = hvScroll
+				addCorner(r, UDim.new(0, 8))
+				local bar = Instance.new('Frame')
+				bar.Size = UDim2.fromOffset(3, 22)
+				bar.Position = UDim2.fromOffset(8, 9)
+				bar.BackgroundColor3 = accent()
+				bar.BorderSizePixel = 0
+				bar.ZIndex = 8
+				bar.Parent = r
+				addCorner(bar, UDim.new(1, 0))
+				local tl = Instance.new('TextLabel')
+				tl.Size = UDim2.new(1, -24, 1, 0)
+				tl.Position = UDim2.fromOffset(18, 0)
+				tl.BackgroundTransparency = 1
+				tl.Text = sess.title
+				tl.TextXAlignment = Enum.TextXAlignment.Left
+				tl.TextTruncate = Enum.TextTruncate.AtEnd
+				tl.TextColor3 = uipallet.Text
+				tl.TextSize = 13
+				tl.FontFace = CHATFONT
+				tl.ZIndex = 8
+				tl.Parent = r
+				r.MouseEnter:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.1) }) end)
+				r.MouseLeave:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.05) }) end)
 				r.MouseButton1Click:Connect(function() loadSession(sess) end)
 			end
 		end
-		historyPanel.Visible = true
+		historyView.Visible = true
 	end
+	hvBack.MouseButton1Click:Connect(function() historyView.Visible = false end)
 
 	local function refreshSend()
 		local has = box.Text:gsub('%s', '') ~= ''
@@ -12663,7 +12701,7 @@ end
 		chat.collapsed = state
 		tween:Tween(dropArt, uipallet.Tween, { Rotation = state and 0 or 90 })
 		if state then
-			historyPanel.Visible = false
+			historyView.Visible = false
 			body.Visible = false
 		else
 			body.Visible = true

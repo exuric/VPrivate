@@ -19472,6 +19472,8 @@ run(function()
 	
 	WinEffect = larp.Legit:CreateModule({
 		Name = 'WinEffect',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/wineffect.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				WinEffect:Clean(larpEvents.MatchEndEvent.Event:Connect(function()

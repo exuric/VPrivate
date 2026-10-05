@@ -74,51 +74,51 @@ local LarpLocales = {
 		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfiles', Targets = 'Objetivos', Overlays = 'Superposiciones',
 		Search = 'Buscar', Settings = 'Ajustes', General = 'General', Performance = 'Rendimiento', TextGUI = 'Texto en pantalla',
 		TargetInfo = 'Info de objetivo', ResetProfile = 'Restablecer perfil', SelfDestruct = 'Unload', Reinject = 'Reinyectar',
-		MultiBind = 'Activar multi-teclas', Language = 'Idioma', EnglishDefault = 'Inglés (predeterminado)', LoadedIn = 'Cargado correctamente en ',
-		AddEntry = 'Añadir...', TypeName = 'Escribe un nombre', RobloxUser = 'Usuario de Roblox', ToggleFav = 'Alternar favorito',
-		FavTooltip = 'Muestra este módulo en Favoritos.', Mode = 'Modo', ModeTip = 'Cantidad de información mostrada.', Minimal = 'Mínimo',
-		Standard = 'Estándar', Detailed = 'Detallado', Font = 'Fuente', ColorMode = 'Modo de color', MatchGUI = 'Igualar color de interfaz',
+		MultiBind = 'Activar multi-teclas', Language = 'Idioma', EnglishDefault = 'InglÃ©s (predeterminado)', LoadedIn = 'Cargado correctamente en ',
+		AddEntry = 'AÃ±adir...', TypeName = 'Escribe un nombre', RobloxUser = 'Usuario de Roblox', ToggleFav = 'Alternar favorito',
+		FavTooltip = 'Muestra este mÃ³dulo en Favoritos.', Mode = 'Modo', ModeTip = 'Cantidad de informaciÃ³n mostrada.', Minimal = 'MÃ­nimo',
+		Standard = 'EstÃ¡ndar', Detailed = 'Detallado', Font = 'Fuente', ColorMode = 'Modo de color', MatchGUI = 'Igualar color de interfaz',
 		CustomColor = 'Color personalizado', TextColor = 'Color de texto', Scale = 'Escala', Watermark = 'Marca de agua',
-		Gradient = 'Degradado', V4Gradient = 'Degradado V4', OpenOverlays = 'Abrir menú de superposiciones', OpenSettings = 'Abrir ajustes',
-		DiscordJoin = 'Únete a nuestro Discord', Profile = 'Perfil', HidSuffix = 'ocultos'
+		Gradient = 'Degradado', V4Gradient = 'Degradado V4', OpenOverlays = 'Abrir menÃº de superposiciones', OpenSettings = 'Abrir ajustes',
+		DiscordJoin = 'Ãšnete a nuestro Discord', Profile = 'Perfil', HidSuffix = 'ocultos'
 	},
 	French = {
 		Combat = 'Combat', Utility = 'Utilitaire', World = 'Monde', Inventory = 'Inventaire', Minigames = 'Mini-jeux', Other = 'Autre',
 		Favorites = 'Favoris', Friends = 'Amis', Profiles = 'Profils', Targets = 'Cibles', Overlays = 'Superpositions',
-		Search = 'Rechercher', Settings = 'Paramètres', General = 'Général', Performance = 'Performances', TextGUI = 'Texte à l’écran',
-		TargetInfo = 'Infos cible', ResetProfile = 'Réinitialiser le profil', SelfDestruct = 'Unload', Reinject = 'Réinjecter',
-		MultiBind = 'Activer multi-touches', Language = 'Langue', EnglishDefault = 'Anglais (par défaut)', LoadedIn = 'Chargé avec succès en ',
+		Search = 'Rechercher', Settings = 'ParamÃ¨tres', General = 'GÃ©nÃ©ral', Performance = 'Performances', TextGUI = 'Texte Ã  lâ€™Ã©cran',
+		TargetInfo = 'Infos cible', ResetProfile = 'RÃ©initialiser le profil', SelfDestruct = 'Unload', Reinject = 'RÃ©injecter',
+		MultiBind = 'Activer multi-touches', Language = 'Langue', EnglishDefault = 'Anglais (par dÃ©faut)', LoadedIn = 'ChargÃ© avec succÃ¨s en ',
 		AddEntry = 'Ajouter...', TypeName = 'Tapez un nom', RobloxUser = "Nom d'utilisateur Roblox", ToggleFav = 'Basculer le favori',
-		FavTooltip = 'Affiche ce module dans Favoris.', Mode = 'Mode', ModeTip = "Quantité d'informations affichées.", Minimal = 'Minimal',
-		Standard = 'Standard', Detailed = 'Détaillé', Font = 'Police', ColorMode = 'Mode couleur', MatchGUI = "Suivre la couleur de l'interface",
-		CustomColor = 'Couleur personnalisée', TextColor = 'Couleur du texte', Scale = 'Échelle', Watermark = 'Filigrane',
-		Gradient = 'Dégradé', V4Gradient = 'Dégradé V4', OpenOverlays = 'Ouvrir le menu des superpositions', OpenSettings = 'Ouvrir les paramètres',
-		DiscordJoin = 'Rejoins notre Discord', Profile = 'Profil', HidSuffix = 'masqués'
+		FavTooltip = 'Affiche ce module dans Favoris.', Mode = 'Mode', ModeTip = "QuantitÃ© d'informations affichÃ©es.", Minimal = 'Minimal',
+		Standard = 'Standard', Detailed = 'DÃ©taillÃ©', Font = 'Police', ColorMode = 'Mode couleur', MatchGUI = "Suivre la couleur de l'interface",
+		CustomColor = 'Couleur personnalisÃ©e', TextColor = 'Couleur du texte', Scale = 'Ã‰chelle', Watermark = 'Filigrane',
+		Gradient = 'DÃ©gradÃ©', V4Gradient = 'DÃ©gradÃ© V4', OpenOverlays = 'Ouvrir le menu des superpositions', OpenSettings = 'Ouvrir les paramÃ¨tres',
+		DiscordJoin = 'Rejoins notre Discord', Profile = 'Profil', HidSuffix = 'masquÃ©s'
 	},
 	German = {
 		Combat = 'Kampf', Utility = 'Dienstprogramm', World = 'Welt', Inventory = 'Inventar', Minigames = 'Minispiele', Other = 'Sonstiges',
 		Favorites = 'Favoriten', Friends = 'Freunde', Profiles = 'Profile', Targets = 'Ziele', Overlays = 'Overlays',
 		Search = 'Suchen', Settings = 'Einstellungen', General = 'Allgemein', Performance = 'Leistung', TextGUI = 'Text-GUI',
-		TargetInfo = 'Zielinfo', ResetProfile = 'Profil zurücksetzen', SelfDestruct = 'Unload', Reinject = 'Neu injizieren',
+		TargetInfo = 'Zielinfo', ResetProfile = 'Profil zurÃ¼cksetzen', SelfDestruct = 'Unload', Reinject = 'Neu injizieren',
 		MultiBind = 'Mehrfachbelegung aktivieren', Language = 'Sprache', EnglishDefault = 'Englisch (Standard)', LoadedIn = 'Erfolgreich geladen auf ',
-		AddEntry = 'Hinzufügen...', TypeName = 'Namen eingeben', RobloxUser = 'Roblox-Benutzername', ToggleFav = 'Favorit umschalten',
+		AddEntry = 'HinzufÃ¼gen...', TypeName = 'Namen eingeben', RobloxUser = 'Roblox-Benutzername', ToggleFav = 'Favorit umschalten',
 		FavTooltip = 'Zeigt dieses Modul in Favoriten.', Mode = 'Modus', ModeTip = 'Umfang der angezeigten Informationen.', Minimal = 'Minimal',
-		Standard = 'Standard', Detailed = 'Detailliert', Font = 'Schriftart', ColorMode = 'Farbmodus', MatchGUI = 'GUI-Farbe übernehmen',
+		Standard = 'Standard', Detailed = 'Detailliert', Font = 'Schriftart', ColorMode = 'Farbmodus', MatchGUI = 'GUI-Farbe Ã¼bernehmen',
 		CustomColor = 'Benutzerdefinierte Farbe', TextColor = 'Textfarbe', Scale = 'Skalierung', Watermark = 'Wasserzeichen',
-		Gradient = 'Verlauf', V4Gradient = 'V4-Verlauf', OpenOverlays = 'Overlay-Menü öffnen', OpenSettings = 'Einstellungen öffnen',
+		Gradient = 'Verlauf', V4Gradient = 'V4-Verlauf', OpenOverlays = 'Overlay-MenÃ¼ Ã¶ffnen', OpenSettings = 'Einstellungen Ã¶ffnen',
 		DiscordJoin = 'Tritt unserem Discord bei', Profile = 'Profil', HidSuffix = 'versteckt'
 	},
 	Portuguese = {
-		Combat = 'Combate', Utility = 'Utilidade', World = 'Mundo', Inventory = 'Inventário', Minigames = 'Minijogos', Other = 'Outro',
-		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfis', Targets = 'Alvos', Overlays = 'Sobreposições',
-		Search = 'Pesquisar', Settings = 'Configurações', General = 'Geral', Performance = 'Desempenho', TextGUI = 'Texto na tela',
+		Combat = 'Combate', Utility = 'Utilidade', World = 'Mundo', Inventory = 'InventÃ¡rio', Minigames = 'Minijogos', Other = 'Outro',
+		Favorites = 'Favoritos', Friends = 'Amigos', Profiles = 'Perfis', Targets = 'Alvos', Overlays = 'SobreposiÃ§Ãµes',
+		Search = 'Pesquisar', Settings = 'ConfiguraÃ§Ãµes', General = 'Geral', Performance = 'Desempenho', TextGUI = 'Texto na tela',
 		TargetInfo = 'Info do alvo', ResetProfile = 'Redefinir perfil', SelfDestruct = 'Unload', Reinject = 'Reinjetar',
-		MultiBind = 'Ativar múltiplas teclas', Language = 'Idioma', EnglishDefault = 'Inglês (padrão)', LoadedIn = 'Carregado com sucesso em ',
-		AddEntry = 'Adicionar...', TypeName = 'Digite um nome', RobloxUser = 'Nome de usuário Roblox', ToggleFav = 'Alternar favorito',
-		FavTooltip = 'Mostra este módulo em Favoritos.', Mode = 'Modo', ModeTip = 'Quantidade de informações exibidas.', Minimal = 'Mínimo',
-		Standard = 'Padrão', Detailed = 'Detalhado', Font = 'Fonte', ColorMode = 'Modo de cor', MatchGUI = 'Seguir cor da interface',
-		CustomColor = 'Cor personalizada', TextColor = 'Cor do texto', Scale = 'Escala', Watermark = 'Marca d’água',
-		Gradient = 'Gradiente', V4Gradient = 'Gradiente V4', OpenOverlays = 'Abrir menu de sobreposições', OpenSettings = 'Abrir configurações',
+		MultiBind = 'Ativar mÃºltiplas teclas', Language = 'Idioma', EnglishDefault = 'InglÃªs (padrÃ£o)', LoadedIn = 'Carregado com sucesso em ',
+		AddEntry = 'Adicionar...', TypeName = 'Digite um nome', RobloxUser = 'Nome de usuÃ¡rio Roblox', ToggleFav = 'Alternar favorito',
+		FavTooltip = 'Mostra este mÃ³dulo em Favoritos.', Mode = 'Modo', ModeTip = 'Quantidade de informaÃ§Ãµes exibidas.', Minimal = 'MÃ­nimo',
+		Standard = 'PadrÃ£o', Detailed = 'Detalhado', Font = 'Fonte', ColorMode = 'Modo de cor', MatchGUI = 'Seguir cor da interface',
+		CustomColor = 'Cor personalizada', TextColor = 'Cor do texto', Scale = 'Escala', Watermark = 'Marca dâ€™Ã¡gua',
+		Gradient = 'Gradiente', V4Gradient = 'Gradiente V4', OpenOverlays = 'Abrir menu de sobreposiÃ§Ãµes', OpenSettings = 'Abrir configuraÃ§Ãµes',
 		DiscordJoin = 'Entre no nosso Discord', Profile = 'Perfil', HidSuffix = 'ocultos'
 	}
 }
@@ -1183,7 +1183,7 @@ components = {
 		title.Name = 'Title'
 		title.Size = UDim2.new(1, 0, 0, 29)
 		title.BackgroundTransparency = 1
-		title.Text = '         '..optionsettings.Name..' - '..optionapi.Value
+		title.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name..' - '..optionapi.Value
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		title.TextSize = 13
@@ -1223,7 +1223,7 @@ components = {
 		
 		function optionapi:SetValue(val, mouse)
 			self.Value = table.find(optionsettings.List, val) and val or optionsettings.List[1] or 'None'
-			title.Text = '         '..optionsettings.Name..' - '..self.Value
+			title.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name..' - '..self.Value
 			if dropdownchildren then
 				arrow.Rotation = 90
 				dropdownchildren:Destroy()
@@ -1253,7 +1253,7 @@ components = {
 					dropdownoption.BackgroundColor3 = uipallet.Main
 					dropdownoption.BorderSizePixel = 0
 					dropdownoption.AutoButtonColor = false
-					dropdownoption.Text = '         '..v
+					dropdownoption.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..v
 					dropdownoption.TextXAlignment = Enum.TextXAlignment.Left
 					dropdownoption.TextColor3 = color.Dark(uipallet.Text, 0.16)
 					dropdownoption.TextSize = 13
@@ -2326,7 +2326,7 @@ components = {
 		toggle.BorderSizePixel = 0
 		toggle.AutoButtonColor = false
 		toggle.Visible = optionsettings.Visible == nil or optionsettings.Visible
-		toggle.Text = '          '..optionsettings.Name
+		toggle.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..optionsettings.Name
 		toggle.TextXAlignment = Enum.TextXAlignment.Left
 		toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		toggle.TextSize = 14
@@ -2640,7 +2640,7 @@ components = {
 			label.Name = 'DividerLabel'
 			label.Size = UDim2.fromOffset(218, 27)
 			label.BackgroundTransparency = 1
-			label.Text = '          '..text:upper()
+			label.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..text:upper()
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.TextColor3 = color.Dark(uipallet.Text, 0.43)
 			label.TextSize = 9
@@ -2880,7 +2880,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = '          Rebind GUI'
+		button.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€ŠRebind GUI'
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -2968,7 +2968,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = (categorysettings.Icon and '                                 ' or '             ')..T(categorysettings.Name)
+		button.Text = (categorysettings.Icon and 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š' or 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š')..T(categorysettings.Name)
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -3269,7 +3269,7 @@ function mainapi:CreateGUI()
 			toggle.Size = UDim2.new(1, 0, 0, 40)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
-			toggle.Text = string.rep(' ', 33 * scale.Scale)..T(togglesettings.Name)
+			toggle.Text = string.rep('â€Š', 33 * scale.Scale)..T(togglesettings.Name)
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
 			toggle.TextColor3 = color.Dark(uipallet.Text, 0.16)
 			toggle.TextSize = 14
@@ -3314,7 +3314,7 @@ function mainapi:CreateGUI()
 			end
 
 			scale:GetPropertyChangedSignal('Scale'):Connect(function()
-				toggle.Text = string.rep(' ', 33 * scale.Scale)..T(togglesettings.Name)
+				toggle.Text = string.rep('â€Š', 33 * scale.Scale)..T(togglesettings.Name)
 			end)
 			toggle.MouseEnter:Connect(function()
 				hovered = true
@@ -3408,7 +3408,7 @@ function mainapi:CreateGUI()
 		button.BackgroundColor3 = uipallet.Main
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
-		button.Text = '          '..T(categorysettings.Name)
+		button.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..T(categorysettings.Name)
 		button.TextXAlignment = Enum.TextXAlignment.Left
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		button.TextSize = 14
@@ -3523,7 +3523,7 @@ function mainapi:CreateGUI()
 			window.Size = UDim2.fromOffset(220, 45 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 			for _, v in categoryapi.Buttons do
 				if v.Icon then
-					v.Object.Text = string.rep(' ', 33 * scale.Scale)..v.Name
+					v.Object.Text = string.rep('â€Š', 33 * scale.Scale)..v.Name
 				end
 			end
 		end)
@@ -4030,7 +4030,7 @@ function mainapi:CreateGUI()
 		window.Size = UDim2.fromOffset(220, 42 + windowlist.AbsoluteContentSize.Y / scale.Scale)
 		for _, v in categoryapi.Buttons do
 			if v.Icon then
-				v.Object.Text = string.rep(' ', 36 * scale.Scale)..v.Name
+				v.Object.Text = string.rep('â€Š', 36 * scale.Scale)..v.Name
 			end
 		end
 	end)
@@ -4270,7 +4270,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.BackgroundColor3 = uipallet.Main
 		modulebutton.BorderSizePixel = 0
 		modulebutton.AutoButtonColor = false
-		modulebutton.Text = '            '..T(modulesettings.Name)
+		modulebutton.Text = 'â€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Šâ€Š'..T(modulesettings.Name)
 		modulebutton.TextXAlignment = Enum.TextXAlignment.Left
 		modulebutton.TextColor3 = color.Dark(uipallet.Text, 0.16)
 		modulebutton.TextSize = 14
@@ -7875,7 +7875,7 @@ toolstroke.Parent = toolstrokebkg
 							if not table.find(held, p) then table.insert(rest, p) end
 						end
 					end
-					table.insert(rows, {text = table.concat(held, ' + ')..(rest[1] and ' + '..table.concat(rest, ' + ') or '')..'  —  '..name})
+					table.insert(rows, {text = table.concat(held, ' + ')..(rest[1] and ' + '..table.concat(rest, ' + ') or '')..'  â€”  '..name})
 				end
 			end
 		end
@@ -9017,7 +9017,7 @@ do
 			local sub = (e.meta.privacy or 'public'):upper()
 			if e.meta.updated and e.meta.updated > 0 then
 				local ok, d = pcall(os.date, '%m/%d', e.meta.updated)
-				if ok and d then sub = sub..' · '..d end
+				if ok and d then sub = sub..' Â· '..d end
 			end
 			pubMkLabel(row, sub, 10, true, 8, 19, 135, 13)
 			row.MouseButton1Click:Connect(function()
@@ -9089,7 +9089,7 @@ do
 			addCorner(card, UDim.new(0, 6))
 			pubMkLabel(card, c.name, 13, false, 8, 4, 164, 17).FontFace = uipallet.FontSemiBold
 			pubMkLabel(card, c.creator, 11, true, 8, 22, 164, 14)
-			pubMkLabel(card, '♥ '..c.likes..'    ⬇ '..c.downloads, 11, true, 8, 38, 164, 14)
+			pubMkLabel(card, 'â™¥ '..c.likes..'    â¬‡ '..c.downloads, 11, true, 8, 38, 164, 14)
 			local tagstr = table.concat(c.tags or {}, ', ')
 			if tagstr ~= '' then pubMkLabel(card, tagstr, 10, true, 8, 54, 164, 14) end
 			if c.privacy ~= 'public' then
@@ -9281,10 +9281,10 @@ pubShowDetails = function(ref)
 		put(pubMkLabel(sc, table.concat(meta.tags, '  |  '), 11, true, 0, 0, 340, 15), 15)
 	end
 	local likes = pubLikeCount(meta, ref.id)
-	local statline = pubMkLabel(sc, '♥ ' .. likes .. '      D/L ' .. pubDlCount(meta, ref.id), 12, false, 0, 0, 200, 18)
+	local statline = pubMkLabel(sc, 'â™¥ ' .. likes .. '      D/L ' .. pubDlCount(meta, ref.id), 12, false, 0, 0, 200, 18)
 	statline.Position = UDim2.fromOffset(0, y)
 	statline.Parent = sc
-	local likeBtn = pubMkButton(sc, pubLiked(ref.id) and '♥ Liked' or '♡ Like', 0, 0, 90, 22, pubLiked(ref.id), 11)
+	local likeBtn = pubMkButton(sc, pubLiked(ref.id) and 'â™¥ Liked' or 'â™¡ Like', 0, 0, 90, 22, pubLiked(ref.id), 11)
 	likeBtn.Position = UDim2.fromOffset(214, y)
 	likeBtn.Parent = sc
 	y = y + 28
@@ -10100,7 +10100,7 @@ local function reloadLarp()
 	end
 end
 function mainapi:ShowLanguagePicker(onPick)
-	local langDisplay = {English = 'English (default)', Spanish = 'Español', French = 'Français', German = 'Deutsch', Portuguese = 'Português'}
+	local langDisplay = {English = 'English (default)', Spanish = 'EspaÃ±ol', French = 'FranÃ§ais', German = 'Deutsch', Portuguese = 'PortuguÃªs'}
 	local selected = mainapi.Language
 	if not table.find(LarpLangNames, selected) then selected = 'English' end
 	local shadow = Instance.new('TextButton')
@@ -10230,14 +10230,14 @@ do
 ]]
 local CHANGELOG_VERSION = 5
 local CHANGELOG = {
-	{ver = '1.5', date = 'Sep 24 · 26', title = 'Released version 1.5', added = {
+	{ver = '1.5', date = 'Sep 24 Â· 26', title = 'Released version 1.5', added = {
 		'Added tabs and search to the Legit tab',
 		'Added favorite modules in the Legit tab',
 		'Fixed Clock widget',
 		'Fixed Profiles window dragging and toggle',
 		'Fixed changelog popup close and dragging',
 	}, removed = {}},
-	{ver = '1.4', date = 'Sep 24 · 26', title = 'Released version 1.4', added = {
+	{ver = '1.4', date = 'Sep 24 Â· 26', title = 'Released version 1.4', added = {
 		'Improved projectile aimbot',
 		'Fixed KillAura slow swings and ghost hits',
 		'Added Fake Rank boards and nametag icons',
@@ -10247,7 +10247,7 @@ local CHANGELOG = {
 	}, removed = {
 		'Random and Random All settings in Larp Skins',
 	}},
-	{ver = '1.3', date = 'Sep 22 · 26', title = 'Released version 1.3', added = {
+	{ver = '1.3', date = 'Sep 22 Â· 26', title = 'Released version 1.3', added = {
 		'Better aimbot target checks',
 		'Fixed device icons on nametags',
 		'Faster script downloads',
@@ -10288,7 +10288,7 @@ local function changelogRenderVersion(idx)
 	local v = CHANGELOG[idx]
 	if not v then return end
 	changelogTitle.Text = v.title
-	changelogVer.Text = v.date .. '  ·  Ver ' .. v.ver
+	changelogVer.Text = v.date .. '  Â·  Ver ' .. v.ver
 	changelogEntryList.CanvasSize = UDim2.fromOffset(0, 60 + ((#v.added + #v.removed) * 26))
 	task.spawn(function()
 		local order = 0
@@ -12084,6 +12084,7 @@ end
 	end
 	local MODEL = 'gemini-3.5-flash-lite'
 	local IMG_MODEL = 'gemini-2.5-flash-image-preview'
+	local TOKEN_SOFT_LIMIT = 1000000
 	local SYSTEM_PROMPT = table.concat({
 		'You are the AI Assistant built into larp v4, a Roblox script and GUI styled after Vape V4, used in Bedwars and other games.',
 		'You are powered by Google Gemini (model '..MODEL..'). Answer clearly and concisely in plain text.',
@@ -12092,13 +12093,26 @@ end
 		'- Open or close the menu with the menu keybind (default RightShift).',
 		'- Modules sit in categories: Combat, Blatant, Render, World, Utility, Inventory, Minigames, Other, plus a Legit tab and a Targets tab.',
 		'- Toggle a module: open the menu, open its category, click the module row.',
-		'- Bind a module to a key: hover the module row, click the keybind icon on the right of the row (or right-click the module), then press the key. Rebind the same way; bind to Backspace or Delete to clear it.',
+		'- Bind a module to a key: hover the module row, click the keybind icon on the right of the row, then press the key. Bind to Backspace or Delete to clear it.',
 		'- Combat modules include KillAura, AimAssist, Reach, Projectile Aimbot. Render includes ESP, Chams, Fullbright. Movement includes Scaffold, Fly, Speed.',
 		'- The Targets tab controls who modules target (friends, enemies, whitelist).',
 		'Keep answers short and friendly. If you do not know something about larp, say so briefly.'
 	}, '\n')
+	local GREETINGS = {
+		'Good morning. What are we working on?',
+		'Your move, %s.',
+		"What's the play, %s?",
+		'Ready when you are, %s.',
+		'Back at it. What do you need?',
+		"What's up, %s? Ask me anything.",
+		"Let's get into it. What's the question?",
+		'Yo %s, what are we building?',
+		'All ears, %s. What do you need?',
+		'Hey %s. Where do we start?'
+	}
 
 	local accent = function() return Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) end
+	local accentText = function() return mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) end
 
 	local CHATFONT, CHATFONTBOLD = uipallet.Font, uipallet.FontSemiBold
 	pcall(function()
@@ -12116,8 +12130,7 @@ end
 			crypt and crypt.base64 and crypt.base64.decode,
 			crypt and crypt.base64_decode,
 			base64 and base64.decode,
-			base64_decode,
-			(getgenv and getgenv().Base64 and getgenv().Base64.Decode)
+			base64_decode
 		}
 		for _, f in next, fns do
 			if type(f) == 'function' then
@@ -12152,7 +12165,7 @@ end
 		})
 		local code = resp and (resp.StatusCode or resp.status_code)
 		if not resp or (code and code >= 400) then
-			error('HTTP '..tostring(code)..': '..tostring(resp and resp.Body and resp.Body:sub(1, 180)))
+			error('HTTP '..tostring(code)..': '..tostring(resp and resp.Body and resp.Body:sub(1, 160)))
 		end
 		local data = HttpService:JSONDecode(resp.Body)
 		local cand = data.candidates and data.candidates[1]
@@ -12166,8 +12179,7 @@ end
 				local bytes = decodeB64(inl.data)
 				if bytes then
 					local path = 'LarpV4/assets/larp/aigen_'..tostring(os.time())..'_'..tostring(math.random(1000, 9999))..'.png'
-					local okw = pcall(writefile, path, bytes)
-					if okw then image = getcustomasset(path) end
+					if pcall(writefile, path, bytes) then image = getcustomasset(path) end
 				end
 			end
 		end
@@ -12177,12 +12189,223 @@ end
 		return { answer = answer, thinking = thinking, image = image, usage = data.usageMetadata }
 	end
 
-	local chat = { win = nil, list = nil, layout = nil, history = {}, tokens = 0, busy = false, imageMode = false, tokenLabel = nil }
+	local W, H, HEADER, INPUTH = 404, 456, 46, 46
+	local chat = { history = {}, tokens = 0, busy = false, imageMode = false, sessions = {}, collapsed = false }
+
+	local win = Instance.new('Frame')
+	win.Name = 'AIAssistant'
+	win.Size = UDim2.fromOffset(W, H)
+	win.BackgroundColor3 = uipallet.Main
+	win.BorderSizePixel = 0
+	win.Visible = false
+	win.Parent = clickgui
+	addCorner(win, UDim.new(0, 10))
+	addBlur(win)
+	makeDraggable(win)
+	do
+		local view = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(1280, 720)
+		win.Position = UDim2.fromOffset(math.floor(view.X / 2 - W / 2), math.floor(view.Y / 2 - H / 2))
+	end
+
+	local hicon = Instance.new('ImageLabel')
+	hicon.Size = UDim2.fromOffset(19, 19)
+	hicon.Position = UDim2.fromOffset(15, 13)
+	hicon.BackgroundTransparency = 1
+	hicon.Image = getcustomasset('LarpV4/assets/larp/ai.png')
+	hicon.ImageColor3 = accent()
+	hicon.Parent = win
+	local htitle = Instance.new('TextLabel')
+	htitle.Size = UDim2.fromOffset(180, 17)
+	htitle.Position = UDim2.fromOffset(42, 8)
+	htitle.BackgroundTransparency = 1
+	htitle.Text = 'AI Assistant'
+	htitle.TextXAlignment = Enum.TextXAlignment.Left
+	htitle.TextColor3 = uipallet.Text
+	htitle.TextSize = 15
+	htitle.FontFace = CHATFONTBOLD
+	htitle.Parent = win
+	local hmodel = Instance.new('TextLabel')
+	hmodel.Size = UDim2.fromOffset(220, 13)
+	hmodel.Position = UDim2.fromOffset(42, 25)
+	hmodel.BackgroundTransparency = 1
+	hmodel.Text = MODEL
+	hmodel.TextXAlignment = Enum.TextXAlignment.Left
+	hmodel.TextColor3 = color.Dark(uipallet.Text, 0.42)
+	hmodel.TextSize = 11
+	hmodel.FontFace = CHATFONT
+	hmodel.Parent = win
+
+	local function headerBtn(x, img, imgSize, tip)
+		local b = Instance.new('ImageButton')
+		b.AnchorPoint = Vector2.new(1, 0)
+		b.Size = UDim2.fromOffset(22, 22)
+		b.Position = UDim2.fromOffset(x, 12)
+		b.BackgroundTransparency = 1
+		b.AutoButtonColor = false
+		b.Image = ''
+		b.Parent = win
+		local art = Instance.new('ImageLabel')
+		art.AnchorPoint = Vector2.new(0.5, 0.5)
+		art.Size = imgSize
+		art.Position = UDim2.fromScale(0.5, 0.5)
+		art.BackgroundTransparency = 1
+		art.Image = img
+		art.ImageColor3 = color.Dark(uipallet.Text, 0.3)
+		art.Parent = b
+		if tip then addTooltip(b, tip) end
+		b.MouseEnter:Connect(function() tween:Tween(art, uipallet.Tween, { ImageColor3 = uipallet.Text }) end)
+		b.MouseLeave:Connect(function() tween:Tween(art, uipallet.Tween, { ImageColor3 = color.Dark(uipallet.Text, 0.3) }) end)
+		return b, art
+	end
+
+	local dropBtn, dropArt = headerBtn(W - 14, getcustomasset('LarpV4/assets/larp/expandright.png'), UDim2.fromOffset(7, 11), 'Collapse')
+	dropArt.Rotation = 90
+	local newBtn = headerBtn(W - 42, getcustomasset('LarpV4/assets/larp/add.png'), UDim2.fromOffset(13, 13), 'New chat')
+	local histBtn = headerBtn(W - 70, getcustomasset('LarpV4/assets/larp/history.png'), UDim2.fromOffset(15, 15), 'Chat history')
+
+	local divider = Instance.new('Frame')
+	divider.Size = UDim2.new(1, -24, 0, 1)
+	divider.Position = UDim2.fromOffset(12, HEADER - 1)
+	divider.BackgroundColor3 = Color3.new(1, 1, 1)
+	divider.BackgroundTransparency = 0.93
+	divider.BorderSizePixel = 0
+	divider.Parent = win
+
+	local body = Instance.new('Frame')
+	body.Name = 'Body'
+	body.Size = UDim2.new(1, 0, 1, -HEADER)
+	body.Position = UDim2.fromOffset(0, HEADER)
+	body.BackgroundTransparency = 1
+	body.Parent = win
+
+	local list = Instance.new('ScrollingFrame')
+	list.Size = UDim2.new(1, -16, 1, -(INPUTH + 14))
+	list.Position = UDim2.fromOffset(8, 8)
+	list.BackgroundTransparency = 1
+	list.BorderSizePixel = 0
+	list.ScrollBarThickness = 2
+	list.ScrollBarImageColor3 = color.Light(uipallet.Main, 0.3)
+	list.ScrollBarImageTransparency = 0.6
+	list.CanvasSize = UDim2.new()
+	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	list.Parent = body
+	local lay = Instance.new('UIListLayout')
+	lay.SortOrder = Enum.SortOrder.LayoutOrder
+	lay.Padding = UDim.new(0, 8)
+	lay.Parent = list
+	local lpad = Instance.new('UIPadding')
+	lpad.PaddingLeft = UDim.new(0, 2)
+	lpad.PaddingRight = UDim.new(0, 4)
+	lpad.PaddingTop = UDim.new(0, 2)
+	lpad.PaddingBottom = UDim.new(0, 4)
+	lpad.Parent = list
+
+	local inputBar = Instance.new('Frame')
+	inputBar.AnchorPoint = Vector2.new(0, 1)
+	inputBar.Size = UDim2.new(1, -16, 0, INPUTH - 8)
+	inputBar.Position = UDim2.new(0, 8, 1, -8)
+	inputBar.BackgroundColor3 = color.Dark(uipallet.Main, 0.015)
+	inputBar.BorderSizePixel = 0
+	inputBar.Parent = body
+	addCorner(inputBar, UDim.new(0, 10))
+	local inputStroke = Instance.new('UIStroke')
+	inputStroke.Color = color.Light(uipallet.Main, 0.14)
+	inputStroke.Transparency = 0.4
+	inputStroke.Parent = inputBar
+
+	local send = Instance.new('ImageButton')
+	send.AnchorPoint = Vector2.new(1, 0.5)
+	send.Size = UDim2.fromOffset(30, 30)
+	send.Position = UDim2.new(1, -4, 0.5, 0)
+	send.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+	send.AutoButtonColor = false
+	send.Image = ''
+	send.Parent = inputBar
+	addCorner(send, UDim.new(0, 8))
+	local sendArt = Instance.new('ImageLabel')
+	sendArt.AnchorPoint = Vector2.new(0.5, 0.5)
+	sendArt.Size = UDim2.fromOffset(9, 13)
+	sendArt.Position = UDim2.fromScale(0.5, 0.5)
+	sendArt.BackgroundTransparency = 1
+	sendArt.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
+	sendArt.ImageColor3 = color.Dark(uipallet.Text, 0.4)
+	sendArt.Parent = send
+
+	local ringTrack = Instance.new('Frame')
+	ringTrack.AnchorPoint = Vector2.new(1, 0.5)
+	ringTrack.Size = UDim2.fromOffset(20, 20)
+	ringTrack.Position = UDim2.new(1, -40, 0.5, 0)
+	ringTrack.BackgroundTransparency = 1
+	ringTrack.Parent = inputBar
+	addCorner(ringTrack, UDim.new(1, 0))
+	local ringStrokeBg = Instance.new('UIStroke')
+	ringStrokeBg.Thickness = 2
+	ringStrokeBg.Color = color.Light(uipallet.Main, 0.1)
+	ringStrokeBg.Transparency = 0.2
+	ringStrokeBg.Parent = ringTrack
+	local ring = Instance.new('Frame')
+	ring.Size = UDim2.fromScale(1, 1)
+	ring.BackgroundTransparency = 1
+	ring.Parent = ringTrack
+	addCorner(ring, UDim.new(1, 0))
+	local ringStroke = Instance.new('UIStroke')
+	ringStroke.Thickness = 2
+	ringStroke.Color = accent()
+	ringStroke.Transparency = 0.9
+	ringStroke.Parent = ring
+	addTooltip(ringTrack, '0 tokens this session')
+
+	local box = Instance.new('TextBox')
+	box.Size = UDim2.new(1, -78, 1, -8)
+	box.Position = UDim2.fromOffset(12, 4)
+	box.BackgroundTransparency = 1
+	box.Text = ''
+	box.PlaceholderText = 'Ask Gemini...'
+	box.PlaceholderColor3 = color.Dark(uipallet.Text, 0.45)
+	box.TextXAlignment = Enum.TextXAlignment.Left
+	box.TextYAlignment = Enum.TextYAlignment.Center
+	box.TextColor3 = Color3.new(1, 1, 1)
+	box.TextSize = 13
+	box.FontFace = CHATFONT
+	box.ClearTextOnFocus = false
+	box.TextTruncate = Enum.TextTruncate.AtEnd
+	box.Parent = inputBar
+
+	local historyPanel = Instance.new('Frame')
+	historyPanel.Size = UDim2.fromOffset(190, 0)
+	historyPanel.AutomaticSize = Enum.AutomaticSize.Y
+	historyPanel.Position = UDim2.fromOffset(W - 200, HEADER + 2)
+	historyPanel.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+	historyPanel.BorderSizePixel = 0
+	historyPanel.Visible = false
+	historyPanel.ZIndex = 5
+	historyPanel.Parent = win
+	addCorner(historyPanel, UDim.new(0, 8))
+	local hpStroke = Instance.new('UIStroke')
+	hpStroke.Color = color.Light(uipallet.Main, 0.14)
+	hpStroke.Transparency = 0.3
+	hpStroke.Parent = historyPanel
+	local hpList = Instance.new('UIListLayout')
+	hpList.SortOrder = Enum.SortOrder.LayoutOrder
+	hpList.Padding = UDim.new(0, 2)
+	hpList.Parent = historyPanel
+	local hpPad = Instance.new('UIPadding')
+	hpPad.PaddingTop = UDim.new(0, 5)
+	hpPad.PaddingBottom = UDim.new(0, 5)
+	hpPad.PaddingLeft = UDim.new(0, 5)
+	hpPad.PaddingRight = UDim.new(0, 5)
+	hpPad.Parent = historyPanel
 
 	local function scrollBottom()
-		task.defer(function()
-			if chat.list then chat.list.CanvasPosition = Vector2.new(0, chat.list.AbsoluteCanvasSize.Y) end
-		end)
+		task.defer(function() if list then list.CanvasPosition = Vector2.new(0, list.AbsoluteCanvasSize.Y) end end)
+	end
+
+	local function setUsage()
+		local frac = math.clamp(chat.tokens / TOKEN_SOFT_LIMIT, 0, 1)
+		local col = frac < 0.6 and accent() or (frac < 0.85 and Color3.fromRGB(235, 185, 45) or Color3.fromRGB(235, 75, 75))
+		ringStroke.Color = col
+		ringStroke.Transparency = 0.85 - frac * 0.75
+		pcall(function() ringTrack:SetAttribute('tip', chat.tokens..' tokens this session') end)
 	end
 
 	local function addBubble(role, text, thinkingText, imageAsset)
@@ -12191,16 +12414,17 @@ end
 		row.Size = UDim2.new(1, 0, 0, 0)
 		row.AutomaticSize = Enum.AutomaticSize.Y
 		row.BackgroundTransparency = 1
-		row.Parent = chat.list
+		row.Parent = list
 
 		local bubble = Instance.new('Frame')
 		bubble.AutomaticSize = Enum.AutomaticSize.XY
 		bubble.AnchorPoint = Vector2.new(isUser and 1 or 0, 0)
 		bubble.Position = UDim2.fromScale(isUser and 1 or 0, 0)
-		bubble.BackgroundColor3 = isUser and accent() or (role == 'error' and Color3.fromRGB(70, 32, 32) or color.Light(uipallet.Main, 0.06))
+		bubble.BackgroundColor3 = isUser and accent() or (role == 'error' and Color3.fromRGB(64, 30, 30) or color.Light(uipallet.Main, 0.06))
+		bubble.BackgroundTransparency = 1
 		bubble.BorderSizePixel = 0
 		bubble.Parent = row
-		addCorner(bubble, UDim.new(0, 9))
+		addCorner(bubble, UDim.new(0, 10))
 		local bpad = Instance.new('UIPadding')
 		bpad.PaddingLeft = UDim.new(0, 11)
 		bpad.PaddingRight = UDim.new(0, 11)
@@ -12212,22 +12436,26 @@ end
 		blay.Padding = UDim.new(0, 6)
 		blay.Parent = bubble
 		local bmax = Instance.new('UISizeConstraint')
-		bmax.MaxSize = Vector2.new(312, math.huge)
+		bmax.MaxSize = Vector2.new(W - 96, math.huge)
 		bmax.Parent = bubble
+
+		local fadeTargets = { { bubble, 0 } }
 
 		if thinkingText and thinkingText ~= '' then
 			local toggle = Instance.new('TextButton')
 			toggle.AutomaticSize = Enum.AutomaticSize.X
-			toggle.Size = UDim2.fromOffset(0, 16)
+			toggle.Size = UDim2.fromOffset(0, 15)
 			toggle.BackgroundTransparency = 1
 			toggle.AutoButtonColor = false
 			toggle.Text = 'Show thoughts'
 			toggle.TextXAlignment = Enum.TextXAlignment.Left
-			toggle.TextColor3 = color.Dark(uipallet.Text, 0.34)
+			toggle.TextColor3 = color.Dark(uipallet.Text, 0.36)
+			toggle.TextTransparency = 1
 			toggle.TextSize = 12
 			toggle.FontFace = CHATFONT
 			toggle.LayoutOrder = 0
 			toggle.Parent = bubble
+			fadeTargets[#fadeTargets + 1] = { toggle, 0, true }
 			local think = Instance.new('TextLabel')
 			think.AutomaticSize = Enum.AutomaticSize.Y
 			think.Size = UDim2.new(1, 0, 0, 0)
@@ -12236,7 +12464,7 @@ end
 			think.TextWrapped = true
 			think.TextXAlignment = Enum.TextXAlignment.Left
 			think.TextYAlignment = Enum.TextYAlignment.Top
-			think.TextColor3 = color.Dark(uipallet.Text, 0.4)
+			think.TextColor3 = color.Dark(uipallet.Text, 0.42)
 			think.TextSize = 12
 			think.FontFace = CHATFONT
 			think.LayoutOrder = 1
@@ -12252,312 +12480,213 @@ end
 		if text and text ~= '' then
 			local label = Instance.new('TextLabel')
 			label.AutomaticSize = Enum.AutomaticSize.XY
-			label.Size = UDim2.fromOffset(0, 0)
 			label.BackgroundTransparency = 1
 			label.Text = text
 			label.TextWrapped = true
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.TextYAlignment = Enum.TextYAlignment.Top
-			label.TextColor3 = isUser and mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or uipallet.Text
+			label.TextColor3 = isUser and accentText() or uipallet.Text
+			label.TextTransparency = 1
 			label.TextSize = 14
 			label.FontFace = CHATFONT
 			label.LayoutOrder = 2
 			label.Parent = bubble
 			local lmax = Instance.new('UISizeConstraint')
-			lmax.MaxSize = Vector2.new(290, math.huge)
+			lmax.MaxSize = Vector2.new(W - 120, math.huge)
 			lmax.Parent = label
+			fadeTargets[#fadeTargets + 1] = { label, 0, true }
 		end
 
 		if imageAsset then
 			local img = Instance.new('ImageLabel')
-			img.Size = UDim2.fromOffset(256, 256)
+			img.Size = UDim2.fromOffset(240, 240)
 			img.BackgroundTransparency = 1
 			img.Image = imageAsset
 			img.ScaleType = Enum.ScaleType.Fit
+			img.ImageTransparency = 1
 			img.LayoutOrder = 3
 			img.Parent = bubble
 			addCorner(img, UDim.new(0, 6))
+			fadeTargets[#fadeTargets + 1] = { img, 0, false, true }
 		end
 
+		for _, ft in next, fadeTargets do
+			local obj, goal, isText, isImg = ft[1], ft[2], ft[3], ft[4]
+			local props = {}
+			if isText then props.TextTransparency = goal
+			elseif isImg then props.ImageTransparency = goal
+			else props.BackgroundTransparency = (obj == bubble and role ~= 'none') and goal or goal end
+			tween:Tween(obj, TweenInfo.new(0.18, Enum.EasingStyle.Quad), props)
+		end
 		scrollBottom()
 		return row
 	end
 
-	local function setTokens(usage)
-		if usage and usage.totalTokenCount then chat.tokens = chat.tokens + usage.totalTokenCount end
-		if chat.tokenLabel then chat.tokenLabel.Text = string.format('%d tokens', chat.tokens) end
+	local function clearList()
+		for _, c in next, list:GetChildren() do
+			if c:IsA('Frame') then c:Destroy() end
+		end
 	end
 
 	local function greet()
-		local name = (lplr and lplr.DisplayName ~= '' and lplr.DisplayName) or (lplr and lplr.Name) or 'player'
-		addBubble('model', 'Your move, '..name..'!')
-		addBubble('model', 'Before you type anything — Ask Gemini.')
+		local name = (lplr and lplr.DisplayName ~= '' and lplr.DisplayName) or (lplr and lplr.Name) or 'there'
+		local g = GREETINGS[math.random(1, #GREETINGS)]
+		if g:find('%%s') then g = string.format(g, name) end
+		addBubble('model', g)
+		local credit = Instance.new('TextLabel')
+		credit.Size = UDim2.new(1, -8, 0, 14)
+		credit.BackgroundTransparency = 1
+		credit.Text = 'Powered by Gemini  -  '..MODEL
+		credit.TextXAlignment = Enum.TextXAlignment.Left
+		credit.TextColor3 = color.Dark(uipallet.Text, 0.5)
+		credit.TextSize = 11
+		credit.FontFace = CHATFONT
+		credit.Parent = list
 	end
 
-	local send
-	local aiModule
+	local openHistory
+	local function saveCurrent()
+		if #chat.history == 0 then return end
+		local title = 'Chat'
+		for _, m in next, chat.history do
+			if m.role == 'user' then title = m.text:sub(1, 26); break end
+		end
+		table.insert(chat.sessions, 1, { title = title, history = table.clone(chat.history) })
+		while #chat.sessions > 12 do table.remove(chat.sessions) end
+	end
+
+	local function loadSession(sess)
+		saveCurrent()
+		clearList()
+		chat.history = table.clone(sess.history)
+		for _, m in next, sess.history do
+			addBubble(m.role == 'user' and 'user' or 'model', m.text)
+		end
+		historyPanel.Visible = false
+	end
+
 	local function newChat()
+		saveCurrent()
 		chat.history = {}
-		if chat.list then
-			for _, c in next, chat.list:GetChildren() do
-				if c:IsA('Frame') then c:Destroy() end
-			end
-		end
+		clearList()
 		greet()
+		historyPanel.Visible = false
 	end
 
-	local buildChat
-	buildChat = function()
-		if chat.win then return end
-		local view = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(1280, 720)
-		local W, H = 440, 520
-		local win = Instance.new('Frame')
-		win.Name = 'AIAssistant'
-		win.Size = UDim2.fromOffset(W, H)
-		win.Position = UDim2.fromOffset(view.X / 2 - W / 2, view.Y / 2 - H / 2)
-		win.BackgroundColor3 = uipallet.Main
-		win.BorderSizePixel = 0
-		win.Visible = false
-		win.Parent = clickgui
-		addCorner(win, UDim.new(0, 8))
-		addBlur(win)
-		makeDraggable(win)
-		chat.win = win
-
-		local hicon = Instance.new('ImageLabel')
-		hicon.Size = UDim2.fromOffset(20, 20)
-		hicon.Position = UDim2.fromOffset(14, 13)
-		hicon.BackgroundTransparency = 1
-		hicon.Image = getcustomasset('LarpV4/assets/larp/ai.png')
-		hicon.ImageColor3 = accent()
-		hicon.Parent = win
-		local htitle = Instance.new('TextLabel')
-		htitle.Size = UDim2.fromOffset(200, 18)
-		htitle.Position = UDim2.fromOffset(42, 10)
-		htitle.BackgroundTransparency = 1
-		htitle.Text = 'AI Assistant'
-		htitle.TextXAlignment = Enum.TextXAlignment.Left
-		htitle.TextColor3 = uipallet.Text
-		htitle.TextSize = 15
-		htitle.FontFace = CHATFONTBOLD
-		htitle.Parent = win
-		local hmodel = Instance.new('TextLabel')
-		hmodel.Size = UDim2.fromOffset(240, 14)
-		hmodel.Position = UDim2.fromOffset(42, 27)
-		hmodel.BackgroundTransparency = 1
-		hmodel.Text = MODEL
-		hmodel.TextXAlignment = Enum.TextXAlignment.Left
-		hmodel.TextColor3 = color.Dark(uipallet.Text, 0.4)
-		hmodel.TextSize = 11
-		hmodel.FontFace = CHATFONT
-		hmodel.Parent = win
-		local tokenLabel = Instance.new('TextLabel')
-		tokenLabel.AnchorPoint = Vector2.new(1, 0)
-		tokenLabel.Size = UDim2.fromOffset(120, 14)
-		tokenLabel.Position = UDim2.fromOffset(W - 66, 15)
-		tokenLabel.BackgroundTransparency = 1
-		tokenLabel.Text = '0 tokens'
-		tokenLabel.TextXAlignment = Enum.TextXAlignment.Right
-		tokenLabel.TextColor3 = color.Dark(uipallet.Text, 0.4)
-		tokenLabel.TextSize = 11
-		tokenLabel.FontFace = CHATFONT
-		tokenLabel.Parent = win
-		chat.tokenLabel = tokenLabel
-
-		local newBtn = Instance.new('TextButton')
-		newBtn.AnchorPoint = Vector2.new(1, 0)
-		newBtn.Size = UDim2.fromOffset(18, 18)
-		newBtn.Position = UDim2.fromOffset(W - 62, 13)
-		newBtn.BackgroundTransparency = 1
-		newBtn.AutoButtonColor = false
-		newBtn.Text = '+'
-		newBtn.TextColor3 = color.Dark(uipallet.Text, 0.3)
-		newBtn.TextSize = 20
-		newBtn.FontFace = CHATFONTBOLD
-		newBtn.Parent = win
-		addTooltip(newBtn, 'New chat')
-		newBtn.MouseEnter:Connect(function() newBtn.TextColor3 = uipallet.Text end)
-		newBtn.MouseLeave:Connect(function() newBtn.TextColor3 = color.Dark(uipallet.Text, 0.3) end)
-		newBtn.MouseButton1Click:Connect(newChat)
-
-		local close = addCloseButton(win, 8)
-		close.MouseButton1Click:Connect(function()
-			win.Visible = false
-			if aiModule and aiModule.Enabled then pcall(function() aiModule:Toggle() end) end
-		end)
-
-		local arrow = Instance.new('ImageButton')
-		arrow.AnchorPoint = Vector2.new(1, 0)
-		arrow.Size = UDim2.fromOffset(14, 14)
-		arrow.Position = UDim2.fromOffset(W - 84, 15)
-		arrow.BackgroundTransparency = 1
-		arrow.Image = getcustomasset('LarpV4/assets/larp/expandright.png')
-		arrow.ImageColor3 = Color3.fromRGB(140, 140, 140)
-		arrow.Rotation = 90
-		arrow.Parent = win
-
-		local divider = Instance.new('Frame')
-		divider.Size = UDim2.new(1, 0, 0, 1)
-		divider.Position = UDim2.fromOffset(0, 46)
-		divider.BackgroundColor3 = Color3.new(1, 1, 1)
-		divider.BackgroundTransparency = 0.928
-		divider.BorderSizePixel = 0
-		divider.Parent = win
-
-		local body = Instance.new('Frame')
-		body.Name = 'Body'
-		body.Size = UDim2.new(1, 0, 1, -47)
-		body.Position = UDim2.fromOffset(0, 47)
-		body.BackgroundTransparency = 1
-		body.Parent = win
-
-		local list = Instance.new('ScrollingFrame')
-		list.Size = UDim2.new(1, -16, 1, -64)
-		list.Position = UDim2.fromOffset(8, 6)
-		list.BackgroundTransparency = 1
-		list.BorderSizePixel = 0
-		list.ScrollBarThickness = 2
-		list.ScrollBarImageTransparency = 0.7
-		list.CanvasSize = UDim2.new()
-		list.AutomaticCanvasSize = Enum.AutomaticSize.Y
-		list.Parent = body
-		chat.list = list
-		local lay = Instance.new('UIListLayout')
-		lay.SortOrder = Enum.SortOrder.LayoutOrder
-		lay.Padding = UDim.new(0, 8)
-		lay.Parent = list
-		chat.layout = lay
-
-		local inputBg = Instance.new('Frame')
-		inputBg.AnchorPoint = Vector2.new(0, 1)
-		inputBg.Size = UDim2.new(1, -16, 0, 44)
-		inputBg.Position = UDim2.new(0, 8, 1, -8)
-		inputBg.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-		inputBg.BorderSizePixel = 0
-		inputBg.Parent = body
-		addCorner(inputBg, UDim.new(0, 8))
-
-		local imgBtn = Instance.new('TextButton')
-		imgBtn.Size = UDim2.fromOffset(34, 28)
-		imgBtn.Position = UDim2.fromOffset(6, 8)
-		imgBtn.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
-		imgBtn.AutoButtonColor = false
-		imgBtn.Text = 'IMG'
-		imgBtn.TextColor3 = color.Dark(uipallet.Text, 0.3)
-		imgBtn.TextSize = 11
-		imgBtn.FontFace = CHATFONTBOLD
-		imgBtn.Parent = inputBg
-		addCorner(imgBtn, UDim.new(0, 6))
-		addTooltip(imgBtn, 'Toggle image generation')
-		local function refreshImg()
-			imgBtn.BackgroundColor3 = chat.imageMode and accent() or color.Light(uipallet.Main, 0.05)
-			imgBtn.TextColor3 = chat.imageMode and mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Dark(uipallet.Text, 0.3)
-		end
-		imgBtn.MouseButton1Click:Connect(function()
-			chat.imageMode = not chat.imageMode
-			refreshImg()
-		end)
-
-		local box = Instance.new('TextBox')
-		box.Size = UDim2.new(1, -92, 1, -12)
-		box.Position = UDim2.fromOffset(46, 6)
-		box.BackgroundTransparency = 1
-		box.Text = ''
-		box.PlaceholderText = 'Ask Gemini…'
-		box.PlaceholderColor3 = color.Dark(uipallet.Text, 0.43)
-		box.TextXAlignment = Enum.TextXAlignment.Left
-		box.TextColor3 = Color3.new(1, 1, 1)
-		box.TextSize = 13
-		box.FontFace = CHATFONT
-		box.ClearTextOnFocus = false
-		box.TextTruncate = Enum.TextTruncate.AtEnd
-		box.Parent = inputBg
-
-		local sendBtn = Instance.new('TextButton')
-		sendBtn.AnchorPoint = Vector2.new(1, 0)
-		sendBtn.Size = UDim2.fromOffset(34, 28)
-		sendBtn.Position = UDim2.new(1, -6, 0, 8)
-		sendBtn.BackgroundColor3 = accent()
-		sendBtn.AutoButtonColor = false
-		sendBtn.Text = '>'
-		sendBtn.TextColor3 = mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-		sendBtn.TextSize = 14
-		sendBtn.FontFace = CHATFONTBOLD
-		sendBtn.Parent = inputBg
-		addCorner(sendBtn, UDim.new(0, 6))
-
-		local collapsed = false
-		arrow.MouseButton1Click:Connect(function()
-			collapsed = not collapsed
-			body.Visible = not collapsed
-			arrow.Rotation = collapsed and 0 or 90
-			win.Size = collapsed and UDim2.fromOffset(W, 47) or UDim2.fromOffset(W, H)
-		end)
-
-		local function doSend()
-			local text = box.Text
-			if chat.busy or text:gsub('%s', '') == '' then return end
-			if getKey() == '' then
-				box.Text = ''
-				addBubble('user', text)
-				addBubble('error', 'No API key set. Put your Gemini key in LarpV4/profiles/ai.txt')
-				return
+	openHistory = function()
+		if historyPanel.Visible then historyPanel.Visible = false return end
+		for _, c in next, historyPanel:GetChildren() do if c:IsA('TextButton') then c:Destroy() end end
+		if #chat.sessions == 0 then
+			local empty = Instance.new('TextButton')
+			empty.Size = UDim2.new(1, 0, 0, 26)
+			empty.BackgroundTransparency = 1
+			empty.AutoButtonColor = false
+			empty.Text = 'No recent chats'
+			empty.TextColor3 = color.Dark(uipallet.Text, 0.4)
+			empty.TextSize = 12
+			empty.FontFace = CHATFONT
+			empty.Parent = historyPanel
+		else
+			for i, sess in next, chat.sessions do
+				local r = Instance.new('TextButton')
+				r.Size = UDim2.new(1, 0, 0, 28)
+				r.LayoutOrder = i
+				r.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+				r.BackgroundTransparency = 1
+				r.AutoButtonColor = false
+				r.Text = '   '..sess.title
+				r.TextXAlignment = Enum.TextXAlignment.Left
+				r.TextTruncate = Enum.TextTruncate.AtEnd
+				r.TextColor3 = color.Dark(uipallet.Text, 0.1)
+				r.TextSize = 13
+				r.FontFace = CHATFONT
+				r.Parent = historyPanel
+				addCorner(r, UDim.new(0, 6))
+				r.MouseEnter:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundTransparency = 0 }) end)
+				r.MouseLeave:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundTransparency = 1 }) end)
+				r.MouseButton1Click:Connect(function() loadSession(sess) end)
 			end
+		end
+		historyPanel.Visible = true
+	end
+
+	local function refreshSend()
+		local has = box.Text:gsub('%s', '') ~= ''
+		tween:Tween(send, uipallet.Tween, { BackgroundColor3 = has and accent() or color.Light(uipallet.Main, 0.05) })
+		tween:Tween(sendArt, uipallet.Tween, { ImageColor3 = has and accentText() or color.Dark(uipallet.Text, 0.4) })
+	end
+
+	local function doSend()
+		local text = box.Text
+		if chat.busy or text:gsub('%s', '') == '' then return end
+		if getKey() == '' then
 			box.Text = ''
-			chat.busy = true
-			local imageMode = chat.imageMode
 			addBubble('user', text)
-			chat.history[#chat.history + 1] = { role = 'user', text = text }
-			local pending = addBubble('model', imageMode and 'Generating image…' or 'Thinking…')
-			task.spawn(function()
-				local ok, res = pcall(callGemini, chat.history, imageMode)
-				if pending then pending:Destroy() end
-				if ok and res then
-					addBubble('model', res.answer, res.thinking, res.image)
-					chat.history[#chat.history + 1] = { role = 'model', text = res.answer ~= '' and res.answer or '[image]' }
-					setTokens(res.usage)
-				else
-					addBubble('error', 'Request failed: '..tostring(res))
-				end
-				chat.busy = false
-			end)
+			addBubble('error', 'No API key set. Put your Gemini key in LarpV4/profiles/ai.txt')
+			return
 		end
-		send = doSend
-		sendBtn.MouseButton1Click:Connect(doSend)
-		box.FocusLost:Connect(function(enter) if enter then doSend() end end)
-		sendBtn.MouseEnter:Connect(function() tween:Tween(sendBtn, uipallet.Tween, { BackgroundColor3 = color.Light(accent(), 0.1) }) end)
-		sendBtn.MouseLeave:Connect(function() tween:Tween(sendBtn, uipallet.Tween, { BackgroundColor3 = accent() }) end)
-
-		greet()
+		local imageMode = false
+		if text:sub(1, 5):lower() == '/img ' then imageMode = true; text = text:sub(6)
+		elseif text:sub(1, 7):lower() == '/image ' then imageMode = true; text = text:sub(8) end
+		box.Text = ''
+		refreshSend()
+		chat.busy = true
+		addBubble('user', text)
+		chat.history[#chat.history + 1] = { role = 'user', text = text }
+		local pending = addBubble('model', imageMode and 'Generating image...' or 'Thinking...')
+		task.spawn(function()
+			local ok, res = pcall(callGemini, chat.history, imageMode)
+			if pending then pending:Destroy() end
+			if ok and res then
+				addBubble('model', res.answer, res.thinking, res.image)
+				chat.history[#chat.history + 1] = { role = 'model', text = res.answer ~= '' and res.answer or '[image]' }
+				if res.usage and res.usage.totalTokenCount then chat.tokens = chat.tokens + res.usage.totalTokenCount end
+				setUsage()
+			else
+				addBubble('error', 'Request failed: '..tostring(res))
+			end
+			chat.busy = false
+		end)
 	end
 
-	local function openChat()
-		buildChat()
-		chat.win.Visible = true
-	end
-
-	pcall(function()
-		if mainapi.Categories and mainapi.Categories.Other then
-			aiModule = mainapi.Categories.Other:CreateModule({
-				Name = 'AI Assistant',
-				Icon = getcustomasset('LarpV4/assets/larp/ai.png'),
-				Function = function(cb)
-					if cb then openChat() elseif chat.win then chat.win.Visible = false end
-				end,
-				Tooltip = 'Chat with Gemini about larp and anything else'
-			})
-		end
+	box:GetPropertyChangedSignal('Text'):Connect(refreshSend)
+	box.FocusLost:Connect(function(enter) if enter then doSend() end end)
+	send.MouseButton1Click:Connect(doSend)
+	send.MouseEnter:Connect(function()
+		if box.Text:gsub('%s', '') ~= '' then tween:Tween(send, uipallet.Tween, { BackgroundColor3 = color.Light(accent(), 0.12) }) end
 	end)
+	send.MouseLeave:Connect(refreshSend)
+	newBtn.MouseButton1Click:Connect(newChat)
+	histBtn.MouseButton1Click:Connect(openHistory)
+
+	local function setCollapsed(state)
+		chat.collapsed = state
+		tween:Tween(dropArt, uipallet.Tween, { Rotation = state and 0 or 90 })
+		if state then
+			historyPanel.Visible = false
+			body.Visible = false
+		else
+			body.Visible = true
+		end
+		tween:Tween(win, TweenInfo.new(0.22, Enum.EasingStyle.Quad), { Size = UDim2.fromOffset(W, state and HEADER or H) })
+	end
+	dropBtn.MouseButton1Click:Connect(function() setCollapsed(not chat.collapsed) end)
+
+	greet()
+	setUsage()
+
+	local navButton = mainapi.Categories.Main:CreateButton({
+		Name = 'AI Assistant',
+		Icon = getcustomasset('LarpV4/assets/larp/ai.png'),
+		Size = UDim2.fromOffset(16, 16),
+		Window = win
+	})
 
 	function mainapi:OpenAIAssistant()
-		if aiModule and not aiModule.Enabled then pcall(function() aiModule:Toggle() end) else openChat() end
+		if navButton and not navButton.Enabled then pcall(function() navButton:Toggle() end) else win.Visible = true end
 	end
 	function mainapi:ToggleAIAssistant()
-		if chat.win and chat.win.Visible then
-			if aiModule and aiModule.Enabled then pcall(function() aiModule:Toggle() end) else chat.win.Visible = false end
-		else
-			mainapi:OpenAIAssistant()
-		end
+		if navButton then pcall(function() navButton:Toggle() end) else win.Visible = not win.Visible end
 	end
 end)()
 

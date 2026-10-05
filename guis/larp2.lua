@@ -45,6 +45,9 @@ local clickgui
 local scaledgui
 local toolblur
 local tooltip
+local toolstroke
+local toolpointer
+local toolpadding
 local scale
 local gui
 
@@ -327,34 +330,63 @@ local function addMaid(object)
 	end
 end
 
+local tooltipToken = 0
 local function addTooltip(gui, text)
 	if not text then return end
+	local curX, curY = 0, 0
 
-	local function tooltipMoved(x, y)
+	local function place()
 		local vs = gameCamera and gameCamera.ViewportSize or Vector2.new(1920, 1080)
 		local w = tooltip.Size.X.Offset
 		local h = tooltip.Size.Y.Offset
-		local maxX = vs.X / scale.Scale - w - 4
 		local maxY = vs.Y / scale.Scale - h - 4
-		local px = x + 16
-		if px + w > vs.X / scale.Scale - 4 then px = x - w * scale.Scale - 16 end
-		local py = y + 11 - h / 2
+		local rightSide = true
+		local px = curX + 16
+		if px + w > vs.X / scale.Scale - 4 then px = curX - w * scale.Scale - 16; rightSide = false end
+		local py = curY + 11 - h / 2
 		if py > maxY then py = maxY end
 		if py < 4 then py = 4 end
 		if px < 4 then px = 4 end
 		tooltip.Position = UDim2.fromOffset(px / scale.Scale, py / scale.Scale)
+		if toolpointer then toolpointer.Position = UDim2.fromScale(rightSide and 0 or 1, 0.5) end
+	end
+
+	local function show()
+		local sz = getfontsizeCached(text, tooltip.TextSize, uipallet.Font)
+		tooltip.Size = UDim2.fromOffset(sz.X + 18, sz.Y + 10)
+		tooltip.Text = text
+		place()
 		tooltip.Visible = toolblur.Visible
+		if not tooltip.Visible then return end
+		tween:Tween(tooltip, uipallet.Tween, { BackgroundTransparency = 0, TextTransparency = 0 })
+		if toolstroke then tween:Tween(toolstroke, uipallet.Tween, { Transparency = 0.2 }) end
+		if toolpointer then tween:Tween(toolpointer, uipallet.Tween, { BackgroundTransparency = 0 }) end
+	end
+
+	local function hide()
+		tooltip.Visible = false
+		tooltip.BackgroundTransparency = 1
+		tooltip.TextTransparency = 1
+		if toolstroke then toolstroke.Transparency = 1 end
+		if toolpointer then toolpointer.BackgroundTransparency = 1 end
 	end
 
 	gui.MouseEnter:Connect(function(x, y)
-		local tooltipSize = getfontsizeCached(text, tooltip.TextSize, uipallet.Font)
-		tooltip.Size = UDim2.fromOffset(tooltipSize.X + 10, tooltipSize.Y + 10)
-		tooltip.Text = text
-		tooltipMoved(x, y)
+		curX, curY = x, y
+		tooltipToken += 1
+		local myToken = tooltipToken
+		task.delay(0.3, function()
+			if myToken ~= tooltipToken then return end
+			show()
+		end)
 	end)
-	gui.MouseMoved:Connect(tooltipMoved)
+	gui.MouseMoved:Connect(function(x, y)
+		curX, curY = x, y
+		if tooltip.Visible and tooltip.Text == text then place() end
+	end)
 	gui.MouseLeave:Connect(function()
-		tooltip.Visible = false
+		tooltipToken += 1
+		hide()
 	end)
 end
 
@@ -7802,22 +7834,42 @@ tooltip.ZIndex = 5
 tooltip.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
 tooltip.Visible = false
 tooltip.Text = ''
-tooltip.TextColor3 = color.Dark(uipallet.Text, 0.16)
+tooltip.TextColor3 = uipallet.Text
 tooltip.TextSize = 12
 tooltip.FontFace = uipallet.Font
+tooltip.TextTransparency = 1
+tooltip.BackgroundTransparency = 1
 tooltip.Parent = scaledgui
 toolblur = addBlur(tooltip)
-addCorner(tooltip)
+addCorner(tooltip, UDim.new(0, 6))
+toolpadding = Instance.new('UIPadding')
+toolpadding.PaddingLeft = UDim.new(0, 9)
+toolpadding.PaddingRight = UDim.new(0, 9)
+toolpadding.PaddingTop = UDim.new(0, 5)
+toolpadding.PaddingBottom = UDim.new(0, 5)
+toolpadding.Parent = tooltip
+toolpointer = Instance.new('Frame')
+toolpointer.Name = 'Pointer'
+toolpointer.Size = UDim2.fromOffset(8, 8)
+toolpointer.Rotation = 45
+toolpointer.AnchorPoint = Vector2.new(0.5, 0.5)
+toolpointer.Position = UDim2.fromScale(0, 0.5)
+toolpointer.BackgroundColor3 = tooltip.BackgroundColor3
+toolpointer.BackgroundTransparency = 1
+toolpointer.BorderSizePixel = 0
+toolpointer.ZIndex = 4
+toolpointer.Parent = tooltip
 local toolstrokebkg = Instance.new('Frame')
 toolstrokebkg.Size = UDim2.new(1, -2, 1, -2)
 toolstrokebkg.Position = UDim2.fromOffset(1, 1)
 toolstrokebkg.ZIndex = 6
 toolstrokebkg.BackgroundTransparency = 1
 toolstrokebkg.Parent = tooltip
-local toolstroke = Instance.new('UIStroke')
-toolstroke.Color = color.Light(uipallet.Main, 0.02)
+toolstroke = Instance.new('UIStroke')
+toolstroke.Color = color.Light(uipallet.Main, 0.14)
+toolstroke.Transparency = 1
 toolstroke.Parent = toolstrokebkg
-	addCorner(toolstrokebkg, UDim.new(0, 4))
+	addCorner(toolstrokebkg, UDim.new(0, 6))
 	local chordPill = Instance.new('Frame')
 	chordPill.Name = 'ChordPill'
 	chordPill.Size = UDim2.fromOffset(260, 30)

@@ -12085,19 +12085,40 @@ end
 	local MODEL = 'gemini-3.5-flash-lite'
 	local IMG_MODEL = 'gemini-2.5-flash-image-preview'
 	local TOKEN_SOFT_LIMIT = 1000000
-	local SYSTEM_PROMPT = table.concat({
-		'You are the AI Assistant built into larp v4, a Roblox script and GUI styled after Vape V4, used in Bedwars and other games.',
-		'You are powered by Google Gemini (model '..MODEL..'). Answer clearly and concisely in plain text.',
-		'You help with how to use larp v4 and with general questions.',
-		'larp v4 facts:',
-		'- Open or close the menu with the menu keybind (default RightShift).',
-		'- Modules sit in categories: Combat, Blatant, Render, World, Utility, Inventory, Minigames, Other, plus a Legit tab and a Targets tab.',
-		'- Toggle a module: open the menu, open its category, click the module row.',
-		'- Bind a module to a key: hover the module row, click the keybind icon on the right of the row, then press the key. Bind to Backspace or Delete to clear it.',
-		'- Combat modules include KillAura, AimAssist, Reach, Projectile Aimbot. Render includes ESP, Chams, Fullbright. Movement includes Scaffold, Fly, Speed.',
-		'- The Targets tab controls who modules target (friends, enemies, whitelist).',
-		'Keep answers short and friendly. If you do not know something about larp, say so briefly.'
-	}, '\n')
+	local function buildSystemPrompt()
+		local cats = {}
+		pcall(function()
+			for _, m in next, mainapi.Modules do
+				if m.Name and m.Category then
+					cats[m.Category] = cats[m.Category] or {}
+					table.insert(cats[m.Category], m.Name)
+				end
+			end
+			if mainapi.Legit and mainapi.Legit.Modules then
+				for _, m in next, mainapi.Legit.Modules do
+					if m.Name then
+						cats['Legit'] = cats['Legit'] or {}
+						table.insert(cats['Legit'], m.Name)
+					end
+				end
+			end
+		end)
+		local modLines = {}
+		for cat, mods in next, cats do
+			table.sort(mods)
+			modLines[#modLines + 1] = '- '..cat..': '..table.concat(mods, ', ')
+		end
+		table.sort(modLines)
+		return table.concat({
+			'You are the AI Assistant built into larp v4, a Roblox script and GUI styled after Vape V4.',
+			'Powered by Google Gemini ('..MODEL..'). Today is '..os.date('%A, %B %d, %Y')..'.',
+			'Answer ANY question accurately and concisely in plain text - general knowledge, the date, math, coding, or larp v4. Do not restrict yourself to larp topics.',
+			'NEVER invent larp features, module names, or which tab a module is in. The modules actually loaded right now, grouped by their real tab, are listed below. Use ONLY this list to answer what is in a tab or where a module lives:',
+			(#modLines > 0 and table.concat(modLines, '\n') or '(module list unavailable)'),
+			'larp usage: open/close the menu with the menu keybind (default RightShift). Toggle a module by clicking its row. Bind a module: hover its row, click the keybind icon, press a key (Backspace or Delete clears it). The Targets tab sets who modules target.',
+			'If you are unsure about a larp specific, say so instead of guessing.'
+		}, '\n')
+	end
 	local GREETINGS = {
 		'Good morning. What are we working on?',
 		'Your move, %s.',
@@ -12149,9 +12170,10 @@ end
 			contents[#contents + 1] = { role = m.role, parts = {{ text = m.text }} }
 		end
 		local body = {
-			system_instruction = { parts = {{ text = SYSTEM_PROMPT }} },
+			system_instruction = { parts = {{ text = buildSystemPrompt() }} },
 			contents = contents
 		}
+		local t0 = os.clock()
 		if imageMode then
 			body.generationConfig = { responseModalities = { 'TEXT', 'IMAGE' } }
 		else
@@ -12186,7 +12208,7 @@ end
 		if answer == '' and not image then
 			answer = (cand and cand.finishReason) and ('No content ('..tostring(cand.finishReason)..')') or 'No response.'
 		end
-		return { answer = answer, thinking = thinking, image = image, usage = data.usageMetadata }
+		return { answer = answer, thinking = thinking, image = image, usage = data.usageMetadata, elapsed = os.clock() - t0 }
 	end
 
 	local W, H, HEADER, INPUTH = 404, 456, 46, 46
@@ -12279,7 +12301,7 @@ end
 	body.Parent = win
 
 	local list = Instance.new('ScrollingFrame')
-	list.Size = UDim2.new(1, -16, 1, -(INPUTH + 14))
+	list.Size = UDim2.new(1, -16, 1, -(INPUTH + 42))
 	list.Position = UDim2.fromOffset(8, 8)
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
@@ -12420,6 +12442,40 @@ end
 		task.defer(function() if list then list.CanvasPosition = Vector2.new(0, list.AbsoluteCanvasSize.Y) end end)
 	end
 
+	local scrollDown = Instance.new('ImageButton')
+	scrollDown.AnchorPoint = Vector2.new(1, 1)
+	scrollDown.Size = UDim2.fromOffset(28, 28)
+	scrollDown.Position = UDim2.new(1, -14, 1, -(INPUTH + 38))
+	scrollDown.BackgroundColor3 = color.Light(uipallet.Main, 0.09)
+	scrollDown.AutoButtonColor = false
+	scrollDown.Image = ''
+	scrollDown.Visible = false
+	scrollDown.ZIndex = 4
+	scrollDown.Parent = body
+	addCorner(scrollDown, UDim.new(1, 0))
+	local sdStroke = Instance.new('UIStroke')
+	sdStroke.Color = color.Light(uipallet.Main, 0.18)
+	sdStroke.Transparency = 0.3
+	sdStroke.Parent = scrollDown
+	local sdArt = Instance.new('ImageLabel')
+	sdArt.AnchorPoint = Vector2.new(0.5, 0.5)
+	sdArt.Size = UDim2.fromOffset(12, 12)
+	sdArt.Position = UDim2.fromScale(0.5, 0.5)
+	sdArt.BackgroundTransparency = 1
+	sdArt.Image = getcustomasset('LarpV4/assets/larp/down.png')
+	sdArt.ImageColor3 = uipallet.Text
+	sdArt.ZIndex = 5
+	sdArt.Parent = scrollDown
+	scrollDown.MouseButton1Click:Connect(scrollBottom)
+	local function updateScrollDown()
+		local canvas = list.AbsoluteCanvasSize.Y
+		local winH = list.AbsoluteWindowSize.Y
+		local atBottom = (canvas - (list.CanvasPosition.Y + winH)) < 40
+		scrollDown.Visible = canvas > winH + 24 and not atBottom
+	end
+	list:GetPropertyChangedSignal('CanvasPosition'):Connect(updateScrollDown)
+	list:GetPropertyChangedSignal('AbsoluteCanvasSize'):Connect(updateScrollDown)
+
 	local function setUsage()
 		local frac = math.clamp(chat.tokens / TOKEN_SOFT_LIMIT, 0, 1)
 		local col = frac < 0.6 and accent() or (frac < 0.85 and Color3.fromRGB(235, 185, 45) or Color3.fromRGB(235, 75, 75))
@@ -12428,7 +12484,7 @@ end
 		pcall(function() ringTrack:SetAttribute('tip', chat.tokens..' tokens this session') end)
 	end
 
-	local function addBubble(role, text, thinkingText, imageAsset)
+	local function addBubble(role, text, thinkingText, imageAsset, elapsed)
 		local isUser = role == 'user'
 		local row = Instance.new('Frame')
 		row.Size = UDim2.new(1, 0, 0, 0)
@@ -12460,6 +12516,22 @@ end
 		bmax.Parent = bubble
 
 		local fadeTargets = { { bubble, 0 } }
+
+		if elapsed and not isUser and role == 'model' then
+			local tl = Instance.new('TextLabel')
+			tl.AutomaticSize = Enum.AutomaticSize.X
+			tl.Size = UDim2.fromOffset(0, 13)
+			tl.BackgroundTransparency = 1
+			tl.Text = string.format('Thought for %.1fs', elapsed)
+			tl.TextXAlignment = Enum.TextXAlignment.Left
+			tl.TextColor3 = color.Dark(uipallet.Text, 0.46)
+			tl.TextTransparency = 1
+			tl.TextSize = 11
+			tl.FontFace = CHATFONT
+			tl.LayoutOrder = -1
+			tl.Parent = bubble
+			fadeTargets[#fadeTargets + 1] = { tl, 0, true }
+		end
 
 		if thinkingText and thinkingText ~= '' then
 			local toggle = Instance.new('TextButton')
@@ -12517,6 +12589,26 @@ end
 			fadeTargets[#fadeTargets + 1] = { label, 0, true }
 		end
 
+		if role == 'model' and text and text ~= '' then
+			local copyBtn = Instance.new('ImageButton')
+			copyBtn.Size = UDim2.fromOffset(14, 14)
+			copyBtn.BackgroundTransparency = 1
+			copyBtn.AutoButtonColor = false
+			copyBtn.Image = getcustomasset('LarpV4/assets/larp/copy.png')
+			copyBtn.ImageColor3 = color.Dark(uipallet.Text, 0.42)
+			copyBtn.ImageTransparency = 1
+			copyBtn.LayoutOrder = 4
+			copyBtn.Parent = bubble
+			copyBtn.MouseEnter:Connect(function() tween:Tween(copyBtn, uipallet.Tween, { ImageColor3 = uipallet.Text }) end)
+			copyBtn.MouseLeave:Connect(function() tween:Tween(copyBtn, uipallet.Tween, { ImageColor3 = color.Dark(uipallet.Text, 0.42) }) end)
+			copyBtn.MouseButton1Click:Connect(function()
+				pcall(setclipboard, text)
+				copyBtn.ImageColor3 = accent()
+				task.delay(0.8, function() if copyBtn and copyBtn.Parent then copyBtn.ImageColor3 = color.Dark(uipallet.Text, 0.42) end end)
+			end)
+			fadeTargets[#fadeTargets + 1] = { copyBtn, 0, false, true }
+		end
+
 		if imageAsset then
 			local img = Instance.new('ImageLabel')
 			img.Size = UDim2.fromOffset(240, 240)
@@ -12571,8 +12663,8 @@ end
 		for _, m in next, chat.history do
 			if m.role == 'user' then title = m.text:sub(1, 26); break end
 		end
-		table.insert(chat.sessions, 1, { title = title, history = table.clone(chat.history) })
-		while #chat.sessions > 12 do table.remove(chat.sessions) end
+		table.insert(chat.sessions, 1, { title = title, history = table.clone(chat.history), time = os.time() })
+		while #chat.sessions > 30 do table.remove(chat.sessions) end
 	end
 
 	local function loadSession(sess)
@@ -12593,14 +12685,61 @@ end
 		historyView.Visible = false
 	end
 
+	local function dayLabel(t)
+		if not t then return 'Earlier' end
+		local now = os.date('*t')
+		local dt = os.date('*t', t)
+		if now.year == dt.year and now.yday == dt.yday then return 'Today' end
+		local y = os.date('*t', os.time() - 86400)
+		if y.year == dt.year and y.yday == dt.yday then return 'Yesterday' end
+		return os.date('%B %d', t)
+	end
+
+	local function makeSessionRow(sess, order)
+		local r = Instance.new('TextButton')
+		r.Size = UDim2.new(1, 0, 0, 38)
+		r.LayoutOrder = order
+		r.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		r.BorderSizePixel = 0
+		r.AutoButtonColor = false
+		r.Text = ''
+		r.ZIndex = 7
+		r.Parent = hvScroll
+		addCorner(r, UDim.new(0, 8))
+		local bar = Instance.new('Frame')
+		bar.Size = UDim2.fromOffset(3, 20)
+		bar.Position = UDim2.fromOffset(10, 9)
+		bar.BackgroundColor3 = accent()
+		bar.BorderSizePixel = 0
+		bar.ZIndex = 8
+		bar.Parent = r
+		addCorner(bar, UDim.new(1, 0))
+		local tl = Instance.new('TextLabel')
+		tl.Size = UDim2.new(1, -28, 1, 0)
+		tl.Position = UDim2.fromOffset(20, 0)
+		tl.BackgroundTransparency = 1
+		tl.Text = sess.title
+		tl.TextXAlignment = Enum.TextXAlignment.Left
+		tl.TextTruncate = Enum.TextTruncate.AtEnd
+		tl.TextColor3 = uipallet.Text
+		tl.TextSize = 13
+		tl.FontFace = CHATFONT
+		tl.ZIndex = 8
+		tl.Parent = r
+		r.MouseEnter:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.1) }) end)
+		r.MouseLeave:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.05) }) end)
+		r.MouseButton1Click:Connect(function() loadSession(sess) end)
+	end
+
 	openHistory = function()
 		if historyView.Visible then historyView.Visible = false return end
-		for _, c in next, hvScroll:GetChildren() do if c:IsA('TextButton') then c:Destroy() end end
+		for _, c in next, hvScroll:GetChildren() do
+			if c:IsA('TextButton') or c:IsA('TextLabel') then c:Destroy() end
+		end
 		if #chat.sessions == 0 then
-			local empty = Instance.new('TextButton')
+			local empty = Instance.new('TextLabel')
 			empty.Size = UDim2.new(1, 0, 0, 40)
 			empty.BackgroundTransparency = 1
-			empty.AutoButtonColor = false
 			empty.Text = 'No recent chats yet'
 			empty.TextColor3 = color.Dark(uipallet.Text, 0.42)
 			empty.TextSize = 13
@@ -12608,40 +12747,26 @@ end
 			empty.ZIndex = 7
 			empty.Parent = hvScroll
 		else
-			for i, sess in next, chat.sessions do
-				local r = Instance.new('TextButton')
-				r.Size = UDim2.new(1, 0, 0, 40)
-				r.LayoutOrder = i
-				r.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
-				r.BorderSizePixel = 0
-				r.AutoButtonColor = false
-				r.Text = ''
-				r.ZIndex = 7
-				r.Parent = hvScroll
-				addCorner(r, UDim.new(0, 8))
-				local bar = Instance.new('Frame')
-				bar.Size = UDim2.fromOffset(3, 22)
-				bar.Position = UDim2.fromOffset(8, 9)
-				bar.BackgroundColor3 = accent()
-				bar.BorderSizePixel = 0
-				bar.ZIndex = 8
-				bar.Parent = r
-				addCorner(bar, UDim.new(1, 0))
-				local tl = Instance.new('TextLabel')
-				tl.Size = UDim2.new(1, -24, 1, 0)
-				tl.Position = UDim2.fromOffset(18, 0)
-				tl.BackgroundTransparency = 1
-				tl.Text = sess.title
-				tl.TextXAlignment = Enum.TextXAlignment.Left
-				tl.TextTruncate = Enum.TextTruncate.AtEnd
-				tl.TextColor3 = uipallet.Text
-				tl.TextSize = 13
-				tl.FontFace = CHATFONT
-				tl.ZIndex = 8
-				tl.Parent = r
-				r.MouseEnter:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.1) }) end)
-				r.MouseLeave:Connect(function() tween:Tween(r, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.05) }) end)
-				r.MouseButton1Click:Connect(function() loadSession(sess) end)
+			local lastLabel, order = nil, 0
+			for _, sess in next, chat.sessions do
+				local lbl = dayLabel(sess.time)
+				if lbl ~= lastLabel then
+					lastLabel = lbl
+					order = order + 1
+					local header = Instance.new('TextLabel')
+					header.Size = UDim2.new(1, -4, 0, 18)
+					header.LayoutOrder = order
+					header.BackgroundTransparency = 1
+					header.Text = lbl
+					header.TextXAlignment = Enum.TextXAlignment.Left
+					header.TextColor3 = color.Dark(uipallet.Text, 0.38)
+					header.TextSize = 12
+					header.FontFace = CHATFONTBOLD
+					header.ZIndex = 7
+					header.Parent = hvScroll
+				end
+				order = order + 1
+				makeSessionRow(sess, order)
 			end
 		end
 		historyView.Visible = true
@@ -12676,7 +12801,7 @@ end
 			local ok, res = pcall(callGemini, chat.history, imageMode)
 			if pending then pending:Destroy() end
 			if ok and res then
-				addBubble('model', res.answer, res.thinking, res.image)
+				addBubble('model', res.answer, res.thinking, res.image, res.elapsed)
 				chat.history[#chat.history + 1] = { role = 'model', text = res.answer ~= '' and res.answer or '[image]' }
 				if res.usage and res.usage.totalTokenCount then chat.tokens = chat.tokens + res.usage.totalTokenCount end
 				setUsage()
@@ -12696,6 +12821,56 @@ end
 	send.MouseLeave:Connect(refreshSend)
 	newBtn.MouseButton1Click:Connect(newChat)
 	histBtn.MouseButton1Click:Connect(openHistory)
+
+	local function sendPrompt(t)
+		if chat.busy then return end
+		box.Text = t
+		doSend()
+	end
+	local QUICK = { 'How do I bind a key?', 'Explain KillAura', "What's in the Combat tab?", 'How do I open the menu?', 'What day is it?' }
+	local quickRow = Instance.new('ScrollingFrame')
+	quickRow.AnchorPoint = Vector2.new(0, 1)
+	quickRow.Size = UDim2.new(1, -16, 0, 24)
+	quickRow.Position = UDim2.new(0, 8, 1, -(INPUTH + 4))
+	quickRow.BackgroundTransparency = 1
+	quickRow.BorderSizePixel = 0
+	quickRow.ScrollBarThickness = 0
+	quickRow.ScrollingDirection = Enum.ScrollingDirection.X
+	quickRow.CanvasSize = UDim2.new()
+	quickRow.AutomaticCanvasSize = Enum.AutomaticSize.X
+	quickRow.Parent = body
+	local qLay = Instance.new('UIListLayout')
+	qLay.FillDirection = Enum.FillDirection.Horizontal
+	qLay.SortOrder = Enum.SortOrder.LayoutOrder
+	qLay.Padding = UDim.new(0, 6)
+	qLay.Parent = quickRow
+	for i, prompt in next, QUICK do
+		local chip = Instance.new('TextButton')
+		chip.AutomaticSize = Enum.AutomaticSize.X
+		chip.Size = UDim2.fromOffset(0, 24)
+		chip.LayoutOrder = i
+		chip.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		chip.AutoButtonColor = false
+		chip.Text = prompt
+		chip.TextColor3 = color.Dark(uipallet.Text, 0.2)
+		chip.TextSize = 12
+		chip.FontFace = CHATFONT
+		chip.Parent = quickRow
+		addCorner(chip, UDim.new(0, 7))
+		local cpad = Instance.new('UIPadding')
+		cpad.PaddingLeft = UDim.new(0, 10)
+		cpad.PaddingRight = UDim.new(0, 10)
+		cpad.Parent = chip
+		chip.MouseEnter:Connect(function()
+			tween:Tween(chip, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.11) })
+			chip.TextColor3 = uipallet.Text
+		end)
+		chip.MouseLeave:Connect(function()
+			tween:Tween(chip, uipallet.Tween, { BackgroundColor3 = color.Light(uipallet.Main, 0.05) })
+			chip.TextColor3 = color.Dark(uipallet.Text, 0.2)
+		end)
+		chip.MouseButton1Click:Connect(function() sendPrompt(prompt) end)
+	end
 
 	local function setCollapsed(state)
 		chat.collapsed = state

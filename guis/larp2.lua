@@ -12071,7 +12071,7 @@ end
 
 ;(function()
 	local HttpService = game:GetService('HttpService')
-	local lplr = playersService.LocalPlayer
+	local lplr = cloneref(game:GetService('Players')).LocalPlayer
 	local API_KEY = ''
 	local function getKey()
 		if API_KEY ~= '' then return API_KEY end

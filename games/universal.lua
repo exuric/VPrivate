@@ -9649,6 +9649,8 @@ run(function()
 	
 	SongBeats = larp.Legit:CreateModule({
 		Name = 'Song Beats',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/songbeats.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				songobj = Instance.new('Sound')

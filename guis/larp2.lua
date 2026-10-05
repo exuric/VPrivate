@@ -12212,7 +12212,48 @@ end
 	end
 
 	local W, H, HEADER, INPUTH = 404, 456, 46, 46
-	local chat = { history = {}, tokens = 0, busy = false, imageMode = false, sessions = {}, collapsed = false }
+	local chat = {
+		history = {}, tokens = 0, busy = false, imageMode = false, sessions = {}, collapsed = false,
+		settings = { remember = true, timestamps = false, accent = 'Theme', style = 'Bubbles', glow = false, animations = true, compact = false, font = 'Vape' }
+	}
+	pcall(function()
+		if isfile('LarpV4/profiles/ai_settings.json') then
+			local ok, saved = pcall(function() return HttpService:JSONDecode(readfile('LarpV4/profiles/ai_settings.json')) end)
+			if ok and type(saved) == 'table' then
+				for k, v in next, saved do chat.settings[k] = v end
+			end
+		end
+	end)
+	local function saveSettings()
+		pcall(function() writefile('LarpV4/profiles/ai_settings.json', HttpService:JSONEncode(chat.settings)) end)
+	end
+
+	local ACCENTS = {
+		Teal = Color3.fromRGB(51, 225, 193),
+		Purple = Color3.fromRGB(167, 139, 250),
+		Blue = Color3.fromRGB(96, 165, 250),
+		Green = Color3.fromRGB(74, 222, 128),
+		Pink = Color3.fromRGB(244, 114, 182),
+		Orange = Color3.fromRGB(251, 146, 60)
+	}
+	local ACCENT_ORDER = { 'Theme', 'Teal', 'Purple', 'Blue', 'Green', 'Pink', 'Orange' }
+	local function chatAccent()
+		local a = chat.settings.accent
+		if a and ACCENTS[a] then return ACCENTS[a] end
+		return Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	end
+	local FONT_ORDER = { 'Vape', 'Gotham', 'System' }
+	local function chatFont(bold)
+		local f = chat.settings.font
+		if f == 'Gotham' then return Font.fromEnum(Enum.Font.Gotham, bold and Enum.FontWeight.Bold or Enum.FontWeight.Regular) end
+		if f == 'System' then return bold and uipallet.FontSemiBold or uipallet.Font end
+		return bold and CHATFONTBOLD or CHATFONT
+	end
+	local STYLE_ORDER = { 'Bubbles', 'Flat' }
+	local function anim(obj, info, props)
+		if chat.settings.animations then tween:Tween(obj, info, props)
+		else for k, v in next, props do obj[k] = v end end
+	end
 
 	local win = Instance.new('Frame')
 	win.Name = 'AIAssistant'
@@ -12234,7 +12275,7 @@ end
 	hicon.Position = UDim2.fromOffset(15, 13)
 	hicon.BackgroundTransparency = 1
 	hicon.Image = getcustomasset('LarpV4/assets/larp/ai.png')
-	hicon.ImageColor3 = accent()
+	hicon.ImageColor3 = chatAccent()
 	hicon.Parent = win
 	local htitle = Instance.new('TextLabel')
 	htitle.Size = UDim2.fromOffset(180, 17)
@@ -12284,6 +12325,7 @@ end
 	dropArt.Rotation = 90
 	local newBtn = headerBtn(W - 42, getcustomasset('LarpV4/assets/larp/add.png'), UDim2.fromOffset(13, 13), 'New chat')
 	local histBtn = headerBtn(W - 70, getcustomasset('LarpV4/assets/larp/history.png'), UDim2.fromOffset(15, 15), 'Chat history')
+	local setBtn = headerBtn(W - 98, getcustomasset('LarpV4/assets/larp/guisettings.png'), UDim2.fromOffset(15, 15), 'Settings')
 
 	local divider = Instance.new('Frame')
 	divider.Size = UDim2.new(1, -24, 0, 1)
@@ -12372,7 +12414,7 @@ end
 	addCorner(ring, UDim.new(1, 0))
 	local ringStroke = Instance.new('UIStroke')
 	ringStroke.Thickness = 2
-	ringStroke.Color = accent()
+	ringStroke.Color = chatAccent()
 	ringStroke.Transparency = 0.9
 	ringStroke.Parent = ring
 	addTooltip(ringTrack, '0 tokens this session')
@@ -12478,13 +12520,13 @@ end
 
 	local function setUsage()
 		local frac = math.clamp(chat.tokens / TOKEN_SOFT_LIMIT, 0, 1)
-		local col = frac < 0.6 and accent() or (frac < 0.85 and Color3.fromRGB(235, 185, 45) or Color3.fromRGB(235, 75, 75))
+		local col = frac < 0.6 and chatAccent() or (frac < 0.85 and Color3.fromRGB(235, 185, 45) or Color3.fromRGB(235, 75, 75))
 		ringStroke.Color = col
 		ringStroke.Transparency = 0.85 - frac * 0.75
 		pcall(function() ringTrack:SetAttribute('tip', chat.tokens..' tokens this session') end)
 	end
 
-	local function addBubble(role, text, thinkingText, imageAsset, elapsed)
+	local function addBubble(role, text, thinkingText, imageAsset, elapsed, noCopy)
 		local isUser = role == 'user'
 		local row = Instance.new('Frame')
 		row.Size = UDim2.new(1, 0, 0, 0)
@@ -12496,16 +12538,27 @@ end
 		bubble.AutomaticSize = Enum.AutomaticSize.XY
 		bubble.AnchorPoint = Vector2.new(isUser and 1 or 0, 0)
 		bubble.Position = UDim2.fromScale(isUser and 1 or 0, 0)
-		bubble.BackgroundColor3 = isUser and accent() or (role == 'error' and Color3.fromRGB(64, 30, 30) or color.Light(uipallet.Main, 0.06))
+		local flat = chat.settings.style == 'Flat' and not isUser and role ~= 'error'
+		bubble.BackgroundColor3 = isUser and chatAccent() or (role == 'error' and Color3.fromRGB(64, 30, 30) or color.Light(uipallet.Main, 0.06))
 		bubble.BackgroundTransparency = 1
 		bubble.BorderSizePixel = 0
 		bubble.Parent = row
-		addCorner(bubble, UDim.new(0, 10))
+		if not flat then
+			addCorner(bubble, UDim.new(0, 10))
+			if chat.settings.glow then
+				local gs = Instance.new('UIStroke')
+				gs.Color = chatAccent()
+				gs.Transparency = 0.55
+				gs.Thickness = 1
+				gs.Parent = bubble
+			end
+		end
+		local pad = chat.settings.compact and 6 or 10
 		local bpad = Instance.new('UIPadding')
-		bpad.PaddingLeft = UDim.new(0, 11)
-		bpad.PaddingRight = UDim.new(0, 11)
-		bpad.PaddingTop = UDim.new(0, 8)
-		bpad.PaddingBottom = UDim.new(0, 8)
+		bpad.PaddingLeft = UDim.new(0, flat and 2 or pad + 1)
+		bpad.PaddingRight = UDim.new(0, flat and 2 or pad + 1)
+		bpad.PaddingTop = UDim.new(0, flat and 1 or pad - 2)
+		bpad.PaddingBottom = UDim.new(0, flat and 1 or pad - 2)
 		bpad.Parent = bubble
 		local blay = Instance.new('UIListLayout')
 		blay.SortOrder = Enum.SortOrder.LayoutOrder
@@ -12515,22 +12568,76 @@ end
 		bmax.MaxSize = Vector2.new(W - 96, math.huge)
 		bmax.Parent = bubble
 
-		local fadeTargets = { { bubble, 0 } }
+		local fadeTargets = { { bubble, flat and 1 or 0 } }
 
-		if elapsed and not isUser and role == 'model' then
-			local tl = Instance.new('TextLabel')
-			tl.AutomaticSize = Enum.AutomaticSize.X
-			tl.Size = UDim2.fromOffset(0, 13)
-			tl.BackgroundTransparency = 1
-			tl.Text = string.format('Thought for %.1fs', elapsed)
-			tl.TextXAlignment = Enum.TextXAlignment.Left
-			tl.TextColor3 = color.Dark(uipallet.Text, 0.46)
-			tl.TextTransparency = 1
-			tl.TextSize = 11
-			tl.FontFace = CHATFONT
-			tl.LayoutOrder = -1
-			tl.Parent = bubble
-			fadeTargets[#fadeTargets + 1] = { tl, 0, true }
+		local showCopy = role == 'model' and text and text ~= '' and not noCopy
+		local metaStr = ''
+		if elapsed and role == 'model' then metaStr = string.format('Thought for %.1fs', elapsed) end
+		if chat.settings and chat.settings.timestamps then
+			local ts = os.date('%H:%M')
+			metaStr = metaStr ~= '' and (metaStr..'   '..ts) or ts
+		end
+		if showCopy or metaStr ~= '' then
+			local topbar = Instance.new('Frame')
+			topbar.Size = UDim2.new(1, 0, 0, 16)
+			topbar.BackgroundTransparency = 1
+			topbar.LayoutOrder = -1
+			topbar.Parent = bubble
+			if metaStr ~= '' then
+				local meta = Instance.new('TextLabel')
+				meta.Size = UDim2.new(1, -22, 1, 0)
+				meta.BackgroundTransparency = 1
+				meta.Text = metaStr
+				meta.TextXAlignment = Enum.TextXAlignment.Left
+				meta.TextColor3 = color.Dark(uipallet.Text, 0.46)
+				meta.TextTransparency = 1
+				meta.TextSize = 11
+				meta.FontFace = CHATFONT
+				meta.Parent = topbar
+				fadeTargets[#fadeTargets + 1] = { meta, 0, true }
+			end
+			if showCopy then
+				local copied = Instance.new('TextLabel')
+				copied.AnchorPoint = Vector2.new(1, 0)
+				copied.Position = UDim2.new(1, -22, 0, 1)
+				copied.Size = UDim2.fromOffset(60, 14)
+				copied.BackgroundTransparency = 1
+				copied.Text = 'Copied'
+				copied.TextXAlignment = Enum.TextXAlignment.Right
+				copied.TextColor3 = chatAccent()
+				copied.TextSize = 11
+				copied.FontFace = CHATFONT
+				copied.TextTransparency = 1
+				copied.Visible = false
+				copied.Parent = topbar
+				local copyBtn = Instance.new('ImageButton')
+				copyBtn.AnchorPoint = Vector2.new(1, 0)
+				copyBtn.Position = UDim2.new(1, 0, 0, 0)
+				copyBtn.Size = UDim2.fromOffset(17, 17)
+				copyBtn.BackgroundTransparency = 1
+				copyBtn.AutoButtonColor = false
+				copyBtn.Image = getcustomasset('LarpV4/assets/larp/copy.png')
+				copyBtn.ImageColor3 = color.Dark(uipallet.Text, 0.38)
+				copyBtn.ImageTransparency = 1
+				copyBtn.Parent = topbar
+				fadeTargets[#fadeTargets + 1] = { copyBtn, 0, false, true }
+				copyBtn.MouseEnter:Connect(function() if copyBtn.Image:find('copy') then tween:Tween(copyBtn, uipallet.Tween, { ImageColor3 = uipallet.Text }) end end)
+				copyBtn.MouseLeave:Connect(function() if copyBtn.Image:find('copy') then tween:Tween(copyBtn, uipallet.Tween, { ImageColor3 = color.Dark(uipallet.Text, 0.38) }) end end)
+				copyBtn.MouseButton1Click:Connect(function()
+					pcall(setclipboard, text)
+					copyBtn.Image = getcustomasset('LarpV4/assets/larp/check.png')
+					copyBtn.ImageColor3 = chatAccent()
+					copied.Visible = true
+					copied.TextTransparency = 0
+					task.delay(1.2, function()
+						if copyBtn and copyBtn.Parent then
+							copyBtn.Image = getcustomasset('LarpV4/assets/larp/copy.png')
+							copyBtn.ImageColor3 = color.Dark(uipallet.Text, 0.38)
+						end
+						if copied and copied.Parent then copied.Visible = false; copied.TextTransparency = 1 end
+					end)
+				end)
+			end
 		end
 
 		if thinkingText and thinkingText ~= '' then
@@ -12579,34 +12686,14 @@ end
 			label.TextYAlignment = Enum.TextYAlignment.Top
 			label.TextColor3 = isUser and accentText() or uipallet.Text
 			label.TextTransparency = 1
-			label.TextSize = 14
-			label.FontFace = CHATFONT
+			label.TextSize = chat.settings.compact and 13 or 14
+			label.FontFace = chatFont()
 			label.LayoutOrder = 2
 			label.Parent = bubble
 			local lmax = Instance.new('UISizeConstraint')
 			lmax.MaxSize = Vector2.new(W - 120, math.huge)
 			lmax.Parent = label
 			fadeTargets[#fadeTargets + 1] = { label, 0, true }
-		end
-
-		if role == 'model' and text and text ~= '' then
-			local copyBtn = Instance.new('ImageButton')
-			copyBtn.Size = UDim2.fromOffset(14, 14)
-			copyBtn.BackgroundTransparency = 1
-			copyBtn.AutoButtonColor = false
-			copyBtn.Image = getcustomasset('LarpV4/assets/larp/copy.png')
-			copyBtn.ImageColor3 = color.Dark(uipallet.Text, 0.42)
-			copyBtn.ImageTransparency = 1
-			copyBtn.LayoutOrder = 4
-			copyBtn.Parent = bubble
-			copyBtn.MouseEnter:Connect(function() tween:Tween(copyBtn, uipallet.Tween, { ImageColor3 = uipallet.Text }) end)
-			copyBtn.MouseLeave:Connect(function() tween:Tween(copyBtn, uipallet.Tween, { ImageColor3 = color.Dark(uipallet.Text, 0.42) }) end)
-			copyBtn.MouseButton1Click:Connect(function()
-				pcall(setclipboard, text)
-				copyBtn.ImageColor3 = accent()
-				task.delay(0.8, function() if copyBtn and copyBtn.Parent then copyBtn.ImageColor3 = color.Dark(uipallet.Text, 0.42) end end)
-			end)
-			fadeTargets[#fadeTargets + 1] = { copyBtn, 0, false, true }
 		end
 
 		if imageAsset then
@@ -12627,8 +12714,8 @@ end
 			local props = {}
 			if isText then props.TextTransparency = goal
 			elseif isImg then props.ImageTransparency = goal
-			else props.BackgroundTransparency = (obj == bubble and role ~= 'none') and goal or goal end
-			tween:Tween(obj, TweenInfo.new(0.18, Enum.EasingStyle.Quad), props)
+			else props.BackgroundTransparency = goal end
+			anim(obj, TweenInfo.new(0.18, Enum.EasingStyle.Quad), props)
 		end
 		scrollBottom()
 		return row
@@ -12636,7 +12723,7 @@ end
 
 	local function clearList()
 		for _, c in next, list:GetChildren() do
-			if c:IsA('Frame') then c:Destroy() end
+			if c:IsA('Frame') or c:IsA('TextLabel') then c:Destroy() end
 		end
 	end
 
@@ -12644,7 +12731,7 @@ end
 		local name = (lplr and lplr.DisplayName ~= '' and lplr.DisplayName) or (lplr and lplr.Name) or 'there'
 		local g = GREETINGS[math.random(1, #GREETINGS)]
 		if g:find('%%s') then g = string.format(g, name) end
-		addBubble('model', g)
+		addBubble('model', g, nil, nil, nil, true)
 		local credit = Instance.new('TextLabel')
 		credit.Size = UDim2.new(1, -8, 0, 14)
 		credit.BackgroundTransparency = 1
@@ -12657,8 +12744,9 @@ end
 	end
 
 	local openHistory
+	local settingsView
 	local function saveCurrent()
-		if #chat.history == 0 then return end
+		if #chat.history == 0 or not chat.settings.remember then return end
 		local title = 'Chat'
 		for _, m in next, chat.history do
 			if m.role == 'user' then title = m.text:sub(1, 26); break end
@@ -12709,7 +12797,7 @@ end
 		local bar = Instance.new('Frame')
 		bar.Size = UDim2.fromOffset(3, 20)
 		bar.Position = UDim2.fromOffset(10, 9)
-		bar.BackgroundColor3 = accent()
+		bar.BackgroundColor3 = chatAccent()
 		bar.BorderSizePixel = 0
 		bar.ZIndex = 8
 		bar.Parent = r
@@ -12769,13 +12857,14 @@ end
 				makeSessionRow(sess, order)
 			end
 		end
+		if settingsView then settingsView.Visible = false end
 		historyView.Visible = true
 	end
 	hvBack.MouseButton1Click:Connect(function() historyView.Visible = false end)
 
 	local function refreshSend()
 		local has = box.Text:gsub('%s', '') ~= ''
-		tween:Tween(send, uipallet.Tween, { BackgroundColor3 = has and accent() or color.Light(uipallet.Main, 0.05) })
+		tween:Tween(send, uipallet.Tween, { BackgroundColor3 = has and chatAccent() or color.Light(uipallet.Main, 0.05) })
 		tween:Tween(sendArt, uipallet.Tween, { ImageColor3 = has and accentText() or color.Dark(uipallet.Text, 0.4) })
 	end
 
@@ -12816,7 +12905,7 @@ end
 	box.FocusLost:Connect(function(enter) if enter then doSend() end end)
 	send.MouseButton1Click:Connect(doSend)
 	send.MouseEnter:Connect(function()
-		if box.Text:gsub('%s', '') ~= '' then tween:Tween(send, uipallet.Tween, { BackgroundColor3 = color.Light(accent(), 0.12) }) end
+		if box.Text:gsub('%s', '') ~= '' then tween:Tween(send, uipallet.Tween, { BackgroundColor3 = color.Light(chatAccent(), 0.12) }) end
 	end)
 	send.MouseLeave:Connect(refreshSend)
 	newBtn.MouseButton1Click:Connect(newChat)
@@ -12835,6 +12924,7 @@ end
 	quickRow.BackgroundTransparency = 1
 	quickRow.BorderSizePixel = 0
 	quickRow.ScrollBarThickness = 0
+	quickRow.ScrollBarImageTransparency = 1
 	quickRow.ScrollingDirection = Enum.ScrollingDirection.X
 	quickRow.CanvasSize = UDim2.new()
 	quickRow.AutomaticCanvasSize = Enum.AutomaticSize.X
@@ -12850,6 +12940,7 @@ end
 		chip.Size = UDim2.fromOffset(0, 24)
 		chip.LayoutOrder = i
 		chip.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
+		chip.BorderSizePixel = 0
 		chip.AutoButtonColor = false
 		chip.Text = prompt
 		chip.TextColor3 = color.Dark(uipallet.Text, 0.2)
@@ -12871,6 +12962,194 @@ end
 		end)
 		chip.MouseButton1Click:Connect(function() sendPrompt(prompt) end)
 	end
+
+	local winGlow = Instance.new('UIStroke')
+	winGlow.Color = chatAccent()
+	winGlow.Thickness = 1.4
+	winGlow.Transparency = 0.5
+	winGlow.Enabled = false
+	winGlow.Parent = win
+
+	local function applyLive()
+		hicon.ImageColor3 = chatAccent()
+		box.FontFace = chatFont()
+		refreshSend()
+		setUsage()
+		winGlow.Color = chatAccent()
+		winGlow.Enabled = chat.settings.glow
+		saveSettings()
+	end
+
+	settingsView = Instance.new('Frame')
+	settingsView.Size = UDim2.fromScale(1, 1)
+	settingsView.BackgroundColor3 = uipallet.Main
+	settingsView.BorderSizePixel = 0
+	settingsView.Visible = false
+	settingsView.ZIndex = 6
+	settingsView.Parent = body
+	local svTitle = Instance.new('TextLabel')
+	svTitle.Size = UDim2.fromOffset(200, 18)
+	svTitle.Position = UDim2.fromOffset(40, 8)
+	svTitle.BackgroundTransparency = 1
+	svTitle.Text = 'Settings'
+	svTitle.TextXAlignment = Enum.TextXAlignment.Left
+	svTitle.TextColor3 = uipallet.Text
+	svTitle.TextSize = 14
+	svTitle.FontFace = CHATFONTBOLD
+	svTitle.ZIndex = 7
+	svTitle.Parent = settingsView
+	local svBack = Instance.new('ImageButton')
+	svBack.Size = UDim2.fromOffset(22, 22)
+	svBack.Position = UDim2.fromOffset(10, 6)
+	svBack.BackgroundTransparency = 1
+	svBack.AutoButtonColor = false
+	svBack.Image = getcustomasset('LarpV4/assets/larp/back.png')
+	svBack.ImageColor3 = color.Dark(uipallet.Text, 0.3)
+	svBack.ZIndex = 7
+	svBack.Parent = settingsView
+	svBack.MouseEnter:Connect(function() tween:Tween(svBack, uipallet.Tween, { ImageColor3 = uipallet.Text }) end)
+	svBack.MouseLeave:Connect(function() tween:Tween(svBack, uipallet.Tween, { ImageColor3 = color.Dark(uipallet.Text, 0.3) }) end)
+	svBack.MouseButton1Click:Connect(function() settingsView.Visible = false end)
+	local svScroll = Instance.new('ScrollingFrame')
+	svScroll.Size = UDim2.new(1, -16, 1, -38)
+	svScroll.Position = UDim2.fromOffset(8, 34)
+	svScroll.BackgroundTransparency = 1
+	svScroll.BorderSizePixel = 0
+	svScroll.ScrollBarThickness = 2
+	svScroll.ScrollBarImageTransparency = 0.6
+	svScroll.CanvasSize = UDim2.new()
+	svScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	svScroll.ZIndex = 7
+	svScroll.Parent = settingsView
+	local svLay = Instance.new('UIListLayout')
+	svLay.SortOrder = Enum.SortOrder.LayoutOrder
+	svLay.Padding = UDim.new(0, 6)
+	svLay.Parent = svScroll
+	local svOrder = 0
+	local function svNext() svOrder = svOrder + 1 return svOrder end
+	local function section(txt)
+		local h = Instance.new('TextLabel')
+		h.Size = UDim2.new(1, 0, 0, 20)
+		h.LayoutOrder = svNext()
+		h.BackgroundTransparency = 1
+		h.Text = txt
+		h.TextXAlignment = Enum.TextXAlignment.Left
+		h.TextColor3 = color.Dark(uipallet.Text, 0.38)
+		h.TextSize = 12
+		h.FontFace = CHATFONTBOLD
+		h.ZIndex = 7
+		h.Parent = svScroll
+	end
+	local function rowBase(label)
+		local r = Instance.new('Frame')
+		r.Size = UDim2.new(1, 0, 0, 36)
+		r.LayoutOrder = svNext()
+		r.BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+		r.BorderSizePixel = 0
+		r.ZIndex = 7
+		r.Parent = svScroll
+		addCorner(r, UDim.new(0, 8))
+		local l = Instance.new('TextLabel')
+		l.Size = UDim2.new(1, -120, 1, 0)
+		l.Position = UDim2.fromOffset(12, 0)
+		l.BackgroundTransparency = 1
+		l.Text = label
+		l.TextXAlignment = Enum.TextXAlignment.Left
+		l.TextColor3 = uipallet.Text
+		l.TextSize = 13
+		l.FontFace = CHATFONT
+		l.ZIndex = 8
+		l.Parent = r
+		return r
+	end
+	local function makeToggle(label, key)
+		local r = rowBase(label)
+		local track = Instance.new('TextButton')
+		track.AnchorPoint = Vector2.new(1, 0.5)
+		track.Size = UDim2.fromOffset(38, 20)
+		track.Position = UDim2.new(1, -12, 0.5, 0)
+		track.AutoButtonColor = false
+		track.Text = ''
+		track.BorderSizePixel = 0
+		track.BackgroundColor3 = chat.settings[key] and chatAccent() or color.Light(uipallet.Main, 0.12)
+		track.ZIndex = 8
+		track.Parent = r
+		addCorner(track, UDim.new(1, 0))
+		local knob = Instance.new('Frame')
+		knob.Size = UDim2.fromOffset(16, 16)
+		knob.Position = UDim2.fromOffset(chat.settings[key] and 20 or 2, 2)
+		knob.BackgroundColor3 = Color3.new(1, 1, 1)
+		knob.BorderSizePixel = 0
+		knob.ZIndex = 9
+		knob.Parent = track
+		addCorner(knob, UDim.new(1, 0))
+		track.MouseButton1Click:Connect(function()
+			chat.settings[key] = not chat.settings[key]
+			tween:Tween(track, uipallet.Tween, { BackgroundColor3 = chat.settings[key] and chatAccent() or color.Light(uipallet.Main, 0.12) })
+			tween:Tween(knob, uipallet.Tween, { Position = UDim2.fromOffset(chat.settings[key] and 20 or 2, 2) })
+			applyLive()
+		end)
+	end
+	local function makeCycle(label, key, options, swatch)
+		local r = rowBase(label)
+		local btn = Instance.new('TextButton')
+		btn.AnchorPoint = Vector2.new(1, 0.5)
+		btn.AutomaticSize = Enum.AutomaticSize.X
+		btn.Size = UDim2.fromOffset(0, 24)
+		btn.Position = UDim2.new(1, -12, 0.5, 0)
+		btn.AutoButtonColor = false
+		btn.BorderSizePixel = 0
+		btn.BackgroundColor3 = color.Light(uipallet.Main, 0.1)
+		btn.Text = tostring(chat.settings[key])
+		btn.TextColor3 = uipallet.Text
+		btn.TextSize = 12
+		btn.FontFace = CHATFONT
+		btn.ZIndex = 8
+		btn.Parent = r
+		addCorner(btn, UDim.new(0, 6))
+		local bp = Instance.new('UIPadding')
+		bp.PaddingLeft = UDim.new(0, swatch and 24 or 10)
+		bp.PaddingRight = UDim.new(0, 10)
+		bp.Parent = btn
+		local dot
+		if swatch then
+			dot = Instance.new('Frame')
+			dot.Size = UDim2.fromOffset(10, 10)
+			dot.Position = UDim2.fromOffset(8, 7)
+			dot.BackgroundColor3 = chatAccent()
+			dot.BorderSizePixel = 0
+			dot.ZIndex = 9
+			dot.Parent = btn
+			addCorner(dot, UDim.new(1, 0))
+		end
+		btn.MouseButton1Click:Connect(function()
+			local cur = chat.settings[key]
+			local idx = 1
+			for i, v in next, options do if v == cur then idx = i break end end
+			chat.settings[key] = options[(idx % #options) + 1]
+			btn.Text = tostring(chat.settings[key])
+			if dot then dot.BackgroundColor3 = chatAccent() end
+			applyLive()
+		end)
+	end
+
+	section('General')
+	makeToggle('Remember chat', 'remember')
+	makeToggle('Show timestamps', 'timestamps')
+	section('Appearance')
+	makeCycle('AI accent', 'accent', ACCENT_ORDER, true)
+	makeCycle('Message style', 'style', STYLE_ORDER)
+	makeCycle('Font', 'font', FONT_ORDER)
+	makeToggle('Glow effects', 'glow')
+	makeToggle('Animations', 'animations')
+	makeToggle('Compact mode', 'compact')
+
+	local function openSettings()
+		settingsView.Visible = not settingsView.Visible
+		if settingsView.Visible then historyView.Visible = false end
+	end
+	setBtn.MouseButton1Click:Connect(openSettings)
+	winGlow.Enabled = chat.settings.glow
 
 	local function setCollapsed(state)
 		chat.collapsed = state

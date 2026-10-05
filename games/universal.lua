@@ -9168,6 +9168,8 @@ run(function()
 	
 	FFlag = larp.Legit:CreateModule({
 		Name = 'FFlagEditor',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/fflag.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(call)
 			if call then
 				ChangeFFlag(true)

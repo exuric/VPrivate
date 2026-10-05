@@ -18248,6 +18248,7 @@ run(function()
 	
 	BedBreakEffect = larp.Legit:CreateModule({
 		Name = 'Bed Break Effect',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/bedbreak.png') return ok and v or nil end)(),
 		Function = function(callback)
 			if callback then
 	            BedBreakEffect:Clean(larpEvents.BedwarsBedBreak.Event:Connect(function(data)

@@ -12069,7 +12069,7 @@ if shared.LarpPresetInstall then
 	end))
 end
 
-do
+;(function()
 	local HttpService = game:GetService('HttpService')
 	local lplr = playersService.LocalPlayer
 	local API_KEY = ''
@@ -12595,6 +12595,6 @@ do
 	function mainapi:ToggleAIAssistant()
 		if chat.win and chat.win.Visible then chat.win.Visible = false else openChat() end
 	end
-end
+end)()
 
 return mainapi

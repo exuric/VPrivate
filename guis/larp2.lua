@@ -1543,7 +1543,101 @@ components = {
 		
 		optionapi.Object = dropdown
 		api.Options[optionsettings.Name] = optionapi
-		
+
+		return optionapi
+	end,
+	Segmented = function(optionsettings, children, api)
+		local optionapi = {
+			Type = 'Segmented',
+			Value = optionsettings.Default or optionsettings.List[1] or 'None',
+			List = optionsettings.List,
+			Index = 0
+		}
+		optionsettings.Function = optionsettings.Function or function() end
+
+		local seg = Instance.new('TextButton')
+		seg.Name = optionsettings.Name..'Segmented'
+		seg.Size = UDim2.new(1, 0, 0, 46)
+		seg.BackgroundColor3 = color.Dark(children.BackgroundColor3, optionsettings.Darker and 0.02 or 0)
+		seg.BorderSizePixel = 0
+		seg.AutoButtonColor = false
+		seg.Visible = optionsettings.Visible == nil or optionsettings.Visible
+		seg.Text = ''
+		seg.Parent = children
+		addTooltip(seg, optionsettings.Tooltip)
+		local title = Instance.new('TextLabel')
+		title.Size = UDim2.fromOffset(200, 14)
+		title.Position = UDim2.fromOffset(10, 4)
+		title.BackgroundTransparency = 1
+		title.Text = optionsettings.Name
+		title.TextXAlignment = Enum.TextXAlignment.Left
+		title.TextColor3 = color.Dark(uipallet.Text, 0.16)
+		title.TextSize = 11
+		title.FontFace = uipallet.Font
+		title.Parent = seg
+		local bar = Instance.new('Frame')
+		bar.Name = 'Track'
+		bar.Size = UDim2.new(1, -20, 0, 22)
+		bar.Position = UDim2.fromOffset(10, 18)
+		bar.BackgroundColor3 = color.Light(uipallet.Main, 0.034)
+		bar.BorderSizePixel = 0
+		bar.Parent = seg
+		addCorner(bar, UDim.new(0, 6))
+		local count = #optionsettings.List
+		local highlight = Instance.new('Frame')
+		highlight.Name = 'Highlight'
+		highlight.Size = UDim2.new(1 / count, -4, 1, -4)
+		highlight.Position = UDim2.fromOffset(2, 2)
+		highlight.BackgroundColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+		highlight.BorderSizePixel = 0
+		highlight.Parent = bar
+		addCorner(highlight, UDim.new(0, 5))
+		local segBtns = {}
+		for i, v in ipairs(optionsettings.List) do
+			local b = Instance.new('TextButton')
+			b.Name = v
+			b.Size = UDim2.new(1 / count, 0, 1, 0)
+			b.Position = UDim2.fromScale((i - 1) / count, 0)
+			b.BackgroundTransparency = 1
+			b.AutoButtonColor = false
+			b.Text = v
+			b.TextColor3 = color.Dark(uipallet.Text, 0.16)
+			b.TextSize = 12
+			b.TextTruncate = Enum.TextTruncate.AtEnd
+			b.FontFace = uipallet.Font
+			b.ZIndex = 2
+			b.Parent = bar
+			segBtns[i] = b
+			b.MouseButton1Click:Connect(function() optionapi:SetValue(v, true) end)
+		end
+
+		function optionapi:Save(tab) tab[optionsettings.Name] = { Value = self.Value } end
+		function optionapi:Load(tab) if self.Value ~= tab.Value then self:SetValue(tab.Value) end end
+		function optionapi:Change(list)
+			optionsettings.List = list or {}
+			self.List = optionsettings.List
+		end
+		function optionapi:Color(hue, sat, val, rainbowcheck)
+			highlight.BackgroundColor3 = rainbowcheck and Color3.fromHSV(mainapi:Color((hue - (self.Index * 0.075)) % 1)) or Color3.fromHSV(hue, sat, val)
+			for _, b in ipairs(segBtns) do
+				if b.Name == self.Value then b.TextColor3 = mainapi:TextColor(hue, sat, val) end
+			end
+		end
+		function optionapi:SetValue(val, mouse)
+			local idx = table.find(optionsettings.List, val)
+			if not idx then val = optionsettings.List[1] or 'None'; idx = 1 end
+			self.Value = val
+			tween:Tween(highlight, uipallet.Tween, { Position = UDim2.new((idx - 1) / count, 2, 0, 2) })
+			for i, b in ipairs(segBtns) do
+				tween:Tween(b, uipallet.Tween, { TextColor3 = (i == idx) and mainapi:TextColor(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value) or color.Dark(uipallet.Text, 0.16) })
+			end
+			optionsettings.Function(self.Value, mouse)
+		end
+		optionapi:SetValue(optionapi.Value)
+
+		optionapi.Object = seg
+		api.Options[optionsettings.Name] = optionapi
+
 		return optionapi
 	end,
 	Font = function(optionsettings, children, api)
@@ -5024,10 +5118,19 @@ function mainapi:CreateCategory(categorysettings)
 			end
 		end)
 		bind.MouseButton1Click:Connect(function()
-			bindcovertext.Text = 'PRESS A KEY TO BIND'
+			bindcovertext.Text = 'LISTENING...'
 			bindcover.Size = UDim2.fromOffset(getfontsizeCached(bindcovertext.Text, bindcovertext.TextSize).X + 20, 40)
+			bindcover.ImageTransparency = 1
+			bindcovertext.TextTransparency = 1
 			bindcover.Visible = true
+			tween:Tween(bindcover, uipallet.Tween, { ImageTransparency = 0 })
+			tween:Tween(bindcovertext, uipallet.Tween, { TextTransparency = 0 })
 			mainapi.Binding = moduleapi
+		end)
+		bind.MouseButton2Click:Connect(function()
+			moduleapi:SetBind({})
+			bindcover.Visible = false
+			if mainapi.Binding == moduleapi then mainapi.Binding = nil end
 		end)
 		dotsbutton.MouseEnter:Connect(function()
 			if not moduleapi.Enabled then

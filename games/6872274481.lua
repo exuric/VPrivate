@@ -18579,6 +18579,89 @@ run(function()
 end)
 
 run(function()
+	local DamageIndicator
+	local diGui
+	local Color, TextSize, Duration, OnlyMine
+	local TweenService = game:GetService('TweenService')
+	DamageIndicator = larp.Legit:CreateModule({
+		Name = 'Damage Indicator',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/damage.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
+		Function = function(callback)
+			if callback then
+				diGui = Instance.new('ScreenGui')
+				diGui.Name = 'LarpDamageIndicator'
+				diGui.ResetOnSpawn = false
+				diGui.IgnoreGuiInset = true
+				diGui.DisplayOrder = 999
+				pcall(function() diGui.Parent = (gethui and gethui()) or lplr:WaitForChild('PlayerGui') end)
+				DamageIndicator:Clean(diGui)
+				DamageIndicator:Clean(larpEvents.EntityDamageEvent.Event:Connect(function(dmg)
+					if not dmg or not dmg.damage or dmg.damage <= 0 then return end
+					local inst = dmg.entityInstance
+					if not inst or inst == lplr.Character then return end
+					if OnlyMine.Enabled and dmg.fromEntity ~= lplr.Character then return end
+					local part = typeof(inst) == 'Instance' and (inst.PrimaryPart or inst:FindFirstChild('HumanoidRootPart'))
+					local wpos
+					if part then
+						wpos = part.Position
+					elseif typeof(inst) == 'Instance' and inst:IsA('Model') then
+						local ok, cf = pcall(function() return inst:GetPivot() end)
+						if ok then wpos = cf.Position end
+					end
+					if not wpos then return end
+					local vpos, vis = gameCamera:WorldToViewportPoint(wpos + Vector3.new(math.random(-12, 12) / 10, 2.4, 0))
+					if not vis then return end
+					local col = Color3.fromRGB(255, 80, 80)
+					pcall(function() if Color and Color.Value then col = Color.Value end end)
+					local label = Instance.new('TextLabel')
+					label.Text = '-'..tostring(math.floor(dmg.damage + 0.5))
+					label.TextColor3 = col
+					label.BackgroundTransparency = 1
+					label.FontFace = Font.fromEnum(Enum.Font.GothamBold)
+					label.TextSize = (TextSize and TextSize.Value) or 20
+					label.TextStrokeTransparency = 0.5
+					label.AnchorPoint = Vector2.new(0.5, 0.5)
+					label.Size = UDim2.fromOffset(90, 24)
+					label.Position = UDim2.fromOffset(vpos.X, vpos.Y)
+					label.ZIndex = 10
+					label.Parent = diGui
+					local dur = (Duration and Duration.Value) or 0.8
+					TweenService:Create(label, TweenInfo.new(dur, Enum.EasingStyle.Quad), {
+						Position = UDim2.fromOffset(vpos.X, vpos.Y - 42),
+						TextTransparency = 1,
+						TextStrokeTransparency = 1
+					}):Play()
+					task.delay(dur + 0.05, function() pcall(function() label:Destroy() end) end)
+				end))
+			end
+		end,
+		Tooltip = 'Shows floating damage numbers on enemies you hit'
+	})
+	Color = DamageIndicator:CreateColorSlider({
+		Name = 'Color'
+	})
+	TextSize = DamageIndicator:CreateSlider({
+		Name = 'Text size',
+		Min = 10,
+		Max = 48,
+		Default = 20
+	})
+	Duration = DamageIndicator:CreateSlider({
+		Name = 'Duration',
+		Min = 0.3,
+		Max = 2,
+		Default = 0.8,
+		Decimal = 10,
+		Suffix = 'seconds'
+	})
+	OnlyMine = DamageIndicator:CreateToggle({
+		Name = 'Only my hits',
+		Default = true
+	})
+end)
+
+run(function()
 	larp.Legit:CreateModule({
 		Name = 'HitFix',
 		Function = function(callback)

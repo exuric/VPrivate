@@ -111,6 +111,21 @@ end)
 shared.LarpOwner = ISOWNER
 shared.LarpPureOwner = ISOWNER
 
+local hash
+local nativeSha512
+do
+	local fn = (crypt and crypt.hash) or (syn and syn.crypt and syn.crypt.hash)
+	if type(fn) == 'function' then
+		local ok, res = pcall(fn, 'abc', 'sha512')
+		if ok and type(res) == 'string' and res:lower() == 'ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f' then
+			nativeSha512 = function(s)
+				local okh, h = pcall(fn, s, 'sha512')
+				return okh and type(h) == 'string' and #h == 128 and h:lower() or nil
+			end
+		end
+	end
+end
+
 local function downloadFile(path, func)
 	local outdated = not isfile(path)
 	if not outdated and path:find('.lua') then
@@ -125,7 +140,7 @@ local function downloadFile(path, func)
 	-- new release. Hash the stripped body against the fresh manifest; on a match,
 	-- rewrite only the watermark locally and skip the network entirely. This is what
 	-- stops a commit bump from redownloading files that never actually changed.
-	if outdated and hash and isfile(path) and path:find('%.lua$') then
+	if outdated and (hash or nativeSha512) and isfile(path) and path:find('%.lua$') then
 		local relative = select(1, path:gsub('LarpV4/', ''))
 		local expected = MANIFEST[relative]
 		if expected then
@@ -177,7 +192,6 @@ writefile(path, res)
 	return (func or readfile)(path)
 end
 
-local hash
 local VERIFY_FILES = {
 	'main.lua',
 	'guis/larp2.lua',
@@ -306,11 +320,10 @@ local function inlineSha512(message)
 	return table.concat(out)
 end
 
-local function fileDigest(path)
-	local content = readfile(path)
-	local i = content:find('\n')
-	if i then
-		content = content:sub(i + 1)
+local function digestBody(content)
+	if nativeSha512 then
+		local d = nativeSha512(content)
+		if d then return d end
 	end
 	local partial = hash.sha512()
 	for j = 1, #content, 32768 do
@@ -320,6 +333,15 @@ local function fileDigest(path)
 		end
 	end
 	return partial()
+end
+
+local function fileDigest(path)
+	local content = readfile(path)
+	local i = content:find('\n')
+	if i then
+		content = content:sub(i + 1)
+	end
+	return digestBody(content)
 end
 
 local function verifyFiles()
@@ -337,7 +359,7 @@ local function verifyFiles()
 		if i then
 			content = content:sub(i + 1)
 		end
-		return inlineSha512(content) == MANIFEST['libraries/hash.lua']
+		return (nativeSha512 and nativeSha512(content) or inlineSha512(content)) == MANIFEST['libraries/hash.lua']
 	end)
 	if not ok or not good then
 		pcall(delfile, 'LarpV4/libraries/hash.lua')
@@ -357,14 +379,7 @@ local function verifyFiles()
 				if expected then
 					local i = content:find('\n')
 					local body = i and content:sub(i + 1) or content
-					local ok, digest = pcall(function()
-						local partial = hash.sha512()
-						for j = 1, #body, 32768 do
-							partial(body:sub(j, j + 32767))
-							if j % 65536 == 0 then task.wait() end
-						end
-						return partial()
-					end)
+					local ok, digest = pcall(digestBody, body)
 					if ok and digest == expected then
 						rebrand[#rebrand + 1] = { full = full, body = body }
 					else

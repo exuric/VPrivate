@@ -8199,6 +8199,8 @@ run(function()
 	
 	Atmosphere = larp.Legit:CreateModule({
 		Name = 'Atmosphere',
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/atmosphere.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Function = function(callback)
 			if callback then
 				for _, v in lightingService:GetChildren() do

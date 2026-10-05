@@ -1206,6 +1206,13 @@ entitylib.start()
 
 local calculatePath
 run(function()
+	if not getgenv().LarpGameReady then
+		local t0 = os.clock()
+		repeat task.wait() until lplr.PlayerScripts:FindFirstChild('TS')
+			and lplr.PlayerScripts.TS:FindFirstChild('knit')
+			and os.clock() - t0 >= 2
+		getgenv().LarpGameReady = true
+	end
 	local KnitInit, Knit
 	repeat
 		KnitInit, Knit = pcall(function()

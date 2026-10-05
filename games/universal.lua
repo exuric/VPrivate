@@ -8418,6 +8418,8 @@ run(function()
 	end
 	
 	Cape = larp.Legit:CreateModule({
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/cape.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Name = 'Cape',
 		Function = function(callback)
 			if callback then

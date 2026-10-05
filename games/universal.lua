@@ -8297,6 +8297,8 @@ run(function()
 	local trail, point, point2
 	
 	Breadcrumbs = larp.Legit:CreateModule({
+		Icon = (function() local ok, v = pcall(larp.Libraries.getcustomasset, 'LarpV4/assets/larp/breadcrumbs.png') return ok and v or nil end)(),
+		IconSize = UDim2.fromOffset(24, 24),
 		Name = 'Breadcrumbs',
 		Function = function(callback)
 			if callback then

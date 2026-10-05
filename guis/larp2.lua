@@ -2186,6 +2186,10 @@ components = {
 		targetbutton.Parent = children
 		addCorner(targetbutton)
 		addTooltip(targetbutton, optionsettings.Tooltip)
+		local tbStroke = Instance.new('UIStroke')
+		tbStroke.Color = color.Light(uipallet.Main, 0.16)
+		tbStroke.Transparency = 0.5
+		tbStroke.Parent = targetbutton
 		local bkg = Instance.new('Frame')
 		bkg.Size = UDim2.new(1, -2, 1, -2)
 		bkg.Position = UDim2.fromOffset(1, 1)
@@ -2211,6 +2215,12 @@ components = {
 			tween:Tween(icon, uipallet.Tween, {
 				ImageColor3 = self.Enabled and Color3.new(1, 1, 1) or color.Light(uipallet.Main, 0.37)
 			})
+			tween:Tween(tbStroke, uipallet.Tween, { Transparency = self.Enabled and 0.2 or 0.5 })
+			local isz = optionsettings.IconSize
+			if isz then
+				tween:Tween(icon, TweenInfo.new(0.13, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(isz.X.Offset + 5, isz.Y.Offset + 5) })
+				task.delay(0.13, function() if icon and icon.Parent then tween:Tween(icon, uipallet.Tween, { Size = isz }) end end)
+			end
 			if tooltipicon then
 				tooltipicon:Destroy()
 			end

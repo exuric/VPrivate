@@ -7705,7 +7705,7 @@ function mainapi:Load(skipgui, profile)
 			if v.Expanded ~= nil and v.Expanded ~= object.Expanded then
 				object:Expand()
 			end
-			if object.Button and (v.Enabled or false) ~= object.Button.Enabled then
+			if object.Button and (v.Enabled or false) ~= (object.Button.Enabled and true or false) then
 				object.Button:Toggle()
 			end
 			if v.List and (#object.List > 0 or #v.List > 0) then
@@ -7735,7 +7735,11 @@ function mainapi:Load(skipgui, profile)
 				if object.Options and v.Options then
 					self:LoadOptions(object, v.Options)
 				end
-				if v.Enabled ~= object.Enabled then
+				-- Enabled must be compared as strict booleans. A module that was never
+				-- toggled can hold nil rather than false, and `false ~= nil` is
+				-- true, so the flip below turned every untouched module on.
+				local wantEnabled = v.Enabled and true or false
+				if wantEnabled ~= (object.Enabled and true or false) then
 					if skipgui then
 						if self.ToggleNotifications.Enabled then
 							mainapi:CreateNotification(i, (not v.Enabled and "<font color='#5AFF5A'>Enabled</font>"..bindSuffix(v.Bind, 'to disable') or "<font color='#FF5A5A'>Disabled</font>"..bindSuffix(v.Bind, 'to enable')), 0.75, v.Enabled and 'warning' or nil)
@@ -7760,7 +7764,7 @@ function mainapi:Load(skipgui, profile)
 				if object.Options and v.Options then
 					self:LoadOptions(object, v.Options)
 				end
-				if object.Enabled ~= v.Enabled then
+				if (object.Enabled and true or false) ~= (v.Enabled and true or false) then
 					object:Toggle()
 				end
 				if v.Bind and object.SetBind then
@@ -10907,18 +10911,14 @@ general:CreateButton({
 	end,
 	Tooltip = 'Change the GUI language'
 })
-general:CreateButton({
-	Name = 'Reinject',
-	Function = function()
-		shared.larpreload = true
-		if shared.LarpDeveloper then
-			loadstring(readfile('LarpV4/init.lua'), 'init')()
-		else
-			loadstring(game:HttpGet((getgenv().LarpReadRoot or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/init.lua?v='..tick(), true))()
-		end
-	end,
-	Tooltip = 'Reloads larp for debugging purposes'
-})
+--[[
+	Reinject was removed on purpose.
+
+	Re-running the loader on top of a live instance left two copies fighting over
+	shared.larp and over the profile file on disk, which is how people ended up
+	with every module switched on and their saved config clobbered. Use Unload
+	and then run the script again instead.
+]]
 
 --[[
 	Module Settings

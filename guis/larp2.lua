@@ -11035,8 +11035,10 @@ guipane:CreateDropdown({
 	Function = function(val, mouse)
 		if mouse then
 			if val == 'Vape Lite' then
-				pcall(writefile, 'LarpV4/profiles/color.txt', httpService:JSONEncode({Main = {22, 22, 26}, Text = {235, 235, 240}, Font = 'Gotham', Preset = 'VapeLite'}))
+				pcall(writefile, 'LarpV4/profiles/color.txt', httpService:JSONEncode({Main = {20, 17, 20}, Text = {255, 255, 255}, Font = 'Gotham', Preset = 'VapeLite'}))
 				writefile('LarpV4/profiles/gui.txt', 'new')
+				pcall(function() mainapi.GUIColor:SetValue(0.6, 0.92, 0.96) end)
+				mainapi:Save()
 			else
 				if isfile('LarpV4/profiles/color.txt') then
 					local ok, data = pcall(loadJson, 'LarpV4/profiles/color.txt')

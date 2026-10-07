@@ -3935,38 +3935,29 @@ run(function()
 
 	local SwordController, EntityUtil
 	local loopConn
-	local goalPos, goalKind
-	local target, targetBed
+	local goalKind, goalPos, goalStop
+	local target, targetBed, myBed
 	local retreating = false
 	local flyActive = false
-	local lastSwing, lastBlockIn, lastArmor, lastBuy, lastHeal, lastJump = 0, 0, 0, 0, 0, 0
+	local lastSwing, lastBlockIn, lastArmor, lastHeal, lastJump = 0, 0, 0, 0, 0
+	local lastProbe, lastProbePos, stuckSince = 0, nil, 0
+
 	local swords = {'wood_sword', 'stone_sword', 'iron_sword', 'diamond_sword', 'emerald_sword'}
 	local armors = {'none', 'leather_chestplate', 'iron_chestplate', 'diamond_chestplate', 'emerald_chestplate'}
 
 	local rc = RaycastParams.new()
 	rc.FilterType = Enum.RaycastFilterType.Exclude
 
-	local function say(msg, dur, level)
-		notif('Auto Win', msg, dur or 3, level)
-	end
-
+	local function char() return entitylib.character end
 	local function alive()
 		return entitylib.isAlive and entitylib.character and entitylib.character.RootPart and entitylib.character.Humanoid
 	end
-
-	local function playing()
-		return store.matchState ~= nil and store.matchState ~= 0
-	end
-
-	local function flat(v)
-		return v * Vector3.new(1, 0, 1)
-	end
-
+	local function playing() return store.matchState ~= nil and store.matchState ~= 0 end
+	local function flat(v) return v * Vector3.new(1, 0, 1) end
 	local function dirTo(from, to)
 		local d = flat(to - from)
 		return d.Magnitude > 0.1 and d.Unit or Vector3.zero
 	end
-
 	local function posOf(inst)
 		if not inst then return nil end
 		if inst:IsA('BasePart') then return inst.Position end
@@ -3975,43 +3966,53 @@ run(function()
 		local p = inst:FindFirstChildWhichIsA('BasePart', true)
 		return p and p.Position or nil
 	end
-
-	local function health()
+	local function hpFrac()
 		local c = lplr.Character
 		if not c then return 1 end
 		local hp = c:GetAttribute('Health') or 0
-		local max = c:GetAttribute('MaxHealth') or 100
-		return max > 0 and (hp / max) or 1
+		local mx = c:GetAttribute('MaxHealth') or 100
+		return mx > 0 and (hp / mx) or 1
 	end
-
 	local function amountOf(name)
 		local item = getItem(name)
 		return item and item.amount or 0
 	end
-
-	local function haveSword()
-		return getSword() ~= nil
+	local function teamWool()
+		local ok, w = pcall(bedwars.Shop.getTeamWool, lplr:GetAttribute('Team'))
+		return ok and w or 'wool_white'
 	end
-
-	local function wornArmorTier()
+	local function swordTier()
+		return store.tools.sword and (table.find(swords, store.tools.sword.itemType) or 0) or 0
+	end
+	local function armorTier()
 		local worn = store.inventory.inventory.armor[2]
 		worn = worn and worn ~= 'empty' and worn.itemType or 'none'
 		return table.find(armors, worn) or 1
 	end
 
-	local function enemies()
+	local function enemies(wantPlayer, wantNPC)
+		if not alive() then return nil end
 		local pos = entitylib.character.RootPart.Position
 		local best, bestd
 		for _, ent in entitylib.List do
 			if ent.RootPart and ent.Targetable and entitylib.isVulnerable(ent) then
-				if (ent.Player and (not Targets.Players.Enabled)) then continue end
-				if (ent.NPC and (not Targets.NPCs.Enabled)) then continue end
+				if ent.Player and not (wantPlayer and Targets.Players.Enabled) then continue end
+				if ent.NPC and not (wantNPC and Targets.NPCs.Enabled) then continue end
 				if (not ent.Player) and (not ent.NPC) then continue end
 				local d = (ent.RootPart.Position - pos).Magnitude
 				if not bestd or d < bestd then best, bestd = ent, d end
 			end
 		end
 		return best, bestd
+	end
+
+	local function findMyBed()
+		local team = lplr:GetAttribute('Team') or -1
+		for _, bed in collectionService:GetTagged('bed') do
+			if bed.Position and bed:GetAttribute('Team' .. team .. 'NoBreak') then
+				return bed.Position
+			end
+		end
 	end
 
 	local function nearestBed()
@@ -4027,28 +4028,32 @@ run(function()
 		return best, bestd
 	end
 
-	local function ownBed()
-		local team = lplr:GetAttribute('Team') or -1
-		for _, bed in collectionService:GetTagged('bed') do
-			if bed.Position and bed:GetAttribute('Team' .. team .. 'NoBreak') then
-				return bed.Position
+	local function nearestGen(reference)
+		local ref = reference or entitylib.character.RootPart.Position
+		local best, bestd
+		for _, g in collectionService:GetTagged('Generator') do
+			local p = posOf(g)
+			if p then
+				local d = (p - ref).Magnitude
+				if not bestd or d < bestd then best, bestd = p, d end
 			end
 		end
-		return nil
+		return best, bestd
 	end
 
-	local function nearestShop(needUpgrades)
-		if not store.shop then return nil, nil end
+	local function nearestShop(kw)
 		local pos = entitylib.character.RootPart.Position
-		local best, bestd, bestId
-		for _, v in store.shop do
-			local tag = needUpgrades and v.Upgrades or v.Shop
-			if tag and v.RootPart then
-				local d = (v.RootPart.Position - pos).Magnitude
-				if not bestd or d < bestd then best, bestd, bestId = v.RootPart.Position, d, v.Id end
+		local best, bestd
+		for _, m in workspace:GetChildren() do
+			if m.Name:find(kw) then
+				local p = posOf(m)
+				if p then
+					local d = (p - pos).Magnitude
+					if not bestd or d < bestd then best, bestd = p, d end
+				end
 			end
 		end
-		return best, bestd, bestId
+		return best, bestd
 	end
 
 	local function resolveCombat()
@@ -4065,23 +4070,16 @@ run(function()
 			end
 		end
 	end
-
 	local function toGameEntity(ent)
 		if not EntityUtil or not ent then return nil end
 		local e = ent.Character and EntityUtil:getEntity(ent.Character)
-		if not e then
-			e = ent.RootPart and ent.RootPart.Parent and EntityUtil:getEntity(ent.RootPart.Parent)
-		end
+		if not e then e = ent.RootPart and ent.RootPart.Parent and EntityUtil:getEntity(ent.RootPart.Parent) end
 		return e
 	end
-
 	local function ensureSword()
 		local sword = getSword()
-		if sword and sword.tool then
-			switchItem(sword.tool)
-		end
+		if sword and sword.tool then switchItem(sword.tool) end
 	end
-
 	local function swingAt(ent)
 		if not SwordController then return end
 		local e = toGameEntity(ent)
@@ -4089,13 +4087,10 @@ run(function()
 		local c = bedwars.CombatConstant
 		local prev = c and c.RAYCAST_SWORD_CHARACTER_DISTANCE
 		if c then c.RAYCAST_SWORD_CHARACTER_DISTANCE = math.max(prev or 14.4, 17) end
-		pcall(function()
-			SwordController:attackEntity(e, nil, nil, {playAnimation = true, playSound = true})
-		end)
+		pcall(function() SwordController:attackEntity(e, nil, nil, {playAnimation = true, playSound = true}) end)
 		if c then c.RAYCAST_SWORD_CHARACTER_DISTANCE = prev end
 		store.lastHit = os.clock()
 	end
-
 	local function equipArmor()
 		for i = 0, 2 do
 			if store.inventory.inventory.armor[i + 1] == 'empty' then
@@ -4106,29 +4101,76 @@ run(function()
 			end
 		end
 	end
-
 	local function blockEnemy(ent)
 		local wool = getWool()
 		if not wool then return end
 		local root = entitylib.character.RootPart
 		local epos = ent.RootPart.Position
 		local place = roundPos(epos + dirTo(epos, root.Position) * 3)
-		if not getPlacedBlock(place) then
-			pcall(bedwars.placeBlock, place, wool)
+		if not getPlacedBlock(place) then pcall(bedwars.placeBlock, place, wool) end
+	end
+	local function heal()
+		if os.clock() - lastHeal < 1.2 then return end
+		local apple = getItem('golden_apple') or getItem('apple') or getItem('orange')
+		if apple then
+			lastHeal = os.clock()
+			pcall(function() bedwars.Handler:Get('ConsumeItem'):Fire('CallServerAsync', {item = apple.tool}) end)
 		end
 	end
 
-	local function bridge()
-		local wool = getWool()
-		if not wool then return end
-		local char = entitylib.character
-		local root = char.RootPart
-		local hip = char.HipHeight or 2
-		local move = char.Humanoid.MoveDirection
-		for i = 0, 1 do
-			local under = roundPos(root.Position - Vector3.new(0, hip + 1.5, 0) + move * (i * 3))
-			if not getPlacedBlock(under) then
-				pcall(bedwars.placeBlock, under, wool)
+	local function shopId()
+		if not store.shop then return nil end
+		local pos = entitylib.character.RootPart.Position
+		for _, v in store.shop do
+			if v.Shop and v.RootPart and (v.RootPart.Position - pos).Magnitude <= 22 then return v.Id end
+		end
+	end
+	local function buyTier(current, tiers, sid)
+		local startIdx = 1
+		if current and table.find(tiers, current.itemType) then startIdx = table.find(tiers, current.itemType) + 1 end
+		local buyable
+		for i = startIdx, #tiers do
+			local v = bedwars.Shop.getShopItem(tiers[i], lplr)
+			if v and not v.disabled and not v.lockedByForge and amountOf(v.currency) >= v.price then buyable = v end
+		end
+		if buyable then
+			notif('Auto Win', 'Bought ' .. (bedwars.ItemMeta[buyable.itemType].displayName or buyable.itemType), 3)
+			bedwars.Handler:Get('BedwarsPurchaseItem'):Fire('CallServerAsync', {shopItem = buyable, shopId = sid})
+			return true
+		end
+	end
+	local function buyBlocks(sid)
+		if amountOf(teamWool()) >= 16 then return end
+		local v = bedwars.Shop.getShopItem(teamWool(), lplr)
+		if v and amountOf(v.currency) >= v.price then
+			notif('Auto Win', 'Bought blocks', 2)
+			for _ = 1, 4 do bedwars.Handler:Get('BedwarsPurchaseItem'):Fire('CallServerAsync', {shopItem = v, shopId = sid}) end
+		end
+	end
+	local function doItemShop()
+		local sid = shopId()
+		if not sid then return end
+		buyTier(store.tools.sword, swords, sid)
+		local worn = store.inventory.inventory.armor[2]
+		worn = worn and worn ~= 'empty' and worn or getBestArmor(1)
+		buyTier(worn and {itemType = worn.itemType} or {itemType = 'none'}, armors, sid)
+		buyTier(store.tools.stone or {itemType = 'none'}, {'none', 'wood_pickaxe', 'stone_pickaxe', 'iron_pickaxe', 'diamond_pickaxe'}, sid)
+		buyBlocks(sid)
+	end
+	local function doUpgrades()
+		local sid = shopId()
+		if not sid then return end
+		local team = lplr:GetAttribute('Team')
+		local state = (bedwars.Store:getState().Bedwars.teamUpgrades or {})[team] or {}
+		for _, key in {'ARMOR', 'DAMAGE', 'HASTE'} do
+			local meta = bedwars.TeamUpgradeMeta[key]
+			if meta then
+				local tier = (state[key] or 0) + 1
+				local t = meta.tiers and meta.tiers[tier]
+				if t and amountOf('diamond') >= t.cost then
+					notif('Auto Win', 'Bought ' .. (meta.name == 'Armor' and 'Protection' or meta.name) .. ' ' .. tier, 3)
+					bedwars.Handler:Get('RequestPurchaseTeamUpgrade'):Fire('CallServerAsync', key)
+				end
 			end
 		end
 	end
@@ -4138,214 +4180,188 @@ run(function()
 		rc.FilterDescendantsInstances = {lplr.Character}
 		return workspace:Raycast(root.Position, Vector3.new(0, -14, 0), rc) ~= nil
 	end
-
+	local function wallAhead(dir)
+		local root = entitylib.character.RootPart
+		rc.FilterDescendantsInstances = {lplr.Character}
+		return workspace:Raycast(root.Position, dir * 3.5, rc) ~= nil
+	end
+	local function bridge()
+		local wool = getWool()
+		if not wool then return end
+		local c = entitylib.character
+		local root = c.RootPart
+		local hip = c.HipHeight or 2
+		local fv = flat(root.AssemblyLinearVelocity)
+		local move = fv.Magnitude > 1 and fv.Unit or Vector3.zero
+		for i = 0, 1 do
+			local under = roundPos(root.Position - Vector3.new(0, hip + 1.5, 0) + move * (i * 3))
+			if not getPlacedBlock(under) then pcall(bedwars.placeBlock, under, wool) end
+		end
+	end
 	local function setFly(on)
 		local fly = larp.Modules.Fly
 		if not fly then return end
 		if on then
 			if not fly.Enabled then fly:Toggle() flyActive = true end
 		elseif flyActive and fly.Enabled then
-			fly:Toggle()
-			flyActive = false
+			fly:Toggle() flyActive = false
 		end
 	end
-
-	local function moveToward(pos, stopDist)
-		local char = entitylib.character
-		local hum, root = char.Humanoid, char.RootPart
-		local delta = flat(pos - root.Position)
-		local dist = delta.Magnitude
-		if dist <= (stopDist or 3) then
-			hum:Move(Vector3.zero, false)
-			return dist
-		end
-		hum:Move(delta.Unit, false)
-		if (not groundBelow()) and DoFly.Enabled then
-			setFly(true)
-			root.AssemblyLinearVelocity = Vector3.new(delta.Unit.X * 48, root.AssemblyLinearVelocity.Y, delta.Unit.Z * 48)
+	local function stop()
+		local v = entitylib.character.RootPart.AssemblyLinearVelocity
+		entitylib.character.RootPart.AssemblyLinearVelocity = Vector3.new(0, v.Y, 0)
+	end
+	local function drive(dir)
+		local c = entitylib.character
+		local root = c.RootPart
+		local v = root.AssemblyLinearVelocity
+		local yv = v.Y
+		local speed = math.min(c.Humanoid.WalkSpeed or 14, 16)
+		if not groundBelow() then
+			if DoFly.Enabled then
+				setFly(true)
+				yv = math.clamp(yv, -6, 16)
+				bridge()
+			end
 		else
-			if flyActive and groundBelow() then setFly(false) end
-			bridge()
-			rc.FilterDescendantsInstances = {lplr.Character}
-			local wall = workspace:Raycast(root.Position, delta.Unit * 3, rc)
-			if wall and os.clock() - lastJump > 0.6 then
-				hum.Jump = true
+			if flyActive then setFly(false) end
+			if wallAhead(dir) and os.clock() - lastJump > 0.6 then
+				yv = 45
 				lastJump = os.clock()
 			end
+			bridge()
 		end
+		root.AssemblyLinearVelocity = Vector3.new(dir.X * speed, yv, dir.Z * speed)
+	end
+
+	local function navTo(dst, stopDist, use3d)
+		local c = entitylib.character
+		local root = c.RootPart
+		local dist = (use3d and (dst - root.Position) or flat(dst - root.Position)).Magnitude
+		if dist <= (stopDist or 3) then stop() stuckSince = 0 return dist end
+		local dir = dirTo(root.Position, dst)
+		local now = os.clock()
+		-- progress tracking: detect when we're wedged against geometry
+		if now - lastProbe > 0.3 then
+			local moved = lastProbePos and flat(root.Position - lastProbePos).Magnitude or 9
+			if moved < 1 then
+				if stuckSince == 0 then stuckSince = now end
+			else
+				stuckSince = 0
+			end
+			lastProbePos = root.Position
+			lastProbe = now
+		end
+		-- hop over ledges / elevated targets / when stuck
+		if (dst.Y - root.Position.Y > 3 or stuckSince > 0) and groundBelow() and now - lastJump > 0.55 then
+			root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 45, root.AssemblyLinearVelocity.Z)
+			lastJump = now
+		end
+		-- persistently stuck: tower a block to step up and over
+		if stuckSince > 0 and now - stuckSince > 1 then
+			local wool = getWool()
+			if wool then
+				local under = roundPos(root.Position - Vector3.new(0, (c.HipHeight or 2) + 1.5, 0))
+				if not getPlacedBlock(under) then pcall(bedwars.placeBlock, under, wool) end
+				local ahead = roundPos(root.Position + dir * 3)
+				if not getPlacedBlock(ahead) then pcall(bedwars.placeBlock, ahead, wool) end
+			end
+		end
+		drive(dir)
 		return dist
 	end
 
-	local function heal()
-		if os.clock() - lastHeal < 1.2 then return end
-		local apple = getItem('golden_apple') or getItem('apple') or getItem('orange')
-		if apple then
-			lastHeal = os.clock()
-			pcall(function()
-				bedwars.Handler:Get('ConsumeItem'):Fire('CallServerAsync', {item = apple.tool})
-			end)
-		end
-	end
-
-	local function buyTool(current, tiers, sid)
-		local startIdx = 1
-		if current and table.find(tiers, current.itemType) then
-			startIdx = table.find(tiers, current.itemType) + 1
-		end
-		local buyable
-		for i = startIdx, #tiers do
-			local v = bedwars.Shop.getShopItem(tiers[i], lplr)
-			if v and (not v.disabled) and (not v.lockedByForge) and amountOf(v.currency) >= v.price then
-				buyable = v
-			end
-		end
-		if buyable then
-			say('Bought ' .. (bedwars.ItemMeta[buyable.itemType].displayName or buyable.itemType))
-			bedwars.Handler:Get('BedwarsPurchaseItem'):Fire('CallServerAsync', {shopItem = buyable, shopId = sid})
-			return true
-		end
-		return false
-	end
-
-	local function buyUpgrades()
-		local team = lplr:GetAttribute('Team')
-		local state = (bedwars.Store:getState().Bedwars.teamUpgrades or {})[team] or {}
-		for _, key in {'ARMOR', 'DAMAGE', 'HASTE'} do
-			local meta = bedwars.TeamUpgradeMeta[key]
-			if meta then
-				local tier = (state[key] or 0) + 1
-				local t = meta.tiers and meta.tiers[tier]
-				if t and amountOf('diamond') >= t.cost then
-					say('Bought ' .. (meta.name == 'Armor' and 'Protection' or meta.name) .. ' ' .. tier)
-					bedwars.Handler:Get('RequestPurchaseTeamUpgrade'):Fire('CallServerAsync', key)
-				end
-			end
-		end
-	end
-
-	local function doShop()
-		if os.clock() - lastBuy < 0.4 then return end
-		lastBuy = os.clock()
-		local _, itemDist, sid = nearestShop(false)
-		if sid and itemDist and itemDist <= 20 then
-			buyTool(store.tools.sword, swords, sid)
-			local worn = store.inventory.inventory.armor[2]
-			worn = worn and worn ~= 'empty' and worn or getBestArmor(1)
-			buyTool(worn and {itemType = worn.itemType} or {itemType = 'none'}, armors, sid)
-		end
-		local upos, updist = nearestShop(true)
-		if upos and updist and updist <= 20 then
-			buyUpgrades()
-		end
-	end
-
-	local function needGear()
-		if not DoBuy.Enabled then return false end
-		local swordTier = store.tools.sword and (table.find(swords, store.tools.sword.itemType) or 1) or 0
-		return swordTier < 3 or wornArmorTier() < 3
-	end
-
 	local function pickGoal()
-		if not alive() then
-			goalKind, goalPos, target, targetBed = nil, nil, nil, nil
-			return
-		end
+		if not alive() then goalKind = nil return end
+		myBed = myBed or findMyBed()
 
-		if DoFly.Enabled and health() <= (LowHealth.Value / 100) then
+		if DoFly.Enabled and hpFrac() <= (LowHealth.Value / 100) then
 			retreating = true
-		elseif health() >= 0.85 then
+		elseif hpFrac() >= 0.85 then
 			retreating = false
 		end
-
 		if retreating then
-			goalKind = 'retreat'
-			goalPos = ownBed() or nearestShop(false)
-			if not goalPos then
-				goalPos = entitylib.character.RootPart.Position + Vector3.new(0, 60, 0)
-			end
+			goalKind, goalPos, goalStop = 'retreat', myBed or nearestShop('item_shop') or (entitylib.character.RootPart.Position + Vector3.new(0, 60, 0)), 6
 			return
 		end
 
-		if needGear() then
-			local spos = nearestShop(false)
-			if spos then
-				goalKind, goalPos, target, targetBed = 'shop', spos, nil, nil
-				return
-			end
+		local wantGear = swordTier() < 3 or armorTier() < 3 or amountOf(teamWool()) < 12
+		if DoBuy.Enabled and wantGear then
+			-- gather iron until we can afford what we still want, then spend it
+			local need = swordTier() < 3 and 70 or 30
+			local gp = nearestGen(myBed)
+			if amountOf('iron') < need and gp then goalKind, goalPos, goalStop = 'gather', gp, 6 return end
+			local sp = nearestShop('item_shop')
+			if sp then goalKind, goalPos, goalStop = 'shop', sp, 6 return end
+		end
+		if DoBuy.Enabled and amountOf('diamond') >= 2 then
+			local up = nearestShop('upgrade_shop')
+			if up then goalKind, goalPos, goalStop = 'upgrade', up, 6 return end
 		end
 
-		local enemy, edist = enemies()
-		if enemy then
-			goalKind, target, targetBed = 'enemy', enemy, nil
-			goalPos = enemy.RootPart.Position
-			return
-		end
+		-- real players first
+		local enemy = enemies(true, false)
+		if enemy then goalKind, target, targetBed, goalPos, goalStop = 'enemy', enemy, nil, enemy.RootPart.Position, 3 return end
 
-		local bed, bdist = nearestBed()
-		if bed then
-			goalKind, targetBed, target = 'bed', bed, nil
-			goalPos = bed.Position
-			return
+		-- then enemy beds
+		local bed = nearestBed()
+		if bed then goalKind, targetBed, target, goalPos, goalStop = 'bed', bed, nil, bed.Position, 8 return end
+
+		-- then hostile NPCs, only if enabled (so shopkeepers never distract from beds)
+		if Targets.NPCs.Enabled then
+			local npc = enemies(false, true)
+			if npc then goalKind, target, targetBed, goalPos, goalStop = 'enemy', npc, nil, npc.RootPart.Position, 3 return end
 		end
 
 		goalKind, goalPos, target, targetBed = 'idle', nil, nil, nil
 	end
 
 	local function frame()
-		if not (alive() and AutoWin.Enabled) then return end
-		if not playing() then return end
+		if not (alive() and AutoWin.Enabled and playing()) then return end
 
 		if goalKind == 'retreat' then
 			heal()
-			if goalPos then moveToward(goalPos, 4) end
+			if goalPos then navTo(goalPos, goalStop) end
 			return
 		end
-
+		if goalKind == 'gather' then
+			if goalPos then navTo(goalPos, goalStop, true) end
+			return
+		end
 		if goalKind == 'shop' then
 			if goalPos then
-				local d = moveToward(goalPos, 8)
-				if d and d <= 18 then doShop() end
+				local d = navTo(goalPos, goalStop)
+				if d and d <= 12 then doItemShop() end
 			end
 			return
 		end
-
-		if goalKind == 'enemy' and target and target.RootPart then
-			if not target.Targetable or not entitylib.isVulnerable(target) then
-				target = nil
-				return
+		if goalKind == 'upgrade' then
+			if goalPos then
+				local d = navTo(goalPos, goalStop)
+				if d and d <= 12 then doUpgrades() end
 			end
+			return
+		end
+		if goalKind == 'enemy' and target and target.RootPart then
+			if not target.Targetable or not entitylib.isVulnerable(target) then target = nil return end
 			local root = entitylib.character.RootPart
 			local epos = target.RootPart.Position
 			local d = (epos - root.Position).Magnitude
 			ensureSword()
-			if d > 10 then
-				moveToward(epos, 4)
-			else
-				entitylib.character.Humanoid:Move(Vector3.zero, false)
-			end
-			if d <= 16 and os.clock() - lastSwing >= 0.11 then
-				swingAt(target)
-				lastSwing = os.clock()
-			end
-			if os.clock() - lastArmor > 1 then
-				equipArmor()
-				lastArmor = os.clock()
-			end
-			if DoBlock.Enabled and d <= 8 and os.clock() - lastBlockIn > 0.55 then
-				blockEnemy(target)
-				lastBlockIn = os.clock()
-			end
+			if d > 8 then navTo(epos, 4) else stop() end
+			if d <= 16 and os.clock() - lastSwing >= 0.11 then swingAt(target) lastSwing = os.clock() end
+			if os.clock() - lastArmor > 1 then equipArmor() lastArmor = os.clock() end
+			if DoBlock.Enabled and d <= 8 and os.clock() - lastBlockIn > 0.55 then blockEnemy(target) lastBlockIn = os.clock() end
 			return
 		end
-
 		if goalKind == 'bed' and DoBeds.Enabled and targetBed and targetBed.Parent then
 			local root = entitylib.character.RootPart
 			local bpos = targetBed.Position
 			local d = (bpos - root.Position).Magnitude
 			if d > 9 then
-				moveToward(bpos, 6)
+				navTo(bpos, 7)
 			else
-				entitylib.character.Humanoid:Move(Vector3.zero, false)
+				stop()
 				gameCamera.CFrame = CFrame.lookAt(gameCamera.CFrame.Position, bpos)
 				pcall(bedwars.breakBlock, targetBed, true, true, nil, true)
 			end
@@ -4353,7 +4369,7 @@ run(function()
 		end
 
 		if flyActive then setFly(false) end
-		entitylib.character.Humanoid:Move(Vector3.zero, false)
+		stop()
 	end
 
 	AutoWin = larp.Categories.Blatant:CreateModule({
@@ -4361,11 +4377,12 @@ run(function()
 		Function = function(callback)
 			if callback then
 				resolveCombat()
-				retreating, flyActive = false, false
+				retreating, flyActive, myBed = false, false, nil
+				waypoints, pathTo = nil, nil
 				task.spawn(function()
 					repeat
 						pcall(pickGoal)
-						task.wait(0.2)
+						task.wait(0.25)
 					until not AutoWin.Enabled
 				end)
 				loopConn = runService.PostSimulation:Connect(function()
@@ -4377,73 +4394,50 @@ run(function()
 				setFly(false)
 				goalKind, goalPos, target, targetBed = nil, nil, nil, nil
 				SwordController, EntityUtil = nil, nil
-				if alive() then entitylib.character.Humanoid:Move(Vector3.zero, false) end
+				if alive() then stop() end
 			end
 		end,
-		Tooltip = 'Fully automatic: gathers, buys gear, bridges to enemies, PvPs and breaks beds. Toggles Fly to cross gaps and bail when low.'
+		Tooltip = 'Fully automatic: gathers iron, buys gear/blocks/upgrades, bridges to enemies, PvPs and breaks beds. Flies across gaps and bails when low.'
 	})
-	Targets = AutoWin:CreateTargets({
-		Players = true,
-		NPCs = true
-	})
-	DoBuy = AutoWin:CreateToggle({
-		Name = 'Auto Buy',
-		Default = true,
-		Tooltip = 'Buys sword, armor and team upgrades at the shop'
-	})
-	DoBeds = AutoWin:CreateToggle({
-		Name = 'Break Beds',
-		Default = true,
-		Tooltip = 'Bridges to enemy beds and breaks them when no target is in range'
-	})
-	DoBlock = AutoWin:CreateToggle({
-		Name = 'Block Enemy',
-		Default = true,
-		Tooltip = 'Drops wool in front of a target to block their hits'
-	})
-	DoFly = AutoWin:CreateToggle({
-		Name = 'Blatant Fly',
-		Default = true,
-		Tooltip = 'Flies across gaps and bails to safety when low on health'
-	})
-	LowHealth = AutoWin:CreateSlider({
-		Name = 'Bail Health',
-		Min = 10,
-		Max = 90,
-		Default = 35,
-		Suffix = '%',
-		Tooltip = 'Flies out to heal below this health'
-	})
+	Targets = AutoWin:CreateTargets({Players = true, NPCs = false})
+	DoBuy = AutoWin:CreateToggle({Name = 'Auto Buy', Default = true, Tooltip = 'Gathers iron, buys sword/armor/pickaxe/blocks and team upgrades'})
+	DoBeds = AutoWin:CreateToggle({Name = 'Break Beds', Default = true, Tooltip = 'Bridges to enemy beds and breaks them when no target is near'})
+	DoBlock = AutoWin:CreateToggle({Name = 'Block Enemy', Default = true, Tooltip = 'Drops wool in front of a target to block their hits'})
+	DoFly = AutoWin:CreateToggle({Name = 'Blatant Fly', Default = true, Tooltip = 'Flies across gaps and bails to safety when low on health'})
+	LowHealth = AutoWin:CreateSlider({Name = 'Bail Health', Min = 10, Max = 90, Default = 35, Suffix = '%', Tooltip = 'Flies out to heal below this health'})
 
 	task.defer(function()
 		local btn = AutoWin.Object
 		if not btn then return end
+		local gc = larp.GUIColor
+		local accent = gc and Color3.fromHSV(gc.Hue, gc.Sat, gc.Value) or Color3.fromRGB(120, 170, 255)
 		local pill = Instance.new('Frame')
 		pill.Name = 'ExperimentalPill'
 		pill.AnchorPoint = Vector2.new(0, 0.5)
-		pill.Size = UDim2.fromOffset(78, 15)
-		pill.Position = UDim2.new(0, 104, 0, 20)
-		pill.BackgroundColor3 = Color3.fromRGB(255, 176, 66)
-		pill.BackgroundTransparency = 0.8
+		pill.AutomaticSize = Enum.AutomaticSize.X
+		pill.Size = UDim2.fromOffset(0, 15)
+		pill.Position = UDim2.new(0, 106, 0, 20)
+		pill.BackgroundColor3 = accent
+		pill.BackgroundTransparency = 0.78
 		pill.BorderSizePixel = 0
-		pill.ZIndex = 2
+		pill.ZIndex = 3
 		pill.Parent = btn
 		local corner = Instance.new('UICorner')
-		corner.CornerRadius = UDim.new(1, 0)
+		corner.CornerRadius = UDim.new(0, 4)
 		corner.Parent = pill
-		local stroke = Instance.new('UIStroke')
-		stroke.Color = Color3.fromRGB(255, 176, 66)
-		stroke.Transparency = 0.4
-		stroke.Thickness = 1
-		stroke.Parent = pill
+		local pad = Instance.new('UIPadding')
+		pad.PaddingLeft = UDim.new(0, 6)
+		pad.PaddingRight = UDim.new(0, 6)
+		pad.Parent = pill
 		local label = Instance.new('TextLabel')
-		label.Size = UDim2.fromScale(1, 1)
+		label.AutomaticSize = Enum.AutomaticSize.X
+		label.Size = UDim2.fromOffset(0, 15)
 		label.BackgroundTransparency = 1
 		label.Text = 'EXPERIMENTAL'
-		label.TextColor3 = Color3.fromRGB(255, 205, 140)
-		label.TextSize = 9
+		label.TextColor3 = accent
+		label.TextSize = 10
 		label.Font = Enum.Font.GothamBold
-		label.ZIndex = 2
+		label.ZIndex = 3
 		label.Parent = pill
 	end)
 end)

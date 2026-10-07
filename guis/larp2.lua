@@ -631,6 +631,17 @@ do
 			or string.format('rbxasset://fonts/families/%s.json', res.Font)
 		) or uipallet.Font
 		uipallet.FontSemiBold = Font.new(uipallet.Font.Family, Enum.FontWeight.SemiBold)
+		if res.Preset == 'VapeLite' then
+			mainapi.VapeLite = true
+			pcall(function()
+				local reg = getcustomasset('LarpV4/assets/larp/proximanova.ttf')
+				local bold = getcustomasset('LarpV4/assets/larp/proximanova_bold.ttf')
+				writefile('LarpV4/assets/larp/proximanova.json', '{"name":"Proxima Nova","faces":[{"name":"Regular","weight":400,"style":"normal","assetId":"'..reg..'"},{"name":"Bold","weight":700,"style":"normal","assetId":"'..bold..'"}]}')
+				local fam = getcustomasset('LarpV4/assets/larp/proximanova.json')
+				uipallet.Font = Font.new(fam, Enum.FontWeight.Regular)
+				uipallet.FontSemiBold = Font.new(fam, Enum.FontWeight.Bold)
+			end)
+		end
 	end
 	fontsize.Font = uipallet.Font
 end
@@ -4568,6 +4579,7 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.TextSize = 14
 		modulebutton.FontFace = uipallet.Font
 		modulebutton.Parent = children
+		if mainapi.VapeLite then addCorner(modulebutton, UDim.new(0, 8)) modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.04) end
 		if modulesettings.Icon then
 			local modicon = Instance.new('ImageLabel')
 			modicon.Name = 'ModuleIcon'

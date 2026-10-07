@@ -11031,10 +11031,21 @@ scaleslider = guipane:CreateSlider({
 })
 guipane:CreateDropdown({
 	Name = 'GUI Theme',
-	List = inputService.TouchEnabled and {'new', 'old'} or {'new', 'old', 'rise'},
+	List = inputService.TouchEnabled and {'new', 'old', 'Vape Lite'} or {'new', 'old', 'rise', 'Vape Lite'},
 	Function = function(val, mouse)
 		if mouse then
-			writefile('LarpV4/profiles/gui.txt', val)
+			if val == 'Vape Lite' then
+				pcall(writefile, 'LarpV4/profiles/color.txt', httpService:JSONEncode({Main = {22, 22, 26}, Text = {235, 235, 240}, Font = 'Gotham', Preset = 'VapeLite'}))
+				writefile('LarpV4/profiles/gui.txt', 'new')
+			else
+				if isfile('LarpV4/profiles/color.txt') then
+					local ok, data = pcall(loadJson, 'LarpV4/profiles/color.txt')
+					if ok and type(data) == 'table' and data.Preset == 'VapeLite' then
+						pcall(delfile, 'LarpV4/profiles/color.txt')
+					end
+				end
+				writefile('LarpV4/profiles/gui.txt', val)
+			end
 			shared.larpreload = true
 			if shared.LarpDeveloper then
 				loadstring(readfile('LarpV4/init.lua'), 'loader')()
@@ -11043,7 +11054,7 @@ guipane:CreateDropdown({
 			end
 		end
 	end,
-	Tooltip = 'new - The newest larp theme to since v4.05\nold - The larp theme pre v4.05\nrise - Rise 6.0'
+	Tooltip = 'new - The newest larp theme to since v4.05\nold - The larp theme pre v4.05\nrise - Rise 6.0\nVape Lite - Vape-styled dark theme (bg, text, font)'
 })
 mainapi.RainbowMode = guipane:CreateDropdown({
 	Name = 'Rainbow Mode',

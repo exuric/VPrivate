@@ -8603,11 +8603,89 @@ run(function()
 	local DistanceCheck
 	local DistanceLimit
 	local Strings, Sizes, Reference = {}, {}, {}
+	local InventoryESP, InvWhitelist, InvBlacklist, InvSort, InvBackground
+	local invWL, invBL = {}, {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
 	local methodused
 	local DeviceCache = {}
 
+	local function invMatch(it, dn, list)
+		for _, entry in list do
+			entry = tostring(entry):lower():gsub('[%s_]', '')
+			if entry ~= '' and (it:find(entry, 1, true) or dn:find(entry, 1, true)) then return true end
+		end
+		return false
+	end
+	local function refreshInv(ent, nametag)
+		local row = nametag:FindFirstChild('InvRow')
+		if not (InventoryESP and InventoryESP.Enabled and ent.Player and store.inventories[ent.Player]) then
+			if row then row:Destroy() end
+			return
+		end
+		if not row then
+			row = Instance.new('Frame')
+			row.Name = 'InvRow'
+			row.AnchorPoint = Vector2.new(0.5, 0)
+			row.AutomaticSize = Enum.AutomaticSize.XY
+			row.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+			row.BorderSizePixel = 0
+			row.ZIndex = 2
+			row.Parent = nametag
+			addCorner(row, UDim.new(0, 6))
+			local lay = Instance.new('UIListLayout')
+			lay.FillDirection = Enum.FillDirection.Horizontal
+			lay.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			lay.VerticalAlignment = Enum.VerticalAlignment.Center
+			lay.Padding = UDim.new(0, 2)
+			lay.SortOrder = Enum.SortOrder.LayoutOrder
+			lay.Parent = row
+			local pad = Instance.new('UIPadding')
+			pad.PaddingLeft = UDim.new(0, 4) pad.PaddingRight = UDim.new(0, 4) pad.PaddingTop = UDim.new(0, 2) pad.PaddingBottom = UDim.new(0, 2)
+			pad.Parent = row
+		end
+		row.Position = UDim2.new(0.5, 0, 1, 4)
+		row.BackgroundTransparency = (InvBackground and InvBackground.Enabled) and 0.3 or 1
+		local inv = store.inventories[ent.Player]
+		local items = {}
+		for slot, item in (inv.items or {}) do
+			local it = item and item.itemType
+			if it and it ~= '' then
+				local meta = bedwars.ItemMeta[it]
+				local dn = (meta and meta.displayName or ''):lower():gsub('[%s_]', '')
+				local itl = it:lower():gsub('[%s_]', '')
+				if #invWL > 0 and not invMatch(itl, dn, invWL) then continue end
+				if #invBL > 0 and invMatch(itl, dn, invBL) then continue end
+				table.insert(items, {item = item, slot = tonumber(slot) or 99})
+			end
+		end
+		if InvSort and InvSort.Enabled then
+			table.sort(items, function(a, b) return a.slot < b.slot end)
+		end
+		local cells = {}
+		for _, c in row:GetChildren() do if c:IsA('Frame') then table.insert(cells, c) end end
+		for i, entry in ipairs(items) do
+			local cell = cells[i]
+			if not cell then
+				cell = Instance.new('Frame')
+				cell.Name = 'Cell' cell.Size = UDim2.fromOffset(22, 22) cell.BackgroundTransparency = 1 cell.ZIndex = 2 cell.Parent = row
+				local img = Instance.new('ImageLabel')
+				img.Name = 'Icon' img.Size = UDim2.fromScale(1, 1) img.BackgroundTransparency = 1 img.ZIndex = 2 img.Parent = cell
+				local cnt = Instance.new('TextLabel')
+				cnt.Name = 'Count' cnt.AnchorPoint = Vector2.new(1, 1) cnt.Position = UDim2.new(1, 2, 1, 3) cnt.Size = UDim2.fromOffset(22, 12)
+				cnt.BackgroundTransparency = 1 cnt.TextXAlignment = Enum.TextXAlignment.Right cnt.TextColor3 = Color3.new(1, 1, 1)
+				cnt.TextStrokeTransparency = 0.3 cnt.TextSize = 12 cnt.ZIndex = 3 cnt.FontFace = FontOption.Value cnt.Parent = cell
+			end
+			cell.LayoutOrder = i
+			cell.Visible = true
+			local ok, icon = pcall(bedwars.getIcon, entry.item, true)
+			cell.Icon.Image = ok and icon or ''
+			local amt = entry.item.amount or 1
+			cell.Count.Text = amt > 1 and tostring(amt) or ''
+		end
+		for extra = #items + 1, #cells do cells[extra]:Destroy() end
+		row.Visible = #items > 0
+	end
 	local function getPlatformIcon(ent)
 		if not ent.Player then return end
 		local userId = ent.Player.UserId
@@ -8851,6 +8929,7 @@ run(function()
 				NameTags:Clean(ent.Player:GetAttributeChangedSignal('PlayingAsKits'):Connect(refresh))
 			end
 			Reference[ent] = nametag
+			refreshInv(ent, nametag)
 		end,
 		Drawing = function(ent)
 			if not Targets.Players.Enabled and ent.Player then return end
@@ -8954,6 +9033,7 @@ run(function()
 				local size = getfontsize(removeTags(Strings[ent]), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
 				nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
 				nametag.Text = Strings[ent]
+				refreshInv(ent, nametag)
 			end
 		end,
 		Drawing = function(ent)
@@ -9204,6 +9284,38 @@ run(function()
 				NameTags:Toggle()
 			end
 		end
+	})
+	local function invRefreshAll()
+		if NameTags.Enabled and methodused == 'Normal' then
+			for ent, nt in Reference do refreshInv(ent, nt) end
+		end
+	end
+	InventoryESP = NameTags:CreateToggle({
+		Name = 'Inventory ESP',
+		Default = true,
+		Function = function() if NameTags.Enabled then NameTags:Toggle() NameTags:Toggle() end end,
+		Tooltip = 'Shows every item in a target inventory next to their name, even what they are not holding'
+	})
+	InvSort = NameTags:CreateToggle({
+		Name = 'Sort Items',
+		Default = true,
+		Function = invRefreshAll,
+		Tooltip = 'Order the items by their hotbar slot'
+	})
+	InvBackground = NameTags:CreateToggle({
+		Name = 'Render Background',
+		Function = invRefreshAll,
+		Tooltip = 'Draws a backing behind the inventory icons'
+	})
+	InvWhitelist = NameTags:CreateTextList({
+		Name = 'Whitelist',
+		Placeholder = 'item name',
+		Function = function(list) invWL = list or {} invRefreshAll() end
+	})
+	InvBlacklist = NameTags:CreateTextList({
+		Name = 'Blacklist',
+		Placeholder = 'item name',
+		Function = function(list) invBL = list or {} invRefreshAll() end
 	})
 	KitHistoryToggle = NameTags:CreateToggle({
 		Name = 'Kit history',

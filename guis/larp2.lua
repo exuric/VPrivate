@@ -634,10 +634,13 @@ do
 		if res.Preset == 'VapeLite' then
 			mainapi.VapeLite = true
 			pcall(function()
+				if not getcustomasset then return end
 				local reg = getcustomasset('LarpV4/assets/larp/proximanova.ttf')
 				local bold = getcustomasset('LarpV4/assets/larp/proximanova_bold.ttf')
+				if not reg or reg == '' or not bold or bold == '' then return end
 				writefile('LarpV4/assets/larp/proximanova.json', '{"name":"Proxima Nova","faces":[{"name":"Regular","weight":400,"style":"normal","assetId":"'..reg..'"},{"name":"Bold","weight":700,"style":"normal","assetId":"'..bold..'"}]}')
 				local fam = getcustomasset('LarpV4/assets/larp/proximanova.json')
+				if not fam or fam == '' then return end
 				uipallet.Font = Font.new(fam, Enum.FontWeight.Regular)
 				uipallet.FontSemiBold = Font.new(fam, Enum.FontWeight.Bold)
 			end)
@@ -11047,7 +11050,7 @@ guipane:CreateDropdown({
 	Function = function(val, mouse)
 		if mouse then
 			if val == 'Vape Lite' then
-				pcall(writefile, 'LarpV4/profiles/color.txt', httpService:JSONEncode({Main = {20, 17, 20}, Text = {255, 255, 255}, Font = 'Gotham', Preset = 'VapeLite'}))
+				pcall(writefile, 'LarpV4/profiles/color.txt', httpService:JSONEncode({Main = {20, 17, 20}, Text = {255, 255, 255}, Preset = 'VapeLite'}))
 				writefile('LarpV4/profiles/gui.txt', 'new')
 				pcall(function() mainapi.GUIColor:SetValue(0.6, 0.92, 0.96) end)
 				mainapi:Save()

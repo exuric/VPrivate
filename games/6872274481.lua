@@ -8604,7 +8604,8 @@ run(function()
 	local DistanceLimit
 	local Strings, Sizes, Reference = {}, {}, {}
 	local InventoryESP, InvWhitelist, InvBlacklist, InvSort, InvBackground
-	local invWL, invBL = {}, {}
+	local invWL, invBL = {}, {'arrow'}
+	local lastDyn = 0
 	local Folder = Instance.new('Folder')
 	Folder.Parent = larp.gui
 	local methodused
@@ -8654,6 +8655,7 @@ run(function()
 			local it = item and item.itemType
 			if it and it ~= '' then
 				local meta = bedwars.ItemMeta[it]
+				if meta and meta.armor then continue end
 				local dn = (meta and meta.displayName or ''):lower():gsub('[%s_]', '')
 				local itl = it:lower():gsub('[%s_]', '')
 				if #invWL > 0 and not invMatch(itl, dn, invWL) then continue end
@@ -8790,10 +8792,10 @@ run(function()
 				local barbg = Instance.new('Frame')
 				barbg.Name = 'HealthBar'
 				barbg.AnchorPoint = Vector2.new(1, 0.5)
-				barbg.Position = UDim2.new(0, -3, 0.5, 0)
-				barbg.Size = UDim2.new(0, 3, 1, -2)
-				barbg.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-				barbg.BackgroundTransparency = 0.15
+				barbg.Position = UDim2.new(0, -6, 0.5, 0)
+				barbg.Size = UDim2.new(0, 6, 1, 2)
+				barbg.BackgroundColor3 = Color3.fromRGB(24, 27, 31)
+				barbg.BackgroundTransparency = 0.1
 				barbg.BorderSizePixel = 0
 				barbg.Parent = nametag
 				local barcorner = Instance.new('UICorner')
@@ -8804,9 +8806,13 @@ run(function()
 				fill.AnchorPoint = Vector2.new(0.5, 1)
 				fill.Position = UDim2.new(0.5, 0, 1, 0)
 				fill.Size = UDim2.new(1, 0, math.clamp(ent.Health / math.max(1, ent.MaxHealth), 0, 1), 0)
-				fill.BackgroundColor3 = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
+				fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 				fill.BorderSizePixel = 0
 				fill.Parent = barbg
+				local fillgrad = Instance.new('UIGradient')
+				fillgrad.Rotation = 90
+				fillgrad.Color = ColorSequence.new(Color3.fromRGB(132, 201, 162), Color3.fromRGB(16, 120, 70))
+				fillgrad.Parent = fill
 				local fillcorner = Instance.new('UICorner')
 				fillcorner.CornerRadius = UDim.new(0.5, 0)
 				fillcorner.Parent = fill
@@ -9014,7 +9020,7 @@ run(function()
 					local fill = barbg:FindFirstChild('Fill')
 					if fill then
 						fill.Size = UDim2.new(1, 0, pct, 0)
-						fill.BackgroundColor3 = Color3.fromHSV(pct / 2.5, 0.89, 0.75)
+						fill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 					end
 				end
 	
@@ -9083,7 +9089,11 @@ run(function()
 		Normal = function()
 			local alive = entitylib.isAlive
 			local selfPos = alive and entitylib.character.RootPart.Position or nil
+			local __now = os.clock()
+			local __dyn = (__now - lastDyn) > 0.4
+			if __dyn then lastDyn = __now end
 			for ent, nametag in Reference do
+				if __dyn then pcall(Updated.Normal, ent) end
 				if DistanceCheck.Enabled then
 					local distance = selfPos and (selfPos - ent.RootPart.Position).Magnitude or math.huge
 					if distance < DistanceLimit.ValueMin or distance > DistanceLimit.ValueMax then
@@ -9317,6 +9327,7 @@ run(function()
 	InvBlacklist = NameTags:CreateTextList({
 		Name = 'Blacklist',
 		Placeholder = 'item name',
+		Default = {'arrow'},
 		Function = function(list) invBL = list or {} invRefreshAll() end
 	})
 	KitHistoryToggle = NameTags:CreateToggle({

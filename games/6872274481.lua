@@ -8620,7 +8620,12 @@ run(function()
 	end
 	local function refreshInv(ent, nametag)
 		local row = nametag:FindFirstChild('InvRow')
-		if not (InventoryESP and InventoryESP.Enabled and ent.Player and store.inventories[ent.Player]) then
+		local inv
+		if InventoryESP and InventoryESP.Enabled and ent.Player then
+			local iok, got = pcall(bedwars.getInventory, ent.Player)
+			inv = (iok and got) or store.inventories[ent.Player]
+		end
+		if not inv then
 			if row then row:Destroy() end
 			return
 		end
@@ -8649,7 +8654,6 @@ run(function()
 		end
 		row.Position = UDim2.new(0.5, 0, 1, 4)
 		row.BackgroundTransparency = (InvBackground and InvBackground.Enabled) and 0.3 or 1
-		local inv = store.inventories[ent.Player]
 		local items = {}
 		for slot, item in (inv.items or {}) do
 			local it = item and item.itemType

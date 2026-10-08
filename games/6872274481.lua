@@ -8632,7 +8632,9 @@ run(function()
 			row.BorderSizePixel = 0
 			row.ZIndex = 2
 			row.Parent = nametag
-			addCorner(row, UDim.new(0, 6))
+			local rc = Instance.new('UICorner')
+			rc.CornerRadius = UDim.new(0, 6)
+			rc.Parent = row
 			local lay = Instance.new('UIListLayout')
 			lay.FillDirection = Enum.FillDirection.Horizontal
 			lay.HorizontalAlignment = Enum.HorizontalAlignment.Center

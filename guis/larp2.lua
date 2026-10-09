@@ -9398,6 +9398,29 @@ do
 			return
 		end
 		cards.Visible = true
+		if not pubSys.regOK then
+			for i = 1, 4 do
+				local sk = Instance.new('Frame')
+				sk.Name = 'Skeleton'
+				sk.LayoutOrder = 1000 + i
+				sk.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+				sk.BorderSizePixel = 0
+				sk.Parent = cards
+				addCorner(sk, UDim.new(0, 8))
+				local function bar(w, yy, h)
+					local b = Instance.new('Frame')
+					b.Size = UDim2.fromOffset(w, h or 10)
+					b.Position = UDim2.fromOffset(10, yy)
+					b.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
+					b.BorderSizePixel = 0
+					b.Parent = sk
+					addCorner(b, UDim.new(0, 4))
+				end
+				bar(90, 11, 12)
+				bar(50, 30)
+				bar(44, 68, 18)
+			end
+		end
 		local q = (pubSys.query or ''):gsub('%s+', '')
 		if q:lower():match('^larp%-') or q:find('paste%.rs') or (#q >= 5 and #q <= 12 and q:match('^[%w%-]+$') and not q:find(' ')) then
 			local banner = pubMkButton(cards, 'Import from code "'..q..'"', 0, 0, 300, 34, true, 12)
@@ -9684,22 +9707,74 @@ pubShowDetails = function(ref)
 	mlay:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 		mbox.CanvasSize = UDim2.fromOffset(0, mlay.AbsoluteContentSize.Y + 6)
 	end)
-	if mods then
-		local k = 0
-		for _, n in en do
-			k += 1
-			local row = Instance.new('Frame')
-			row.Size = UDim2.new(1, -8, 0, 20)
-			row.BackgroundTransparency = 1
-			row.LayoutOrder = k
-			row.Parent = mbox
-			pubMkLabel(row, n, 12, false, 6, 0, 230, 20)
-			local pill = pubMkLabel(row, 'ON', 10, false, 0, 0, 60, 20)
-			pill.Position = UDim2.new(1, -66, 0, 0)
-			pill.TextColor3 = Color3.fromRGB(90, 255, 90)
-			pill.TextXAlignment = Enum.TextXAlignment.Right
-	end
-	end
+		if mods then
+			local k = 0
+			for _, n in en do
+				k += 1
+				local entry = mods[n] or {}
+				local opts = type(entry.Options) == 'table' and entry.Options or {}
+				local rows = {}
+				for ok, ov in opts do table.insert(rows, {tostring(ok), ov}) end
+				table.sort(rows, function(a, b) return a[1] < b[1] end)
+				local bind = type(entry.Bind) == 'table' and table.concat(entry.Bind, ' + ') or ''
+				local bodyN = #rows + (bind ~= '' and 1 or 0)
+				local cont = Instance.new('Frame')
+				cont.Size = UDim2.new(1, -8, 0, 22)
+				cont.BackgroundTransparency = 1
+				cont.LayoutOrder = k
+				cont.ClipsDescendants = true
+				cont.Parent = mbox
+				local head = Instance.new('TextButton')
+				head.Size = UDim2.new(1, 0, 0, 22)
+				head.BackgroundTransparency = 1
+				head.AutoButtonColor = false
+				head.Text = ''
+				head.Parent = cont
+				local arrow = pubMkLabel(head, bodyN > 0 and '+' or '', 12, true, 6, 0, 14, 22)
+				pubMkLabel(head, n, 12, false, 20, 0, 210, 22)
+				local pill = pubMkLabel(head, 'ON', 10, false, 0, 0, 60, 22)
+				pill.Position = UDim2.new(1, -66, 0, 0)
+				pill.TextColor3 = Color3.fromRGB(90, 255, 90)
+				pill.TextXAlignment = Enum.TextXAlignment.Right
+				local open = false
+				head.MouseButton1Click:Connect(function()
+					if bodyN == 0 then return end
+					open = not open
+					arrow.Text = open and '-' or '+'
+					if open and not cont:FindFirstChild('Body') then
+						local body = Instance.new('Frame')
+						body.Name = 'Body'
+						body.Size = UDim2.new(1, 0, 0, bodyN * 16 + 4)
+						body.Position = UDim2.fromOffset(0, 22)
+						body.BackgroundTransparency = 1
+						body.Parent = cont
+						local yy = 2
+						if bind ~= '' then
+							pubMkLabel(body, 'Keybind', 11, true, 24, yy, 150, 15)
+							local bv = pubMkLabel(body, bind, 11, false, 0, yy, 120, 15)
+							bv.Position = UDim2.new(1, -126, 0, yy)
+							bv.TextXAlignment = Enum.TextXAlignment.Right
+							yy += 16
+						end
+						for _, r in rows do
+							local v = r[2]
+							local vs
+							if type(v) == 'boolean' then vs = v and 'On' or 'Off'
+							elseif type(v) == 'number' then vs = tostring(math.floor(v * 100 + 0.5) / 100)
+							elseif type(v) == 'table' then vs = (v.R and 'color') or (#v .. ' items')
+							else vs = tostring(v) end
+							pubMkLabel(body, r[1], 11, true, 24, yy, 180, 15)
+							local vl = pubMkLabel(body, vs, 11, false, 0, yy, 120, 15)
+							vl.Position = UDim2.new(1, -126, 0, yy)
+							vl.TextXAlignment = Enum.TextXAlignment.Right
+							vl.TextColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+							yy += 16
+						end
+					end
+					cont.Size = UDim2.new(1, -8, 0, open and (22 + bodyN * 16 + 4) or 22)
+				end)
+			end
+		end
 	local brow = Instance.new('Frame')
 	brow.Size = UDim2.new(1, -8, 0, 30)
 	brow.BackgroundTransparency = 1

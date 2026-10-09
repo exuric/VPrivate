@@ -6013,7 +6013,7 @@ run(function()
 						local effectiveMult = (AutoCharge.Enabled or not Aim.Enabled) and 1 or (projmeta.velocityMultiplier or 1)
 						local fireSpeed = projSpeed * effectiveMult
 						local speedScaled = fireSpeed
-						local latency = 0
+						local latency = pingLatency()
 						local aimRoot = rootPart or plr[TargetPart.Value] or plr.Head
 						local rawRootVel = isPearl and Vector3.zero or (aimRoot and (aimRoot.AssemblyLinearVelocity or aimRoot.Velocity) or Vector3.zero)
 						local baseVel = isPearl and Vector3.zero or smoothVel(aimRoot, rawRootVel)
@@ -6096,6 +6096,20 @@ run(function()
 								local okClear, clear = pcall(prediction.IsTrajectoryClear, cb.from, cb.dir, gravity, cb.travelTime, rayCheck, aimPos)
 								if (not Targets.Walls.Enabled) or ((not okClear) or clear) then
 									best = cb
+								end
+							end
+						end
+						if not best then
+							local tpart = plr[TargetPart.Value] or plr.RootPart or plr.HumanoidRootPart or plr.Head
+							if tpart and tpart.Position then
+								local tpos = tpart.Position
+								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
+								local origin3 = newlook.Position
+								local okF, calcF, impF, ttF = pcall(prediction.SolveTrajectory, origin3, speedScaled, gravity, tpos, leadVel, playerGravity, hipH, plr.Jumping and 42.6 or nil, rayCheck, airborne, rootPos or tpos, rootPart or tpart, latency, true)
+								if okF and calcF then
+									best = { dir = CFrame.new(origin3, calcF).LookVector * fireSpeed, from = origin3, travelTime = ttF or lifetime }
+								else
+									best = { dir = CFrame.new(origin3, tpos + leadVel * 0.3).LookVector * fireSpeed, from = origin3, travelTime = lifetime }
 								end
 							end
 						end

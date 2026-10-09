@@ -8979,6 +8979,11 @@ do
 		table.insert(data[id], 1, review)
 		pubWriteJson('LarpV4/profiles/reviews.json', data)
 	end
+	local function pubSetReviews(id, list)
+		local data = pubReadJson('LarpV4/profiles/reviews.json') or {}
+		data[id] = list
+		pubWriteJson('LarpV4/profiles/reviews.json', data)
+	end
 	local function pubLiked(id)
 		local data = pubReadJson('LarpV4/profiles/likes.json')
 		return data and data[id] or false
@@ -9007,12 +9012,7 @@ do
 		return id
 	end
 	local function pubCreator()
-		local name = 'Anonymous'
-		pcall(function()
-			local plr = cloneref(game:GetService('Players')).LocalPlayer
-			if plr then name = (plr.DisplayName ~= '' and plr.DisplayName or plr.Name)..' (@'..plr.Name..')' end
-		end)
-		return name
+		return 'exuric'
 	end
 	local function pubSnapshot(sourceName)
 		if sourceName and sourceName ~= '' then
@@ -9419,23 +9419,52 @@ do
 			pubMkLabel(cards, 'No profiles yet. Publish one!', 12, true, 8, 8, 300, 20)
 		end
 		for k, c in shown do
+			local accent = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
 			local card = Instance.new('TextButton')
 			card.Name = 'Card'
 			card.LayoutOrder = k
-			card.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+			card.BackgroundColor3 = color.Light(uipallet.Main, 0.025)
 			card.BorderSizePixel = 0
 			card.AutoButtonColor = false
 			card.Text = ''
 			card.Parent = cards
-			addCorner(card, UDim.new(0, 6))
-			pubMkLabel(card, c.name, 13, false, 8, 4, 164, 17).FontFace = uipallet.FontSemiBold
-			pubMkLabel(card, c.creator, 11, true, 8, 22, 164, 14)
-			pubMkLabel(card, '♥ '..c.likes..'    ⬇ '..c.downloads, 11, true, 8, 38, 164, 14)
-			local tagstr = table.concat(c.tags or {}, ', ')
-			if tagstr ~= '' then pubMkLabel(card, tagstr, 10, true, 8, 54, 164, 14) end
+			addCorner(card, UDim.new(0, 8))
+			local stroke = Instance.new('UIStroke')
+			stroke.Color = accent
+			stroke.Thickness = 1
+			stroke.Transparency = 1
+			stroke.Parent = card
+			local nm = pubMkLabel(card, c.name, 13, false, 10, 9, 160, 17)
+			nm.FontFace = uipallet.FontSemiBold
+			pubMkLabel(card, 'by exuric', 11, true, 10, 27, 160, 14)
 			if c.privacy ~= 'public' then
-				pubMkLabel(card, c.privacy:upper(), 10, true, 8, 70, 164, 14)
+				local pv = pubMkLabel(card, c.privacy:upper(), 9, false, 0, 9, 50, 14)
+				pv.Position = UDim2.new(1, -56, 0, 9)
+				pv.TextXAlignment = Enum.TextXAlignment.Right
+				pv.TextColor3 = color.Dark(uipallet.Text, 0.4)
 			end
+			local pill = Instance.new('Frame')
+			pill.Size = UDim2.fromOffset(52, 20)
+			pill.Position = UDim2.new(0, 10, 1, -28)
+			pill.BackgroundColor3 = accent
+			pill.BackgroundTransparency = 0.82
+			pill.BorderSizePixel = 0
+			pill.Parent = card
+			addCorner(pill, UDim.new(0, 6))
+			local th = Instance.new('ImageLabel')
+			th.Size = UDim2.fromOffset(11, 11)
+			th.Position = UDim2.fromOffset(8, 5)
+			th.BackgroundTransparency = 1
+			th.Image = getcustomasset('LarpV4/assets/larp/thumbup.png')
+			th.ImageColor3 = accent
+			th.Parent = pill
+			local lc = pubMkLabel(pill, tostring(c.likes), 11, false, 23, 0, 26, 20)
+			lc.TextColor3 = accent
+			local dl = pubMkLabel(card, '⬇ '..c.downloads, 11, true, 0, 0, 60, 20)
+			dl.Position = UDim2.new(1, -62, 1, -28)
+			dl.TextXAlignment = Enum.TextXAlignment.Right
+			card.MouseEnter:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 0.3}) end)
+			card.MouseLeave:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 1}) end)
 			card.MouseButton1Click:Connect(function()
 				pubShowDetails({kind = c.kind, id = c.id})
 			end)
@@ -9611,7 +9640,7 @@ pubShowDetails = function(ref)
 	nm.FontFace = uipallet.FontSemiBold
 	put(nm, 20)
 	local priv = (meta.privacy or 'public'):upper()
-	put(pubMkLabel(sc, (meta.anonymous and 'Anonymous' or meta.creator or '?') .. '   ' .. priv, 11, true, 0, 0, 340, 15), 15)
+	put(pubMkLabel(sc, 'by exuric   ' .. priv, 11, true, 0, 0, 340, 15), 15)
 	if meta.description and meta.description ~= '' then
 		local dh = wrapH(meta.description, 12, 332)
 		local d = pubMkLabel(sc, meta.description, 12, false, 0, 0, 340, dh)
@@ -9727,11 +9756,64 @@ pubShowDetails = function(ref)
 	for _, r in revs do avg += (tonumber(r.rating) or 0) end
 	if #revs > 0 then avg = math.floor(avg / #revs * 10 + 0.5) / 10 end
 	put(pubMkLabel(sc, 'REVIEWS (' .. #revs .. (#revs > 0 and '  AVG ' .. avg or '') .. ')', 11, true, 0, 0, 340, 15), 15)
-	for _, r in revs do
-		local rh = wrapH((r.by or '?') .. ' [' .. tostring(r.rating or '?') .. '/5] ' .. (r.text or ''), 11, 332)
-		local rl = pubMkLabel(sc, (r.by or '?') .. ' [' .. tostring(r.rating or '?') .. '/5] ' .. (r.text or ''), 11, false, 0, 0, 340, rh)
-		rl.TextWrapped = true
-		put(rl, rh)
+	for ri, r in revs do
+		local txt = r.text or ''
+		local th = wrapH(txt, 11, 316) + 44
+		local rc = Instance.new('Frame')
+		rc.Size = UDim2.new(1, -8, 0, th)
+		rc.BackgroundColor3 = color.Dark(uipallet.Main, 0.015)
+		rc.BorderSizePixel = 0
+		put(rc, th)
+		addCorner(rc, UDim.new(0, 6))
+		local who = pubMkLabel(rc, 'exuric', 11, false, 10, 7, 160, 14)
+		who.FontFace = uipallet.FontSemiBold
+		local rating = math.clamp(tonumber(r.rating) or 0, 0, 5)
+		local stars = pubMkLabel(rc, ('★'):rep(rating) .. ('☆'):rep(5 - rating), 11, false, 0, 7, 70, 14)
+		stars.Position = UDim2.new(1, -78, 0, 7)
+		stars.TextXAlignment = Enum.TextXAlignment.Right
+		stars.TextColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+		local body = pubMkLabel(rc, txt, 11, false, 10, 24, 316, th - 44)
+		body.TextWrapped = true
+		body.TextColor3 = color.Dark(uipallet.Text, 0.12)
+		local function voteIcon(asset, hover, offx)
+			local ic = Instance.new('ImageButton')
+			ic.Size = UDim2.fromOffset(13, 13)
+			ic.Position = UDim2.new(0, offx, 1, -20)
+			ic.BackgroundTransparency = 1
+			ic.Image = getcustomasset('LarpV4/assets/larp/' .. asset)
+			ic.ImageColor3 = color.Dark(uipallet.Text, 0.45)
+			ic.Parent = rc
+			ic.MouseEnter:Connect(function() ic.ImageColor3 = hover end)
+			ic.MouseLeave:Connect(function() ic.ImageColor3 = color.Dark(uipallet.Text, 0.45) end)
+			return ic
+		end
+		local up = voteIcon('thumbup.png', Color3.fromRGB(80, 220, 120), 10)
+		local hc = pubMkLabel(rc, tostring(r.helpful or 0), 11, true, 28, 0, 24, 14)
+		hc.Position = UDim2.new(0, 28, 1, -20)
+		voteIcon('thumbdown.png', Color3.fromRGB(230, 80, 80), 54)
+		up.MouseButton1Click:Connect(function()
+			r.helpful = (tonumber(r.helpful) or 0) + 1
+			pubSetReviews(ref.id, revs)
+			hc.Text = tostring(r.helpful)
+		end)
+		local flag = Instance.new('ImageButton')
+		flag.Size = UDim2.fromOffset(13, 13)
+		flag.Position = UDim2.new(1, -24, 1, -20)
+		flag.BackgroundTransparency = 1
+		flag.Image = getcustomasset('LarpV4/assets/larp/flag.png')
+		flag.ImageColor3 = color.Dark(uipallet.Text, 0.45)
+		flag.Parent = rc
+		flag.MouseEnter:Connect(function() flag.ImageColor3 = Color3.fromRGB(230, 80, 80) end)
+		flag.MouseLeave:Connect(function() flag.ImageColor3 = color.Dark(uipallet.Text, 0.45) end)
+		flag.MouseButton1Click:Connect(function()
+			mainapi:CreatePrompt({Title = 'Report Review', Text = 'Report this review as inappropriate or spam?', Confirm = 'Report', Cancel = 'Cancel', Function = function(ok)
+				if ok then
+					r.flagged = true
+					pubSetReviews(ref.id, revs)
+					mainapi:CreateNotification('Report', 'Review reported. Thanks.', 3)
+				end
+			end})
+		end)
 	end
 	put(pubMkLabel(sc, 'Your rating:', 11, true, 0, 0, 340, 15), 15)
 	local rateRow = Instance.new('Frame')

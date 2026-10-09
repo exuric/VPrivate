@@ -9723,12 +9723,17 @@ pubShowDetails = function(ref)
 		return d .. ' days'
 	end
 	local function asset(n) return getcustomasset('LarpV4/assets/larp/' .. n) end
+	local function raiseZ(root)
+		for _, d in root:GetDescendants() do
+			if d:IsA('GuiObject') then d.ZIndex = 6 end
+		end
+	end
 	local ov = Instance.new('Frame')
 	ov.Name = 'DetailsOverlay'
 	ov.Size = UDim2.fromScale(1, 1)
 	ov.BackgroundColor3 = uipallet.Main
 	ov.BorderSizePixel = 0
-	ov.ZIndex = 5
+	ov.ZIndex = 6
 	ov.Parent = win
 	addCorner(ov, UDim.new(0, 8))
 	local back = Instance.new('ImageButton')
@@ -9889,6 +9894,7 @@ pubShowDetails = function(ref)
 			ln.Parent = rw
 			y = y + 38
 		end
+		raiseZ(dc)
 		dc.CanvasSize = UDim2.fromOffset(0, y + 8)
 	end
 	showDetails = function()
@@ -10009,6 +10015,7 @@ pubShowDetails = function(ref)
 			ln.Parent = rw
 			y = y + 44
 		end
+		raiseZ(dc)
 		dc.CanvasSize = UDim2.fromOffset(0, y + 8)
 	end
 	detNav.MouseButton1Click:Connect(showDetails)
@@ -10115,6 +10122,7 @@ pubShowDetails = function(ref)
 			pubApplyImport(meta.name or ref.id, m2, ref)
 		end)
 	end
+	raiseZ(ov)
 	showDetails()
 end
 	pubRefreshAll = function()

@@ -9296,13 +9296,24 @@ do
 		right.BackgroundTransparency = 1
 		right.Parent = win
 		pubSys.right = right
-		local search = pubMkBox(right, 'Search Profile / Share Code', 0, 0, 343, 30, false)
+		local search = pubMkBox(right, 'Search Profile / Share Code', 0, 0, 343, 32, false)
 		pubSys.searchBox = search
+		local sicon = Instance.new('ImageLabel')
+		sicon.Size = UDim2.fromOffset(15, 15)
+		sicon.Position = UDim2.fromOffset(12, 9)
+		sicon.BackgroundTransparency = 1
+		sicon.Image = getcustomasset('LarpV4/assets/larp/search.png')
+		sicon.ImageColor3 = color.Dark(uipallet.Text, 0.42)
+		sicon.ZIndex = 2
+		sicon.Parent = right
+		local spad = Instance.new('UIPadding')
+		spad.PaddingLeft = UDim.new(0, 34)
+		spad.Parent = search
 		search:GetPropertyChangedSignal('Text'):Connect(function()
 			pubSys.query = search.Text
 			pubRefreshCards()
 		end)
-		local tagBtn = pubMkButton(right, '#', 349, 0, 28, 30, false, 14)
+		local tagBtn = pubMkButton(right, '#', 349, 0, 28, 32, false, 14)
 		tagBtn.MouseButton1Click:Connect(function()
 			local ex = right:FindFirstChild('TagOverlay')
 			if ex then ex:Destroy() return end
@@ -9370,14 +9381,14 @@ do
 		end)
 		pubSys.cards = cards
 		local collapse = Instance.new('ImageButton')
-		collapse.Size = UDim2.fromOffset(16, 16)
-		collapse.Position = UDim2.fromOffset(147, 43)
+		collapse.Size = UDim2.fromOffset(20, 20)
+		collapse.Position = UDim2.fromOffset(155, 40)
 		collapse.BackgroundTransparency = 1
 		collapse.Image = getcustomasset('LarpV4/assets/larp/collapse.png')
-		collapse.ImageColor3 = color.Dark(uipallet.Text, 0.4)
+		collapse.ImageColor3 = color.Dark(uipallet.Text, 0.3)
 		collapse.Parent = win
 		collapse.MouseEnter:Connect(function() collapse.ImageColor3 = uipallet.Text end)
-		collapse.MouseLeave:Connect(function() collapse.ImageColor3 = color.Dark(uipallet.Text, 0.4) end)
+		collapse.MouseLeave:Connect(function() collapse.ImageColor3 = color.Dark(uipallet.Text, 0.3) end)
 		collapse.MouseButton1Click:Connect(function()
 			pubSys.collapsed = not pubSys.collapsed
 			local on = pubSys.collapsed
@@ -9385,7 +9396,7 @@ do
 			createBtn.Visible = not on
 			yours.Visible = not on
 			div.Visible = not on
-			collapse.Position = UDim2.fromOffset(on and 12 or 147, 43)
+			collapse.Position = UDim2.fromOffset(on and 12 or 155, 40)
 			collapse.Rotation = on and 180 or 0
 			right.Position = UDim2.fromOffset(on and 36 or 191, 44)
 			right.Size = on and UDim2.new(1, -48, 1, -56) or UDim2.new(1, -203, 1, -56)
@@ -9461,27 +9472,28 @@ do
 		end
 		cards.Visible = true
 		if not pubSys.regOK then
-			for i = 1, 4 do
+			for i = 1, 6 do
 				local sk = Instance.new('Frame')
 				sk.Name = 'Skeleton'
-				sk.LayoutOrder = 1000 + i
-				sk.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+				sk.LayoutOrder = i
+				sk.BackgroundColor3 = color.Light(uipallet.Main, 0.025)
 				sk.BorderSizePixel = 0
 				sk.Parent = cards
 				addCorner(sk, UDim.new(0, 8))
 				local function bar(w, yy, h)
 					local b = Instance.new('Frame')
 					b.Size = UDim2.fromOffset(w, h or 10)
-					b.Position = UDim2.fromOffset(10, yy)
-					b.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
+					b.Position = UDim2.fromOffset(12, yy)
+					b.BackgroundColor3 = color.Light(uipallet.Main, 0.07)
 					b.BorderSizePixel = 0
 					b.Parent = sk
 					addCorner(b, UDim.new(0, 4))
 				end
-				bar(90, 11, 12)
-				bar(50, 30)
-				bar(44, 68, 18)
+				bar(110, 13, 13)
+				bar(60, 34, 11)
+				bar(46, 66, 20)
 			end
+			return
 		end
 		local q = (pubSys.query or ''):gsub('%s+', '')
 		if q:lower():match('^larp%-') or q:find('paste%.rs') or (#q >= 5 and #q <= 12 and q:match('^[%w%-]+$') and not q:find(' ')) then
@@ -9519,37 +9531,35 @@ do
 			stroke.Thickness = 1
 			stroke.Transparency = 1
 			stroke.Parent = card
-			local nm = pubMkLabel(card, c.name, 13, false, 10, 9, 160, 17)
+			local nm = pubMkLabel(card, c.name, 14, false, 12, 11, 156, 36)
 			nm.FontFace = uipallet.FontSemiBold
-			pubMkLabel(card, 'by exuric', 11, true, 10, 27, 160, 14)
+			nm.TextWrapped = true
+			nm.TextYAlignment = Enum.TextYAlignment.Top
+			pubMkLabel(card, 'exuric', 12, true, 12, 48, 156, 14)
 			if c.privacy ~= 'public' then
-				local pv = pubMkLabel(card, c.privacy:upper(), 9, false, 0, 9, 50, 14)
-				pv.Position = UDim2.new(1, -56, 0, 9)
+				local pv = pubMkLabel(card, c.privacy:upper(), 9, false, 0, 11, 50, 14)
+				pv.Position = UDim2.new(1, -58, 0, 11)
 				pv.TextXAlignment = Enum.TextXAlignment.Right
-				pv.TextColor3 = color.Dark(uipallet.Text, 0.4)
+				pv.TextColor3 = color.Dark(uipallet.Text, 0.45)
 			end
+			local likew = 32 + getfontsizeCached(tostring(c.likes), 12, uipallet.Font).X
 			local pill = Instance.new('Frame')
-			pill.Size = UDim2.fromOffset(52, 20)
-			pill.Position = UDim2.new(0, 10, 1, -28)
-			pill.BackgroundColor3 = accent
-			pill.BackgroundTransparency = 0.82
+			pill.Size = UDim2.fromOffset(likew, 22)
+			pill.Position = UDim2.new(0, 12, 1, -30)
+			pill.BackgroundColor3 = color.Dark(uipallet.Main, 0.03)
 			pill.BorderSizePixel = 0
 			pill.Parent = card
-			addCorner(pill, UDim.new(0, 6))
+			addCorner(pill, UDim.new(0, 11))
 			local th = Instance.new('ImageLabel')
-			th.Size = UDim2.fromOffset(11, 11)
-			th.Position = UDim2.fromOffset(8, 5)
+			th.Size = UDim2.fromOffset(13, 13)
+			th.Position = UDim2.fromOffset(9, 5)
 			th.BackgroundTransparency = 1
 			th.Image = getcustomasset('LarpV4/assets/larp/thumbup.png')
-			th.ImageColor3 = accent
+			th.ImageColor3 = Color3.fromRGB(46, 204, 113)
 			th.Parent = pill
-			local lc = pubMkLabel(pill, tostring(c.likes), 11, false, 23, 0, 26, 20)
-			lc.TextColor3 = accent
-			local dl = pubMkLabel(card, '⬇ '..c.downloads, 11, true, 0, 0, 60, 20)
-			dl.Position = UDim2.new(1, -62, 1, -28)
-			dl.TextXAlignment = Enum.TextXAlignment.Right
-			card.MouseEnter:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 0.3}) end)
-			card.MouseLeave:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 1}) end)
+			local lc = pubMkLabel(pill, tostring(c.likes), 12, true, 27, 0, likew - 30, 22)
+			card.MouseEnter:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 0.2}) card.BackgroundColor3 = color.Light(uipallet.Main, 0.06) end)
+			card.MouseLeave:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 1}) card.BackgroundColor3 = color.Light(uipallet.Main, 0.025) end)
 			card.MouseButton1Click:Connect(function()
 				pubShowDetails({kind = c.kind, id = c.id})
 			end)
@@ -9691,302 +9701,422 @@ pubShowDetails = function(ref)
 	pubBuildWindow()
 	pubSys.view = 'details'
 	pubSys.selected = ref
-	pubSys.cards.Visible = false
+	local win = pubSys.win
+	win.Visible = true
 	local meta = pubGetMeta(ref) or {}
 	local mine = ref.kind == 'local'
-	local right = pubSys.right
-	local old = right:FindFirstChild('Details')
+	local old = win:FindFirstChild('DetailsOverlay')
 	if old then old:Destroy() end
-	local oldf = right:FindFirstChild('Form')
-	if oldf then oldf:Destroy() end
-	local oldi = right:FindFirstChild('Import')
-	if oldi then oldi:Destroy() end
-	local f = Instance.new('Frame')
-	f.Name = 'Details'
-	f.Size = UDim2.new(1, 0, 1, -66)
-	f.Position = UDim2.fromOffset(0, 66)
-	f.BackgroundTransparency = 1
-	f.Parent = right
-	local sc = Instance.new('ScrollingFrame')
-	sc.Size = UDim2.fromScale(1, 1)
-	sc.BackgroundTransparency = 1
-	sc.BorderSizePixel = 0
-	sc.ScrollBarThickness = 2
-	sc.ScrollBarImageTransparency = 0.75
-	sc.CanvasSize = UDim2.new()
-	sc.Parent = f
-	local y = 0
-	local function gap(n) y = y + (n or 6) end
-	local function put(obj, h, g)
-		obj.Position = UDim2.fromOffset(0, y)
-		obj.Parent = sc
-		y = y + h + (g or 6)
+	local accent = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+	local up = Color3.fromRGB(46, 204, 113)
+	local down = Color3.fromRGB(240, 80, 110)
+	local inset = color.Dark(uipallet.Main, 0.03)
+	local cardc = color.Light(uipallet.Main, 0.04)
+	local line = color.Light(uipallet.Main, 0.09)
+	local muted = color.Dark(uipallet.Text, 0.42)
+	local function ago(ts)
+		ts = tonumber(ts) or 0
+		if ts <= 0 then return 'recently' end
+		local d = math.floor((os.time() - ts) / 86400)
+		if d <= 0 then return 'today' end
+		if d == 1 then return '1 day' end
+		return d .. ' days'
 	end
-	local function wrapH(text, size, w)
-		local s = getfontsizeCached(text, size, uipallet.Font)
-		return math.max(1, math.ceil(s.X / w)) * (size + 1) + 6
-	end
-	local back = pubMkButton(sc, '< Back', 0, 0, 70, 24, false, 11)
-	put(back, 24)
-	back.MouseButton1Click:Connect(function() pubShowBrowse() end)
-	local nm = pubMkLabel(sc, meta.name or ref.id, 16, false, 0, 0, 340, 20)
-	nm.FontFace = uipallet.FontSemiBold
-	put(nm, 20)
-	local priv = (meta.privacy or 'public'):upper()
-	put(pubMkLabel(sc, 'by exuric   ' .. priv, 11, true, 0, 0, 340, 15), 15)
-	if meta.description and meta.description ~= '' then
-		local dh = wrapH(meta.description, 12, 332)
-		local d = pubMkLabel(sc, meta.description, 12, false, 0, 0, 340, dh)
-		d.TextWrapped = true
-		put(d, dh)
-	end
-	if meta.tags and #meta.tags > 0 then
-		put(pubMkLabel(sc, table.concat(meta.tags, '  |  '), 11, true, 0, 0, 340, 15), 15)
-	end
-	local likes = pubLikeCount(meta, ref.id)
-	local statline = pubMkLabel(sc, '♥ ' .. likes .. '      D/L ' .. pubDlCount(meta, ref.id), 12, false, 0, 0, 200, 18)
-	statline.Position = UDim2.fromOffset(0, y)
-	statline.Parent = sc
-	local likeBtn = pubMkButton(sc, pubLiked(ref.id) and '♥ Liked' or '♡ Like', 0, 0, 90, 22, pubLiked(ref.id), 11)
-	likeBtn.Position = UDim2.fromOffset(214, y)
-	likeBtn.Parent = sc
-	y = y + 28
-	likeBtn.MouseButton1Click:Connect(function()
-		pubSetLiked(ref.id, not pubLiked(ref.id))
-		pubShowDetails(ref)
-		pubRefreshCards()
-		pubRefreshYours()
-	end)
+	local function asset(n) return getcustomasset('LarpV4/assets/larp/' .. n) end
+	local ov = Instance.new('Frame')
+	ov.Name = 'DetailsOverlay'
+	ov.Size = UDim2.fromScale(1, 1)
+	ov.BackgroundColor3 = uipallet.Main
+	ov.BorderSizePixel = 0
+	ov.ZIndex = 5
+	ov.Parent = win
+	addCorner(ov, UDim.new(0, 8))
+	local back = Instance.new('ImageButton')
+	back.Size = UDim2.fromOffset(17, 17)
+	back.Position = UDim2.fromOffset(16, 15)
+	back.BackgroundTransparency = 1
+	back.Image = asset('back.png')
+	back.ImageColor3 = muted
+	back.Parent = ov
+	back.MouseEnter:Connect(function() back.ImageColor3 = uipallet.Text end)
+	back.MouseLeave:Connect(function() back.ImageColor3 = muted end)
+	back.MouseButton1Click:Connect(function() ov:Destroy() pubShowBrowse() end)
+	local tt = pubMkLabel(ov, meta.name or ref.id, 14, false, 44, 13, 420, 20)
+	tt.FontFace = uipallet.FontSemiBold
+	local cl = Instance.new('ImageButton')
+	cl.Size = UDim2.fromOffset(15, 15)
+	cl.Position = UDim2.new(1, -28, 0, 15)
+	cl.BackgroundTransparency = 1
+	cl.Image = asset('close.png')
+	cl.ImageColor3 = muted
+	cl.Parent = ov
+	cl.MouseEnter:Connect(function() cl.ImageColor3 = uipallet.Text end)
+	cl.MouseLeave:Connect(function() cl.ImageColor3 = muted end)
+	cl.MouseButton1Click:Connect(function() win.Visible = false ov:Destroy() end)
+	local tbl = Instance.new('Frame')
+	tbl.Size = UDim2.new(1, 0, 0, 1)
+	tbl.Position = UDim2.fromOffset(0, 45)
+	tbl.BackgroundColor3 = line
+	tbl.BorderSizePixel = 0
+	tbl.Parent = ov
 	local mods, merr = pubGetData(ref)
 	local en, total = pubAffected({Modules = mods or {}})
-	put(pubMkLabel(sc, 'MODULES (' .. #en .. ' on / ' .. total .. ')', 11, true, 0, 0, 340, 15), 15)
-	if merr then put(pubMkLabel(sc, merr, 11, true, 0, 0, 340, 15), 15) end
-	local mbox = Instance.new('ScrollingFrame')
-	mbox.Size = UDim2.new(1, -8, 0, 96)
-	mbox.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
-	mbox.BorderSizePixel = 0
-	mbox.ScrollBarThickness = 2
-	mbox.ScrollBarImageTransparency = 0.75
-	mbox.CanvasSize = UDim2.new()
-	put(mbox, 96)
-	addCorner(mbox, UDim.new(0, 5))
-	local mlay = Instance.new('UIListLayout')
-	mlay.SortOrder = Enum.SortOrder.LayoutOrder
-	mlay.Padding = UDim.new(0, 2)
-	mlay.Parent = mbox
-	mlay:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-		mbox.CanvasSize = UDim2.fromOffset(0, mlay.AbsoluteContentSize.Y + 6)
+	local dside = Instance.new('Frame')
+	dside.Size = UDim2.new(0, 196, 1, -102)
+	dside.Position = UDim2.fromOffset(0, 46)
+	dside.BackgroundTransparency = 1
+	dside.Parent = ov
+	local dsb = Instance.new('Frame')
+	dsb.Size = UDim2.new(0, 1, 1, 0)
+	dsb.Position = UDim2.new(1, 0, 0, 0)
+	dsb.BackgroundColor3 = line
+	dsb.BorderSizePixel = 0
+	dsb.Parent = dside
+	local pn = pubMkLabel(dside, meta.name or ref.id, 15, false, 14, 12, 168, 36)
+	pn.FontFace = uipallet.FontSemiBold
+	pn.TextWrapped = true
+	pn.TextYAlignment = Enum.TextYAlignment.Top
+	local av = Instance.new('Frame')
+	av.Size = UDim2.fromOffset(18, 18)
+	av.Position = UDim2.fromOffset(14, 54)
+	av.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
+	av.BorderSizePixel = 0
+	av.Parent = dside
+	addCorner(av, UDim.new(1, 0))
+	local avg = Instance.new('UIGradient')
+	avg.Color = ColorSequence.new(Color3.fromRGB(221, 68, 68), Color3.fromRGB(178, 34, 34))
+	avg.Rotation = 135
+	avg.Parent = av
+	pubMkLabel(dside, 'By exuric', 12, true, 40, 54, 150, 18)
+	local detNav = Instance.new('TextButton')
+	detNav.Size = UDim2.fromOffset(176, 32)
+	detNav.Position = UDim2.fromOffset(10, 84)
+	detNav.BackgroundColor3 = cardc
+	detNav.BorderSizePixel = 0
+	detNav.AutoButtonColor = false
+	detNav.Text = ''
+	detNav.Parent = dside
+	addCorner(detNav, UDim.new(0, 7))
+	pubMkLabel(detNav, 'Details', 13, false, 10, 0, 130, 32).FontFace = uipallet.FontSemiBold
+	local dchev = Instance.new('ImageLabel')
+	dchev.Size = UDim2.fromOffset(13, 13)
+	dchev.Position = UDim2.new(1, -24, 0.5, -6)
+	dchev.BackgroundTransparency = 1
+	dchev.Image = asset('chevron.png')
+	dchev.ImageColor3 = muted
+	dchev.Parent = detNav
+	pubMkLabel(dside, total .. ' AFFECTED MODULES', 11, true, 14, 124, 176, 14)
+	local mlist = Instance.new('ScrollingFrame')
+	mlist.Size = UDim2.new(1, -12, 1, -148)
+	mlist.Position = UDim2.fromOffset(6, 144)
+	mlist.BackgroundTransparency = 1
+	mlist.BorderSizePixel = 0
+	mlist.ScrollBarThickness = 2
+	mlist.ScrollBarImageTransparency = 0.7
+	mlist.CanvasSize = UDim2.new()
+	mlist.Parent = dside
+	local mll = Instance.new('UIListLayout')
+	mll.SortOrder = Enum.SortOrder.LayoutOrder
+	mll.Padding = UDim.new(0, 2)
+	mll.Parent = mlist
+	mll:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+		mlist.CanvasSize = UDim2.fromOffset(0, mll.AbsoluteContentSize.Y + 4)
 	end)
-		if mods then
-			local k = 0
-			for _, n in en do
-				k += 1
-				local entry = mods[n] or {}
-				local opts = type(entry.Options) == 'table' and entry.Options or {}
-				local rows = {}
-				for ok, ov in opts do table.insert(rows, {tostring(ok), ov}) end
-				table.sort(rows, function(a, b) return a[1] < b[1] end)
-				local bind = type(entry.Bind) == 'table' and table.concat(entry.Bind, ' + ') or ''
-				local bodyN = #rows + (bind ~= '' and 1 or 0)
-				local cont = Instance.new('Frame')
-				cont.Size = UDim2.new(1, -8, 0, 22)
-				cont.BackgroundTransparency = 1
-				cont.LayoutOrder = k
-				cont.ClipsDescendants = true
-				cont.Parent = mbox
-				local head = Instance.new('TextButton')
-				head.Size = UDim2.new(1, 0, 0, 22)
-				head.BackgroundTransparency = 1
-				head.AutoButtonColor = false
-				head.Text = ''
-				head.Parent = cont
-				local arrow = pubMkLabel(head, bodyN > 0 and '+' or '', 12, true, 6, 0, 14, 22)
-				pubMkLabel(head, n, 12, false, 20, 0, 210, 22)
-				local pill = pubMkLabel(head, 'ON', 10, false, 0, 0, 60, 22)
-				pill.Position = UDim2.new(1, -66, 0, 0)
-				pill.TextColor3 = Color3.fromRGB(90, 255, 90)
-				pill.TextXAlignment = Enum.TextXAlignment.Right
-				local open = false
-				head.MouseButton1Click:Connect(function()
-					if bodyN == 0 then return end
-					open = not open
-					arrow.Text = open and '-' or '+'
-					if open and not cont:FindFirstChild('Body') then
-						local body = Instance.new('Frame')
-						body.Name = 'Body'
-						body.Size = UDim2.new(1, 0, 0, bodyN * 16 + 4)
-						body.Position = UDim2.fromOffset(0, 22)
-						body.BackgroundTransparency = 1
-						body.Parent = cont
-						local yy = 2
-						if bind ~= '' then
-							pubMkLabel(body, 'Keybind', 11, true, 24, yy, 150, 15)
-							local bv = pubMkLabel(body, bind, 11, false, 0, yy, 120, 15)
-							bv.Position = UDim2.new(1, -126, 0, yy)
-							bv.TextXAlignment = Enum.TextXAlignment.Right
-							yy += 16
-						end
-						for _, r in rows do
-							local v = r[2]
-							local vs
-							if type(v) == 'boolean' then vs = v and 'On' or 'Off'
-							elseif type(v) == 'number' then vs = tostring(math.floor(v * 100 + 0.5) / 100)
-							elseif type(v) == 'table' then vs = (v.R and 'color') or (#v .. ' items')
-							else vs = tostring(v) end
-							pubMkLabel(body, r[1], 11, true, 24, yy, 180, 15)
-							local vl = pubMkLabel(body, vs, 11, false, 0, yy, 120, 15)
-							vl.Position = UDim2.new(1, -126, 0, yy)
-							vl.TextXAlignment = Enum.TextXAlignment.Right
-							vl.TextColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-							yy += 16
-						end
-					end
-					cont.Size = UDim2.new(1, -8, 0, open and (22 + bodyN * 16 + 4) or 22)
-				end)
-			end
+	local dc = Instance.new('ScrollingFrame')
+	dc.Name = 'DContent'
+	dc.Size = UDim2.new(1, -205, 1, -102)
+	dc.Position = UDim2.fromOffset(205, 46)
+	dc.BackgroundTransparency = 1
+	dc.BorderSizePixel = 0
+	dc.ScrollBarThickness = 2
+	dc.ScrollBarImageTransparency = 0.7
+	dc.CanvasSize = UDim2.new()
+	dc.Parent = ov
+	local navRows = {}
+	local function clearDC()
+		for _, c in dc:GetChildren() do if c:IsA('GuiObject') then c:Destroy() end end
+	end
+	local function setActive(which)
+		detNav.BackgroundTransparency = which == 'details' and 0 or 1
+		for name, row in navRows do
+			row.BackgroundTransparency = (which == name) and 0 or 1
 		end
-	local brow = Instance.new('Frame')
-	brow.Size = UDim2.new(1, -8, 0, 30)
-	brow.BackgroundTransparency = 1
-	put(brow, 30)
-	local bx = 0
-	local function abtn(label, accent, fn)
-		local b = pubMkButton(brow, label, bx, 4, 0, 24, accent, 12)
-		b.Size = UDim2.new(0, math.max(getfontsizeCached(label, 12, uipallet.Font).X + 20, 56), 0, 24)
+	end
+	local showDetails
+	local function showModule(m)
+		pubSys.detView = m
+		clearDC()
+		setActive(m)
+		local y = 2
+		local title = pubMkLabel(dc, m, 15, false, 4, y, 320, 20)
+		title.FontFace = uipallet.FontSemiBold
+		y = y + 30
+		local entry = (mods or {})[m] or {}
+		local opts = type(entry.Options) == 'table' and entry.Options or {}
+		local rows = {}
+		if type(entry.Bind) == 'table' and #entry.Bind > 0 then
+			table.insert(rows, {'Keybind', table.concat(entry.Bind, ' + ')})
+		end
+		local okeys = {}
+		for k in opts do table.insert(okeys, tostring(k)) end
+		table.sort(okeys)
+		for _, k in okeys do
+			local v = opts[k]
+			local vs
+			if type(v) == 'boolean' then vs = v and 'ON' or 'OFF'
+			elseif type(v) == 'number' then vs = tostring(math.floor(v * 100 + 0.5) / 100)
+			elseif type(v) == 'table' then vs = v.R and 'color' or (#v .. ' items')
+			else vs = tostring(v) end
+			table.insert(rows, {k, vs})
+		end
+		if #rows == 0 then table.insert(rows, {'Enabled', entry.Enabled and 'ON' or 'OFF'}) end
+		for _, r in rows do
+			local rw = Instance.new('Frame')
+			rw.Size = UDim2.new(1, -8, 0, 38)
+			rw.Position = UDim2.fromOffset(4, y)
+			rw.BackgroundTransparency = 1
+			rw.Parent = dc
+			pubMkLabel(rw, r[1], 13, false, 0, 0, 220, 38).FontFace = uipallet.FontSemiBold
+			local vl = pubMkLabel(rw, r[2], 13, true, 0, 0, 120, 38)
+			vl.Position = UDim2.new(1, -124, 0, 0)
+			vl.TextXAlignment = Enum.TextXAlignment.Right
+			if r[2] == 'ON' then vl.TextColor3 = up end
+			local ln = Instance.new('Frame')
+			ln.Size = UDim2.new(1, 0, 0, 1)
+			ln.Position = UDim2.new(0, 0, 1, 0)
+			ln.BackgroundColor3 = line
+			ln.BorderSizePixel = 0
+			ln.Parent = rw
+			y = y + 38
+		end
+		dc.CanvasSize = UDim2.fromOffset(0, y + 8)
+	end
+	showDetails = function()
+		pubSys.detView = 'details'
+		clearDC()
+		setActive('details')
+		local y = 2
+		pubMkLabel(dc, 'Details', 15, false, 4, y, 200, 20).FontFace = uipallet.FontSemiBold
+		y = y + 28
+		local desc = meta.description
+		if desc and desc ~= '' then
+			local dh = (math.max(1, math.ceil(getfontsizeCached(desc, 12, uipallet.Font).X / 320)) * 15) + 6
+			local d = pubMkLabel(dc, desc, 12, false, 4, y, 328, dh)
+			d.TextWrapped = true
+			d.TextYAlignment = Enum.TextYAlignment.Top
+			d.TextColor3 = color.Dark(uipallet.Text, 0.12)
+			y = y + dh + 6
+		end
+		if meta.tags and #meta.tags > 0 then
+			local tx = 4
+			for _, t in meta.tags do
+				local tw = getfontsizeCached(tostring(t), 11, uipallet.Font).X + 20
+				local chip = Instance.new('Frame')
+				chip.Size = UDim2.fromOffset(tw, 24)
+				chip.Position = UDim2.fromOffset(tx, y)
+				chip.BackgroundColor3 = cardc
+				chip.BorderSizePixel = 0
+				chip.Parent = dc
+				addCorner(chip, UDim.new(0, 6))
+				local tl = pubMkLabel(chip, tostring(t), 11, false, 0, 0, tw, 24)
+				tl.TextXAlignment = Enum.TextXAlignment.Center
+				tl.TextColor3 = color.Dark(uipallet.Text, 0.12)
+				tx = tx + tw + 8
+				if tx > 300 then tx = 4 y = y + 30 end
+			end
+			y = y + 32
+		end
+		local stats = {{tostring(pubLikeCount(meta, ref.id)), 'Positive reviews'}, {ago(meta.updated), 'Last updated'}, {tostring(pubDlCount(meta, ref.id)), 'Downloads'}}
+		local sw = math.floor((330 - 20) / 3)
+		for i, st in stats do
+			local sc = Instance.new('Frame')
+			sc.Size = UDim2.fromOffset(sw, 56)
+			sc.Position = UDim2.fromOffset(4 + (i - 1) * (sw + 10), y)
+			sc.BackgroundColor3 = cardc
+			sc.BorderSizePixel = 0
+			sc.Parent = dc
+			addCorner(sc, UDim.new(0, 8))
+			local b = pubMkLabel(sc, st[1], 18, false, 0, 10, sw, 22)
+			b.FontFace = uipallet.FontSemiBold
+			b.TextXAlignment = Enum.TextXAlignment.Center
+			local sp = pubMkLabel(sc, st[2], 10, true, 0, 34, sw, 14)
+			sp.TextXAlignment = Enum.TextXAlignment.Center
+		end
+		y = y + 66
+		if merr then
+			local e = pubMkLabel(dc, merr, 11, true, 4, y, 328, 28)
+			e.TextWrapped = true
+			y = y + 30
+		end
+		local revs = pubReviews(ref.id)
+		local rh = pubMkLabel(dc, 'Reviews', 15, false, 4, y, 120, 20)
+		rh.FontFace = uipallet.FontSemiBold
+		local rc = pubMkLabel(dc, tostring(#revs), 12, true, 78, y + 1, 50, 18)
+		if #revs > 0 then
+			local pos = 0
+			for _, r in revs do if (tonumber(r.rating) or 0) >= 4 then pos = pos + 1 end end
+			local pct = pubMkLabel(dc, math.floor(pos / #revs * 100 + 0.5) .. '% positive reviews', 12, false, 0, y + 1, 180, 18)
+			pct.Position = UDim2.new(1, -184, 0, y + 1)
+			pct.TextXAlignment = Enum.TextXAlignment.Right
+			pct.TextColor3 = up
+		end
+		y = y + 28
+		if #revs == 0 then
+			pubMkLabel(dc, 'No reviews yet.', 12, true, 4, y, 300, 18)
+			y = y + 24
+		end
+		for ri, r in revs do
+			local rw = Instance.new('Frame')
+			rw.Size = UDim2.new(1, -8, 0, 44)
+			rw.Position = UDim2.fromOffset(4, y)
+			rw.BackgroundTransparency = 1
+			rw.Parent = dc
+			local rav = Instance.new('Frame')
+			rav.Size = UDim2.fromOffset(22, 22)
+			rav.Position = UDim2.fromOffset(0, 8)
+			rav.BackgroundColor3 = accent
+			rav.BorderSizePixel = 0
+			rav.Parent = rw
+			addCorner(rav, UDim.new(0, 6))
+			pubMkLabel(rw, 'exuric', 13, false, 32, 5, 180, 15).FontFace = uipallet.FontSemiBold
+			pubMkLabel(rw, ('*'):rep(math.clamp(tonumber(r.rating) or 0, 0, 5)), 11, false, 32, 22, 120, 14).TextColor3 = Color3.fromRGB(255, 184, 31)
+			local tu = Instance.new('ImageLabel')
+			tu.Size = UDim2.fromOffset(14, 14)
+			tu.Position = UDim2.new(1, -56, 0, 15)
+			tu.BackgroundTransparency = 1
+			tu.Image = asset('thumbup.png')
+			tu.ImageColor3 = up
+			tu.Parent = rw
+			local fg = Instance.new('ImageButton')
+			fg.Size = UDim2.fromOffset(14, 14)
+			fg.Position = UDim2.new(1, -24, 0, 15)
+			fg.BackgroundTransparency = 1
+			fg.Image = asset('flag.png')
+			fg.ImageColor3 = color.Dark(uipallet.Text, 0.5)
+			fg.Parent = rw
+			fg.MouseEnter:Connect(function() fg.ImageColor3 = down end)
+			fg.MouseLeave:Connect(function() fg.ImageColor3 = color.Dark(uipallet.Text, 0.5) end)
+			fg.MouseButton1Click:Connect(function()
+				mainapi:CreatePrompt({Title = 'Report review', Text = 'Report this review as inappropriate or spam?', Confirm = 'REPORT', Cancel = 'CANCEL', Function = function(okk)
+					if okk then mainapi:CreateNotification('Report', 'Review reported. Thanks.', 3) end
+				end})
+			end)
+			local ln = Instance.new('Frame')
+			ln.Size = UDim2.new(1, 0, 0, 1)
+			ln.Position = UDim2.new(0, 0, 1, 0)
+			ln.BackgroundColor3 = line
+			ln.BorderSizePixel = 0
+			ln.Parent = rw
+			y = y + 44
+		end
+		dc.CanvasSize = UDim2.fromOffset(0, y + 8)
+	end
+	detNav.MouseButton1Click:Connect(showDetails)
+	if mods then
+		local k = 0
+		for _, n in en do
+			k = k + 1
+			local row = Instance.new('TextButton')
+			row.Size = UDim2.fromOffset(182, 30)
+			row.LayoutOrder = k
+			row.BackgroundColor3 = cardc
+			row.BackgroundTransparency = 1
+			row.BorderSizePixel = 0
+			row.AutoButtonColor = false
+			row.Text = ''
+			row.Parent = mlist
+			addCorner(row, UDim.new(0, 7))
+			pubMkLabel(row, n, 13, false, 10, 0, 140, 30)
+			local ch = Instance.new('ImageLabel')
+			ch.Size = UDim2.fromOffset(12, 12)
+			ch.Position = UDim2.new(1, -22, 0.5, -6)
+			ch.BackgroundTransparency = 1
+			ch.Image = asset('chevron.png')
+			ch.ImageColor3 = muted
+			ch.Parent = row
+			navRows[n] = row
+			row.MouseButton1Click:Connect(function() showModule(n) end)
+		end
+	end
+	local foot = Instance.new('Frame')
+	foot.Size = UDim2.new(1, 0, 0, 56)
+	foot.Position = UDim2.new(0, 0, 1, -56)
+	foot.BackgroundTransparency = 1
+	foot.Parent = ov
+	local ftl = Instance.new('Frame')
+	ftl.Size = UDim2.new(1, 0, 0, 1)
+	ftl.BackgroundColor3 = line
+	ftl.BorderSizePixel = 0
+	ftl.Parent = foot
+	local vote = Instance.new('Frame')
+	vote.Size = UDim2.fromOffset(90, 40)
+	vote.Position = UDim2.fromOffset(16, 8)
+	vote.BackgroundColor3 = inset
+	vote.BorderSizePixel = 0
+	vote.Parent = foot
+	addCorner(vote, UDim.new(0, 8))
+	local vstk = Instance.new('UIStroke')
+	vstk.Color = line
+	vstk.Thickness = 1
+	vstk.Parent = vote
+	local function voteCell(ic, x, hov, fn)
+		local b = Instance.new('ImageButton')
+		b.Size = UDim2.fromOffset(18, 18)
+		b.Position = UDim2.fromOffset(x, 11)
+		b.BackgroundTransparency = 1
+		b.Image = asset(ic)
+		b.ImageColor3 = color.Dark(uipallet.Text, 0.4)
+		b.Parent = vote
+		b.MouseEnter:Connect(function() b.ImageColor3 = hov end)
+		b.MouseLeave:Connect(function() b.ImageColor3 = color.Dark(uipallet.Text, 0.4) end)
 		b.MouseButton1Click:Connect(fn)
-		bx += b.Size.X.Offset + 6
+		return b
 	end
-	abtn('LOAD', true, function()
-		local m2, e2 = pubGetData(ref)
-		if not m2 then
-			mainapi:CreateNotification('Load', e2 or 'No data', 4, 'alert')
-			return
-		end
-		pubApplyImport(meta.name or ref.id, m2, ref)
+	local tub = voteCell('thumbup.png', 14, up, function()
+		pubSetLiked(ref.id, not pubLiked(ref.id))
+		pubRefreshCards()
+		pubRefreshYours()
+		mainapi:CreateNotification('Profiles', pubLiked(ref.id) and 'Liked' or 'Like removed', 2)
 	end)
+	if pubLiked(ref.id) then tub.ImageColor3 = up end
+	local vdiv = Instance.new('Frame')
+	vdiv.Size = UDim2.new(0, 1, 1, -12)
+	vdiv.Position = UDim2.new(0.5, 0, 0, 6)
+	vdiv.BackgroundColor3 = line
+	vdiv.BorderSizePixel = 0
+	vdiv.Parent = vote
+	voteCell('thumbdown.png', 58, down, function() mainapi:CreateNotification('Profiles', 'Noted', 2) end)
 	if mine then
-		abtn('UPDATE', false, function()
-			local src = meta.sourceLive and nil or meta.source
-			local m2, e2 = pubSnapshot(src)
-			if not m2 then
-				mainapi:CreateNotification('Update', e2 or 'No data', 4, 'alert')
-				return
-			end
-			local item = pubLoadItem(ref.id) or {meta = meta}
-			item.data = {Modules = m2}
-			item.meta.updated = os.time()
-			pubSaveItem(ref.id, item)
-			local idx = pubLoadIndex()
-			if idx[ref.id] then idx[ref.id].updated = item.meta.updated end
-			pubSaveIndex(idx)
-			mainapi:CreateNotification('Updated', 'Updated from source', 3)
-			pubShowDetails(ref)
-			pubRefreshYours()
-			pubRefreshCards()
+		local bigx = 118
+		local function footBtn(label, w, acc, fn)
+			local b = pubMkButton(foot, label, bigx, 8, w, 40, acc, 13)
+			b.MouseButton1Click:Connect(fn)
+			bigx = bigx + w + 8
+			return b
+		end
+		footBtn('LOAD', 92, true, function()
+			local m2, e2 = pubGetData(ref)
+			if not m2 then mainapi:CreateNotification('Load', e2 or 'No data', 4, 'alert') return end
+			pubApplyImport(meta.name or ref.id, m2, ref)
 		end)
-		abtn('EDIT', false, function() pubShowForm('edit', ref) end)
-		abtn('DELETE', false, function()
-			mainapi:CreatePrompt({Title = 'Delete', Text = "Delete published profile '" .. (meta.name or '') .. "'? Your private profiles are kept.", Confirm = 'Delete', Cancel = 'Keep', Function = function(ok)
-				if ok then
-					mainapi:PubDeleteIds({ref.id})
-					pubShowBrowse()
-				end
+		footBtn('EDIT', 74, false, function() pubShowForm('edit', ref) end)
+		footBtn('SHARE', 80, false, function() pubDoShare(ref, false) end)
+		footBtn('DELETE', 84, false, function()
+			mainapi:CreatePrompt({Title = 'Delete', Text = "Delete published profile '" .. (meta.name or '') .. "'?", Confirm = 'Delete', Cancel = 'Keep', Function = function(okk)
+				if okk then mainapi:PubDeleteIds({ref.id}) ov:Destroy() pubShowBrowse() end
 			end})
 		end)
-		abtn('SHARE', false, function() pubDoShare(ref, false) end)
-		abtn('CODE', false, function() pubDoShare(ref, true) end)
-	end
-	local revs = pubReviews(ref.id)
-	local avg = 0
-	for _, r in revs do avg += (tonumber(r.rating) or 0) end
-	if #revs > 0 then avg = math.floor(avg / #revs * 10 + 0.5) / 10 end
-	put(pubMkLabel(sc, 'REVIEWS (' .. #revs .. (#revs > 0 and '  AVG ' .. avg or '') .. ')', 11, true, 0, 0, 340, 15), 15)
-	for ri, r in revs do
-		local txt = r.text or ''
-		local th = wrapH(txt, 11, 316) + 44
-		local rc = Instance.new('Frame')
-		rc.Size = UDim2.new(1, -8, 0, th)
-		rc.BackgroundColor3 = color.Dark(uipallet.Main, 0.015)
-		rc.BorderSizePixel = 0
-		put(rc, th)
-		addCorner(rc, UDim.new(0, 6))
-		local who = pubMkLabel(rc, 'exuric', 11, false, 10, 7, 160, 14)
-		who.FontFace = uipallet.FontSemiBold
-		local rating = math.clamp(tonumber(r.rating) or 0, 0, 5)
-		local stars = pubMkLabel(rc, ('★'):rep(rating) .. ('☆'):rep(5 - rating), 11, false, 0, 7, 70, 14)
-		stars.Position = UDim2.new(1, -78, 0, 7)
-		stars.TextXAlignment = Enum.TextXAlignment.Right
-		stars.TextColor3 = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
-		local body = pubMkLabel(rc, txt, 11, false, 10, 24, 316, th - 44)
-		body.TextWrapped = true
-		body.TextColor3 = color.Dark(uipallet.Text, 0.12)
-		local function voteIcon(asset, hover, offx)
-			local ic = Instance.new('ImageButton')
-			ic.Size = UDim2.fromOffset(13, 13)
-			ic.Position = UDim2.new(0, offx, 1, -20)
-			ic.BackgroundTransparency = 1
-			ic.Image = getcustomasset('LarpV4/assets/larp/' .. asset)
-			ic.ImageColor3 = color.Dark(uipallet.Text, 0.45)
-			ic.Parent = rc
-			ic.MouseEnter:Connect(function() ic.ImageColor3 = hover end)
-			ic.MouseLeave:Connect(function() ic.ImageColor3 = color.Dark(uipallet.Text, 0.45) end)
-			return ic
-		end
-		local up = voteIcon('thumbup.png', Color3.fromRGB(80, 220, 120), 10)
-		local hc = pubMkLabel(rc, tostring(r.helpful or 0), 11, true, 28, 0, 24, 14)
-		hc.Position = UDim2.new(0, 28, 1, -20)
-		voteIcon('thumbdown.png', Color3.fromRGB(230, 80, 80), 54)
-		up.MouseButton1Click:Connect(function()
-			r.helpful = (tonumber(r.helpful) or 0) + 1
-			pubSetReviews(ref.id, revs)
-			hc.Text = tostring(r.helpful)
-		end)
-		local flag = Instance.new('ImageButton')
-		flag.Size = UDim2.fromOffset(13, 13)
-		flag.Position = UDim2.new(1, -24, 1, -20)
-		flag.BackgroundTransparency = 1
-		flag.Image = getcustomasset('LarpV4/assets/larp/flag.png')
-		flag.ImageColor3 = color.Dark(uipallet.Text, 0.45)
-		flag.Parent = rc
-		flag.MouseEnter:Connect(function() flag.ImageColor3 = Color3.fromRGB(230, 80, 80) end)
-		flag.MouseLeave:Connect(function() flag.ImageColor3 = color.Dark(uipallet.Text, 0.45) end)
-		flag.MouseButton1Click:Connect(function()
-			mainapi:CreatePrompt({Title = 'Report Review', Text = 'Report this review as inappropriate or spam?', Confirm = 'Report', Cancel = 'Cancel', Function = function(ok)
-				if ok then
-					r.flagged = true
-					pubSetReviews(ref.id, revs)
-					mainapi:CreateNotification('Report', 'Review reported. Thanks.', 3)
-				end
-			end})
+	else
+		local dlb = pubMkButton(foot, 'Download', 118, 8, 0, 40, true, 14)
+		dlb.Size = UDim2.new(1, -134, 0, 40)
+		dlb.MouseButton1Click:Connect(function()
+			local m2, e2 = pubGetData(ref)
+			if not m2 then mainapi:CreateNotification('Download', e2 or 'No data', 4, 'alert') return end
+			pubApplyImport(meta.name or ref.id, m2, ref)
 		end)
 	end
-	put(pubMkLabel(sc, 'Your rating:', 11, true, 0, 0, 340, 15), 15)
-	local rateRow = Instance.new('Frame')
-	rateRow.Size = UDim2.new(1, -8, 0, 24)
-	rateRow.BackgroundTransparency = 1
-	put(rateRow, 24)
-	for s = 1, 5 do
-		local rb = pubMkButton(rateRow, tostring(s), (s - 1) * 34, 0, 28, 22, pubSys.rateSel == s, 11)
-		rb.MouseButton1Click:Connect(function()
-			pubSys.rateSel = s
-			pubShowDetails(ref)
-		end)
-	end
-	local rbox = pubMkBox(sc, 'Write a review...', 0, 0, 340, 26, false)
-	put(rbox, 26)
-	local sub = pubMkButton(sc, 'SUBMIT REVIEW', 0, 0, 130, 26, true, 11)
-	put(sub, 26)
-	sub.MouseButton1Click:Connect(function()
-		local t = tostring(rbox.Text or ''):gsub('^%s+', ''):gsub('%s+$', '')
-		if t == '' then
-			mainapi:CreateNotification('Review', 'Write something first', 3, 'warning')
-			return
-		end
-		pubAddReview(ref.id, {by = pubCreator(), rating = pubSys.rateSel or 5, text = t:sub(1, 300), time = os.time()})
-		pubShowDetails(ref)
-	end)
-	sc.CanvasSize = UDim2.fromOffset(0, y + 8)
-	end
+	showDetails()
+end
 	pubRefreshAll = function()
 		pubRefreshYours()
 		pubRefreshCards()

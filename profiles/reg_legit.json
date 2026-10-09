@@ -1,0 +1,1 @@
+{"name":"Legit PvP","creator":"exuric","game":0,"modules":{"KillAura":{"Enabled":true,"Bind":[],"Options":{"Range":4.0,"CPS":8,"Mode":"Single","Walls":false,"KeepSprint":true}},"Sprint":{"Enabled":true,"Bind":[]},"NoFall":{"Enabled":true,"Bind":[],"Options":{"Mode":"Ground"}}}}

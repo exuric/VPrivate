@@ -6050,7 +6050,8 @@ run(function()
 								local resolvedRoot = rootPart or tpart
 								local newlook = CFrame.new(offsetpos, tpos) * CFrame.new(relOffset)
 								local origin3 = newlook.Position
-								local order = wantHigh and {'high', 'flat'} or {'flat', 'high'}
+								local descending = (vel.Y < -4) or (resolvedRootPos and resolvedRootPos.Y < origin3.Y - 4)
+								local order = descending and {'flat'} or (wantHigh and {'high', 'flat'} or {'flat', 'high'})
 								local chosen, chosenMode
 								for _, mode in ipairs(order) do
 									local solver = (mode == 'high') and (hasHighArc and prediction.SolveTrajectoryHigh) or prediction.SolveTrajectory
@@ -6109,7 +6110,10 @@ run(function()
 								if okF and calcF then
 									best = { dir = CFrame.new(origin3, calcF).LookVector * fireSpeed, from = origin3, travelTime = ttF or lifetime }
 								else
-									best = { dir = CFrame.new(origin3, tpos + leadVel * 0.3).LookVector * fireSpeed, from = origin3, travelTime = lifetime }
+									local horizF = (Vector3.new(tpos.X, 0, tpos.Z) - Vector3.new(origin3.X, 0, origin3.Z)).Magnitude
+									local tflightF = horizF / math.max(fireSpeed, 1)
+									local dropF = 0.5 * gravity * tflightF * tflightF
+									best = { dir = CFrame.new(origin3, tpos + leadVel * 0.3 + Vector3.new(0, dropF, 0)).LookVector * fireSpeed, from = origin3, travelTime = lifetime }
 								end
 							end
 						end

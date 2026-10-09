@@ -9515,8 +9515,17 @@ do
 		local meta = pubGetMeta(ref)
 		if not meta or not meta.file then return nil, 'Registry entry has no file.' end
 		local root = (getgenv and getgenv().LarpReadRoot) or 'https://raw.githubusercontent.com/exuric/VPrivate/'
-		local ok, res = pcall(game.HttpGet, game, root..'main/'..meta.file..'?v='..tick(), true)
-		if not ok or not res or res == '' then return nil, 'Could not download profile data. Check connection.' end
+		local commit = (pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt')) or 'main'
+		local bases = {root..commit..'/'..meta.file, root..'main/'..meta.file, 'https://cdn.jsdelivr.net/gh/exuric/VPrivate@main/'..meta.file}
+		local ok, res
+		for i = 1, 5 do
+			local url = bases[((i - 1) % #bases) + 1]..'?v='..tick()..'_'..i
+			ok, res = pcall(game.HttpGet, game, url, true)
+			if ok and res and res ~= '' and res ~= '404: Not Found' and #res > 40 then break end
+			ok = false
+			task.wait(math.min(0.25 * i, 1))
+		end
+		if not ok or not res or res == '' or res == '404: Not Found' then return nil, 'Could not download profile data. Check connection.' end
 		local ok2, data = pcall(httpService.JSONDecode, httpService, res)
 		if not ok2 or type(data) ~= 'table' then return nil, 'Downloaded data is invalid.' end
 		local mods = data.modules or (data.data and data.data.Modules)

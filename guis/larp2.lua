@@ -10127,7 +10127,7 @@ end
 		pubSys.selected = nil
 		pubSys.creating = false
 		pubSys.editing = false
-		for _, n in {'Details', 'Form', 'Import'} do
+		for _, n in {'Details', 'Form', 'Import', 'DetailsOverlay'} do
 			local o = pubSys.right:FindFirstChild(n)
 			if o then o:Destroy() end
 		end
@@ -10144,7 +10144,7 @@ end
 		pubBuildWindow()
 		pubSys.view = 'import'
 		pubSys.cards.Visible = false
-		for _, n in {'Details', 'Form', 'Import'} do
+		for _, n in {'Details', 'Form', 'Import', 'DetailsOverlay'} do
 			local o = pubSys.right:FindFirstChild(n)
 			if o then o:Destroy() end
 		end
@@ -10209,7 +10209,7 @@ end
 		pubBuildWindow()
 		pubSys.view = 'form'
 		pubSys.cards.Visible = false
-		for _, n in {'Details', 'Form', 'Import'} do
+		for _, n in {'Details', 'Form', 'Import', 'DetailsOverlay'} do
 			local o = pubSys.right:FindFirstChild(n)
 			if o then o:Destroy() end
 		end

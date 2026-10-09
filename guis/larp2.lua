@@ -9262,7 +9262,7 @@ do
 		pubMkLabel(win, 'Public Profiles', 15, false, 16, 10, 300, 20).FontFace = uipallet.FontSemiBold
 		local close = addCloseButton(win, 8)
 		close.MouseButton1Click:Connect(function() win.Visible = false end)
-		pubMkLabel(win, 'YOUR PROFILES', 11, true, 12, 44, 160, 14)
+		local yoursLabel = pubMkLabel(win, 'YOUR PROFILES', 11, true, 12, 44, 120, 14)
 		local createBtn = pubMkButton(win, '+ CREATE NEW', 12, 62, 151, 30, true, 12)
 		createBtn.MouseButton1Click:Connect(function() pubShowForm('create') end)
 		local yours = Instance.new('ScrollingFrame')
@@ -9296,11 +9296,52 @@ do
 		right.BackgroundTransparency = 1
 		right.Parent = win
 		pubSys.right = right
-		local search = pubMkBox(right, 'Search Profile / Share Code', 0, 0, 377, 30, false)
+		local search = pubMkBox(right, 'Search Profile / Share Code', 0, 0, 343, 30, false)
 		pubSys.searchBox = search
 		search:GetPropertyChangedSignal('Text'):Connect(function()
 			pubSys.query = search.Text
 			pubRefreshCards()
+		end)
+		local tagBtn = pubMkButton(right, '#', 349, 0, 28, 30, false, 14)
+		tagBtn.MouseButton1Click:Connect(function()
+			local ex = right:FindFirstChild('TagOverlay')
+			if ex then ex:Destroy() return end
+			local ov = Instance.new('Frame')
+			ov.Name = 'TagOverlay'
+			ov.Size = UDim2.fromOffset(200, 0)
+			ov.Position = UDim2.fromOffset(177, 32)
+			ov.BackgroundColor3 = color.Light(uipallet.Main, 0.06)
+			ov.BorderSizePixel = 0
+			ov.ZIndex = 20
+			ov.Parent = right
+			addCorner(ov, UDim.new(0, 6))
+			local pad = Instance.new('UIPadding')
+			pad.PaddingTop = UDim.new(0, 6) pad.PaddingLeft = UDim.new(0, 6) pad.PaddingRight = UDim.new(0, 6)
+			pad.Parent = ov
+			local fl = Instance.new('UIListLayout')
+			fl.FillDirection = Enum.FillDirection.Horizontal
+			fl.Wraps = true
+			fl.Padding = UDim.new(0, 5)
+			fl.Parent = ov
+			local seen = {}
+			for _, c in pubCardData() do
+				for _, t in (c.tags or {}) do
+					local tag = tostring(t):lower()
+					if not seen[tag] then
+						seen[tag] = true
+						local chip = pubMkButton(ov, tag, 0, 0, math.max(getfontsizeCached(tag, 11, uipallet.Font).X + 16, 36), 22, false, 11)
+						chip.ZIndex = 21
+						chip.MouseButton1Click:Connect(function()
+							search.Text = tag
+							ov:Destroy()
+						end)
+					end
+				end
+			end
+			fl:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+				ov.Size = UDim2.fromOffset(200, fl.AbsoluteContentSize.Y + 12)
+			end)
+			ov.Size = UDim2.fromOffset(200, fl.AbsoluteContentSize.Y + 12)
 		end)
 		local sortRow = Instance.new('Frame')
 		sortRow.Size = UDim2.new(1, 0, 0, 24)
@@ -9328,6 +9369,27 @@ do
 			cards.CanvasSize = UDim2.fromOffset(0, grid.AbsoluteContentSize.Y + 8)
 		end)
 		pubSys.cards = cards
+		local collapse = Instance.new('ImageButton')
+		collapse.Size = UDim2.fromOffset(16, 16)
+		collapse.Position = UDim2.fromOffset(147, 43)
+		collapse.BackgroundTransparency = 1
+		collapse.Image = getcustomasset('LarpV4/assets/larp/collapse.png')
+		collapse.ImageColor3 = color.Dark(uipallet.Text, 0.4)
+		collapse.Parent = win
+		collapse.MouseEnter:Connect(function() collapse.ImageColor3 = uipallet.Text end)
+		collapse.MouseLeave:Connect(function() collapse.ImageColor3 = color.Dark(uipallet.Text, 0.4) end)
+		collapse.MouseButton1Click:Connect(function()
+			pubSys.collapsed = not pubSys.collapsed
+			local on = pubSys.collapsed
+			yoursLabel.Visible = not on
+			createBtn.Visible = not on
+			yours.Visible = not on
+			div.Visible = not on
+			collapse.Position = UDim2.fromOffset(on and 12 or 147, 43)
+			collapse.Rotation = on and 180 or 0
+			right.Position = UDim2.fromOffset(on and 36 or 191, 44)
+			right.Size = on and UDim2.new(1, -48, 1, -56) or UDim2.new(1, -203, 1, -56)
+		end)
 		pubSys.win = win
 	end
 	pubRefreshYours = function()

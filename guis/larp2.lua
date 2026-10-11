@@ -9542,22 +9542,21 @@ do
 				pv.TextXAlignment = Enum.TextXAlignment.Right
 				pv.TextColor3 = color.Dark(uipallet.Text, 0.45)
 			end
-			local likew = 32 + getfontsizeCached(tostring(c.likes), 12, uipallet.Font).X
-			local pill = Instance.new('Frame')
-			pill.Size = UDim2.fromOffset(likew, 22)
-			pill.Position = UDim2.new(0, 12, 1, -30)
-			pill.BackgroundColor3 = color.Dark(uipallet.Main, 0.03)
-			pill.BorderSizePixel = 0
-			pill.Parent = card
-			addCorner(pill, UDim.new(0, 11))
-			local th = Instance.new('ImageLabel')
-			th.Size = UDim2.fromOffset(13, 13)
-			th.Position = UDim2.fromOffset(9, 5)
-			th.BackgroundTransparency = 1
-			th.Image = getcustomasset('LarpV4/assets/larp/thumbup.png')
-			th.ImageColor3 = Color3.fromRGB(46, 204, 113)
-			th.Parent = pill
-			local lc = pubMkLabel(pill, tostring(c.likes), 12, true, 27, 0, likew - 30, 22)
+			local metacol = color.Dark(uipallet.Text, 0.48)
+			local lth = Instance.new('ImageLabel')
+			lth.Size = UDim2.fromOffset(14, 14)
+			lth.Position = UDim2.new(0, 12, 1, -26)
+			lth.BackgroundTransparency = 1
+			lth.Image = getcustomasset('LarpV4/assets/larp/thumbup.png')
+			lth.ImageColor3 = metacol
+			lth.Parent = card
+			local lc = pubMkLabel(card, tostring(c.likes), 12, true, 30, 0, 44, 20)
+			lc.Position = UDim2.new(0, 30, 1, -29)
+			lc.TextColor3 = metacol
+			local dc = pubMkLabel(card, '⬇ ' .. c.downloads, 12, true, 0, 0, 70, 20)
+			dc.Position = UDim2.new(1, -78, 1, -29)
+			dc.TextXAlignment = Enum.TextXAlignment.Right
+			dc.TextColor3 = metacol
 			card.MouseEnter:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 0.2}) card.BackgroundColor3 = color.Light(uipallet.Main, 0.06) end)
 			card.MouseLeave:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 1}) card.BackgroundColor3 = color.Light(uipallet.Main, 0.025) end)
 			card.MouseButton1Click:Connect(function()
@@ -9991,7 +9990,7 @@ pubShowDetails = function(ref)
 			tu.Position = UDim2.new(1, -56, 0, 15)
 			tu.BackgroundTransparency = 1
 			tu.Image = asset('thumbup.png')
-			tu.ImageColor3 = up
+			tu.ImageColor3 = color.Dark(uipallet.Text, 0.5)
 			tu.Parent = rw
 			local fg = Instance.new('ImageButton')
 			fg.Size = UDim2.fromOffset(14, 14)

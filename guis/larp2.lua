@@ -9159,6 +9159,29 @@ do
 		pubSaveIndex(idx)
 	end
 	local pubRefreshCards, pubShowForm, pubShowDetails, pubShowBrowse, pubShowImport, pubRefreshYours, pubRenderSort, pubRefreshAll
+	local function pubHideWin()
+		local win = pubSys.win
+		if not win or not win.Visible then return end
+		local sc = pubSys.winScale
+		if sc then
+			tween:Tween(sc, TweenInfo.new(0.13, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.9})
+			local tok = tick()
+			pubSys.hideTok = tok
+			task.delay(0.13, function()
+				if pubSys.hideTok == tok then win.Visible = false sc.Scale = 1 end
+			end)
+		else
+			win.Visible = false
+		end
+	end
+	local function pubOpenAnim()
+		local win = pubSys.win
+		local sc = pubSys.winScale
+		pubSys.hideTok = nil
+		if sc then sc.Scale = 0.9 end
+		win.Visible = true
+		if sc then tween:Tween(sc, TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}) end
+	end
 	local function pubMkLabel(parent, text, size, dim, x, y, w, h)
 		local l = Instance.new('TextLabel')
 		l.Size = UDim2.new(0, w or 200, 0, h or 16)
@@ -9259,9 +9282,18 @@ do
 		addCorner(win, UDim.new(0, 8))
 		addBlur(win)
 		makeDraggable(win)
+		local winStroke = Instance.new('UIStroke')
+		winStroke.Color = Color3.fromHSV(mainapi.GUIColor.Hue, mainapi.GUIColor.Sat, mainapi.GUIColor.Value)
+		winStroke.Thickness = 1
+		winStroke.Transparency = 0.45
+		winStroke.Parent = win
+		local winScale = Instance.new('UIScale')
+		winScale.Scale = 1
+		winScale.Parent = win
+		pubSys.winScale = winScale
 		pubMkLabel(win, 'Public Profiles', 15, false, 16, 10, 300, 20).FontFace = uipallet.FontSemiBold
 		local close = addCloseButton(win, 8)
-		close.MouseButton1Click:Connect(function() win.Visible = false end)
+		close.MouseButton1Click:Connect(function() pubHideWin() end)
 		local yoursLabel = pubMkLabel(win, 'YOUR PROFILES', 11, true, 12, 44, 120, 14)
 		local createBtn = pubMkButton(win, '+ CREATE NEW', 12, 62, 151, 30, true, 12)
 		createBtn.MouseButton1Click:Connect(function() pubShowForm('create') end)
@@ -9542,21 +9574,24 @@ do
 				pv.TextXAlignment = Enum.TextXAlignment.Right
 				pv.TextColor3 = color.Dark(uipallet.Text, 0.45)
 			end
-			local metacol = color.Dark(uipallet.Text, 0.48)
+			local metacol = color.Dark(uipallet.Text, 0.4)
+			local pillw = 34 + getfontsizeCached(tostring(c.likes), 12, uipallet.Font).X
+			local pill = Instance.new('Frame')
+			pill.Size = UDim2.fromOffset(pillw, 24)
+			pill.Position = UDim2.new(0, 12, 1, -32)
+			pill.BackgroundColor3 = color.Dark(uipallet.Main, 0.04)
+			pill.BorderSizePixel = 0
+			pill.Parent = card
+			addCorner(pill, UDim.new(1, 0))
 			local lth = Instance.new('ImageLabel')
 			lth.Size = UDim2.fromOffset(14, 14)
-			lth.Position = UDim2.new(0, 12, 1, -26)
+			lth.Position = UDim2.fromOffset(10, 5)
 			lth.BackgroundTransparency = 1
 			lth.Image = getcustomasset('LarpV4/assets/larp/thumbup.png')
 			lth.ImageColor3 = metacol
-			lth.Parent = card
-			local lc = pubMkLabel(card, tostring(c.likes), 12, true, 30, 0, 44, 20)
-			lc.Position = UDim2.new(0, 30, 1, -29)
+			lth.Parent = pill
+			local lc = pubMkLabel(pill, tostring(c.likes), 12, true, 29, 0, pillw - 32, 24)
 			lc.TextColor3 = metacol
-			local dc = pubMkLabel(card, '⬇ ' .. c.downloads, 12, true, 0, 0, 70, 20)
-			dc.Position = UDim2.new(1, -78, 1, -29)
-			dc.TextXAlignment = Enum.TextXAlignment.Right
-			dc.TextColor3 = metacol
 			card.MouseEnter:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 0.2}) card.BackgroundColor3 = color.Light(uipallet.Main, 0.06) end)
 			card.MouseLeave:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 1}) card.BackgroundColor3 = color.Light(uipallet.Main, 0.025) end)
 			card.MouseButton1Click:Connect(function()
@@ -9735,6 +9770,10 @@ pubShowDetails = function(ref)
 	ov.ZIndex = 6
 	ov.Parent = win
 	addCorner(ov, UDim.new(0, 8))
+	local ovScale = Instance.new('UIScale')
+	ovScale.Scale = 0.96
+	ovScale.Parent = ov
+	tween:Tween(ovScale, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
 	local back = Instance.new('ImageButton')
 	back.Size = UDim2.fromOffset(17, 17)
 	back.Position = UDim2.fromOffset(16, 15)
@@ -10445,11 +10484,11 @@ end
 			end
 		end)
 		pubShowBrowse()
-		pubSys.win.Visible = true
+		pubOpenAnim()
 	end
 	function mainapi:TogglePublicProfiles()
 		if pubSys.win and pubSys.win.Visible then
-			pubSys.win.Visible = false
+			pubHideWin()
 		else
 			mainapi:OpenPublicProfiles()
 		end

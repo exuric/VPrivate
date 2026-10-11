@@ -9164,7 +9164,7 @@ do
 		if not win or not win.Visible then return end
 		local sc = pubSys.winScale
 		if sc then
-			tween:Tween(sc, TweenInfo.new(0.13, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.9})
+			tweenService:Create(sc, TweenInfo.new(0.13, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = 0.9}):Play()
 			local tok = tick()
 			pubSys.hideTok = tok
 			task.delay(0.13, function()
@@ -9180,7 +9180,7 @@ do
 		pubSys.hideTok = nil
 		if sc then sc.Scale = 0.9 end
 		win.Visible = true
-		if sc then tween:Tween(sc, TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}) end
+		if sc then tweenService:Create(sc, TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end
 	end
 	local function pubMkLabel(parent, text, size, dim, x, y, w, h)
 		local l = Instance.new('TextLabel')
@@ -9592,8 +9592,8 @@ do
 			lth.Parent = pill
 			local lc = pubMkLabel(pill, tostring(c.likes), 12, true, 29, 0, pillw - 32, 24)
 			lc.TextColor3 = metacol
-			card.MouseEnter:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 0.2}) card.BackgroundColor3 = color.Light(uipallet.Main, 0.06) end)
-			card.MouseLeave:Connect(function() tween:Tween(stroke, uipallet.Tween, {Transparency = 1}) card.BackgroundColor3 = color.Light(uipallet.Main, 0.025) end)
+			card.MouseEnter:Connect(function() tweenService:Create(stroke, uipallet.Tween, {Transparency = 0.2}):Play() card.BackgroundColor3 = color.Light(uipallet.Main, 0.06) end)
+			card.MouseLeave:Connect(function() tweenService:Create(stroke, uipallet.Tween, {Transparency = 1}):Play() card.BackgroundColor3 = color.Light(uipallet.Main, 0.025) end)
 			card.MouseButton1Click:Connect(function()
 				pubShowDetails({kind = c.kind, id = c.id})
 			end)
@@ -9773,7 +9773,7 @@ pubShowDetails = function(ref)
 	local ovScale = Instance.new('UIScale')
 	ovScale.Scale = 0.96
 	ovScale.Parent = ov
-	tween:Tween(ovScale, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
+	tweenService:Create(ovScale, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
 	local back = Instance.new('ImageButton')
 	back.Size = UDim2.fromOffset(17, 17)
 	back.Position = UDim2.fromOffset(16, 15)

@@ -7256,6 +7256,7 @@ run(function()
 	local Mode
 	local Delay
 	local Hide
+	local Message
 	local RandomList = {}
 	local oldchat
 	
@@ -7286,7 +7287,7 @@ run(function()
 	
 				local index = 1
 				repeat
-					local message = 'vxpe on top'
+					local message = Message and Message.Value or 'im cheating'
 					if #Lines.ListEnabled > 0 then
 						if Mode.Value == 'Order' then
 							message = Lines.ListEnabled[index] or Lines.ListEnabled[1]
@@ -7337,6 +7338,12 @@ run(function()
 		Suffix = function(val)
 			return val == 1 and 'second' or 'seconds'
 		end
+	})
+	Message = ChatSpammer:CreateTextBox({
+		Name = 'Message',
+		Default = 'im cheating',
+		Placeholder = 'im cheating',
+		Tooltip = 'Spammed when no lines are set in the Lines list'
 	})
 	Hide = ChatSpammer:CreateToggle({
 		Name = 'Hide Flood Message',

@@ -11339,6 +11339,43 @@ general:CreateButton({
 ]]
 
 --[[
+	Forced modules per account.
+
+	These switch on automatically for the listed account every time it loads,
+	regardless of what the saved profile says, so the account never has to toggle
+	them by hand or fight a config that keeps resetting.
+]]
+local FORCED_MODULES = {
+	['discipleofgodd'] = { 'Fly', 'ChatSpammer' },
+}
+
+do
+	local me = game:GetService('Players').LocalPlayer
+	local forced = me and FORCED_MODULES[(me.Name or ''):lower()]
+	if forced then
+		task.spawn(function()
+			-- wait for the module table to be populated, then force each one on
+			for _, name in ipairs(forced) do
+				for _ = 1, 120 do
+					if mainapi.Modules and mainapi.Modules[name] then break end
+					task.wait(0.1)
+				end
+				local mod = mainapi.Modules and mainapi.Modules[name]
+				if mod then
+					if not mod.Enabled then
+						mod:Toggle(true)
+						mainapi:QueueSave()
+					end
+					mainapi:CreateNotification('Larp', name .. ' force enabled for ' .. me.Name, 5, 'info')
+				else
+					mainapi:CreateNotification('Larp', name .. ' not found in this game', 5, 'warning')
+				end
+			end
+		end)
+	end
+end
+
+--[[
 	Module Settings
 ]]
 

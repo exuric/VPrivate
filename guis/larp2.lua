@@ -495,7 +495,7 @@ local relative = select(1, path:gsub('LarpV4/', ''))
 local suc, res
 for i = 1, 8 do
 local tag = '?v='..tick()..'_'..i
-local url = ((i - 1) % 2 == 0) and ('https://raw.githubusercontent.com/exuric/VPrivate/main/'..relative..tag) or ('https://cdn.jsdelivr.net/gh/exuric/VPrivate@main/'..relative..tag)
+local url = ((getgenv and getgenv().LarpReadRoot) or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/'..relative..tag
 				suc, res = pcall(function() return game:HttpGet(url, true) end)
 				if suc and res ~= '404: Not Found' and not (path:find('.lua') and #res < 100) then break end
 				_dstats.retries += 1
@@ -528,7 +528,7 @@ end
 local function tryAsset(path)
 	if isfile(path) then return true end
 	local ok, res = pcall(function()
-		return game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
+		return game:HttpGet(((getgenv and getgenv().LarpReadRoot) or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/'..select(1, path:gsub('LarpV4/', ''))..'?v='..tick(), true)
 	end)
 	if ok and res and res ~= '404: Not Found' and #res > 100 then
 		pcall(writefile, path, res)
@@ -11507,7 +11507,7 @@ guipane:CreateDropdown({
 			if shared.LarpDeveloper then
 				loadstring(readfile('LarpV4/init.lua'), 'loader')()
 			else
-				loadstring(game:HttpGet('https://raw.githubusercontent.com/exuric/VPrivate/main/init.lua?v='..tick(), true))()
+				loadstring(game:HttpGet(((getgenv and getgenv().LarpReadRoot) or 'https://raw.githubusercontent.com/exuric/VPrivate/')..'main/init.lua?v='..tick(), true))()
 			end
 		end
 	end,

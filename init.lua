@@ -25,9 +25,32 @@ downloader.Font = Enum.Font.Arial
 downloader.Text = ''
 downloader.Parent = Instance.new('ScreenGui', gethui and gethui() or cloneref(game:GetService('CoreGui')))
 
-local RTOK = ''
+local WORKER = 'https://larp-auth.sahilrengensamy.workers.dev'
+local KEY = tostring(license.Key or '')
+local UID = ''
+local LARPTIER = 'user'
+do
+	local p = cloneref(game:GetService('Players')).LocalPlayer
+	if not p then task.wait(1); p = cloneref(game:GetService('Players')).LocalPlayer end
+	if p then UID = tostring(p.UserId) end
+	local data
+	local ok, res = pcall(function() return game:HttpGet(WORKER..'/auth?key='..KEY..'&uid='..UID) end)
+	if ok and res then
+		local dok, d = pcall(function() return game:GetService('HttpService'):JSONDecode(res) end)
+		if dok then data = d end
+	end
+	if type(data) ~= 'table' or not data.ok then
+		if p then pcall(function() p:Kick('larp v4: your key is invalid, revoked, or locked to another account') end) end
+		return
+	end
+	LARPTIER = data.tier or 'user'
+end
 local BRANCH = 'main'
-local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
+local ROOT = WORKER..'/g/'..KEY..'/'..UID..'/'
+getgenv().LarpReadRoot = ROOT
+getgenv().LarpWorker = WORKER
+getgenv().LarpKey = KEY
+getgenv().LarpUID = UID
 local SELFCOMMIT = '5527544f1a7b33d7402b40d7c3bf2833aef565ba'
 
 local MANIFEST = {}
@@ -35,7 +58,7 @@ local MANIFEST = {}
 local function fetchManifest()
 	table.clear(MANIFEST)
 	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..BRANCH..'/profiles/manifest.txt?v='..tick(), true)
+		return game:HttpGet(WORKER..'/f/profiles/manifest.txt?key='..KEY..'&uid='..UID..'&c='..BRANCH..'&v='..tick(), true)
 	end)
 	if ok and res then
 		for line in (res..'\n'):gmatch('(.-)\r?\n') do
@@ -49,7 +72,7 @@ end
 
 local function fetchCommit()
 	local ok, res = pcall(function()
-		return game:HttpGet(ROOT..BRANCH..'/profiles/commit.txt?v='..tick(), true)
+		return game:HttpGet(WORKER..'/f/profiles/commit.txt?key='..KEY..'&uid='..UID..'&c='..BRANCH..'&v='..tick(), true)
 	end)
 	if ok and res then
 		local commit = res:gsub('%s+$', ''):gsub('^%s+', '')
@@ -102,14 +125,10 @@ do
 	while pending > 0 do task.wait() end
 end
 
-local OID = 0
-local ISOWNER = false
-pcall(function()
-	local p = cloneref(game:GetService('Players')).LocalPlayer
-	ISOWNER = p and p.UserId == OID or false
-end)
+local ISOWNER = LARPTIER == 'owner'
 shared.LarpOwner = ISOWNER
 shared.LarpPureOwner = ISOWNER
+if LARPTIER == 'owner' or LARPTIER == 'dev' then shared.LarpDeveloper = true end
 
 local hash
 local nativeSha512
@@ -159,15 +178,8 @@ local function downloadFile(path, func)
 		end
 		local relative = select(1, path:gsub('LarpV4/', ''))
 		local suc, res
-		local urls = {
-			ROOT..COMMIT..'/'..relative,
-			ROOT..BRANCH..'/'..relative,
-			'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..COMMIT..'/'..relative,
-			'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..BRANCH..'/'..relative,
-		}
-		for i = 1, 10 do
-			local base = urls[((i - 1) % #urls) + 1]
-			local url = base..'?v='..COMMIT..'_'..i
+			for i = 1, 10 do
+				local url = WORKER..'/f/'..relative..'?key='..KEY..'&uid='..UID..'&c='..COMMIT..'&r='..i
 			suc, res = pcall(function()
 				return game:HttpGet(url, true)
 			end)
@@ -486,20 +498,12 @@ if not (shared.LarpDeveloper and ISOWNER) then
 	writefile('LarpV4/.version', '122')
 	if #listfiles('LarpV4/profiles') < 4 then
 		shared.LarpPresetInstall = function()
-			local headers = {}
-			if RTOK ~= '' then headers.Authorization = 'token '..RTOK end
-			local suc, req = pcall(request, {
-				Url = 'https://api.github.com/repos/exuric/VPrivate/contents/profiles',
-				Method = 'GET',
-				Headers = headers
-			})
-			if not suc or req.StatusCode ~= 200 then return false end
-			local body = cloneref(game:GetService('HttpService')):JSONDecode(req.Body)
-			if not body or typeof(body) ~= 'table' then return false end
 			local installed = false
-			for _, v in body do
-				if v.type == 'file' and pcall(downloadFile, 'LarpV4/'.. ({v.path:gsub(' ', '%%20')})[1]) then
-					installed = true
+			for relative in pairs(MANIFEST) do
+				if relative:sub(1, 9) == 'profiles/' and (relative:sub(-4) == '.txt' or relative:sub(-5) == '.json') then
+					if pcall(downloadFile, 'LarpV4/'..relative) then
+						installed = true
+					end
 				end
 			end
 			return installed

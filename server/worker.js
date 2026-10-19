@@ -83,6 +83,29 @@ export default {
       return new Response(buf, { status: 200, headers: h({ 'content-type': 'application/octet-stream' }) });
     }
 
+    // Path-based variant for the in-client helpers that build
+    //   LarpReadRoot .. <ref> .. '/' .. <path>
+    // where LarpReadRoot is set to  <worker>/g/<key>/<uid>/
+    if (url.pathname.startsWith('/g/')) {
+      const parts = url.pathname.slice(3).split('/');
+      if (parts.length < 4) return txt('-- bad path', 400);
+      const gkey = parts[0];
+      const guid = parts[1];
+      const ref = (parts[2] || 'main').replace(/[^A-Za-z0-9._-]/g, '');
+      let path;
+      try { path = decodeURIComponent(parts.slice(3).join('/')); } catch (e) { return txt('-- bad path', 400); }
+      if (path.includes('..') || !ALLOW.some((r) => r.test(path))) return txt('-- forbidden path', 400);
+      const k = await getKey(env, gkey);
+      if (!k) return txt('-- unauthorized', 403);
+      if (!userOk(k, guid)) return txt('-- key bound to another account', 403);
+      const gh = await fetch('https://raw.githubusercontent.com/' + REPO + '/' + ref + '/' + path, {
+        headers: { Authorization: 'token ' + env.GH_TOKEN, 'User-Agent': 'larp-proxy', Accept: 'application/vnd.github.raw' },
+      });
+      if (!gh.ok) return txt('-- fetch failed ' + gh.status, 502);
+      const buf = await gh.arrayBuffer();
+      return new Response(buf, { status: 200, headers: h({ 'content-type': 'application/octet-stream' }) });
+    }
+
     return txt('larp', 200);
   },
 };

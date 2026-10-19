@@ -27,35 +27,38 @@ local httpService = cloneref(game:GetService("HttpService"))
 
 shared.LarpOwner = false
 shared.LarpPureOwner = false
+local WORKER = 'https://larp-auth.sahilrengensamy.workers.dev'
+local KEY = tostring(license.Key or '')
+local UID = ''
 do
 	local _p = playersService.LocalPlayer
 	if not _p then task.wait(1); _p = playersService.LocalPlayer end
 	if not _p then return end
-	do
-		local _ok = false
-		local _hx = '4433764b337935'
-		local _k = ''
-		for _i = 1, #_hx, 2 do _k = _k .. string.char(tonumber(_hx:sub(_i, _i + 1), 16)) end
-		local function _x(s) local b = {} for i = 1, #s, 2 do b[#b+1] = string.char(tonumber(s:sub(i, i+1), 16)) end return table.concat(b) end
-		local function _r(s, k) local b, m = {}, 0 for i = 1, #s do m = m % #k + 1 local r, a, c = 0, s:byte(i), k:byte(m) for j = 0, 7 do if math.floor(a/(2^j))%2 ~= math.floor(c/(2^j))%2 then r = r + 2^j end end b[#b+1] = string.char(r) end return table.concat(b) end
-		pcall(function()
-			local _n = _p.Name:lower()
-			for _, _s in {_r(_x('2503407f'), _k):lower(), _r(_x('205a05285a0959215c102c5c1d51'), _k):lower()} do
-				if _n == _s then _ok = true end
-			end
-		-- owner/dev tier grants below
-		if _n == _r(_x('2d5f1a225a15592d5a1f275f155c285f1f27'), _k):lower() or _n == _r(_x('0d7a1a275f157c287a3f277a15590d7a1a'), _k):lower() or _n == _r(_x('285c04225d16573240'), _k):lower() or _n == _r(_x('284b043b654d'), _k):lower() then
-			_ok = true
-			shared.LarpOwner = true
-		end
-		end)
-		if not _ok then pcall(function() _p:Kick('your not authorized to use larp v4') end) return end
+	UID = tostring(_p.UserId)
+	local data
+	local ok, res = pcall(function() return game:HttpGet(WORKER..'/auth?key='..KEY..'&uid='..UID) end)
+	if ok and res then
+		local dok, d = pcall(function() return httpService:JSONDecode(res) end)
+		if dok then data = d end
+	end
+	if type(data) ~= 'table' or not data.ok then
+		pcall(function() _p:Kick('larp v4: your key is invalid, revoked, or locked to another account') end)
+		return
+	end
+	if data.tier == 'owner' then
+		shared.LarpOwner = true
+		shared.LarpPureOwner = true
+		shared.LarpDeveloper = true
+	elseif data.tier == 'dev' then
+		shared.LarpDeveloper = true
 	end
 end
 
-local RTOK = ''
-local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
+local ROOT = WORKER..'/g/'..KEY..'/'..UID..'/'
 getgenv().LarpReadRoot = ROOT
+getgenv().LarpWorker = WORKER
+getgenv().LarpKey = KEY
+getgenv().LarpUID = UID
 
 local LARPCOMMIT = (pcall(readfile, 'LarpV4/profiles/commit.txt') and readfile('LarpV4/profiles/commit.txt') or 'main')
 local LARPWATER = '--LARP:'..LARPCOMMIT..'\n'
@@ -80,15 +83,8 @@ local function downloadFile(path, func)
 			_pending[path] = true
 			local relative = select(1, path:gsub('LarpV4/', ''))
 			local suc, res
-			local urls = {
-				ROOT..LARPCOMMIT..'/'..relative,
-				ROOT..'main/'..relative,
-				'https://cdn.jsdelivr.net/gh/exuric/VPrivate@'..LARPCOMMIT..'/'..relative,
-				'https://cdn.jsdelivr.net/gh/exuric/VPrivate@main/'..relative,
-			}
 			for i = 1, 10 do
-				local base = urls[((i - 1) % #urls) + 1]
-				local url = base..'?v='..LARPCOMMIT..'_'..i
+				local url = WORKER..'/f/'..relative..'?key='..KEY..'&uid='..UID..'&c='..LARPCOMMIT..'&r='..i
 				suc, res = pcall(function() return game:HttpGet(url, true) end)
 				if suc and res and res ~= '404: Not Found' and not (#res < 100 and path:find('.lua')) then break end
 				_dstats.retries += 1
@@ -154,7 +150,7 @@ end
 		local ok, res
 		for attempt = 1, 3 do
 			ok, res = pcall(function()
-				return game:HttpGet(ROOT..'main/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i, true)
+				return game:HttpGet(WORKER..'/f/'..select(1, base:gsub('^LarpV4/', ''))..'.'..i..'?key='..KEY..'&uid='..UID..'&c=main', true)
 			end)
 			if ok and typeof(res) == 'string' and res ~= '404: Not Found' then break end
 			_dstats.retries += 1
@@ -190,7 +186,7 @@ local function finishLoading()
 				if shared.LarpDeveloper and shared.LarpOwner then
 					loadstring(readfile('LarpV4/main.lua'), 'main')(_scriptconfig)
 				else
-					loadstring(game:HttpGet(']]..ROOT..'main'..[['/init.lua?v='..tick(), true), 'init')(_scriptconfig)
+					loadstring(game:HttpGet(']]..WORKER..[[/f/init.lua?key=]]..KEY..[[&uid='..tostring(game:GetService('Players').LocalPlayer.UserId)..'&c=main&v='..tick(), true), 'init')(_scriptconfig)
 				end
 			]]
 			local teleportConfig = httpService:JSONEncode(license)

@@ -12,8 +12,7 @@ local isfile = isfile or function(file)
 	end)
 	return suc and res ~= nil and res ~= ''
 end
-local RTOK = ''
-local ROOT = (RTOK ~= '' and 'https://'..RTOK..'@' or 'https://')..'raw.githubusercontent.com/exuric/VPrivate/'
+local ROOT = (getgenv and getgenv().LarpReadRoot) or 'https://raw.githubusercontent.com/exuric/VPrivate/'
 
 local function downloadFile(path, func)
 	if not isfile(path) or (path:find('.lua') and #readfile(path) < 100) then

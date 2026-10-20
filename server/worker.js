@@ -1,19 +1,5 @@
-// larp auth proxy — Cloudflare Worker
-// The ONLY lock that matters: the GitHub token and the key list live here,
-// server-side, never in the distributed loader.
-//
-// Bindings required (set in the Cloudflare dashboard, see DEPLOY.md):
-//   Secret  GH_TOKEN  — fine-grained PAT, read-only Contents on exuric/VPrivate ONLY
-//   KV      KEYS      — namespace; one entry per user:  key "k:<userkey>"  value JSON
-//                        {"tier":"owner"|"dev"|"user","userId":<number|null>,"revoked":false,"label":"..."}
-//
-// Endpoints the loader calls:
-//   GET /auth?key=K&uid=U      -> {"ok":true,"tier":"owner"} or 403 {"ok":false,"reason":"..."}
-//   GET /f/<repo-path>?key=K&uid=U&c=<commit>  -> raw file bytes (private repo), or 403
-
 const REPO = 'exuric/VPrivate';
 
-// Only these paths may ever be served. No traversal, no .git, no workflow files.
 const ALLOW = [
   /^main\.lua$/,
   /^init\.lua$/,
@@ -45,7 +31,6 @@ async function getKey(env, key) {
   } catch (e) { return null; }
 }
 
-// A key is valid for this user if it is not bound, or bound to this exact UserId.
 function userOk(k, uid) {
   if (k.userId === null || k.userId === undefined || k.userId === '') return true;
   return String(k.userId) === String(uid);
@@ -68,14 +53,11 @@ export default {
       let path;
       try { path = decodeURIComponent(url.pathname.slice(3)); } catch (e) { return txt('-- bad path', 400); }
       if (path.includes('..') || !ALLOW.some((r) => r.test(path))) return txt('-- forbidden path', 400);
-
       const k = await getKey(env, key);
       if (!k) return txt('-- unauthorized', 403);
       if (!userOk(k, uid)) return txt('-- key bound to another account', 403);
-
       const ref = (url.searchParams.get('c') || 'main').replace(/[^A-Za-z0-9._/-]/g, '');
-      const ghUrl = 'https://raw.githubusercontent.com/' + REPO + '/' + ref + '/' + path;
-      const gh = await fetch(ghUrl, {
+      const gh = await fetch('https://raw.githubusercontent.com/' + REPO + '/' + ref + '/' + path, {
         headers: { Authorization: 'token ' + env.GH_TOKEN, 'User-Agent': 'larp-proxy', Accept: 'application/vnd.github.raw' },
       });
       if (!gh.ok) return txt('-- fetch failed ' + gh.status, 502);
@@ -83,9 +65,6 @@ export default {
       return new Response(buf, { status: 200, headers: h({ 'content-type': 'application/octet-stream' }) });
     }
 
-    // Path-based variant for the in-client helpers that build
-    //   LarpReadRoot .. <ref> .. '/' .. <path>
-    // where LarpReadRoot is set to  <worker>/g/<key>/<uid>/
     if (url.pathname.startsWith('/g/')) {
       const parts = url.pathname.slice(3).split('/');
       if (parts.length < 4) return txt('-- bad path', 400);

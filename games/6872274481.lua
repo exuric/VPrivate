@@ -4583,6 +4583,14 @@ run(function()
 
 	local function resolve()
 		SwordController = bedwars.SwordController
+		if not (SwordController and SwordController.sendServerRequest) then
+			for _, v in getgc(true) do
+				if type(v) == 'table' and rawget(v, 'sendServerRequest') and rawget(v, 'swingSwordInRegion') then
+					SwordController = v
+					break
+				end
+			end
+		end
 		local ok, cc = pcall(function() return require(replicatedStorage.TS.combat['combat-constant']).CombatConstant end)
 		CombatConst = ok and cc or nil
 		local okr, rem = pcall(function() return require(replicatedStorage.TS.remotes).default.Client:Get('SwordHit') end)
@@ -4677,6 +4685,8 @@ run(function()
 	end
 
 	local function hit(ent)
+		if not (SwordController and SwordController.sendServerRequest) then resolve() end
+		if not (SwordController and SwordController.sendServerRequest) then return false end
 		local e = toEntity(ent)
 		if not e then return false end
 		local char = entitylib.character and entitylib.character.Character

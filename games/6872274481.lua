@@ -4578,6 +4578,9 @@ end)
 run(function()
 	local Killaura, Targets, SwingRange, AttackRange, MaxAngle, LimitItems, SwingOnly, SwingAnim, SwingSpeed, HitReg
 	local SwordController, EntityUtil, CombatConst, SwordHit
+	local swordHitInst
+	getgenv().__larpKaState = getgenv().__larpKaState or {}
+	local kaState = getgenv().__larpKaState
 	local realSwing, realCanSee, realReach
 	local lastAnim, lastManualSwing = 0, 0
 
@@ -4595,6 +4598,30 @@ run(function()
 		CombatConst = ok and cc or nil
 		local okr, rem = pcall(function() return require(replicatedStorage.TS.remotes).default.Client:Get('SwordHit') end)
 		SwordHit = okr and rem or nil
+		swordHitInst = (SwordHit and SwordHit.instance) or swordHitInst
+		kaState.inst = swordHitInst
+		if swordHitInst and not kaState.hooked and hookmetamethod and getnamecallmethod then
+			local old
+			old = hookmetamethod(game, '__namecall', newcclosure(function(self, ...)
+				if kaState.spoof and self == kaState.inst and getnamecallmethod() == 'FireServer' then
+					local a = {...}
+					local pay = a[1]
+					if type(pay) == 'table' and pay.validate and pay.validate.targetPosition and pay.validate.targetPosition.value then
+						local tpos = pay.validate.targetPosition.value
+						local me = game:GetService('Players').LocalPlayer
+						me = me and me.Character
+						local mine = (me and me.PrimaryPart and me.PrimaryPart.Position) or tpos
+						local dir = tpos - mine
+						dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.new(0, 0, 1)
+						pay.validate.selfPosition = { value = tpos - dir * 2 }
+						pay.validate.raycast = nil
+					end
+					return old(self, table.unpack(a))
+				end
+				return old(self, ...)
+			end))
+			kaState.hooked = true
+		end
 		EntityUtil = (function()
 			local ok2, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
 			if ok2 and mod and mod.EntityUtil then return mod.EntityUtil end
@@ -4689,32 +4716,15 @@ run(function()
 		if not (SwordController and SwordController.sendServerRequest) then return false end
 		local e = toEntity(ent)
 		if not e then return false end
-		local char = entitylib.character and entitylib.character.Character
-		local hrp = char and char.PrimaryPart
-		local troot = ent.RootPart or ent.HumanoidRootPart
-		if not (hrp and troot) then
-			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
-			store.lastHit = os.clock()
-			store.meleeHit = os.clock()
-			return true
-		end
-		local realCF = hrp.CFrame
-		local function strike()
-			local tpos = (ent.RootPart or ent.HumanoidRootPart or troot).Position
-			local dir = tpos - realCF.Position
-			dir = dir.Magnitude > 0.01 and dir.Unit or realCF.LookVector
-			hrp.CFrame = CFrame.lookAt(tpos - dir * 3, tpos)
-			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
-		end
-		strike()
-		task.wait()
-		if entitylib.isAlive and ent and (ent.RootPart or ent.HumanoidRootPart) then strike() end
-		hrp.CFrame = realCF
+		kaState.spoof = true
+		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
+		kaState.spoof = false
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
 		store.meleeHit = os.clock()
 		return true
 	end
+
 
 	local function bestSwordSlot()
 		if not (store.inventory and store.inventory.hotbar) then return nil end
@@ -4741,9 +4751,25 @@ run(function()
 		return true
 	end
 
+	local function swordAttackSpeed()
+		local h = handItem()
+		local m = h and h.itemType and bedwars.ItemMeta[h.itemType]
+		local sp = m and m.sword and m.sword.attackSpeed
+		return (type(sp) == 'number' and sp > 0.05) and sp or 0.3
+	end
+	local function maxHitReg()
+		return math.max(1, math.floor(10 / swordAttackSpeed()))
+	end
 	local function hitInterval()
-		local n = tonumber(HitReg.Value) or 34
-		if n <= 0 then n = 34 end
+		local cap = maxHitReg()
+		local want = HitReg.Value
+		local n
+		if want == nil or want == 'Auto' then
+			n = cap
+		else
+			n = math.min(tonumber(want) or cap, cap)
+		end
+		if n <= 0 then n = cap end
 		return 10 / n
 	end
 
@@ -4802,6 +4828,7 @@ run(function()
 					end
 				end)
 			else
+				kaState.spoof = false
 				store.KillauraTarget = nil
 				if realSwing then SwordController.swingSwordInRegion = realSwing end
 				if realCanSee then SwordController.canSee = realCanSee end
@@ -4843,9 +4870,9 @@ run(function()
 	})
 	HitReg = Killaura:CreateDropdown({
 		Name = 'Hit reg',
-		List = {'33', '34', '35', '36'},
-		Default = '35',
-		Tooltip = 'Swing rate per 10 seconds. Each hit reports your position next to the target so the server lands the full count, up to 36. Drop it if your ping ghosts'
+		List = {'Auto', '20', '25', '30', '33', '36', '40'},
+		Default = 'Auto',
+		Tooltip = 'Auto uses the max your current sword accepts (10 / attack speed) so every hit lands with no ghosting. A manual value is capped to that max so it never ghosts or trips the swing-rate check'
 	})
 	SwingSpeed = Killaura:CreateSlider({
 		Name = 'Swing speed',

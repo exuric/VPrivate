@@ -4682,23 +4682,24 @@ run(function()
 		local char = entitylib.character and entitylib.character.Character
 		local hrp = char and char.PrimaryPart
 		local troot = ent.RootPart or ent.HumanoidRootPart
-		if hrp and troot then
-			local tpos = troot.Position
-			local realCF = hrp.CFrame
+		if not (hrp and troot) then
+			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
+			store.lastHit = os.clock()
+			store.meleeHit = os.clock()
+			return true
+		end
+		local realCF = hrp.CFrame
+		local function strike()
+			local tpos = (ent.RootPart or ent.HumanoidRootPart or troot).Position
 			local dir = tpos - realCF.Position
 			dir = dir.Magnitude > 0.01 and dir.Unit or realCF.LookVector
-			local ts = workspace:GetServerTimeNow()
-			hrp.CFrame = CFrame.new(tpos - dir * 10, tpos)
-			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts })
-			task.wait(0.02)
-			if entitylib.isAlive and ent and ent.RootPart then
-				hrp.CFrame = CFrame.new(ent.RootPart.Position - dir * 10, ent.RootPart.Position)
-				pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = ts + 0.02 })
-			end
-			hrp.CFrame = realCF
-		else
+			hrp.CFrame = CFrame.lookAt(tpos - dir * 3, tpos)
 			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
 		end
+		strike()
+		task.wait()
+		if entitylib.isAlive and ent and (ent.RootPart or ent.HumanoidRootPart) then strike() end
+		hrp.CFrame = realCF
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
 		store.meleeHit = os.clock()

@@ -4608,13 +4608,10 @@ run(function()
 					local pay = a[1]
 					if type(pay) == 'table' and pay.validate and pay.validate.targetPosition and pay.validate.targetPosition.value then
 						local tpos = pay.validate.targetPosition.value
-						local me = game:GetService('Players').LocalPlayer
-						me = me and me.Character
-						local mine = (me and me.PrimaryPart and me.PrimaryPart.Position) or tpos
+						local mine = kaState.selfPos or tpos
 						local dir = tpos - mine
 						dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.new(0, 0, 1)
 						pay.validate.selfPosition = { value = tpos - dir * 2 }
-						pay.validate.raycast = nil
 					end
 					return old(self, table.unpack(a))
 				end
@@ -4716,6 +4713,8 @@ run(function()
 		if not (SwordController and SwordController.sendServerRequest) then return false end
 		local e = toEntity(ent)
 		if not e then return false end
+		local sc = entitylib.character and entitylib.character.Character
+		kaState.selfPos = sc and sc.PrimaryPart and sc.PrimaryPart.Position or nil
 		kaState.spoof = true
 		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
 		kaState.spoof = false

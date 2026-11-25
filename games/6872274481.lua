@@ -4582,10 +4582,13 @@ run(function()
 	local lastAnim, lastManualSwing = 0, 0
 
 	local function resolve()
-		SwordController = bedwars.SwordController
-		if not (SwordController and SwordController.sendServerRequest) then
+		SwordController = Knit and Knit.Controllers and Knit.Controllers.SwordController or nil
+		if not (SwordController and SwordController.sendServerRequest and SwordController.getHandItem) then
+			SwordController = bedwars.SwordController
+		end
+		if not (SwordController and SwordController.sendServerRequest and SwordController.getHandItem) then
 			for _, v in getgc(true) do
-				if type(v) == 'table' and rawget(v, 'sendServerRequest') and rawget(v, 'swingSwordInRegion') then
+				if type(v) == 'table' and rawget(v, 'sendServerRequest') and rawget(v, 'swingSwordInRegion') and rawget(v, 'getHandItem') and rawget(v, 'lastAttack') ~= nil then
 					SwordController = v
 					break
 				end
@@ -4713,7 +4716,7 @@ run(function()
 		local sc = entitylib.character and entitylib.character.Character
 		kaState.selfPos = sc and sc.PrimaryPart and sc.PrimaryPart.Position or nil
 		kaState.spoof = true
-		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() })
+		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() - 0.35 })
 		kaState.spoof = false
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()

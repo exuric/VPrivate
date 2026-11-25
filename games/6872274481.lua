@@ -1237,11 +1237,8 @@ run(function()
 	RemoteHandler.CachedRemotes = {}
 	RemoteHandler.__index = RemoteHandler
 
-	local RemoteDefinitionConstruct, RemotesInConstruct = next(getupvalue(getrawmetatable(Remotes.Server).Get, 1))
-	local GlobalMiddleware = RemoteDefinitionConstruct and getupvalue(RemoteDefinitionConstruct.globalMiddleware[2], 1)
-	if not GlobalMiddleware or typeof(GlobalMiddleware) ~= "table" then
-		notif('Cat', 'Failed to load ratelimits, report this to a developer.', 30, 'alert')
-	end
+	local okMw, RemoteDefinitionConstruct = pcall(function() return (next(getupvalue(getrawmetatable(Remotes.Server).Get, 1))) end)
+	local GlobalMiddleware = okMw and RemoteDefinitionConstruct and select(2, pcall(function() return getupvalue(RemoteDefinitionConstruct.globalMiddleware[2], 1) end)) or nil
 
 	function RemoteHandler.Get(self, RemoteID: string)
 		if RemoteHandler.CachedRemotes[RemoteID] then
@@ -1261,7 +1258,7 @@ run(function()
 		Remote.Remote = AttempedRemote
 
 		if not Success or not Remote.Remote then
-			notif('Cat', `Tried to Get remote {Remote.ID}, remote is invalid`, 15, 'alert')
+			notif('Larp', `Tried to Get remote {Remote.ID}, remote is invalid`, 15, 'alert')
 			Remote.Remote = nil
 		end
 
@@ -1275,7 +1272,7 @@ run(function()
 		if not self.Success or not Remote then
 			if tick() - lastNotify > 5 then
 				lastNotify = tick()
-				notif('Cat', `Tried to Fire remote {Remote.ID}, remote is invalid`, 10, 'alert')
+				notif('Larp', `Tried to Fire remote {Remote.ID}, remote is invalid`, 10, 'alert')
 			end
 			return {
 				andThen = function() end
@@ -4869,7 +4866,7 @@ run(function()
 	})
 	HitReg = Killaura:CreateDropdown({
 		Name = 'Hit reg',
-		List = {'Auto', '20', '25', '30', '33', '36', '40'},
+		List = {'Auto', '34', '35', '36'},
 		Default = 'Auto',
 		Tooltip = 'Auto uses the max your current sword accepts (10 / attack speed) so every hit lands with no ghosting. A manual value is capped to that max so it never ghosts or trips the swing-rate check'
 	})

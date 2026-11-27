@@ -9715,13 +9715,15 @@ run(function()
 				end
 			end
 		end
+		if not out.run then out.run = out.walk end
+		if not out.walk then out.walk = out.run end
 		return out
 	end
 	local function startAnimator(char)
 		local hum = char:FindFirstChildWhichIsA('Humanoid')
 		local animator = hum and hum:FindFirstChildWhichIsA('Animator')
 		if not animator then return end
-		ids = ids or resolveIds()
+		if not ids then ids = resolveIds() end
 		if not ids then return end
 		local animate = char:FindFirstChild('Animate')
 		if animate then animate.Disabled = true end
@@ -9732,32 +9734,44 @@ run(function()
 			local ok, tr = pcall(function() return animator:LoadAnimation(a) end)
 			if ok and tr then tr.Looped = true tr.Priority = Enum.AnimationPriority.Action tracks[state] = tr end
 		end
+		if not tracks.idle then return end
 		local gen = loopGen
 		local current
+		local function switch(st, speed)
+			local want = tracks[st] or tracks.idle
+			if not want then return end
+			if current ~= want then
+				for _, tr in pairs(tracks) do if tr ~= want and tr.IsPlaying then tr:Stop(0.15) end end
+				if not want.IsPlaying then want:Play(0.15) end
+				want:AdjustWeight(1, 0.15)
+				current = want
+			elseif not want.IsPlaying then
+				want:Play(0.15) want:AdjustWeight(1, 0.15)
+			end
+			want:AdjustSpeed(speed or 1)
+		end
+		switch('idle', 1)
 		task.spawn(function()
 			while CustomAnims.Enabled and gen == loopGen and char.Parent do
-				local st = 'idle'
+				local root = char.PrimaryPart
+				local vel = root and root.AssemblyLinearVelocity or Vector3.zero
+				local planar = Vector3.new(vel.X, 0, vel.Z).Magnitude
 				local ok, hs = pcall(function() return hum:GetState() end)
-				if ok and hs == Enum.HumanoidStateType.Jumping then st = 'jump'
-				elseif ok and hs == Enum.HumanoidStateType.Freefall then st = 'fall'
-				elseif hum.MoveDirection.Magnitude > 0.1 then st = 'run'
-				else st = 'idle' end
-				if not tracks[st] then st = (tracks.run and 'run') or (tracks.idle and 'idle') or st end
-				local want = tracks[st]
-				if want then
-					if current ~= st then
-						for s, tr in pairs(tracks) do if s ~= st and tr.IsPlaying then tr:Stop(0.15) end end
-						want:Play(0.15) want:AdjustWeight(1, 0.15)
-						current = st
-					elseif not want.IsPlaying then
-						want:Play(0.15) want:AdjustWeight(1, 0.15)
-					end
+				local st, spd = 'idle', 1
+				if ok and (hs == Enum.HumanoidStateType.Jumping or (hs == Enum.HumanoidStateType.Freefall and vel.Y > 3)) then
+					st = 'jump'
+				elseif ok and hs == Enum.HumanoidStateType.Freefall then
+					st = 'fall'
+				elseif hum.MoveDirection.Magnitude > 0.1 or planar > 2 then
+					st = 'run'
+					spd = math.clamp(planar / 16, 0.75, 3)
 				end
+				switch(st, spd)
 				for _, tr in ipairs(animator:GetPlayingAnimationTracks()) do
 					local id = tr.Animation and tr.Animation.AnimationId:gsub('.*=', ''):gsub('rbxassetid://', '') or ''
 					if defaults[id] then pcall(function() tr:Stop(0) end) end
 				end
-				task.wait(0.1)
+				task.wait()
 			end
 		end)
 	end
@@ -9768,8 +9782,8 @@ run(function()
 				loopGen = loopGen + 1
 				if lplr.Character then startAnimator(lplr.Character) end
 				CustomAnims:Clean(lplr.CharacterAdded:Connect(function(c)
-					ids = nil
-					task.wait(0.7)
+					c:WaitForChild('Humanoid', 5)
+					task.wait(0.3)
 					if CustomAnims.Enabled then startAnimator(c) end
 				end))
 			else

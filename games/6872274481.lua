@@ -1482,7 +1482,6 @@ run(function()
 					store.attackReachUpdate = tick() + 1
 
 					if Reach.Enabled or HitBoxes.Enabled or store.killauraAttacking then
-						attackTable.validate.raycast = attackTable.validate.raycast or {}
 						local reachCap = 14.4
 						pcall(function()
 							local hand = bedwars.SwordController and bedwars.SwordController:getHandItem()

@@ -4661,7 +4661,15 @@ run(function()
 		if not e then return false end
 		store.killauraReach = AttackRange and AttackRange.Value or 14.4
 		store.killauraAttacking = true
-		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() - 0.35 })
+		local cam = workspace.CurrentCamera
+		local inst = e.getInstance and e:getInstance()
+		local tpos = (inst and inst:GetPivot().Position) or (ent.RootPart and ent.RootPart.Position)
+		local dir = (cam and tpos) and (tpos - cam.CFrame.Position) or nil
+		if dir and dir.Magnitude > 0.01 then
+			pcall(SwordController.sendServerRequest, SwordController, e, 1, { rayDirection = dir.Unit })
+		else
+			pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() - 0.35 })
+		end
 		store.killauraAttacking = false
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
@@ -4742,6 +4750,7 @@ run(function()
 						end
 						if active then
 							if not LimitItems.Enabled then ensureSword() end
+							if CombatConst then CombatConst.RAYCAST_SWORD_CHARACTER_DISTANCE = math.clamp(AttackRange.Value, 14.4, 18) end
 							local t = pickTarget(AttackRange.Value)
 							if t then
 								store.KillauraTarget = t

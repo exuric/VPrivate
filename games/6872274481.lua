@@ -1493,6 +1493,9 @@ run(function()
 						end)
 						-- do not spoof the position through walls: only extend reach
 						-- when the target is visible from the real position
+						if store.killauraAttacking and type(store.killauraReach) == 'number' and store.killauraReach > reachCap then
+							reachCap = math.min(store.killauraReach, 18)
+						end
 						local wallBlocked = false
 						pcall(function()
 							local origin = attackTable.validate.selfPosition.value
@@ -4542,8 +4545,6 @@ run(function()
 	local Killaura, Targets, SwingRange, AttackRange, MaxAngle, LimitItems, SwingOnly, SwingAnim, SwingSpeed, HitReg
 	local SwordController, EntityUtil, CombatConst, SwordHit
 	local swordHitInst
-	getgenv().__larpKaState = getgenv().__larpKaState or {}
-	local kaState = getgenv().__larpKaState
 	local realSwing, realCanSee, realReach
 	local lastAnim, lastManualSwing = 0, 0
 
@@ -4565,26 +4566,6 @@ run(function()
 		local okr, rem = pcall(function() return require(replicatedStorage.TS.remotes).default.Client:Get('SwordHit') end)
 		SwordHit = okr and rem or nil
 		swordHitInst = (SwordHit and SwordHit.instance) or swordHitInst
-		kaState.inst = swordHitInst
-		if swordHitInst and not kaState.hooked and hookmetamethod and getnamecallmethod then
-			local old
-			old = hookmetamethod(game, '__namecall', newcclosure(function(self, ...)
-				if kaState.spoof and self == kaState.inst and getnamecallmethod() == 'FireServer' then
-					local a = {...}
-					local pay = a[1]
-					if type(pay) == 'table' and pay.validate and pay.validate.targetPosition and pay.validate.targetPosition.value then
-						local tpos = pay.validate.targetPosition.value
-						local mine = kaState.selfPos or tpos
-						local dir = tpos - mine
-						dir = dir.Magnitude > 0.01 and dir.Unit or Vector3.new(0, 0, 1)
-						pay.validate.selfPosition = { value = tpos - dir * 2 }
-					end
-					return old(self, table.unpack(a))
-				end
-				return old(self, ...)
-			end))
-			kaState.hooked = true
-		end
 		EntityUtil = (function()
 			local ok2, mod = pcall(require, replicatedStorage.TS.entity['entity-util'])
 			if ok2 and mod and mod.EntityUtil then return mod.EntityUtil end
@@ -4679,11 +4660,10 @@ run(function()
 		if not (SwordController and SwordController.sendServerRequest) then return false end
 		local e = toEntity(ent)
 		if not e then return false end
-		local sc = entitylib.character and entitylib.character.Character
-		kaState.selfPos = sc and sc.PrimaryPart and sc.PrimaryPart.Position or nil
-		kaState.spoof = true
+		store.killauraReach = AttackRange and AttackRange.Value or 14.4
+		store.killauraAttacking = true
 		pcall(SwordController.sendServerRequest, SwordController, e, 0, { swingStartTime = workspace:GetServerTimeNow() - 0.35 })
-		kaState.spoof = false
+		store.killauraAttacking = false
 		if targetinfo then targetinfo.Targets[ent] = tick() + 1 end
 		store.lastHit = os.clock()
 		store.meleeHit = os.clock()
@@ -4793,7 +4773,7 @@ run(function()
 					end
 				end)
 			else
-				kaState.spoof = false
+				store.killauraAttacking = false
 				store.KillauraTarget = nil
 				if realSwing then SwordController.swingSwordInRegion = realSwing end
 				if realCanSee then SwordController.canSee = realCanSee end
@@ -4824,7 +4804,7 @@ run(function()
 		Default = 14.4,
 		Decimal = 10,
 		Suffix = function(val) return val == 1 and 'stud' or 'studs' end,
-		Tooltip = 'Targeting range. The server validates reach against your real position (about 14 studs on a wood sword) so hits past that ghost no matter what this is set to'
+		Tooltip = 'How far KillAura targets and reaches. Reports your position at the reach edge so hits land past vanilla, capped at ~18 studs which is the server limit. Keep it around 16-18; higher only widens targeting and those extra hits ghost'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',

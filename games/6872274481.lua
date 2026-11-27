@@ -9681,6 +9681,99 @@ run(function()
 end)
 
 run(function()
+	local CustomAnims
+	local animIds
+	local originals = setmetatable({}, { __mode = 'k' })
+	local slots = {
+		idle = { 'Animation1', 'Animation2' },
+		walk = { 'WalkAnim' },
+		run = { 'RunAnim' },
+		jump = { 'JumpAnim' },
+		fall = { 'FallAnim' },
+		climb = { 'ClimbAnim' },
+		swim = { 'Swim' },
+		swimidle = { 'SwimIdle' },
+	}
+	local function fetchIds()
+		if animIds then return animIds end
+		local ok, desc = pcall(function() return playersService:GetHumanoidDescriptionFromUserId(lplr.UserId) end)
+		if not ok or not desc then return nil end
+		animIds = {
+			idle = desc.IdleAnimation,
+			walk = desc.WalkAnimation,
+			run = desc.RunAnimation,
+			jump = desc.JumpAnimation,
+			fall = desc.FallAnimation,
+			climb = desc.ClimbAnimation,
+			swim = desc.SwimAnimation,
+			swimidle = desc.SwimAnimation,
+		}
+		return animIds
+	end
+	local function apply()
+		local char = lplr.Character
+		local animate = char and char:FindFirstChild('Animate')
+		if not animate then return end
+		local ids = fetchIds()
+		if not ids then return end
+		local saved = originals[animate]
+		if not saved then saved = {} originals[animate] = saved end
+		for state, names in pairs(slots) do
+			local id = ids[state]
+			local folder = animate:FindFirstChild(state)
+			if folder and id and id ~= 0 then
+				local target = 'rbxassetid://' .. tostring(id)
+				for _, n in ipairs(names) do
+					local a = folder:FindFirstChild(n)
+					if a and a:IsA('Animation') then
+						local key = state .. '.' .. n
+						if saved[key] == nil then saved[key] = a.AnimationId end
+						if a.AnimationId ~= target then a.AnimationId = target end
+					end
+				end
+			end
+		end
+	end
+	local function restore()
+		local char = lplr.Character
+		local animate = char and char:FindFirstChild('Animate')
+		if not animate then return end
+		local saved = originals[animate]
+		if not saved then return end
+		for state, names in pairs(slots) do
+			local folder = animate:FindFirstChild(state)
+			if folder then
+				for _, n in ipairs(names) do
+					local a = folder:FindFirstChild(n)
+					local key = state .. '.' .. n
+					if a and a:IsA('Animation') and saved[key] ~= nil then a.AnimationId = saved[key] end
+				end
+			end
+		end
+	end
+	CustomAnims = larp.Categories.Render:CreateModule({
+		Name = 'Custom Animations',
+		Function = function(callback)
+			if callback then
+				apply()
+				CustomAnims:Clean(lplr.CharacterAdded:Connect(function()
+					task.wait(0.5)
+					if CustomAnims.Enabled then apply() end
+				end))
+				task.spawn(function()
+					while CustomAnims.Enabled do
+						apply()
+						task.wait(1)
+					end
+				end)
+			else
+				restore()
+			end
+		end,
+	})
+end)
+
+run(function()
 	local LarpSkins
 	local handConn
 	local accConn

@@ -4811,7 +4811,7 @@ run(function()
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
 		Min = 1,
-		Max = 50,
+		Max = 30,
 		Default = 14.4,
 		Decimal = 10,
 		Suffix = function(val) return val == 1 and 'stud' or 'studs' end,
@@ -4820,11 +4820,11 @@ run(function()
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
 		Min = 1,
-		Max = 50,
+		Max = 30,
 		Default = 14.4,
 		Decimal = 10,
 		Suffix = function(val) return val == 1 and 'stud' or 'studs' end,
-		Tooltip = 'Range hits land within. Reports your position 2 studs from the target so the server accepts hits at any distance with no camera movement. Targeting is the only limit; push it up until targets stop being picked'
+		Tooltip = 'Targeting range. The server validates reach against your real position (about 14 studs on a wood sword) so hits past that ghost no matter what this is set to'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',

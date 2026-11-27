@@ -4403,40 +4403,6 @@ run(function()
 	DoFly = AutoWin:CreateToggle({Name = 'Blatant Fly', Default = true, Tooltip = 'Flies across gaps and bails to safety when low on health'})
 	LowHealth = AutoWin:CreateSlider({Name = 'Bail Health', Min = 10, Max = 90, Default = 35, Suffix = '%', Tooltip = 'Flies out to heal below this health'})
 
-	task.defer(function()
-		local btn = AutoWin.Object
-		if not btn then return end
-		local gc = larp.GUIColor
-		local accent = gc and Color3.fromHSV(gc.Hue, gc.Sat, gc.Value) or Color3.fromRGB(120, 170, 255)
-		local pill = Instance.new('Frame')
-		pill.Name = 'ExperimentalPill'
-		pill.AnchorPoint = Vector2.new(0, 0.5)
-		pill.AutomaticSize = Enum.AutomaticSize.X
-		pill.Size = UDim2.fromOffset(0, 15)
-		pill.Position = UDim2.new(0, 106, 0, 20)
-		pill.BackgroundColor3 = accent
-		pill.BackgroundTransparency = 0.78
-		pill.BorderSizePixel = 0
-		pill.ZIndex = 3
-		pill.Parent = btn
-		local corner = Instance.new('UICorner')
-		corner.CornerRadius = UDim.new(0, 4)
-		corner.Parent = pill
-		local pad = Instance.new('UIPadding')
-		pad.PaddingLeft = UDim.new(0, 6)
-		pad.PaddingRight = UDim.new(0, 6)
-		pad.Parent = pill
-		local label = Instance.new('TextLabel')
-		label.AutomaticSize = Enum.AutomaticSize.X
-		label.Size = UDim2.fromOffset(0, 15)
-		label.BackgroundTransparency = 1
-		label.Text = 'EXPERIMENTAL'
-		label.TextColor3 = accent
-		label.TextSize = 10
-		label.Font = Enum.Font.GothamBold
-		label.ZIndex = 3
-		label.Parent = pill
-	end)
 end)
 
 run(function()
@@ -4845,7 +4811,7 @@ run(function()
 	SwingRange = Killaura:CreateSlider({
 		Name = 'Swing range',
 		Min = 1,
-		Max = 30,
+		Max = 50,
 		Default = 14.4,
 		Decimal = 10,
 		Suffix = function(val) return val == 1 and 'stud' or 'studs' end,
@@ -4854,11 +4820,11 @@ run(function()
 	AttackRange = Killaura:CreateSlider({
 		Name = 'Attack range',
 		Min = 1,
-		Max = 30,
+		Max = 50,
 		Default = 14.4,
 		Decimal = 10,
 		Suffix = function(val) return val == 1 and 'stud' or 'studs' end,
-		Tooltip = 'Range hits land within. Reports your position next to the target so hits register past the normal 14, with no camera movement. Push it up until shots start ghosting'
+		Tooltip = 'Range hits land within. Reports your position 2 studs from the target so the server accepts hits at any distance with no camera movement. Targeting is the only limit; push it up until targets stop being picked'
 	})
 	MaxAngle = Killaura:CreateSlider({
 		Name = 'Max angle',

@@ -9682,92 +9682,101 @@ end)
 
 run(function()
 	local CustomAnims
-	local animIds
-	local originals = setmetatable({}, { __mode = 'k' })
-	local slots = {
-		idle = { 'Animation1', 'Animation2' },
-		walk = { 'WalkAnim' },
-		run = { 'RunAnim' },
-		jump = { 'JumpAnim' },
-		fall = { 'FallAnim' },
-		climb = { 'ClimbAnim' },
-		swim = { 'Swim' },
-		swimidle = { 'SwimIdle' },
+	local ids
+	local loopGen = 0
+	local defaults = {
+		['507766666'] = true, ['507766951'] = true, ['507766388'] = true,
+		['507777826'] = true, ['507767714'] = true, ['507784897'] = true,
+		['507785072'] = true, ['507765000'] = true, ['507767968'] = true,
+		['507765644'] = true, ['913384386'] = true, ['137618946217746'] = true,
 	}
-	local function fetchIds()
-		if animIds then return animIds end
-		local ok, desc = pcall(function() return playersService:GetHumanoidDescriptionFromUserId(lplr.UserId) end)
-		if not ok or not desc then return nil end
-		animIds = {
-			idle = desc.IdleAnimation,
-			walk = desc.WalkAnimation,
-			run = desc.RunAnimation,
-			jump = desc.JumpAnimation,
-			fall = desc.FallAnimation,
-			climb = desc.ClimbAnimation,
-			swim = desc.SwimAnimation,
-			swimidle = desc.SwimAnimation,
-		}
-		return animIds
+	local function toUrl(id)
+		id = tostring(id)
+		if id:find('://') or id:find('asset') then return id end
+		return 'rbxassetid://' .. id
 	end
-	local function apply()
+	local function resolveIds()
 		local char = lplr.Character
-		local animate = char and char:FindFirstChild('Animate')
-		if not animate then return end
-		local ids = fetchIds()
-		if not ids then return end
-		local saved = originals[animate]
-		if not saved then saved = {} originals[animate] = saved end
-		for state, names in pairs(slots) do
-			local id = ids[state]
-			local folder = animate:FindFirstChild(state)
-			if folder and id and id ~= 0 then
-				local target = 'rbxassetid://' .. tostring(id)
-				for _, n in ipairs(names) do
-					local a = folder:FindFirstChild(n)
-					if a and a:IsA('Animation') then
-						local key = state .. '.' .. n
-						if saved[key] == nil then saved[key] = a.AnimationId end
-						if a.AnimationId ~= target then a.AnimationId = target end
+		local hum = char and char:FindFirstChildWhichIsA('Humanoid')
+		if not hum then return nil end
+		local ok, desc = pcall(function() return hum:GetAppliedDescription() end)
+		if not ok or not desc then return nil end
+		local fields = { idle = 'IdleAnimation', walk = 'WalkAnimation', run = 'RunAnimation', jump = 'JumpAnimation', fall = 'FallAnimation' }
+		local out = {}
+		for state, field in pairs(fields) do
+			local pkg = desc[field]
+			if pkg and pkg ~= 0 then
+				local ok2, objs = pcall(function() return game:GetObjects('rbxassetid://' .. tostring(pkg)) end)
+				if ok2 and objs then
+					for _, o in ipairs(objs) do
+						if o:IsA('Animation') and not out[state] then out[state] = o.AnimationId end
+						for _, c in ipairs(o:GetDescendants()) do if c:IsA('Animation') and not out[state] then out[state] = c.AnimationId end end
 					end
 				end
 			end
 		end
+		return out
 	end
-	local function restore()
-		local char = lplr.Character
-		local animate = char and char:FindFirstChild('Animate')
-		if not animate then return end
-		local saved = originals[animate]
-		if not saved then return end
-		for state, names in pairs(slots) do
-			local folder = animate:FindFirstChild(state)
-			if folder then
-				for _, n in ipairs(names) do
-					local a = folder:FindFirstChild(n)
-					local key = state .. '.' .. n
-					if a and a:IsA('Animation') and saved[key] ~= nil then a.AnimationId = saved[key] end
-				end
-			end
+	local function startAnimator(char)
+		local hum = char:FindFirstChildWhichIsA('Humanoid')
+		local animator = hum and hum:FindFirstChildWhichIsA('Animator')
+		if not animator then return end
+		ids = ids or resolveIds()
+		if not ids then return end
+		local animate = char:FindFirstChild('Animate')
+		if animate then animate.Disabled = true end
+		local tracks = {}
+		for state, id in pairs(ids) do
+			local a = Instance.new('Animation')
+			a.AnimationId = toUrl(id)
+			local ok, tr = pcall(function() return animator:LoadAnimation(a) end)
+			if ok and tr then tr.Looped = true tr.Priority = Enum.AnimationPriority.Action tracks[state] = tr end
 		end
+		local gen = loopGen
+		local current
+		task.spawn(function()
+			while CustomAnims.Enabled and gen == loopGen and char.Parent do
+				local st = 'idle'
+				local ok, hs = pcall(function() return hum:GetState() end)
+				if ok and hs == Enum.HumanoidStateType.Jumping then st = 'jump'
+				elseif ok and hs == Enum.HumanoidStateType.Freefall then st = 'fall'
+				elseif hum.MoveDirection.Magnitude > 0.1 then st = 'run'
+				else st = 'idle' end
+				if not tracks[st] then st = (tracks.run and 'run') or (tracks.idle and 'idle') or st end
+				local want = tracks[st]
+				if want then
+					if current ~= st then
+						for s, tr in pairs(tracks) do if s ~= st and tr.IsPlaying then tr:Stop(0.15) end end
+						want:Play(0.15) want:AdjustWeight(1, 0.15)
+						current = st
+					elseif not want.IsPlaying then
+						want:Play(0.15) want:AdjustWeight(1, 0.15)
+					end
+				end
+				for _, tr in ipairs(animator:GetPlayingAnimationTracks()) do
+					local id = tr.Animation and tr.Animation.AnimationId:gsub('.*=', ''):gsub('rbxassetid://', '') or ''
+					if defaults[id] then pcall(function() tr:Stop(0) end) end
+				end
+				task.wait(0.1)
+			end
+		end)
 	end
 	CustomAnims = larp.Categories.Render:CreateModule({
 		Name = 'Custom Animations',
 		Function = function(callback)
 			if callback then
-				apply()
-				CustomAnims:Clean(lplr.CharacterAdded:Connect(function()
-					task.wait(0.5)
-					if CustomAnims.Enabled then apply() end
+				loopGen = loopGen + 1
+				if lplr.Character then startAnimator(lplr.Character) end
+				CustomAnims:Clean(lplr.CharacterAdded:Connect(function(c)
+					ids = nil
+					task.wait(0.7)
+					if CustomAnims.Enabled then startAnimator(c) end
 				end))
-				task.spawn(function()
-					while CustomAnims.Enabled do
-						apply()
-						task.wait(1)
-					end
-				end)
 			else
-				restore()
+				loopGen = loopGen + 1
+				local char = lplr.Character
+				local animate = char and char:FindFirstChild('Animate')
+				if animate then animate.Disabled = false end
 			end
 		end,
 	})

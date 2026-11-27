@@ -9732,7 +9732,7 @@ run(function()
 			local a = Instance.new('Animation')
 			a.AnimationId = toUrl(id)
 			local ok, tr = pcall(function() return animator:LoadAnimation(a) end)
-			if ok and tr then tr.Looped = true tr.Priority = Enum.AnimationPriority.Action tracks[state] = tr end
+			if ok and tr then tr.Looped = true tr.Priority = (state == 'idle') and Enum.AnimationPriority.Core or Enum.AnimationPriority.Movement tracks[state] = tr end
 		end
 		if not tracks.idle then return end
 		local gen = loopGen
